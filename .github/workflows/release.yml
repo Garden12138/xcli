@@ -12,19 +12,21 @@ jobs:
   goreleaser:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.26.x'
           check-latest: true
           cache: true
       - run: go mod download
-      - uses: goreleaser/goreleaser-action@v6
+      - name: Check release notes
+        run: test -f ".github/release-notes/${GITHUB_REF_NAME}.md"
+      - uses: goreleaser/goreleaser-action@v7.2.3
         with:
           distribution: goreleaser
-          version: '~> v2'
-          args: release --clean
+          version: v2.16.0
+          args: release --clean --release-notes .github/release-notes/${{ github.ref_name }}.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

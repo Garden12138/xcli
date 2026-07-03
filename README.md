@@ -15,7 +15,32 @@ It manages the real CLI processes rather than replacing them with model API call
 
 Declarative aliases and custom agents can be added without rebuilding xcli.
 
-## Build
+## Install
+
+Download a prebuilt archive from the [GitHub Releases](https://github.com/Garden12138/xcli/releases) page. Releases are available for macOS and Linux on amd64 and arm64.
+
+Choose one of `darwin_amd64`, `darwin_arm64`, `linux_amd64`, or `linux_arm64`, then verify and install the archive:
+
+```bash
+VERSION=0.1.0
+PLATFORM=darwin_arm64
+ARCHIVE="xcli_${VERSION}_${PLATFORM}.tar.gz"
+
+curl -fLO "https://github.com/Garden12138/xcli/releases/download/v${VERSION}/${ARCHIVE}"
+curl -fLO "https://github.com/Garden12138/xcli/releases/download/v${VERSION}/checksums.txt"
+
+# Linux: replace `shasum -a 256` with `sha256sum`
+grep -F "  ${ARCHIVE}" checksums.txt | shasum -a 256 --check
+
+tar -xzf "${ARCHIVE}"
+mkdir -p "$HOME/.local/bin"
+mv xcli "$HOME/.local/bin/xcli"
+xcli --version
+```
+
+The macOS archives are not code-signed or notarized. Always verify the published SHA-256 checksum before running a downloaded binary.
+
+### Build from source
 
 xcli targets Go 1.26 and produces a standalone binary:
 
@@ -23,8 +48,6 @@ xcli targets Go 1.26 and produces a standalone binary:
 go build -o xcli .
 ./xcli --help
 ```
-
-The v0.1 release targets macOS and Linux on amd64 and arm64.
 
 ## Quick start
 

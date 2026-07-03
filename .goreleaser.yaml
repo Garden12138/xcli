@@ -25,6 +25,11 @@ archives:
 checksum:
   name_template: checksums.txt
 
+release:
+  draft: false
+  prerelease: auto
+  make_latest: true
+
 changelog:
   sort: asc
   filters:
