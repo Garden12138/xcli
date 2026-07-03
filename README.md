@@ -1,5 +1,7 @@
 # xcli
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 `xcli` is a unified entry point for installing, running, switching between, and orchestrating mainstream AI coding agent CLI tools.
 
 It manages the real CLI processes rather than replacing them with model API calls. Native authentication, permissions, plugins, MCP configuration, and agent-specific flags remain available.
