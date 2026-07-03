@@ -1,0 +1,54 @@
+version: 1
+default_agent: codex
+
+agents:
+  claude:
+    adapter: claude
+    command: claude
+    network: proxy
+
+  codex:
+    adapter: codex
+    command: codex
+    network: proxy
+    args:
+      - --sandbox
+      - workspace-write
+
+  gemini:
+    adapter: gemini
+    command: gemini
+    network: proxy
+
+  opencode:
+    adapter: opencode
+    command: opencode
+    network: direct
+
+  deepseek:
+    adapter: opencode
+    command: opencode
+    network: direct
+    args:
+      - --model
+      - deepseek/deepseek-chat
+
+networks:
+  proxy:
+    set:
+      HTTP_PROXY: http://127.0.0.1:6738
+      HTTPS_PROXY: http://127.0.0.1:6738
+    unset: []
+
+  direct:
+    set: {}
+    unset:
+      - HTTP_PROXY
+      - HTTPS_PROXY
+      - ALL_PROXY
+      - http_proxy
+      - https_proxy
+      - all_proxy
+
+recording:
+  output: false

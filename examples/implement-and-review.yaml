@@ -1,0 +1,28 @@
+version: 1
+name: implement-and-review
+cwd: .
+
+vars:
+  requirement: Implement the requested change and run the relevant tests.
+
+steps:
+  - id: implement
+    agent: codex
+    prompt: "{{ vars.requirement }}"
+    timeout: 30m
+
+  - id: review
+    agent: claude
+    depends_on: [implement]
+    prompt: |
+      Review the current workspace changes for correctness and regressions.
+      Implementation summary: {{ steps.implement.output }}
+
+  - id: fix
+    agent: codex
+    depends_on: [review]
+    prompt: |
+      Address the review findings below and rerun the tests:
+      {{ steps.review.output }}
+    retries: 0
+    continue_on_error: false
