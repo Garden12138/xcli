@@ -2,6 +2,8 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
+[手工测试指南](docs/manual-testing.zh-CN.md)
+
 `xcli` 是一个统一入口，用于安装、运行、切换和编排主流 AI Coding Agent CLI。
 
 它直接管理真实的 CLI 进程，而不是用模型 API 替代这些工具。原生认证、权限、插件、MCP 配置及 Agent 专属参数均可继续使用。
