@@ -75,7 +75,7 @@ xcli use
 xcli run codex "Review the current changes"
 xcli run "Fix the failing tests" -- --sandbox workspace-write
 
-# Run a serial workflow
+# Run a workflow (parallelism is opt-in)
 xcli workflow validate examples/implement-and-review.yaml
 xcli workflow run examples/implement-and-review.yaml \
   --var requirement="Implement the cache invalidation fix"
@@ -129,22 +129,32 @@ xcli does not store API keys. Authentication stays with each native CLI, and env
 
 ## Workflows
 
-Workflows run one step at a time in declaration order. Code changes pass naturally through the shared working directory; textual results are injected only by explicit references:
+Workflows default to one step at a time for backward compatibility. Set `max_parallel` to run independent steps concurrently; `--max-parallel` can override the file for one invocation. Explicit `depends_on` entries and step-result template references both delay a step until its prerequisites succeed:
 
 ```yaml
 version: 1
-name: implement-and-review
+name: parallel-review
 cwd: .
+max_parallel: 2
 steps:
-  - id: implement
+  - id: correctness
     agent: codex
-    prompt: Implement the requested feature.
+    prompt: Review the current changes for correctness.
 
-  - id: review
+  - id: security
     agent: claude
-    depends_on: [implement]
-    prompt: "Review the implementation: {{ steps.implement.output }}"
+    prompt: Review the current changes for security issues.
+
+  - id: summarize
+    agent: codex
+    depends_on: [correctness, security]
+    prompt: |
+      Combine these reviews:
+      {{ steps.correctness.output }}
+      {{ steps.security.output }}
 ```
+
+Dependencies and template references must still point to earlier declarations, and execution summaries remain in declaration order even when completion order differs. See [`examples/parallel-review.yaml`](examples/parallel-review.yaml) for a complete fan-out/fan-in workflow.
 
 Supported references are:
 
@@ -153,7 +163,9 @@ Supported references are:
 - `{{ steps.id.output_file }}`
 - `{{ steps.id.session_id }}`
 
-Inline output is limited to 128 KiB. Larger results must be passed through `output_file`. Steps default to a 30-minute timeout, no retries, and fail-fast behavior. Use `continue_on_error: true` only when later independent steps should still run.
+Inline output is limited to 128 KiB. Larger results must be passed through `output_file`. Steps default to a 30-minute timeout, no retries, and fail-fast behavior. A fatal failure or timeout cancels running sibling steps and skips pending steps. Use `continue_on_error: true` only when independent branches should continue; dependents are still skipped and the workflow still fails.
+
+Parallel steps keep the existing shared `cwd` behavior. xcli does not create isolated worktrees, so steps that can write files should use separate `cwd` values or otherwise coordinate access. Concurrent stderr is streamed live and may be interleaved.
 
 ## Run records and privacy
 
@@ -173,4 +185,4 @@ xcli runs show <run-id>
 - Unknown YAML fields, invalid templates, missing networks, and forward workflow dependencies fail validation.
 - xcli does not add telemetry or automatically trust repository configuration.
 
-Parallel workflows, automatic routing, cost aggregation, ACP/CAP, MCP synchronization, daemons, process control, session resume, Windows ConPTY, and a web UI are intentionally deferred beyond v0.1.
+Automatic routing, cost aggregation, ACP/CAP, MCP synchronization, daemons, process control, session resume, Windows ConPTY, and a web UI are intentionally deferred beyond v0.1.

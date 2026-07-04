@@ -9,7 +9,7 @@ import (
 )
 
 func (a *app) newWorkflowCommand() *cobra.Command {
-	command := &cobra.Command{Use: "workflow", Short: "Validate and run serial agent workflows"}
+	command := &cobra.Command{Use: "workflow", Short: "Validate and run agent workflows"}
 	command.AddCommand(a.newWorkflowValidateCommand(), a.newWorkflowRunCommand())
 	return command
 }
@@ -45,9 +45,10 @@ func (a *app) newWorkflowRunCommand() *cobra.Command {
 	var values []string
 	var recordOutput bool
 	var asJSON bool
+	var maxParallel int
 	command := &cobra.Command{
 		Use:   "run <file>",
-		Short: "Run a serial workflow",
+		Short: "Run a workflow",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(command *cobra.Command, args []string) error {
 			cfg, _, registry, err := a.load()
@@ -76,7 +77,14 @@ func (a *app) newWorkflowRunCommand() *cobra.Command {
 			}
 			ctx, cancel := signalContext(command.Context())
 			defer cancel()
-			execution, err := runner.Run(ctx, path, definition, overrides, recordOutput || cfg.Recording.Output)
+			options := workflow.RunOptions{
+				VariableOverrides: overrides,
+				RecordOutput:      recordOutput || cfg.Recording.Output,
+			}
+			if command.Flags().Changed("max-parallel") {
+				options.MaxParallel = &maxParallel
+			}
+			execution, err := runner.Run(ctx, path, definition, options)
 			if err != nil {
 				return err
 			}
@@ -85,7 +93,10 @@ func (a *app) newWorkflowRunCommand() *cobra.Command {
 					return err
 				}
 			} else {
-				fmt.Fprintf(command.OutOrStdout(), "Workflow %s: %s (run %s)\n", execution.Name, execution.Status, execution.ID)
+				fmt.Fprintf(
+					command.OutOrStdout(), "Workflow %s: %s (run %s, max parallel %d)\n",
+					execution.Name, execution.Status, execution.ID, execution.MaxParallel,
+				)
 				for _, step := range execution.Steps {
 					fmt.Fprintf(command.OutOrStdout(), "- %s: %s", step.ID, step.Status)
 					if step.Error != "" {
@@ -103,5 +114,6 @@ func (a *app) newWorkflowRunCommand() *cobra.Command {
 	command.Flags().StringArrayVar(&values, "var", nil, "workflow variable override (key=value)")
 	command.Flags().BoolVar(&recordOutput, "record-output", false, "persist raw step output")
 	command.Flags().BoolVar(&asJSON, "json", false, "print JSON execution summary")
+	command.Flags().IntVar(&maxParallel, "max-parallel", 0, "override maximum parallel workflow steps")
 	return command
 }

@@ -15,19 +15,21 @@ import (
 )
 
 const (
-	CurrentVersion  = 1
-	DefaultTimeout  = "30m"
-	MaxInlineOutput = 128 * 1024
+	CurrentVersion     = 1
+	DefaultTimeout     = "30m"
+	DefaultMaxParallel = 1
+	MaxInlineOutput    = 128 * 1024
 )
 
 var idPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]*$`)
 
 type Workflow struct {
-	Version int               `yaml:"version" json:"version"`
-	Name    string            `yaml:"name" json:"name"`
-	Cwd     string            `yaml:"cwd,omitempty" json:"cwd,omitempty"`
-	Vars    map[string]string `yaml:"vars,omitempty" json:"vars,omitempty"`
-	Steps   []Step            `yaml:"steps" json:"steps"`
+	Version     int               `yaml:"version" json:"version"`
+	Name        string            `yaml:"name" json:"name"`
+	Cwd         string            `yaml:"cwd,omitempty" json:"cwd,omitempty"`
+	MaxParallel *int              `yaml:"max_parallel,omitempty" json:"max_parallel,omitempty"`
+	Vars        map[string]string `yaml:"vars,omitempty" json:"vars,omitempty"`
+	Steps       []Step            `yaml:"steps" json:"steps"`
 }
 
 type Step struct {
@@ -79,6 +81,9 @@ func Validate(workflow Workflow, registry *agent.Registry, networks map[string]s
 	}
 	if len(workflow.Steps) == 0 {
 		return errors.New("workflow must contain at least one step")
+	}
+	if workflow.MaxParallel != nil && *workflow.MaxParallel <= 0 {
+		return errors.New("workflow max_parallel must be greater than zero")
 	}
 	for name := range workflow.Vars {
 		if !idPattern.MatchString(name) {

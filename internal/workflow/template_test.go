@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -38,5 +39,16 @@ func TestValidateTemplateSyntaxRejectsUnknownOrForwardReferences(t *testing.T) {
 	}
 	if err := validateTemplateSyntax("{{ steps.future.output }}", map[string]string{}, map[string]bool{}); err == nil {
 		t.Fatal("expected forward-step error")
+	}
+}
+
+func TestStepTemplateReferencesIncludesPromptAndArguments(t *testing.T) {
+	step := Step{
+		Prompt: "{{ steps.first.output }} and {{ steps.first.session_id }}",
+		Args:   []string{"{{ steps.second.output_file }}"},
+	}
+	want := []string{"first", "second"}
+	if got := stepTemplateReferences(step); !reflect.DeepEqual(got, want) {
+		t.Fatalf("references = %#v, want %#v", got, want)
 	}
 }

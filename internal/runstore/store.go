@@ -14,18 +14,19 @@ import (
 )
 
 type Record struct {
-	ID         string       `json:"id"`
-	Kind       string       `json:"kind"`
-	Agent      string       `json:"agent,omitempty"`
-	Workflow   string       `json:"workflow,omitempty"`
-	Cwd        string       `json:"cwd"`
-	StartedAt  time.Time    `json:"started_at"`
-	EndedAt    time.Time    `json:"ended_at"`
-	Status     string       `json:"status"`
-	ExitCode   int          `json:"exit_code"`
-	SessionID  string       `json:"session_id,omitempty"`
-	OutputFile string       `json:"output_file,omitempty"`
-	Steps      []StepRecord `json:"steps,omitempty"`
+	ID          string       `json:"id"`
+	Kind        string       `json:"kind"`
+	Agent       string       `json:"agent,omitempty"`
+	Workflow    string       `json:"workflow,omitempty"`
+	MaxParallel int          `json:"max_parallel,omitempty"`
+	Cwd         string       `json:"cwd"`
+	StartedAt   time.Time    `json:"started_at"`
+	EndedAt     time.Time    `json:"ended_at"`
+	Status      string       `json:"status"`
+	ExitCode    int          `json:"exit_code"`
+	SessionID   string       `json:"session_id,omitempty"`
+	OutputFile  string       `json:"output_file,omitempty"`
+	Steps       []StepRecord `json:"steps,omitempty"`
 }
 
 type StepRecord struct {

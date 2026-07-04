@@ -21,7 +21,7 @@
 | 网络配置与环境合并 | ✓ | 可选 |
 | 安装命令选择 | dry-run | 可选实际安装 |
 | 原生认证入口 | ✓ | ✓ |
-| 串行工作流与变量传递 | ✓ | ✓ |
+| 串行/并行工作流与变量传递 | ✓ | ✓ |
 | 重试、跳过、超时和 Ctrl+C | ✓ | — |
 | 运行记录与输出保存 | ✓ | ✓ |
 
@@ -334,7 +334,7 @@ received=<hello from stdin>
 
 不要在体验 dry-run 时添加 `--yes` 或删除 `--dry-run`，除非确实希望修改本机安装。
 
-## 10. 串行工作流
+## 10. 依赖工作流与并行调度
 
 ### 10.1 创建成功工作流
 
@@ -377,7 +377,53 @@ YAML
 - 两个步骤均为 `success`。
 - 第二步收到第一步的显式文本输出和 `output_file` 路径。
 
-### 10.2 JSON 汇总和输出记录
+未设置 `max_parallel` 时，并发度默认为 1，因此旧工作流仍保持串行行为。
+
+### 10.2 并行 fan-out/fan-in
+
+```bash
+cat > "$XCLI_TEST_ROOT/parallel-workflow.yaml" <<'YAML'
+version: 1
+name: fake-parallel
+cwd: work
+max_parallel: 2
+
+steps:
+  - id: first
+    agent: fake
+    prompt: first parallel branch
+    args: ["--sleep", "1"]
+
+  - id: second
+    agent: fake-alt
+    prompt: second parallel branch
+    args: ["--sleep", "1"]
+
+  - id: summarize
+    agent: fake
+    depends_on: [first, second]
+    prompt: |
+      first={{ steps.first.output }}
+      second={{ steps.second.output }}
+YAML
+
+time "$XCLI_BIN" --config "$XCLI_CONFIG" workflow run \
+  "$XCLI_TEST_ROOT/parallel-workflow.yaml" --json
+
+"$XCLI_BIN" --config "$XCLI_CONFIG" workflow run \
+  "$XCLI_TEST_ROOT/parallel-workflow.yaml" --max-parallel 1 --json
+```
+
+预期结果：
+
+- 第一次执行的 `max_parallel` 为 `2`，`first` 和 `second` 的时间范围重叠，总耗时接近一次休眠而不是两次。
+- `summarize` 只在两个分支成功后运行，并收到两份输出。
+- JSON 中的步骤始终按 `first`、`second`、`summarize` 的声明顺序排列。
+- 第二次执行的 `max_parallel` 为 `1`，CLI 成功覆盖 YAML 并恢复串行执行。
+
+并行步骤共享工作目录。不要让两个会写文件的 Agent 并发修改同一目录；应通过 `cwd` 分离工作区或自行协调。
+
+### 10.3 JSON 汇总和输出记录
 
 ```bash
 "$XCLI_BIN" --config "$XCLI_CONFIG" workflow run \
@@ -390,16 +436,18 @@ YAML
 预期结果：标准输出只有一个 JSON 执行摘要，包含：
 
 - 工作流 `status: success`、`exit_code: 0`。
+- 实际并发度 `max_parallel: 1`。
 - 两个步骤的状态、输出、尝试次数和时间。
 - 持久化的 `output_file` 路径。
 
-### 10.3 重试、继续和依赖跳过
+### 10.4 重试、继续和依赖跳过
 
 ```bash
 cat > "$XCLI_TEST_ROOT/failure-workflow.yaml" <<'YAML'
 version: 1
 name: fake-failure
 cwd: work
+max_parallel: 2
 
 steps:
   - id: failing
@@ -431,13 +479,14 @@ echo "exit_code=$?"
 - `dependent` 因依赖失败而标记为 `skipped`。
 - 整体工作流失败并返回非零退出码。
 
-### 10.4 超时
+### 10.5 超时与同级取消
 
 ```bash
 cat > "$XCLI_TEST_ROOT/timeout-workflow.yaml" <<'YAML'
 version: 1
 name: fake-timeout
 cwd: work
+max_parallel: 2
 
 steps:
   - id: slow
@@ -445,6 +494,15 @@ steps:
     prompt: timeout test
     args: ["--sleep", "2"]
     timeout: 200ms
+
+  - id: sibling
+    agent: fake-alt
+    prompt: cancel with sibling
+    args: ["--sleep", "2"]
+
+  - id: later
+    agent: fake
+    prompt: must not start
 YAML
 
 "$XCLI_BIN" --config "$XCLI_CONFIG" workflow run \
@@ -452,18 +510,38 @@ YAML
 echo "exit_code=$?"
 ```
 
-预期结果：步骤和工作流状态为 `timed_out`，命令返回退出码 `124`。
+预期结果：`slow` 和工作流状态为 `timed_out`，`sibling` 为 `canceled`，`later` 为 `skipped`，命令返回退出码 `124`。
 
-### 10.5 Ctrl+C
+### 10.6 Ctrl+C
 
-运行下面的命令，并在假 Agent 休眠时按一次 Ctrl+C：
+创建并行休眠工作流，运行后按一次 Ctrl+C：
 
 ```bash
-"$XCLI_BIN" --config "$XCLI_CONFIG" run fake "cancel test" -- --sleep 60
+cat > "$XCLI_TEST_ROOT/cancel-workflow.yaml" <<'YAML'
+version: 1
+name: fake-cancel
+cwd: work
+max_parallel: 2
+steps:
+  - id: first
+    agent: fake
+    prompt: first cancel test
+    args: ["--sleep", "60"]
+  - id: second
+    agent: fake-alt
+    prompt: second cancel test
+    args: ["--sleep", "60"]
+  - id: later
+    agent: fake
+    prompt: must not start
+YAML
+
+"$XCLI_BIN" --config "$XCLI_CONFIG" workflow run \
+  "$XCLI_TEST_ROOT/cancel-workflow.yaml"
 echo "exit_code=$?"
 ```
 
-预期结果：子进程终止，xcli 返回退出码 `130`，不会遗留休眠进程。
+预期结果：两个运行中的步骤均被取消，`later` 被跳过，工作流返回退出码 `130`，不会遗留休眠进程。
 
 ## 11. 运行记录与隐私
 
@@ -481,7 +559,7 @@ ls -la "$XDG_DATA_HOME/xcli/runs"
 
 预期结果：
 
-- 记录包含类型、Agent 或工作流、工作目录、时间、状态和退出码。
+- 记录包含类型、Agent 或工作流、实际并发度、工作目录、时间、状态和退出码。
 - JSON 元数据文件权限为 `-rw-------`，目录权限仅允许当前用户访问。
 - 普通运行不会保存完整输出。
 - 使用 `--record-output` 的工作流会在对应运行目录中保存步骤输出。
@@ -591,7 +669,7 @@ YAML
 - [ ] `--` 后参数不被 xcli 或 shell 重新解释。
 - [ ] `--cwd`、网络变量清除和 Agent 环境变量生效。
 - [ ] 安装器 dry-run 展示正确命令且不修改系统。
-- [ ] 工作流严格串行，并能显式传递步骤输出。
+- [ ] 工作流默认串行，配置后能并行运行独立步骤并按依赖汇合。
 - [ ] 重试、失败继续、依赖跳过、超时和 Ctrl+C 状态正确。
 - [ ] 运行记录权限正确，默认不保存完整输出。
 - [ ] 至少一个真实 Agent 能完成认证、单次运行和交互运行。

@@ -1,0 +1,29 @@
+version: 1
+name: parallel-review
+cwd: .
+max_parallel: 2
+
+steps:
+  - id: correctness
+    agent: codex
+    prompt: |
+      Review the current workspace changes for correctness and regressions.
+      Do not modify files. Return concise findings with file references.
+
+  - id: security
+    agent: claude
+    prompt: |
+      Review the current workspace changes for security and privacy issues.
+      Do not modify files. Return concise findings with file references.
+
+  - id: summarize
+    agent: codex
+    depends_on: [correctness, security]
+    prompt: |
+      Deduplicate and prioritize the findings from both reviews.
+
+      Correctness review:
+      {{ steps.correctness.output }}
+
+      Security review:
+      {{ steps.security.output }}

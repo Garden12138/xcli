@@ -75,7 +75,7 @@ xcli use
 xcli run codex "审查当前变更"
 xcli run "修复失败的测试" -- --sandbox workspace-write
 
-# 运行串行工作流
+# 运行工作流（并行需显式启用）
 xcli workflow validate examples/implement-and-review.yaml
 xcli workflow run examples/implement-and-review.yaml \
   --var requirement="实现缓存失效修复"
@@ -129,22 +129,32 @@ xcli 不保存 API Key。认证仍由各原生 CLI 管理，xcli 也不会打印
 
 ## 工作流
 
-工作流严格按照声明顺序逐步运行。代码变更通过共享工作目录自然传递；文本结果仅通过显式引用注入：
+为保持向后兼容，工作流默认一次只运行一个步骤。设置 `max_parallel` 后，互不依赖的步骤可以并行运行；`--max-parallel` 可在单次调用中覆盖文件配置。显式 `depends_on` 和步骤结果模板引用都会让步骤等待前置步骤成功：
 
 ```yaml
 version: 1
-name: implement-and-review
+name: parallel-review
 cwd: .
+max_parallel: 2
 steps:
-  - id: implement
+  - id: correctness
     agent: codex
-    prompt: 实现所需功能。
+    prompt: 审查当前变更的正确性。
 
-  - id: review
+  - id: security
     agent: claude
-    depends_on: [implement]
-    prompt: "审查实现：{{ steps.implement.output }}"
+    prompt: 审查当前变更的安全问题。
+
+  - id: summarize
+    agent: codex
+    depends_on: [correctness, security]
+    prompt: |
+      汇总以下审查结果：
+      {{ steps.correctness.output }}
+      {{ steps.security.output }}
 ```
+
+依赖和模板引用仍必须指向更早声明的步骤；即使完成顺序不同，执行摘要也始终保持声明顺序。完整的 fan-out/fan-in 工作流参见 [`examples/parallel-review.yaml`](examples/parallel-review.yaml)。
 
 支持以下引用：
 
@@ -153,7 +163,9 @@ steps:
 - `{{ steps.id.output_file }}`
 - `{{ steps.id.session_id }}`
 
-内联输出上限为 128 KiB，更大的结果必须通过 `output_file` 传递。步骤默认超时 30 分钟、不重试，并在失败时立即停止。只有后续独立步骤仍需运行时，才应使用 `continue_on_error: true`。
+内联输出上限为 128 KiB，更大的结果必须通过 `output_file` 传递。步骤默认超时 30 分钟、不重试，并在失败时立即停止。致命失败或超时会取消正在运行的同级步骤并跳过待运行步骤。只有独立分支仍需继续时，才应使用 `continue_on_error: true`；依赖步骤仍会跳过，工作流整体仍为失败。
+
+并行步骤沿用现有的共享 `cwd` 语义。xcli 不会自动创建隔离 worktree，因此可能写文件的步骤应使用不同的 `cwd`，或自行协调并发访问。并发 stderr 会实时输出，不同步骤的内容可能交错。
 
 ## 运行记录与隐私
 
@@ -173,4 +185,4 @@ xcli runs show <run-id>
 - 未知 YAML 字段、无效模板、缺失网络配置和前向工作流依赖都会导致校验失败。
 - xcli 不添加遥测，也不会自动信任仓库配置。
 
-并行工作流、自动路由、费用聚合、ACP/CAP、MCP 同步、守护进程、进程控制、会话恢复、Windows ConPTY 和 Web UI 均明确延后到 v0.1 之后。
+自动路由、费用聚合、ACP/CAP、MCP 同步、守护进程、进程控制、会话恢复、Windows ConPTY 和 Web UI 均明确延后到 v0.1 之后。

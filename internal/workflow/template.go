@@ -100,3 +100,20 @@ func resolveTemplate(value string, context templateContext) (string, error) {
 	}
 	return resolved, nil
 }
+
+func stepTemplateReferences(step Step) []string {
+	seen := make(map[string]bool)
+	var references []string
+	values := append([]string{step.Prompt}, step.Args...)
+	for _, value := range values {
+		for _, match := range templatePattern.FindAllStringSubmatch(value, -1) {
+			parts := strings.Split(match[1], ".")
+			if len(parts) != 3 || parts[0] != "steps" || seen[parts[1]] {
+				continue
+			}
+			seen[parts[1]] = true
+			references = append(references, parts[1])
+		}
+	}
+	return references
+}
