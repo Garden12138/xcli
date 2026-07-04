@@ -5,11 +5,17 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/Garden12138/xcli/internal/agent"
 )
 
 func TestSaveLoadAndList(t *testing.T) {
 	store := &Store{root: filepath.Join(t.TempDir(), "runs")}
-	record := Record{ID: "run-test", Kind: "run", Agent: "codex", StartedAt: time.Now().UTC(), Status: "success"}
+	cost := 0.0
+	record := Record{
+		ID: "run-test", Kind: "run", Agent: "codex", StartedAt: time.Now().UTC(), Status: "success",
+		Usage: &agent.Usage{InputTokens: 10, TotalTokens: 10, EstimatedCostUSD: &cost},
+	}
 	if err := store.Save(record); err != nil {
 		t.Fatal(err)
 	}
@@ -17,7 +23,8 @@ func TestSaveLoadAndList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if loaded.Agent != "codex" {
+	if loaded.Agent != "codex" || loaded.Usage == nil || loaded.Usage.InputTokens != 10 ||
+		loaded.Usage.EstimatedCostUSD == nil || *loaded.Usage.EstimatedCostUSD != 0 {
 		t.Fatalf("unexpected record: %#v", loaded)
 	}
 	info, err := os.Stat(filepath.Join(store.root, "run-test.json"))
@@ -44,7 +51,7 @@ func TestLoadLegacyRecordWithoutRoutingMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if record.Agent != "codex" || record.SelectionSource != "" || record.RouteRule != "" {
+	if record.Agent != "codex" || record.SelectionSource != "" || record.RouteRule != "" || record.Usage != nil {
 		t.Fatalf("unexpected legacy record: %#v", record)
 	}
 }

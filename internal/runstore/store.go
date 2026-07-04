@@ -11,6 +11,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/Garden12138/xcli/internal/agent"
 )
 
 type Record struct {
@@ -27,21 +29,23 @@ type Record struct {
 	Status          string       `json:"status"`
 	ExitCode        int          `json:"exit_code"`
 	SessionID       string       `json:"session_id,omitempty"`
+	Usage           *agent.Usage `json:"usage,omitempty"`
 	OutputFile      string       `json:"output_file,omitempty"`
 	Steps           []StepRecord `json:"steps,omitempty"`
 }
 
 type StepRecord struct {
-	ID         string    `json:"id"`
-	Agent      string    `json:"agent"`
-	Status     string    `json:"status"`
-	ExitCode   int       `json:"exit_code"`
-	SessionID  string    `json:"session_id,omitempty"`
-	OutputFile string    `json:"output_file,omitempty"`
-	StartedAt  time.Time `json:"started_at,omitempty"`
-	EndedAt    time.Time `json:"ended_at,omitempty"`
-	Attempts   int       `json:"attempts,omitempty"`
-	Error      string    `json:"error,omitempty"`
+	ID         string       `json:"id"`
+	Agent      string       `json:"agent"`
+	Status     string       `json:"status"`
+	ExitCode   int          `json:"exit_code"`
+	SessionID  string       `json:"session_id,omitempty"`
+	Usage      *agent.Usage `json:"usage,omitempty"`
+	OutputFile string       `json:"output_file,omitempty"`
+	StartedAt  time.Time    `json:"started_at,omitempty"`
+	EndedAt    time.Time    `json:"ended_at,omitempty"`
+	Attempts   int          `json:"attempts,omitempty"`
+	Error      string       `json:"error,omitempty"`
 }
 
 type Store struct {

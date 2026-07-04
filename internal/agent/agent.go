@@ -44,6 +44,7 @@ type RunResult struct {
 	SessionID string `json:"session_id,omitempty"`
 	ExitCode  int    `json:"exit_code"`
 	Status    string `json:"status"`
+	Usage     *Usage `json:"usage,omitempty"`
 }
 
 type InstallSpec struct {
@@ -299,6 +300,7 @@ func ParseStructured(adapter, outputFormat string, data []byte) RunResult {
 
 	var pieces []string
 	var lastLine string
+	usage := newUsageAccumulator()
 	scanner := bufio.NewScanner(bytes.NewReader(data))
 	buffer := make([]byte, 64*1024)
 	scanner.Buffer(buffer, 4*1024*1024)
@@ -312,9 +314,11 @@ func ParseStructured(adapter, outputFormat string, data []byte) RunResult {
 		if err := json.Unmarshal([]byte(line), &event); err != nil {
 			continue
 		}
+		usage.capture(adapter, event)
 		captureSession(event, &result)
 		captureOutput(event, &pieces)
 	}
+	result.Usage = usage.result()
 	if len(pieces) > 0 {
 		result.Output = strings.TrimSpace(strings.Join(pieces, ""))
 	} else if lastLine != "" {

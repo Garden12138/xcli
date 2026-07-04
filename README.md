@@ -80,6 +80,9 @@ xcli route "Review the authentication changes"
 xcli workflow validate examples/implement-and-review.yaml
 xcli workflow run examples/implement-and-review.yaml \
   --var requirement="Implement the cache invalidation fix"
+
+# Summarize recorded token usage and native cost estimates
+xcli usage --days 7
 ```
 
 `--var` overrides variables declared by the workflow; undeclared keys are rejected.
@@ -186,9 +189,9 @@ Inline output is limited to 128 KiB. Larger results must be passed through `outp
 
 Parallel steps keep the existing shared `cwd` behavior. xcli does not create isolated worktrees, so steps that can write files should use separate `cwd` values or otherwise coordinate access. Concurrent stderr is streamed live and may be interleaved.
 
-## Run records and privacy
+## Run records, usage, and privacy
 
-xcli stores private (`0600`) metadata under `$XDG_DATA_HOME/xcli/runs` or `~/.local/share/xcli/runs`. Metadata includes the agent, working directory, timestamps, status, exit code, and a native session ID when the structured output exposes one.
+xcli stores private (`0600`) metadata under `$XDG_DATA_HOME/xcli/runs` or `~/.local/share/xcli/runs`. Metadata includes the agent, working directory, timestamps, status, exit code, native session ID, and normalized token usage when the structured output exposes them.
 
 Full output is disabled by default because it may contain source code or secrets. Enable it explicitly with workflow `--record-output` or `recording.output: true`.
 
@@ -197,6 +200,18 @@ xcli runs list
 xcli runs show <run-id>
 ```
 
+Built-in agents use their machine-readable mode for non-interactive runs. xcli captures those events and prints only the normalized final message to stdout; native progress and diagnostics continue on stderr. Generic agents keep their existing output behavior and do not have a usage contract.
+
+Use `xcli usage` to aggregate one-off runs and attempted workflow steps. Workflow retries are accumulated into their logical step. Interactive `use` sessions are excluded, while legacy and generic tasks appear as untracked so coverage stays visible:
+
+```bash
+xcli usage
+xcli usage --days 30 --agent claude
+xcli usage --json
+```
+
+Codex and Gemini report tokens but not a dollar estimate. Claude and OpenCode may report a native `estimated_cost_usd`; it is a client-side estimate rather than authoritative billing. The `TRACKED` and `COSTED` columns show coverage, and a missing estimate remains distinct from an explicitly reported zero. Usage metadata never includes the prompt or model output.
+
 ## Safety boundaries
 
 - Installers invoke npm or Homebrew directly without `sudo`, a shell, or hidden `curl | sh` pipelines.
@@ -204,4 +219,4 @@ xcli runs show <run-id>
 - Unknown YAML fields, invalid templates, missing networks, and forward workflow dependencies fail validation.
 - xcli does not add telemetry or automatically trust repository configuration.
 
-Cost aggregation, ACP/CAP, MCP synchronization, daemons, process control, session resume, Windows ConPTY, and a web UI are intentionally deferred beyond v0.2.
+ACP/CAP, MCP synchronization, daemons, process control, session resume, Windows ConPTY, and a web UI are intentionally deferred beyond v0.2.

@@ -363,6 +363,91 @@ func TestRunnerRecordsParallelOutputsAndEffectiveLimit(t *testing.T) {
 	}
 }
 
+func TestRunnerAccumulatesUsageAcrossRetries(t *testing.T) {
+	directory := t.TempDir()
+	countPath := filepath.Join(directory, "attempts")
+	script := writeTestScript(t, directory, "usage-agent", "#!/bin/sh\n"+
+		"count=$(cat \"$XCLI_ATTEMPTS\" 2>/dev/null || printf 0)\n"+
+		"count=$((count + 1))\n"+
+		"printf '%s' \"$count\" > \"$XCLI_ATTEMPTS\"\n"+
+		"if [ \"$count\" -eq 1 ]; then\n"+
+		"  printf '%s\\n' '{\"type\":\"result\",\"result\":\"retry\",\"usage\":{\"input_tokens\":10,\"output_tokens\":2},\"total_cost_usd\":0.1}'\n"+
+		"  exit 7\n"+
+		"fi\n"+
+		"printf '%s\\n' '{\"type\":\"result\",\"result\":\"done\",\"usage\":{\"input_tokens\":20,\"output_tokens\":3},\"total_cost_usd\":0.2}'\n")
+	cfg := config.Defaults()
+	cfg.Agents["fake"] = config.AgentConfig{
+		Adapter: "claude", Command: script, Env: map[string]string{"XCLI_ATTEMPTS": countPath},
+	}
+	setEnvironment(t, "XDG_DATA_HOME", filepath.Join(directory, "data"))
+	store, err := runstore.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner := Runner{
+		Config: cfg, Registry: agent.NewRegistry(cfg), Store: store,
+		Progress: io.Discard, Stderr: io.Discard,
+	}
+	definition := Workflow{Version: 1, Name: "usage-retry", Steps: []Step{
+		{ID: "one", Agent: "fake", Prompt: "work", Retries: 1},
+	}}
+
+	execution, err := runner.Run(
+		context.Background(), filepath.Join(directory, "workflow.yaml"), definition, RunOptions{},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if execution.Status != "success" || execution.Steps[0].Attempts != 2 {
+		t.Fatalf("unexpected execution: %#v", execution)
+	}
+	assertWorkflowUsage(t, execution.Steps[0].Usage, 30, 5, 35, 0.3)
+	assertWorkflowUsage(t, execution.Usage, 30, 5, 35, 0.3)
+	record, err := store.Load(execution.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertWorkflowUsage(t, record.Steps[0].Usage, 30, 5, 35, 0.3)
+	assertWorkflowUsage(t, record.Usage, 30, 5, 35, 0.3)
+}
+
+func TestRunnerRecordsUsageFromFailedStep(t *testing.T) {
+	directory := t.TempDir()
+	script := writeTestScript(t, directory, "failed-usage-agent", "#!/bin/sh\n"+
+		"printf '%s\\n' '{\"type\":\"result\",\"subtype\":\"error\",\"usage\":{\"input_tokens\":7,\"output_tokens\":2},\"total_cost_usd\":0.05}'\n"+
+		"exit 7\n")
+	cfg := config.Defaults()
+	cfg.Agents["fake"] = config.AgentConfig{Adapter: "claude", Command: script}
+	setEnvironment(t, "XDG_DATA_HOME", filepath.Join(directory, "data"))
+	store, err := runstore.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner := Runner{
+		Config: cfg, Registry: agent.NewRegistry(cfg), Store: store,
+		Progress: io.Discard, Stderr: io.Discard,
+	}
+	definition := Workflow{Version: 1, Name: "failed-usage", Steps: []Step{
+		{ID: "one", Agent: "fake", Prompt: "fail"},
+	}}
+
+	execution, err := runner.Run(
+		context.Background(), filepath.Join(directory, "workflow.yaml"), definition, RunOptions{},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if execution.Status != "failed" || execution.Steps[0].Status != "failed" {
+		t.Fatalf("unexpected execution: %#v", execution)
+	}
+	assertWorkflowUsage(t, execution.Usage, 7, 2, 9, 0.05)
+	record, err := store.Load(execution.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertWorkflowUsage(t, record.Steps[0].Usage, 7, 2, 9, 0.05)
+}
+
 func TestValidateRejectsForwardDependency(t *testing.T) {
 	cfg := config.Defaults()
 	registry := agent.NewRegistry(cfg)
@@ -417,6 +502,16 @@ func newTestRunner(t *testing.T, directory, script string, environment map[strin
 
 func intPointer(value int) *int {
 	return &value
+}
+
+func assertWorkflowUsage(t *testing.T, usage *agent.Usage, input, output, total int64, cost float64) {
+	t.Helper()
+	if usage == nil || usage.InputTokens != input || usage.OutputTokens != output || usage.TotalTokens != total {
+		t.Fatalf("unexpected usage: %#v", usage)
+	}
+	if usage.EstimatedCostUSD == nil || *usage.EstimatedCostUSD < cost-1e-12 || *usage.EstimatedCostUSD > cost+1e-12 {
+		t.Fatalf("unexpected estimated cost: %#v", usage)
+	}
 }
 
 func setEnvironment(t *testing.T, key, value string) {

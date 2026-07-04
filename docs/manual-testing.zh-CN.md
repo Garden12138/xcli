@@ -1,4 +1,4 @@
-# xcli v0.2.0 手工测试与体验指南
+# xcli 手工测试与体验指南
 
 本文用于在 macOS 或 Linux 上手工体验 xcli 的核心功能。完整流程分为两部分：
 
@@ -24,29 +24,19 @@
 | 串行/并行工作流与变量传递 | ✓ | ✓ |
 | 重试、跳过、超时和 Ctrl+C | ✓ | — |
 | 运行记录与输出保存 | ✓ | ✓ |
+| Token 用量与费用估算聚合 | 覆盖率验证 | ✓ |
 
 ## 2. 准备 xcli
 
-确认当前使用的是发布版：
-
-```bash
-export XCLI_BIN="$(command -v xcli)"
-"$XCLI_BIN" --version
-```
-
-预期输出：
-
-```text
-xcli version 0.2.0
-```
-
-如果尚未安装，请按 [中文 README](../README.zh-CN.md#安装) 下载发布二进制。也可以在 Go 1.26 环境中从源码构建：
+确认当前使用的是待测试构建。开发中的功能应从当前源码构建：
 
 ```bash
 go build -o /tmp/xcli .
 export XCLI_BIN=/tmp/xcli
 "$XCLI_BIN" --version
 ```
+
+预期输出当前源码声明的开发版本。
 
 ## 3. 创建隔离测试环境
 
@@ -565,6 +555,21 @@ ls -la "$XDG_DATA_HOME/xcli/runs"
 - 使用 `--record-output` 的工作流会在对应运行目录中保存步骤输出。
 - 记录中不应出现父进程环境变量值或 API Key。
 
+### 11.1 用量覆盖率
+
+假 Agent 使用 generic Adapter，因此会计入任务数但不提供 usage：
+
+```bash
+"$XCLI_BIN" --config "$XCLI_CONFIG" usage
+"$XCLI_BIN" --config "$XCLI_CONFIG" usage --agent fake --json
+```
+
+预期结果：
+
+- 文本表包含固定的 Token、费用和覆盖率列以及 `TOTAL` 行。
+- `fake` 的任务数大于零，`tracked_tasks` 和 `costed_tasks` 为零。
+- `use` 记录不会计入任务数；未尝试的工作流步骤也不会计入。
+
 ## 12. 使用真实 Agent 体验
 
 真实测试可能消耗 API 配额，并可能按提示修改工作目录。请使用临时目录和低风险提示词。
@@ -599,7 +604,7 @@ printf '# Manual test\n' > "$XCLI_TEST_ROOT/real-work/README.md"
 预期结果：
 
 - xcli 使用 Codex 的结构化协议运行。
-- 最终输出被归一化为包含 `agent`、`output`、`session_id`（原生协议提供时）、`exit_code` 和 `status` 的 JSON。
+- 最终输出被归一化为包含 `agent`、`output`、`session_id`（原生协议提供时）、`exit_code`、`status` 和可选 `usage` 的 JSON。
 - 原生 CLI 的诊断信息仍可出现在 stderr。
 
 可以依次替换为其他已安装 Agent：
@@ -609,6 +614,15 @@ printf '# Manual test\n' > "$XCLI_TEST_ROOT/real-work/README.md"
 "$XCLI_BIN" --config "$XCLI_CONFIG" run --cwd "$XCLI_TEST_ROOT/real-work" --json gemini "只回复 XCLI_OK"
 "$XCLI_BIN" --config "$XCLI_CONFIG" run --cwd "$XCLI_TEST_ROOT/real-work" --json opencode "只回复 XCLI_OK"
 ```
+
+随后检查聚合结果：
+
+```bash
+"$XCLI_BIN" --config "$XCLI_CONFIG" usage --days 1
+"$XCLI_BIN" --config "$XCLI_CONFIG" usage --days 1 --agent codex --json
+```
+
+预期结果：内置 Agent 运行显示为已采集；Codex 和 Gemini 只有 Token，Claude 和 OpenCode 在原生事件提供时显示估算费用。费用只是客户端估算，不应与账单核对或用于财务决策。
 
 ### 12.3 真实交互模式
 
@@ -658,13 +672,13 @@ YAML
 
 ## 13. 验收清单
 
-完成测试后，可以按下列清单判断 v0.2.0 的核心体验是否符合预期：
+完成测试后，可以按下列清单判断当前核心体验是否符合预期：
 
 - [ ] `config init/path/validate` 行为正确，配置权限为 `0600`。
 - [ ] 未知 YAML 字段会立即失败。
 - [ ] `agents` 和 `doctor` 能检测路径与版本。
 - [ ] 默认 Agent、位置参数和 `--agent` 优先级正确。
-- [ ] `use` 保留终端 stdio，`run` 保留普通原生输出。
+- [ ] `use` 保留终端 stdio，内置 Agent 的普通 `run` 只输出归一化最终文本。
 - [ ] `--json` 返回合法、稳定的归一化结构。
 - [ ] `--` 后参数不被 xcli 或 shell 重新解释。
 - [ ] `--cwd`、网络变量清除和 Agent 环境变量生效。
@@ -672,6 +686,7 @@ YAML
 - [ ] 工作流默认串行，配置后能并行运行独立步骤并按依赖汇合。
 - [ ] 重试、失败继续、依赖跳过、超时和 Ctrl+C 状态正确。
 - [ ] 运行记录权限正确，默认不保存完整输出。
+- [ ] `usage` 正确区分已采集、未采集、有费用和无费用的任务。
 - [ ] 至少一个真实 Agent 能完成认证、单次运行和交互运行。
 
 ## 14. 问题反馈建议

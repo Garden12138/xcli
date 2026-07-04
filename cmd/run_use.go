@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -138,7 +139,8 @@ func (a *app) newRunCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			spec, err := definition.Run(prompt, asJSON, nativeArgs)
+			structured := asJSON || definition.Config.Adapter != "generic"
+			spec, err := definition.Run(prompt, structured, nativeArgs)
 			if err != nil {
 				return err
 			}
@@ -161,9 +163,9 @@ func (a *app) newRunCommand() *cobra.Command {
 			}
 			ctx, cancel := signalContext(command.Context())
 			defer cancel()
-			capture := asJSON || cfg.Recording.Output
+			capture := structured || cfg.Recording.Output
 			var stdout = command.OutOrStdout()
-			if asJSON {
+			if structured {
 				stdout = nil
 			}
 			processResult, runErr := xruntime.RunProcess(ctx, spec, xruntime.ProcessOptions{
@@ -180,14 +182,21 @@ func (a *app) newRunCommand() *cobra.Command {
 			record.ExitCode = processResult.ExitCode
 			record.Status = processStatus(processResult)
 			var normalized agent.RunResult
-			if asJSON {
+			if structured {
 				normalized = agent.ParseStructured(definition.Config.Adapter, definition.Config.Output, processResult.Stdout)
 				normalized.Agent = name
 				normalized.ExitCode = processResult.ExitCode
 				normalized.Status = record.Status
 				record.SessionID = normalized.SessionID
-				if err := encodeJSON(command.OutOrStdout(), normalized); err != nil {
-					return err
+				record.Usage = normalized.Usage
+				if asJSON {
+					if err := encodeJSON(command.OutOrStdout(), normalized); err != nil {
+						return err
+					}
+				} else if normalized.Output != "" {
+					if _, err := fmt.Fprintln(command.OutOrStdout(), normalized.Output); err != nil {
+						return err
+					}
 				}
 			}
 			if cfg.Recording.Output {

@@ -80,6 +80,9 @@ xcli route "审查认证相关改动"
 xcli workflow validate examples/implement-and-review.yaml
 xcli workflow run examples/implement-and-review.yaml \
   --var requirement="实现缓存失效修复"
+
+# 汇总已记录的 Token 用量和原生费用估算
+xcli usage --days 7
 ```
 
 `--var` 会覆盖工作流中已经声明的变量；未声明的键会被拒绝。
@@ -186,9 +189,9 @@ steps:
 
 并行步骤沿用现有的共享 `cwd` 语义。xcli 不会自动创建隔离 worktree，因此可能写文件的步骤应使用不同的 `cwd`，或自行协调并发访问。并发 stderr 会实时输出，不同步骤的内容可能交错。
 
-## 运行记录与隐私
+## 运行记录、用量与隐私
 
-xcli 将权限为 `0600` 的私有元数据保存在 `$XDG_DATA_HOME/xcli/runs` 或 `~/.local/share/xcli/runs`。元数据包含 Agent、工作目录、时间、状态、退出码，以及结构化输出能够提供的原生会话 ID。
+xcli 将权限为 `0600` 的私有元数据保存在 `$XDG_DATA_HOME/xcli/runs` 或 `~/.local/share/xcli/runs`。元数据包含 Agent、工作目录、时间、状态、退出码，以及结构化输出能够提供的原生会话 ID 和标准化 Token 用量。
 
 完整输出默认关闭，因为其中可能包含源代码或密钥。可以通过工作流参数 `--record-output` 或配置项 `recording.output: true` 显式启用。
 
@@ -197,6 +200,18 @@ xcli runs list
 xcli runs show <run-id>
 ```
 
+内置 Agent 的非交互运行默认使用机器可读模式。xcli 捕获原生事件后只向 stdout 输出归一化的最终消息；原生进度和诊断信息仍写入 stderr。generic Agent 保持原有输出行为，且首版不定义 usage 协议。
+
+`xcli usage` 会汇总单次运行和已尝试的工作流步骤；工作流重试累加到对应的逻辑步骤。交互式 `use` 会话不参与统计，旧记录和 generic 任务则显示为未采集，以便覆盖率保持可见：
+
+```bash
+xcli usage
+xcli usage --days 30 --agent claude
+xcli usage --json
+```
+
+Codex 和 Gemini 提供 Token 统计但不提供美元估算；Claude 和 OpenCode 可能提供原生 `estimated_cost_usd`，它只是客户端估算而非权威账单。`TRACKED` 和 `COSTED` 列展示覆盖率，缺失费用与原生明确报告的零费用保持可区分。usage 元数据不包含提示词或模型输出。
+
 ## 安全边界
 
 - 安装器直接调用 npm 或 Homebrew，不使用 `sudo`、shell 或隐藏的 `curl | sh` 管道。
@@ -204,4 +219,4 @@ xcli runs show <run-id>
 - 未知 YAML 字段、无效模板、缺失网络配置和前向工作流依赖都会导致校验失败。
 - xcli 不添加遥测，也不会自动信任仓库配置。
 
-费用聚合、ACP/CAP、MCP 同步、守护进程、进程控制、会话恢复、Windows ConPTY 和 Web UI 均明确延后到 v0.2 之后。
+ACP/CAP、MCP 同步、守护进程、进程控制、会话恢复、Windows ConPTY 和 Web UI 均明确延后到 v0.2 之后。

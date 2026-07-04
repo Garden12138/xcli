@@ -78,6 +78,80 @@ func TestRunPromptIsNotEvaluatedByShell(t *testing.T) {
 	if _, err := os.Stat(marker); !os.IsNotExist(err) {
 		t.Fatalf("prompt was evaluated as shell input; marker stat error = %v", err)
 	}
+	store, err := newStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	records, err := store.List()
+	if err != nil || len(records) != 1 || records[0].Usage != nil {
+		t.Fatalf("generic run should be untracked: %#v, %v", records, err)
+	}
+}
+
+func TestRunBuiltinCapturesUsageWithoutLeakingJSONL(t *testing.T) {
+	directory := t.TempDir()
+	script := filepath.Join(directory, "fake-codex")
+	scriptData := "#!/bin/sh\n" +
+		"case \" $* \" in\n" +
+		"  *\" --json \"*) ;;\n" +
+		"  *) echo 'structured mode missing' >&2; exit 9 ;;\n" +
+		"esac\n" +
+		"printf '%s\\n' '{\"type\":\"thread.started\",\"thread_id\":\"thread-usage\"}'\n" +
+		"printf '%s\\n' '{\"type\":\"item.completed\",\"item\":{\"type\":\"agent_message\",\"text\":\"done\"}}'\n" +
+		"printf '%s\\n' '{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":100,\"cached_input_tokens\":80,\"output_tokens\":10,\"reasoning_output_tokens\":4}}'\n"
+	if err := os.WriteFile(script, []byte(scriptData), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(directory, "config.yaml")
+	cfg := config.Defaults()
+	cfg.DefaultAgent = "fake"
+	cfg.Agents["fake"] = config.AgentConfig{Adapter: "codex", Command: script}
+	if err := config.Save(configPath, cfg); err != nil {
+		t.Fatal(err)
+	}
+	setCommandEnvironment(t, "XDG_DATA_HOME", filepath.Join(directory, "data"))
+
+	root := newRootCommand()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	root.SetOut(&stdout)
+	root.SetErr(&stderr)
+	root.SetArgs([]string{"--config", configPath, "run", "plain output"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("execute: %v (stderr: %s)", err, stderr.String())
+	}
+	if stdout.String() != "done\n" {
+		t.Fatalf("plain stdout leaked structured events: %q", stdout.String())
+	}
+	store, err := newStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	records, err := store.List()
+	if err != nil || len(records) != 1 {
+		t.Fatalf("unexpected records: %#v, %v", records, err)
+	}
+	record := records[0]
+	if record.SessionID != "thread-usage" || record.Usage == nil || record.Usage.TotalTokens != 110 {
+		t.Fatalf("usage metadata was not recorded: %#v", record)
+	}
+
+	root = newRootCommand()
+	stdout.Reset()
+	stderr.Reset()
+	root.SetOut(&stdout)
+	root.SetErr(&stderr)
+	root.SetArgs([]string{"--config", configPath, "run", "--json", "json output"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("execute JSON: %v (stderr: %s)", err, stderr.String())
+	}
+	var result agent.RunResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("decode output %q: %v", stdout.String(), err)
+	}
+	if result.Output != "done" || result.Usage == nil || result.Usage.ReasoningTokens != 4 {
+		t.Fatalf("unexpected JSON result: %#v", result)
+	}
 }
 
 func TestRunAgentSelectionPrecedenceAndRecords(t *testing.T) {

@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"math"
 	"reflect"
 	"testing"
 
@@ -73,6 +74,72 @@ func TestParseGeminiStreamingMessages(t *testing.T) {
 	result := ParseStructured("gemini", "jsonl", data)
 	if result.SessionID != "gemini-1" || result.Output != "first second" {
 		t.Fatalf("unexpected Gemini result: %#v", result)
+	}
+}
+
+func TestParseCodexUsage(t *testing.T) {
+	data := []byte("{\"type\":\"thread.started\",\"thread_id\":\"thread-1\"}\n" +
+		"{\"type\":\"item.completed\",\"item\":{\"type\":\"agent_message\",\"text\":\"done\"}}\n" +
+		"{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":1000,\"cached_input_tokens\":800,\"output_tokens\":100,\"reasoning_output_tokens\":40,\"total_tokens\":1100}}\n")
+	result := ParseStructured("codex", "jsonl", data)
+	want := Usage{InputTokens: 200, CacheReadTokens: 800, OutputTokens: 60, ReasoningTokens: 40, TotalTokens: 1100}
+	assertUsage(t, result.Usage, want)
+}
+
+func TestParseClaudeUsageAndZeroCost(t *testing.T) {
+	data := []byte("{\"type\":\"result\",\"result\":\"done\",\"usage\":{\"input_tokens\":100,\"cache_read_input_tokens\":200,\"cache_creation_input_tokens\":50,\"output_tokens\":30},\"total_cost_usd\":0}\n")
+	result := ParseStructured("claude", "jsonl", data)
+	want := Usage{InputTokens: 100, CacheReadTokens: 200, CacheWriteTokens: 50, OutputTokens: 30, TotalTokens: 380}
+	assertUsage(t, result.Usage, want)
+	if result.Usage.EstimatedCostUSD == nil || *result.Usage.EstimatedCostUSD != 0 {
+		t.Fatalf("zero estimated cost was not preserved: %#v", result.Usage)
+	}
+}
+
+func TestParseGeminiUsage(t *testing.T) {
+	data := []byte("{\"type\":\"result\",\"status\":\"success\",\"stats\":{\"total_tokens\":1000,\"input_tokens\":900,\"output_tokens\":50,\"cached\":600,\"input\":300}}\n")
+	result := ParseStructured("gemini", "jsonl", data)
+	want := Usage{InputTokens: 300, CacheReadTokens: 600, OutputTokens: 50, ReasoningTokens: 50, TotalTokens: 1000}
+	assertUsage(t, result.Usage, want)
+}
+
+func TestParseOpenCodeUsageDeduplicatesParts(t *testing.T) {
+	first := "{\"type\":\"step_finish\",\"part\":{\"id\":\"part-1\",\"cost\":0.1,\"tokens\":{\"input\":100,\"output\":10,\"reasoning\":0,\"total\":165,\"cache\":{\"read\":50,\"write\":5}}}}\n"
+	second := "{\"type\":\"step_finish\",\"part\":{\"id\":\"part-2\",\"cost\":0.2,\"tokens\":{\"input\":20,\"output\":5,\"reasoning\":3,\"total\":28,\"cache\":{\"read\":0,\"write\":0}}}}\n"
+	data := []byte(first + first + second)
+	result := ParseStructured("opencode", "jsonl", data)
+	want := Usage{InputTokens: 120, CacheReadTokens: 50, CacheWriteTokens: 5, OutputTokens: 15, ReasoningTokens: 3, TotalTokens: 193}
+	assertUsage(t, result.Usage, want)
+	if result.Usage.EstimatedCostUSD == nil || math.Abs(*result.Usage.EstimatedCostUSD-0.3) > 1e-12 {
+		t.Fatalf("unexpected estimated cost: %#v", result.Usage)
+	}
+}
+
+func TestParseUsageIgnoresMalformedNumbers(t *testing.T) {
+	data := []byte("{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":-1,\"cached_input_tokens\":1.5,\"output_tokens\":\"3\"}}\n")
+	result := ParseStructured("codex", "jsonl", data)
+	if result.Usage != nil {
+		t.Fatalf("malformed usage should be ignored: %#v", result.Usage)
+	}
+}
+
+func TestParseGenericOutputDoesNotInferUsage(t *testing.T) {
+	data := []byte(`{"output":"done","usage":{"input_tokens":10}}`)
+	result := ParseStructured("generic", "json", data)
+	if result.Usage != nil {
+		t.Fatalf("generic usage should be unsupported: %#v", result.Usage)
+	}
+}
+
+func assertUsage(t *testing.T, got *Usage, want Usage) {
+	t.Helper()
+	if got == nil {
+		t.Fatalf("usage is nil, want %#v", want)
+	}
+	gotWithoutCost := *got
+	gotWithoutCost.EstimatedCostUSD = nil
+	if !reflect.DeepEqual(gotWithoutCost, want) {
+		t.Fatalf("usage = %#v, want %#v", gotWithoutCost, want)
 	}
 }
 

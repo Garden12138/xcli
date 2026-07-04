@@ -18,17 +18,18 @@ import (
 )
 
 type StepResult struct {
-	ID         string    `json:"id"`
-	Agent      string    `json:"agent"`
-	Status     string    `json:"status"`
-	Output     string    `json:"output,omitempty"`
-	OutputFile string    `json:"output_file,omitempty"`
-	SessionID  string    `json:"session_id,omitempty"`
-	ExitCode   int       `json:"exit_code"`
-	Attempts   int       `json:"attempts"`
-	Error      string    `json:"error,omitempty"`
-	StartedAt  time.Time `json:"started_at,omitempty"`
-	EndedAt    time.Time `json:"ended_at,omitempty"`
+	ID         string       `json:"id"`
+	Agent      string       `json:"agent"`
+	Status     string       `json:"status"`
+	Output     string       `json:"output,omitempty"`
+	OutputFile string       `json:"output_file,omitempty"`
+	SessionID  string       `json:"session_id,omitempty"`
+	Usage      *agent.Usage `json:"usage,omitempty"`
+	ExitCode   int          `json:"exit_code"`
+	Attempts   int          `json:"attempts"`
+	Error      string       `json:"error,omitempty"`
+	StartedAt  time.Time    `json:"started_at,omitempty"`
+	EndedAt    time.Time    `json:"ended_at,omitempty"`
 }
 
 type Execution struct {
@@ -39,6 +40,7 @@ type Execution struct {
 	MaxParallel int          `json:"max_parallel"`
 	Cwd         string       `json:"cwd"`
 	Steps       []StepResult `json:"steps"`
+	Usage       *agent.Usage `json:"usage,omitempty"`
 }
 
 type RunOptions struct {
@@ -256,9 +258,11 @@ func (r *Runner) Run(ctx context.Context, sourcePath string, workflow Workflow, 
 	}
 
 	summarizeExecution(&execution, externalCanceled, fatalIndex)
+	execution.Usage = summarizeUsage(execution.Steps)
 	record.EndedAt = time.Now().UTC()
 	record.Status = execution.Status
 	record.ExitCode = execution.ExitCode
+	record.Usage = execution.Usage
 	for _, step := range execution.Steps {
 		outputFile := ""
 		if options.RecordOutput {
@@ -267,7 +271,7 @@ func (r *Runner) Run(ctx context.Context, sourcePath string, workflow Workflow, 
 		record.Steps = append(record.Steps, runstore.StepRecord{
 			ID: step.ID, Agent: step.Agent, Status: step.Status, ExitCode: step.ExitCode,
 			SessionID: step.SessionID, OutputFile: outputFile, StartedAt: step.StartedAt,
-			EndedAt: step.EndedAt, Attempts: step.Attempts, Error: step.Error,
+			EndedAt: step.EndedAt, Attempts: step.Attempts, Error: step.Error, Usage: step.Usage,
 		})
 	}
 	if !options.RecordOutput {
@@ -421,6 +425,12 @@ func (r *Runner) runStep(ctx context.Context, workflowCwd, tempDir string, step 
 		parsed := agent.ParseStructured(definition.Config.Adapter, definition.Config.Output, processResult.Stdout)
 		result.Output = parsed.Output
 		result.SessionID = parsed.SessionID
+		if parsed.Usage != nil {
+			if result.Usage == nil {
+				result.Usage = &agent.Usage{}
+			}
+			result.Usage.Add(parsed.Usage)
+		}
 		result.ExitCode = processResult.ExitCode
 		outputPath := filepath.Join(tempDir, step.ID+".output")
 		if err := os.WriteFile(outputPath, []byte(result.Output), 0o600); err != nil {
@@ -457,6 +467,20 @@ func (r *Runner) runStep(ctx context.Context, workflowCwd, tempDir string, step 
 		if result.Status == "canceled" || result.Status == "timed_out" {
 			return result
 		}
+	}
+	return result
+}
+
+func summarizeUsage(steps []StepResult) *agent.Usage {
+	var result *agent.Usage
+	for _, step := range steps {
+		if step.Usage == nil {
+			continue
+		}
+		if result == nil {
+			result = &agent.Usage{}
+		}
+		result.Add(step.Usage)
 	}
 	return result
 }
