@@ -74,6 +74,7 @@ xcli use
 # 执行单次任务；Agent 专属参数放在 -- 之后
 xcli run codex "审查当前变更"
 xcli run "修复失败的测试" -- --sandbox workspace-write
+xcli route "审查认证相关改动"
 
 # 运行工作流（并行需显式启用）
 xcli workflow validate examples/implement-and-review.yaml
@@ -114,6 +115,24 @@ agents:
 ```
 
 即使提示词包含空格、分号或 shell 元字符，它仍会作为单个进程参数传递。支持的输出模式为 `text`、`json` 和 `jsonl`。
+
+### 提示词路由
+
+当 `xcli run` 没有显式指定 Agent 时，可按声明顺序使用 Go 正则表达式匹配完整提示词并选择 Agent：
+
+```yaml
+default_agent: codex
+
+routing:
+  rules:
+    - name: review
+      prompt_regex: '(?i)(review|audit|审查)'
+      agent: claude
+```
+
+首个命中的规则生效。没有规则命中时使用 `default_agent`；两者都无法选出 Agent 时，命令会在启动进程前失败。大小写敏感性由正则表达式决定，需要忽略大小写时可使用 `(?i)`。
+
+选择优先级依次为 `--agent`、首个位置参数中的已配置 Agent、首个命中的路由规则、`default_agent`。显式选择不会计算路由规则。使用 `xcli route <prompt>` 或 `xcli route --json <prompt>` 可以预览路由决定，且不会启动 Agent 或创建运行记录。路由仅用于 `run`；交互会话和工作流步骤继续使用显式 Agent 语义。
 
 ### 网络配置
 
@@ -185,4 +204,4 @@ xcli runs show <run-id>
 - 未知 YAML 字段、无效模板、缺失网络配置和前向工作流依赖都会导致校验失败。
 - xcli 不添加遥测，也不会自动信任仓库配置。
 
-自动路由、费用聚合、ACP/CAP、MCP 同步、守护进程、进程控制、会话恢复、Windows ConPTY 和 Web UI 均明确延后到 v0.2 之后。
+费用聚合、ACP/CAP、MCP 同步、守护进程、进程控制、会话恢复、Windows ConPTY 和 Web UI 均明确延后到 v0.2 之后。

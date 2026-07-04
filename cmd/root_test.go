@@ -13,6 +13,7 @@ import (
 
 	"github.com/Garden12138/xcli/internal/agent"
 	"github.com/Garden12138/xcli/internal/config"
+	"github.com/Garden12138/xcli/internal/routing"
 	"github.com/Garden12138/xcli/internal/workflow"
 )
 
@@ -76,6 +77,141 @@ func TestRunPromptIsNotEvaluatedByShell(t *testing.T) {
 	}
 	if _, err := os.Stat(marker); !os.IsNotExist(err) {
 		t.Fatalf("prompt was evaluated as shell input; marker stat error = %v", err)
+	}
+}
+
+func TestRunAgentSelectionPrecedenceAndRecords(t *testing.T) {
+	directory := t.TempDir()
+	script := filepath.Join(directory, "fake-agent")
+	if err := os.WriteFile(script, []byte("#!/bin/sh\nprintf '%s' \"$1\"\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(directory, "config.yaml")
+	cfg := config.Defaults()
+	cfg.DefaultAgent = "default-agent"
+	for _, name := range []string{"flag-agent", "positional-agent", "rule-agent", "default-agent"} {
+		cfg.Agents[name] = config.AgentConfig{
+			Adapter: "generic", Command: script, RunArgs: []string{name}, Output: "text",
+		}
+	}
+	cfg.Routing.Rules = []config.RouteRule{{Name: "review", PromptRegex: "review", Agent: "rule-agent"}}
+	if err := config.Save(configPath, cfg); err != nil {
+		t.Fatal(err)
+	}
+	setCommandEnvironment(t, "XDG_DATA_HOME", filepath.Join(directory, "data"))
+
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{name: "flag", args: []string{"--config", configPath, "run", "--agent", "flag-agent", "--json", "please review"}, want: "flag-agent"},
+		{name: "positional", args: []string{"--config", configPath, "run", "positional-agent", "please review", "--json"}, want: "positional-agent"},
+		{name: "rule", args: []string{"--config", configPath, "run", "please review", "--json"}, want: "rule-agent"},
+		{name: "default", args: []string{"--config", configPath, "run", "implement this", "--json"}, want: "default-agent"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := newRootCommand()
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+			root.SetOut(&stdout)
+			root.SetErr(&stderr)
+			root.SetArgs(test.args)
+			if err := root.Execute(); err != nil {
+				t.Fatalf("execute: %v (stderr: %s)", err, stderr.String())
+			}
+			var result agent.RunResult
+			if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+				t.Fatalf("decode output %q: %v", stdout.String(), err)
+			}
+			if result.Agent != test.want || result.Output != test.want {
+				t.Fatalf("unexpected result: %#v", result)
+			}
+		})
+	}
+
+	store, err := newStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	records, err := store.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(records) != 4 {
+		t.Fatalf("record count = %d, want 4", len(records))
+	}
+	wantSources := map[string]string{
+		"flag-agent": routing.SourceFlag, "positional-agent": routing.SourcePositional,
+		"rule-agent": routing.SourceRule, "default-agent": routing.SourceDefault,
+	}
+	for _, record := range records {
+		if record.SelectionSource != wantSources[record.Agent] {
+			t.Fatalf("unexpected selection metadata: %#v", record)
+		}
+		if record.Agent == "rule-agent" && record.RouteRule != "review" {
+			t.Fatalf("routed record missing rule: %#v", record)
+		}
+		if record.Agent != "rule-agent" && record.RouteRule != "" {
+			t.Fatalf("non-routed record has rule: %#v", record)
+		}
+	}
+}
+
+func TestRouteCommandExplainsWithoutRunningOrRecording(t *testing.T) {
+	directory := t.TempDir()
+	marker := filepath.Join(directory, "started")
+	script := filepath.Join(directory, "fake-agent")
+	if err := os.WriteFile(script, []byte("#!/bin/sh\ntouch \"$XCLI_ROUTE_MARKER\"\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(directory, "config.yaml")
+	cfg := config.Defaults()
+	cfg.DefaultAgent = "codex"
+	claude := cfg.Agents["claude"]
+	claude.Command = script
+	claude.Env = map[string]string{"XCLI_ROUTE_MARKER": marker}
+	cfg.Agents["claude"] = claude
+	cfg.Routing.Rules = []config.RouteRule{{Name: "review", PromptRegex: "review", Agent: "claude"}}
+	if err := config.Save(configPath, cfg); err != nil {
+		t.Fatal(err)
+	}
+	dataPath := filepath.Join(directory, "data")
+	setCommandEnvironment(t, "XDG_DATA_HOME", dataPath)
+
+	root := newRootCommand()
+	var stdout bytes.Buffer
+	root.SetOut(&stdout)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"--config", configPath, "route", "please review"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := stdout.String(), "Agent: claude\nSource: rule\nRule: review\n"; got != want {
+		t.Fatalf("route output = %q, want %q", got, want)
+	}
+
+	root = newRootCommand()
+	stdout.Reset()
+	root.SetOut(&stdout)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"--config", configPath, "route", "--json", "implement this"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	var decision routing.Decision
+	if err := json.Unmarshal(stdout.Bytes(), &decision); err != nil {
+		t.Fatalf("decode route output %q: %v", stdout.String(), err)
+	}
+	if decision.Agent != "codex" || decision.Source != routing.SourceDefault || decision.Rule != "" {
+		t.Fatalf("unexpected route decision: %#v", decision)
+	}
+	if _, err := os.Stat(marker); !os.IsNotExist(err) {
+		t.Fatalf("route command started an agent; marker stat error = %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dataPath, "xcli", "runs")); !os.IsNotExist(err) {
+		t.Fatalf("route command created run records; runs stat error = %v", err)
 	}
 }
 

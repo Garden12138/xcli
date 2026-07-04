@@ -74,6 +74,7 @@ xcli use
 # Run one task; agent-specific arguments follow --
 xcli run codex "Review the current changes"
 xcli run "Fix the failing tests" -- --sandbox workspace-write
+xcli route "Review the authentication changes"
 
 # Run a workflow (parallelism is opt-in)
 xcli workflow validate examples/implement-and-review.yaml
@@ -114,6 +115,24 @@ agents:
 ```
 
 The prompt remains one process argument even when it contains spaces, semicolons, or shell metacharacters. Supported output modes are `text`, `json`, and `jsonl`.
+
+### Prompt routing
+
+When `xcli run` has no explicit agent, ordered routing rules can select one by matching the complete prompt with Go regular expressions:
+
+```yaml
+default_agent: codex
+
+routing:
+  rules:
+    - name: review
+      prompt_regex: '(?i)(review|audit|审查)'
+      agent: claude
+```
+
+The first matching rule wins. If none match, xcli uses `default_agent`; if neither produces an agent, the command fails without starting a process. Case sensitivity follows the regular expression, so use `(?i)` when matching should be case-insensitive.
+
+Selection precedence is `--agent`, a configured agent in the first positional argument, the first matching routing rule, then `default_agent`. Explicit selections never evaluate routing rules. Use `xcli route <prompt>` or `xcli route --json <prompt>` to inspect the rule decision without starting an agent or creating a run record. Routing applies only to `run`; interactive sessions and workflow steps retain their explicit agent behavior.
 
 ### Network profiles
 
@@ -185,4 +204,4 @@ xcli runs show <run-id>
 - Unknown YAML fields, invalid templates, missing networks, and forward workflow dependencies fail validation.
 - xcli does not add telemetry or automatically trust repository configuration.
 
-Automatic routing, cost aggregation, ACP/CAP, MCP synchronization, daemons, process control, session resume, Windows ConPTY, and a web UI are intentionally deferred beyond v0.2.
+Cost aggregation, ACP/CAP, MCP synchronization, daemons, process control, session resume, Windows ConPTY, and a web UI are intentionally deferred beyond v0.2.

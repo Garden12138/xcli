@@ -48,6 +48,67 @@ func TestLoadRejectsUnknownFields(t *testing.T) {
 	}
 }
 
+func TestLoadRoutingRules(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	data := `version: 1
+default_agent: codex
+routing:
+  rules:
+    - name: review
+      prompt_regex: '(?i)(review|审查)'
+      agent: claude
+`
+	if err := os.WriteFile(path, []byte(data), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, _, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Routing.Rules) != 1 || cfg.Routing.Rules[0].Name != "review" || cfg.Routing.Rules[0].Agent != "claude" {
+		t.Fatalf("unexpected routing config: %#v", cfg.Routing)
+	}
+}
+
+func TestLoadRejectsUnknownRoutingFields(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	data := "version: 1\nrouting:\n  rules:\n    - name: review\n      prompt_regex: review\n      matcher: contains\n      agent: claude\n"
+	if err := os.WriteFile(path, []byte(data), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, _, err := Load(path)
+	if err == nil || !strings.Contains(err.Error(), "field matcher not found") {
+		t.Fatalf("expected strict routing-field error, got %v", err)
+	}
+}
+
+func TestValidateRoutingRules(t *testing.T) {
+	tests := []struct {
+		name  string
+		rules []RouteRule
+		want  string
+	}{
+		{name: "empty regex", rules: []RouteRule{{Name: "review", Agent: "claude"}}, want: "empty prompt_regex"},
+		{name: "invalid regex", rules: []RouteRule{{Name: "review", PromptRegex: "[", Agent: "claude"}}, want: "invalid prompt_regex"},
+		{name: "duplicate name", rules: []RouteRule{
+			{Name: "review", PromptRegex: "review", Agent: "claude"},
+			{Name: "review", PromptRegex: "audit", Agent: "codex"},
+		}, want: "duplicate routing rule name"},
+		{name: "unknown agent", rules: []RouteRule{{Name: "review", PromptRegex: "review", Agent: "missing"}}, want: "references unknown agent"},
+		{name: "invalid name", rules: []RouteRule{{Name: "review rule", PromptRegex: "review", Agent: "claude"}}, want: "invalid name"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := Defaults()
+			cfg.Routing.Rules = test.rules
+			err := cfg.Validate()
+			if err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("expected error containing %q, got %v", test.want, err)
+			}
+		})
+	}
+}
+
 func TestValidateRejectsMissingNetwork(t *testing.T) {
 	cfg := Defaults()
 	agent := cfg.Agents["codex"]

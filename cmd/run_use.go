@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Garden12138/xcli/internal/agent"
+	"github.com/Garden12138/xcli/internal/routing"
 	"github.com/Garden12138/xcli/internal/runstore"
 	xruntime "github.com/Garden12138/xcli/internal/runtime"
 	"github.com/spf13/cobra"
@@ -114,26 +115,29 @@ func (a *app) newRunCommand() *cobra.Command {
 				return err
 			}
 			before, nativeArgs := splitNativeArgs(command, args)
-			name := selectedAgent
+			selection := routing.Decision{}
 			promptParts := before
-			if name == "" && len(before) > 0 && registry.Has(before[0]) {
-				name = before[0]
+			if selectedAgent != "" {
+				selection = routing.Decision{Agent: selectedAgent, Source: routing.SourceFlag}
+			} else if len(before) > 0 && registry.Has(before[0]) {
+				selection = routing.Decision{Agent: before[0], Source: routing.SourcePositional}
 				promptParts = before[1:]
-			}
-			if name == "" {
-				name = cfg.DefaultAgent
-			}
-			if name == "" {
-				return errors.New("no agent selected; pass an agent, use --agent, or configure xcli default")
 			}
 			if len(promptParts) == 0 {
 				return errors.New("a prompt is required")
 			}
+			prompt := strings.Join(promptParts, " ")
+			if selection.Agent == "" {
+				selection, err = routing.Select(cfg, prompt)
+				if err != nil {
+					return err
+				}
+			}
+			name := selection.Agent
 			definition, err := registry.Get(name)
 			if err != nil {
 				return err
 			}
-			prompt := strings.Join(promptParts, " ")
 			spec, err := definition.Run(prompt, asJSON, nativeArgs)
 			if err != nil {
 				return err
@@ -151,7 +155,8 @@ func (a *app) newRunCommand() *cobra.Command {
 				return err
 			}
 			record := runstore.Record{
-				ID: runstore.NewID("run"), Kind: "run", Agent: name, Cwd: cwd,
+				ID: runstore.NewID("run"), Kind: "run", Agent: name,
+				SelectionSource: selection.Source, RouteRule: selection.Rule, Cwd: cwd,
 				StartedAt: time.Now().UTC(), Status: "running",
 			}
 			ctx, cancel := signalContext(command.Context())

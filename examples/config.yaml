@@ -33,6 +33,12 @@ agents:
       - --model
       - deepseek/deepseek-chat
 
+routing:
+  rules:
+    - name: review
+      prompt_regex: '(?i)(review|audit|审查)'
+      agent: claude
+
 networks:
   proxy:
     set:

@@ -22,7 +22,18 @@ type Config struct {
 	DefaultAgent string                 `yaml:"default_agent,omitempty" json:"default_agent,omitempty"`
 	Agents       map[string]AgentConfig `yaml:"agents,omitempty" json:"agents,omitempty"`
 	Networks     map[string]Network     `yaml:"networks,omitempty" json:"networks,omitempty"`
+	Routing      Routing                `yaml:"routing,omitempty" json:"routing,omitempty"`
 	Recording    Recording              `yaml:"recording,omitempty" json:"recording"`
+}
+
+type Routing struct {
+	Rules []RouteRule `yaml:"rules,omitempty" json:"rules,omitempty"`
+}
+
+type RouteRule struct {
+	Name        string `yaml:"name" json:"name"`
+	PromptRegex string `yaml:"prompt_regex" json:"prompt_regex"`
+	Agent       string `yaml:"agent" json:"agent"`
 }
 
 type AgentConfig struct {
@@ -184,6 +195,9 @@ func merge(base, user Config) Config {
 			base.Networks[name] = Network{Set: cloneMap(network.Set), Unset: append([]string(nil), network.Unset...)}
 		}
 	}
+	if user.Routing.Rules != nil {
+		base.Routing.Rules = append([]RouteRule(nil), user.Routing.Rules...)
+	}
 	base.Recording = user.Recording
 	return base
 }
@@ -239,6 +253,26 @@ func (c Config) Validate() error {
 			if err := validateArgumentTemplate(arg); err != nil {
 				return fmt.Errorf("agent %q: %w", name, err)
 			}
+		}
+	}
+	seenRules := make(map[string]bool, len(c.Routing.Rules))
+	for index, rule := range c.Routing.Rules {
+		label := fmt.Sprintf("routing rule %d", index+1)
+		if !namePattern.MatchString(rule.Name) {
+			return fmt.Errorf("%s has invalid name %q", label, rule.Name)
+		}
+		if seenRules[rule.Name] {
+			return fmt.Errorf("duplicate routing rule name %q", rule.Name)
+		}
+		seenRules[rule.Name] = true
+		if strings.TrimSpace(rule.PromptRegex) == "" {
+			return fmt.Errorf("routing rule %q has an empty prompt_regex", rule.Name)
+		}
+		if _, err := regexp.Compile(rule.PromptRegex); err != nil {
+			return fmt.Errorf("routing rule %q has invalid prompt_regex: %w", rule.Name, err)
+		}
+		if _, ok := c.Agents[rule.Agent]; !ok {
+			return fmt.Errorf("routing rule %q references unknown agent %q", rule.Name, rule.Agent)
 		}
 	}
 	for name, network := range c.Networks {
