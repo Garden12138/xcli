@@ -26,7 +26,7 @@ Download a prebuilt archive from the [GitHub Releases](https://github.com/Garden
 Choose one of `darwin_amd64`, `darwin_arm64`, `linux_amd64`, or `linux_arm64`, then verify and install the archive:
 
 ```bash
-VERSION=0.1.0
+VERSION=0.2.0
 PLATFORM=darwin_arm64
 ARCHIVE="xcli_${VERSION}_${PLATFORM}.tar.gz"
 
@@ -185,4 +185,4 @@ xcli runs show <run-id>
 - Unknown YAML fields, invalid templates, missing networks, and forward workflow dependencies fail validation.
 - xcli does not add telemetry or automatically trust repository configuration.
 
-Automatic routing, cost aggregation, ACP/CAP, MCP synchronization, daemons, process control, session resume, Windows ConPTY, and a web UI are intentionally deferred beyond v0.1.
+Automatic routing, cost aggregation, ACP/CAP, MCP synchronization, daemons, process control, session resume, Windows ConPTY, and a web UI are intentionally deferred beyond v0.2.

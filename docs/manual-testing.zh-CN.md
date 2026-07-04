@@ -1,4 +1,4 @@
-# xcli v0.1.0 手工测试与体验指南
+# xcli v0.2.0 手工测试与体验指南
 
 本文用于在 macOS 或 Linux 上手工体验 xcli 的核心功能。完整流程分为两部分：
 
@@ -37,7 +37,7 @@ export XCLI_BIN="$(command -v xcli)"
 预期输出：
 
 ```text
-xcli version 0.1.0
+xcli version 0.2.0
 ```
 
 如果尚未安装，请按 [中文 README](../README.zh-CN.md#安装) 下载发布二进制。也可以在 Go 1.26 环境中从源码构建：
@@ -658,7 +658,7 @@ YAML
 
 ## 13. 验收清单
 
-完成测试后，可以按下列清单判断 v0.1.0 的核心体验是否符合预期：
+完成测试后，可以按下列清单判断 v0.2.0 的核心体验是否符合预期：
 
 - [ ] `config init/path/validate` 行为正确，配置权限为 `0600`。
 - [ ] 未知 YAML 字段会立即失败。
