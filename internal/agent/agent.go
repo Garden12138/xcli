@@ -21,6 +21,11 @@ type CommandSpec struct {
 	Args    []string `json:"args"`
 }
 
+type ACPLaunch struct {
+	CommandSpec
+	InstallHint string
+}
+
 type Installation struct {
 	Installed bool   `json:"installed"`
 	Path      string `json:"path,omitempty"`
@@ -99,6 +104,36 @@ func (d Definition) Interactive(extra []string) CommandSpec {
 	}
 	args = append(args, extra...)
 	return CommandSpec{Command: d.Config.Command, Args: args}
+}
+
+func (d Definition) ACP(extra []string) (ACPLaunch, error) {
+	if d.Config.ACP != nil {
+		args := append([]string{}, d.Config.ACP.Args...)
+		args = append(args, extra...)
+		return ACPLaunch{CommandSpec: CommandSpec{Command: d.Config.ACP.Command, Args: args}}, nil
+	}
+
+	var launch ACPLaunch
+	switch d.Config.Adapter {
+	case "claude":
+		launch.Command = "claude-agent-acp"
+		launch.InstallHint = "npm install -g @agentclientprotocol/claude-agent-acp"
+	case "codex":
+		launch.Command = "codex-acp"
+		launch.InstallHint = "npm install -g @agentclientprotocol/codex-acp"
+	case "gemini":
+		launch.Command = d.Config.Command
+		launch.Args = append(append([]string{}, d.Config.Args...), "--acp")
+	case "opencode":
+		launch.Command = d.Config.Command
+		launch.Args = append(append([]string{}, d.Config.Args...), "acp")
+	case "generic":
+		return ACPLaunch{}, fmt.Errorf("agent %q does not support ACP; configure agents.%s.acp", d.Name, d.Name)
+	default:
+		return ACPLaunch{}, fmt.Errorf("unsupported adapter %q", d.Config.Adapter)
+	}
+	launch.Args = append(launch.Args, extra...)
+	return launch, nil
 }
 
 func (d Definition) Run(prompt string, structured bool, extra []string) (CommandSpec, error) {

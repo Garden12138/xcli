@@ -48,6 +48,56 @@ func TestLoadRejectsUnknownFields(t *testing.T) {
 	}
 }
 
+func TestLoadACPCommandOverride(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	data := `version: 1
+agents:
+  custom:
+    adapter: generic
+    command: custom
+    run_args: ["run", "{{ prompt }}"]
+    acp:
+      command: custom-acp
+      args: []
+`
+	if err := os.WriteFile(path, []byte(data), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, _, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	acp := cfg.Agents["custom"].ACP
+	if acp == nil || acp.Command != "custom-acp" || len(acp.Args) != 0 {
+		t.Fatalf("unexpected ACP config: %#v", acp)
+	}
+}
+
+func TestLoadRejectsInvalidACPConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		acp  string
+		want string
+	}{
+		{name: "empty command", acp: "command: ''", want: "ACP command must not be empty"},
+		{name: "unknown field", acp: "command: custom-acp\n      transport: stdio", want: "field transport not found"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "config.yaml")
+			data := "version: 1\nagents:\n  custom:\n    adapter: generic\n    command: custom\n" +
+				"    run_args: [\"{{ prompt }}\"]\n    acp:\n      " + test.acp + "\n"
+			if err := os.WriteFile(path, []byte(data), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			_, _, err := Load(path)
+			if err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("expected error containing %q, got %v", test.want, err)
+			}
+		})
+	}
+}
+
 func TestLoadRoutingRules(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.yaml")
 	data := `version: 1

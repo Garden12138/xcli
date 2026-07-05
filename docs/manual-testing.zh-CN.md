@@ -15,6 +15,7 @@
 | Agent 检测与版本识别 | ✓ | ✓ |
 | 默认 Agent 切换 | ✓ | ✓ |
 | 交互模式 `use` | ✓ | ✓ |
+| ACP stdio 入口 | ✓ | ✓ |
 | 单次运行 `run` | ✓ | ✓ |
 | 原生参数透传 | ✓ | 可选 |
 | JSON 归一化结果 | ✓ | ✓ |
@@ -97,6 +98,13 @@ case "${1:-}" in
     printf 'received=<%s>\n' "$input"
     ;;
 
+  acp)
+    shift
+    printf 'acp_cwd=%s agent_env=%s network_env=%s native_args=%s\n' \
+      "$PWD" "${XCLI_AGENT_ENV:-<unset>}" "${XCLI_NETWORK_ENV:-<unset>}" "$*" >&2
+    cat
+    ;;
+
   run)
     shift
     prompt="${1:-}"
@@ -158,6 +166,9 @@ agents:
     run_args: ["run", "{{ prompt }}"]
     auth_args: ["auth"]
     output: text
+    acp:
+      command: $XCLI_TEST_ROOT/bin/fake-agent
+      args: ["acp"]
 
   fake-alt:
     adapter: generic
@@ -297,7 +308,30 @@ received=<hello from stdin>
 
 这说明 xcli 将 stdin/stdout/stderr 直接交给原生进程。
 
-### 8.2 原生认证入口
+### 8.2 ACP stdio 透传
+
+```bash
+ACP_MESSAGE='{"jsonrpc":"2.0","id":1,"method":"test"}'
+
+printf '%s' "$ACP_MESSAGE" | "$XCLI_BIN" --config "$XCLI_CONFIG" acp \
+  --cwd "$XCLI_TEST_ROOT/work" fake -- --native-acp-arg \
+  > "$XCLI_TEST_ROOT/acp.stdout" \
+  2> "$XCLI_TEST_ROOT/acp.stderr"
+
+printf '%s' "$ACP_MESSAGE" | cmp - "$XCLI_TEST_ROOT/acp.stdout"
+cat "$XCLI_TEST_ROOT/acp.stderr"
+```
+
+预期结果：
+
+- `cmp` 不输出差异，证明 stdout 只包含假 ACP 服务返回的原始协议消息。
+- stderr 包含 `acp_cwd`、`agent_env=agent-value`、`network_env=network-value` 和 `native_args=--native-acp-arg`。
+- `--cwd`、环境合并和 `--` 后参数均生效。
+- `xcli runs list` 不会因为该 ACP 连接新增记录。
+
+将 `fake` 从命令中省略也应得到相同结果，因为它是 `default_agent`。ACP 选择不使用提示词路由。
+
+### 8.3 原生认证入口
 
 ```bash
 "$XCLI_BIN" --config "$XCLI_CONFIG" auth login fake
@@ -624,7 +658,35 @@ printf '# Manual test\n' > "$XCLI_TEST_ROOT/real-work/README.md"
 
 预期结果：内置 Agent 运行显示为已采集；Codex 和 Gemini 只有 Token，Claude 和 OpenCode 在原生事件提供时显示估算费用。费用只是客户端估算，不应与账单核对或用于财务决策。
 
-### 12.3 真实交互模式
+### 12.3 真实 ACP 客户端
+
+Gemini 和 OpenCode 直接使用原生 ACP 模式。Codex 与 Claude 需要先显式安装桥接器：
+
+```bash
+npm install -g @agentclientprotocol/codex-acp
+npm install -g @agentclientprotocol/claude-agent-acp
+command -v codex-acp claude-agent-acp
+```
+
+在 ACP 客户端中将启动命令配置为 xcli，例如 Codex 的命令和参数分别为：
+
+```json
+{
+  "command": "/tmp/xcli",
+  "args": ["--config", "/absolute/path/to/config.yaml", "acp", "codex"]
+}
+```
+
+实际路径应替换为 `$XCLI_BIN` 和 `$XCLI_CONFIG` 的绝对路径。连接后新建会话，发送一个只读提示词并确认：
+
+- 客户端能够完成 ACP 初始化和会话创建。
+- 文本、工具调用、权限请求等能力由下游 ACP 服务报告并处理。
+- xcli 自身不会在协议 stdout 中插入日志。
+- 断开连接后没有新增 xcli 运行记录或 usage 任务。
+
+不要在普通终端中裸运行 `xcli acp` 后等待人类可读提示；该命令专门等待 ACP 客户端发送协议消息。
+
+### 12.4 真实交互模式
 
 ```bash
 "$XCLI_BIN" --config "$XCLI_CONFIG" use \
@@ -633,7 +695,7 @@ printf '# Manual test\n' > "$XCLI_TEST_ROOT/real-work/README.md"
 
 确认终端颜色、键盘输入、Ctrl+C 和原生权限提示与直接运行 `codex` 时一致。退出后使用 `xcli runs list` 检查元数据记录。
 
-### 12.4 双 Agent 串行工作流
+### 12.5 双 Agent 串行工作流
 
 仅在 Codex 和 Claude 均已安装并完成认证后执行：
 
@@ -679,6 +741,7 @@ YAML
 - [ ] `agents` 和 `doctor` 能检测路径与版本。
 - [ ] 默认 Agent、位置参数和 `--agent` 优先级正确。
 - [ ] `use` 保留终端 stdio，内置 Agent 的普通 `run` 只输出归一化最终文本。
+- [ ] `acp` 保持协议 stdio 字节不变，复用 cwd/环境配置且不创建运行记录。
 - [ ] `--json` 返回合法、稳定的归一化结构。
 - [ ] `--` 后参数不被 xcli 或 shell 重新解释。
 - [ ] `--cwd`、网络变量清除和 Agent 环境变量生效。

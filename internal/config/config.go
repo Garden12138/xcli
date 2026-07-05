@@ -46,6 +46,12 @@ type AgentConfig struct {
 	RunArgs         []string          `yaml:"run_args,omitempty" json:"run_args,omitempty"`
 	AuthArgs        []string          `yaml:"auth_args,omitempty" json:"auth_args,omitempty"`
 	Output          string            `yaml:"output,omitempty" json:"output,omitempty"`
+	ACP             *ACPConfig        `yaml:"acp,omitempty" json:"acp,omitempty"`
+}
+
+type ACPConfig struct {
+	Command string   `yaml:"command" json:"command"`
+	Args    []string `yaml:"args,omitempty" json:"args,omitempty"`
 }
 
 type Network struct {
@@ -187,6 +193,12 @@ func merge(base, user Config) Config {
 		if override.Output != "" {
 			current.Output = override.Output
 		}
+		if override.ACP != nil {
+			current.ACP = &ACPConfig{
+				Command: override.ACP.Command,
+				Args:    append([]string(nil), override.ACP.Args...),
+			}
+		}
 		base.Agents[name] = current
 	}
 	if user.Networks != nil {
@@ -243,6 +255,9 @@ func (c Config) Validate() error {
 		}
 		if agent.Output != "" && agent.Output != "text" && agent.Output != "json" && agent.Output != "jsonl" {
 			return fmt.Errorf("agent %q has invalid output format %q", name, agent.Output)
+		}
+		if agent.ACP != nil && strings.TrimSpace(agent.ACP.Command) == "" {
+			return fmt.Errorf("agent %q ACP command must not be empty", name)
 		}
 		if agent.Network != "" {
 			if _, ok := c.Networks[agent.Network]; !ok {

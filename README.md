@@ -10,12 +10,12 @@ It manages the real CLI processes rather than replacing them with model API call
 
 ## Supported agents
 
-| Agent | Interactive | Non-interactive | Structured workflow output | npm | Homebrew |
-| --- | --- | --- | --- | --- | --- |
-| [Claude Code](https://code.claude.com/docs/en/cli-usage) | `claude` | `claude -p` | stream JSON | `@anthropic-ai/claude-code` | — |
-| [Codex CLI](https://developers.openai.com/codex/cli) | `codex` | `codex exec` | JSONL | `@openai/codex` | `--cask codex` |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/headless.md) | `gemini` | `gemini -p` | stream JSON | `@google/gemini-cli` | `gemini-cli` |
-| [OpenCode](https://opencode.ai/docs/cli/) | `opencode` | `opencode run` | JSON events | `opencode-ai` | `anomalyco/tap/opencode` |
+| Agent | Interactive | Non-interactive | Structured workflow output | ACP | npm | Homebrew |
+| --- | --- | --- | --- | --- | --- | --- |
+| [Claude Code](https://code.claude.com/docs/en/cli-usage) | `claude` | `claude -p` | stream JSON | `claude-agent-acp` bridge | `@anthropic-ai/claude-code` | — |
+| [Codex CLI](https://developers.openai.com/codex/cli) | `codex` | `codex exec` | JSONL | `codex-acp` bridge | `@openai/codex` | `--cask codex` |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/headless.md) | `gemini` | `gemini -p` | stream JSON | native `--acp` | `@google/gemini-cli` | `gemini-cli` |
+| [OpenCode](https://opencode.ai/docs/cli/) | `opencode` | `opencode run` | JSON events | native `acp` | `opencode-ai` | `anomalyco/tap/opencode` |
 
 Declarative aliases and custom agents can be added without rebuilding xcli.
 
@@ -71,6 +71,9 @@ xcli auth login codex
 xcli default codex
 xcli use
 
+# Expose the selected agent to an ACP client over stdio
+xcli acp codex
+
 # Run one task; agent-specific arguments follow --
 xcli run codex "Review the current changes"
 xcli run "Fix the failing tests" -- --sandbox workspace-write
@@ -115,9 +118,27 @@ agents:
     run_args: ["run", "{{ prompt }}"]
     auth_args: ["auth", "login"]
     output: text
+    acp:
+      command: my-agent-acp
+      args: ["--stdio"]
 ```
 
 The prompt remains one process argument even when it contains spaces, semicolons, or shell metacharacters. Supported output modes are `text`, `json`, and `jsonl`.
+
+### ACP stdio entry point
+
+`xcli acp [agent] [-- native-args...]` starts the selected agent's [Agent Client Protocol](https://agentclientprotocol.com/) server with stdin, stdout, and stderr connected directly to the ACP client. A positional agent overrides `default_agent`; prompt routing is not involved because xcli does not inspect the protocol stream. `--cwd` sets the child process directory, and the usual agent environment and network profile still apply.
+
+Gemini and OpenCode use their native ACP commands. Claude and Codex require the maintained bridges to be installed explicitly; xcli never downloads them while starting a protocol server:
+
+```bash
+npm install -g @agentclientprotocol/claude-agent-acp
+npm install -g @agentclientprotocol/codex-acp
+```
+
+The optional `agents.<name>.acp` block is a complete command override: its arguments replace ordinary agent `args`, while arguments after `--` are appended. Generic agents must define this block before they can be used with `xcli acp`.
+
+xcli does not parse, capture, or persist ACP messages. One connection may contain multiple sessions and tasks, so ACP processes do not create run records and do not contribute to `xcli usage`. Protocol version negotiation, authentication, permissions, and capability handling remain the responsibility of the downstream ACP server and client.
 
 ### Prompt routing
 
@@ -219,4 +240,4 @@ Codex and Gemini report tokens but not a dollar estimate. Claude and OpenCode ma
 - Unknown YAML fields, invalid templates, missing networks, and forward workflow dependencies fail validation.
 - xcli does not add telemetry or automatically trust repository configuration.
 
-ACP/CAP, MCP synchronization, daemons, process control, session resume, Windows ConPTY, and a web UI are intentionally deferred beyond v0.2.
+CAP, MCP synchronization, daemons, process control, session resume, Windows ConPTY, and a web UI are intentionally deferred beyond v0.2.

@@ -32,6 +32,11 @@ agents:
     args:
       - --model
       - deepseek/deepseek-chat
+    # An explicit ACP block completely replaces the ordinary command arguments.
+    acp:
+      command: opencode
+      args:
+        - acp
 
 routing:
   rules:

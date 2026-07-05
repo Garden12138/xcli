@@ -5,11 +5,14 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Garden12138/xcli/internal/agent"
 	"github.com/Garden12138/xcli/internal/config"
@@ -286,6 +289,219 @@ func TestRouteCommandExplainsWithoutRunningOrRecording(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dataPath, "xcli", "runs")); !os.IsNotExist(err) {
 		t.Fatalf("route command created run records; runs stat error = %v", err)
+	}
+}
+
+func TestACPCommandPassesThroughStdioAndUsesSelectedAgent(t *testing.T) {
+	directory := t.TempDir()
+	workdir := filepath.Join(directory, "work")
+	if err := os.Mkdir(workdir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	script := filepath.Join(directory, "fake-acp")
+	scriptData := "#!/bin/sh\n" +
+		"printf '%s' \"$PWD\" > \"$XCLI_ACP_STATE/cwd\"\n" +
+		"printf '%s' \"$XCLI_ACP_AGENT\" > \"$XCLI_ACP_STATE/agent\"\n" +
+		"printf '%s' \"$XCLI_ACP_NETWORK\" > \"$XCLI_ACP_STATE/network\"\n" +
+		"printf '%s\\n' \"$@\" > \"$XCLI_ACP_STATE/args\"\n" +
+		"printf 'diagnostic' >&2\n" +
+		"cat\n"
+	if err := os.WriteFile(script, []byte(scriptData), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(directory, "config.yaml")
+	cfg := config.Defaults()
+	cfg.DefaultAgent = "default-acp"
+	cfg.Networks["test"] = config.Network{Set: map[string]string{"XCLI_ACP_NETWORK": "direct"}}
+	for _, name := range []string{"default-acp", "selected-acp"} {
+		cfg.Agents[name] = config.AgentConfig{
+			Adapter: "generic", Command: "unused", RunArgs: []string{"{{ prompt }}"}, Network: "test",
+			Env: map[string]string{"XCLI_ACP_STATE": directory, "XCLI_ACP_AGENT": name},
+			ACP: &config.ACPConfig{Command: script, Args: []string{"--stdio"}},
+		}
+	}
+	if err := config.Save(configPath, cfg); err != nil {
+		t.Fatal(err)
+	}
+	dataPath := filepath.Join(directory, "data")
+	setCommandEnvironment(t, "XDG_DATA_HOME", dataPath)
+	payload := "{\"jsonrpc\":\"2.0\",\"id\":1}"
+
+	run := func(agentName string, extra ...string) (string, string) {
+		t.Helper()
+		root := newRootCommand()
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+		root.SetIn(strings.NewReader(payload))
+		root.SetOut(&stdout)
+		root.SetErr(&stderr)
+		args := []string{"--config", configPath, "acp"}
+		if agentName != "" {
+			args = append(args, agentName)
+		}
+		args = append(args, "--cwd", workdir)
+		if len(extra) > 0 {
+			args = append(args, "--")
+			args = append(args, extra...)
+		}
+		root.SetArgs(args)
+		if err := root.Execute(); err != nil {
+			t.Fatalf("execute: %v (stderr: %s)", err, stderr.String())
+		}
+		return stdout.String(), stderr.String()
+	}
+
+	stdout, stderr := run("")
+	if stdout != payload || stderr != "diagnostic" {
+		t.Fatalf("stdio was not passed through exactly: stdout=%q stderr=%q", stdout, stderr)
+	}
+	assertFileContent(t, filepath.Join(directory, "agent"), "default-acp")
+
+	stdout, stderr = run("selected-acp", "--debug", "value with spaces")
+	if stdout != payload || stderr != "diagnostic" {
+		t.Fatalf("selected stdio was not passed through exactly: stdout=%q stderr=%q", stdout, stderr)
+	}
+	assertFileContent(t, filepath.Join(directory, "agent"), "selected-acp")
+	resolvedWorkdir, err := filepath.EvalSymlinks(workdir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertFileContent(t, filepath.Join(directory, "cwd"), resolvedWorkdir)
+	assertFileContent(t, filepath.Join(directory, "network"), "direct")
+	assertFileContent(t, filepath.Join(directory, "args"), "--stdio\n--debug\nvalue with spaces\n")
+	if _, err := os.Stat(filepath.Join(dataPath, "xcli", "runs")); !os.IsNotExist(err) {
+		t.Fatalf("ACP command created run records; runs stat error = %v", err)
+	}
+}
+
+func TestACPCommandErrorsAndExitCode(t *testing.T) {
+	directory := t.TempDir()
+	configPath := filepath.Join(directory, "config.yaml")
+
+	t.Run("generic requires ACP config", func(t *testing.T) {
+		cfg := config.Defaults()
+		cfg.DefaultAgent = "custom"
+		cfg.Agents["custom"] = config.AgentConfig{Adapter: "generic", Command: "custom", RunArgs: []string{"{{ prompt }}"}}
+		if err := config.Save(configPath, cfg); err != nil {
+			t.Fatal(err)
+		}
+		root := newRootCommand()
+		root.SetArgs([]string{"--config", configPath, "acp"})
+		err := root.Execute()
+		if err == nil || !strings.Contains(err.Error(), "configure agents.custom.acp") {
+			t.Fatalf("expected unsupported error, got %v", err)
+		}
+	})
+
+	t.Run("missing bridge has install hint", func(t *testing.T) {
+		cfg := config.Defaults()
+		cfg.DefaultAgent = "codex"
+		if err := config.Save(configPath, cfg); err != nil {
+			t.Fatal(err)
+		}
+		setCommandEnvironment(t, "PATH", directory)
+		root := newRootCommand()
+		root.SetArgs([]string{"--config", configPath, "acp"})
+		err := root.Execute()
+		if err == nil || !strings.Contains(err.Error(), "npm install -g @agentclientprotocol/codex-acp") {
+			t.Fatalf("expected bridge install hint, got %v", err)
+		}
+	})
+
+	t.Run("exit code is preserved", func(t *testing.T) {
+		script := filepath.Join(directory, "failing-acp")
+		if err := os.WriteFile(script, []byte("#!/bin/sh\nexit 7\n"), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		cfg := config.Defaults()
+		cfg.DefaultAgent = "custom"
+		cfg.Agents["custom"] = config.AgentConfig{
+			Adapter: "generic", Command: "custom", RunArgs: []string{"{{ prompt }}"},
+			ACP: &config.ACPConfig{Command: script},
+		}
+		if err := config.Save(configPath, cfg); err != nil {
+			t.Fatal(err)
+		}
+		root := newRootCommand()
+		root.SetArgs([]string{"--config", configPath, "acp"})
+		err := root.Execute()
+		var exitErr *ExitError
+		if !errors.As(err, &exitErr) || exitErr.Code != 7 {
+			t.Fatalf("expected exit code 7, got %v", err)
+		}
+	})
+}
+
+func TestACPCommandForwardsCancellation(t *testing.T) {
+	directory := t.TempDir()
+	ready := filepath.Join(directory, "ready")
+	interrupted := filepath.Join(directory, "interrupted")
+	script := filepath.Join(directory, "waiting-acp")
+	scriptData := "#!/bin/sh\n" +
+		"trap 'printf interrupted > \"$XCLI_ACP_INTERRUPTED\"; exit 0' INT\n" +
+		"printf ready > \"$XCLI_ACP_READY\"\n" +
+		"while :; do sleep 0.05; done\n"
+	if err := os.WriteFile(script, []byte(scriptData), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(directory, "config.yaml")
+	cfg := config.Defaults()
+	cfg.DefaultAgent = "custom"
+	cfg.Agents["custom"] = config.AgentConfig{
+		Adapter: "generic", Command: "unused", RunArgs: []string{"{{ prompt }}"},
+		Env: map[string]string{"XCLI_ACP_READY": ready, "XCLI_ACP_INTERRUPTED": interrupted},
+		ACP: &config.ACPConfig{Command: script},
+	}
+	if err := config.Save(configPath, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	root := newRootCommand()
+	root.SetContext(ctx)
+	root.SetIn(strings.NewReader(""))
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"--config", configPath, "acp"})
+	finished := make(chan error, 1)
+	go func() {
+		finished <- root.Execute()
+	}()
+
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		if _, err := os.Stat(ready); err == nil {
+			break
+		} else if !os.IsNotExist(err) {
+			t.Fatal(err)
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("ACP child did not start")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	cancel()
+
+	select {
+	case err := <-finished:
+		var exitErr *ExitError
+		if !errors.As(err, &exitErr) || exitErr.Code != 130 {
+			t.Fatalf("expected canceled exit code 130, got %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("ACP command did not exit after cancellation")
+	}
+	assertFileContent(t, interrupted, "interrupted")
+}
+
+func assertFileContent(t *testing.T, path, want string) {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != want {
+		t.Fatalf("%s = %q, want %q", path, data, want)
 	}
 }
 

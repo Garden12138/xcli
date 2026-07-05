@@ -55,6 +55,7 @@ func newRootCommand() *cobra.Command {
 		a.newAuthCommand(),
 		a.newDefaultCommand(),
 		a.newUseCommand(),
+		a.newACPCommand(),
 		a.newRouteCommand(),
 		a.newRunCommand(),
 		a.newWorkflowCommand(),

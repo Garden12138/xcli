@@ -10,12 +10,12 @@
 
 ## 支持的 Agent
 
-| Agent | 交互模式 | 非交互模式 | 工作流结构化输出 | npm | Homebrew |
-| --- | --- | --- | --- | --- | --- |
-| [Claude Code](https://code.claude.com/docs/en/cli-usage) | `claude` | `claude -p` | 流式 JSON | `@anthropic-ai/claude-code` | — |
-| [Codex CLI](https://developers.openai.com/codex/cli) | `codex` | `codex exec` | JSONL | `@openai/codex` | `--cask codex` |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/headless.md) | `gemini` | `gemini -p` | 流式 JSON | `@google/gemini-cli` | `gemini-cli` |
-| [OpenCode](https://opencode.ai/docs/cli/) | `opencode` | `opencode run` | JSON 事件 | `opencode-ai` | `anomalyco/tap/opencode` |
+| Agent | 交互模式 | 非交互模式 | 工作流结构化输出 | ACP | npm | Homebrew |
+| --- | --- | --- | --- | --- | --- | --- |
+| [Claude Code](https://code.claude.com/docs/en/cli-usage) | `claude` | `claude -p` | 流式 JSON | `claude-agent-acp` 桥接器 | `@anthropic-ai/claude-code` | — |
+| [Codex CLI](https://developers.openai.com/codex/cli) | `codex` | `codex exec` | JSONL | `codex-acp` 桥接器 | `@openai/codex` | `--cask codex` |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/headless.md) | `gemini` | `gemini -p` | 流式 JSON | 原生 `--acp` | `@google/gemini-cli` | `gemini-cli` |
+| [OpenCode](https://opencode.ai/docs/cli/) | `opencode` | `opencode run` | JSON 事件 | 原生 `acp` | `opencode-ai` | `anomalyco/tap/opencode` |
 
 无需重新构建 xcli，即可通过声明式配置添加别名和自定义 Agent。
 
@@ -71,6 +71,9 @@ xcli auth login codex
 xcli default codex
 xcli use
 
+# 通过 stdio 向 ACP 客户端暴露所选 Agent
+xcli acp codex
+
 # 执行单次任务；Agent 专属参数放在 -- 之后
 xcli run codex "审查当前变更"
 xcli run "修复失败的测试" -- --sandbox workspace-write
@@ -115,9 +118,27 @@ agents:
     run_args: ["run", "{{ prompt }}"]
     auth_args: ["auth", "login"]
     output: text
+    acp:
+      command: my-agent-acp
+      args: ["--stdio"]
 ```
 
 即使提示词包含空格、分号或 shell 元字符，它仍会作为单个进程参数传递。支持的输出模式为 `text`、`json` 和 `jsonl`。
+
+### ACP stdio 入口
+
+`xcli acp [agent] [-- native-args...]` 启动所选 Agent 的 [Agent Client Protocol](https://agentclientprotocol.com/) 服务，并将 stdin、stdout、stderr 直接连接到 ACP 客户端。位置参数优先于 `default_agent`；xcli 不检查协议流，因此不会应用提示词路由。`--cwd` 用于设置子进程目录，已有的 Agent 环境变量和网络配置仍然生效。
+
+Gemini 和 OpenCode 使用原生 ACP 命令。Claude 与 Codex 需要显式安装维护中的桥接器；xcli 启动协议服务时不会联网下载：
+
+```bash
+npm install -g @agentclientprotocol/claude-agent-acp
+npm install -g @agentclientprotocol/codex-acp
+```
+
+可选的 `agents.<name>.acp` 是完整命令覆盖：其中的参数会替代普通 Agent `args`，而 `--` 后的参数会继续追加。generic Agent 必须配置该结构后才能用于 `xcli acp`。
+
+xcli 不解析、捕获或持久化 ACP 消息。一个连接可以承载多个会话和任务，因此 ACP 进程不会创建运行记录，也不会计入 `xcli usage`。协议版本协商、认证、权限和能力处理均由下游 ACP 服务与客户端负责。
 
 ### 提示词路由
 
@@ -219,4 +240,4 @@ Codex 和 Gemini 提供 Token 统计但不提供美元估算；Claude 和 OpenCo
 - 未知 YAML 字段、无效模板、缺失网络配置和前向工作流依赖都会导致校验失败。
 - xcli 不添加遥测，也不会自动信任仓库配置。
 
-ACP/CAP、MCP 同步、守护进程、进程控制、会话恢复、Windows ConPTY 和 Web UI 均明确延后到 v0.2 之后。
+CAP、MCP 同步、守护进程、进程控制、会话恢复、Windows ConPTY 和 Web UI 均明确延后到 v0.2 之后。

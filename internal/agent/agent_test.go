@@ -3,6 +3,7 @@ package agent
 import (
 	"math"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/Garden12138/xcli/internal/config"
@@ -34,6 +35,68 @@ func TestBuiltinRunCommands(t *testing.T) {
 		if !reflect.DeepEqual(spec.Args, test.want) {
 			t.Errorf("%s args = %#v, want %#v", test.name, spec.Args, test.want)
 		}
+	}
+}
+
+func TestBuiltinACPCommands(t *testing.T) {
+	cfg := config.Defaults()
+	gemini := cfg.Agents["gemini"]
+	gemini.Args = []string{"--model", "pro"}
+	cfg.Agents["gemini"] = gemini
+	opencode := cfg.Agents["opencode"]
+	opencode.Args = []string{"--model", "provider/model"}
+	cfg.Agents["opencode"] = opencode
+
+	tests := []struct {
+		name        string
+		wantCommand string
+		wantArgs    []string
+		wantHint    string
+	}{
+		{name: "claude", wantCommand: "claude-agent-acp", wantArgs: []string{"--debug"}, wantHint: "@agentclientprotocol/claude-agent-acp"},
+		{name: "codex", wantCommand: "codex-acp", wantArgs: []string{"--debug"}, wantHint: "@agentclientprotocol/codex-acp"},
+		{name: "gemini", wantCommand: "gemini", wantArgs: []string{"--model", "pro", "--acp", "--debug"}},
+		{name: "opencode", wantCommand: "opencode", wantArgs: []string{"--model", "provider/model", "acp", "--debug"}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			definition := Definition{Name: test.name, Config: cfg.Agents[test.name]}
+			launch, err := definition.ACP([]string{"--debug"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if launch.Command != test.wantCommand || !reflect.DeepEqual(launch.Args, test.wantArgs) {
+				t.Fatalf("launch = %#v, want command %q args %#v", launch, test.wantCommand, test.wantArgs)
+			}
+			if test.wantHint != "" && !strings.Contains(launch.InstallHint, test.wantHint) {
+				t.Fatalf("install hint = %q, want package %q", launch.InstallHint, test.wantHint)
+			}
+		})
+	}
+}
+
+func TestACPOverrideIsComplete(t *testing.T) {
+	definition := Definition{Name: "custom", Config: config.AgentConfig{
+		Adapter: "gemini", Command: "gemini", Args: []string{"--model", "pro"},
+		ACP: &config.ACPConfig{Command: "custom-acp", Args: []string{"--stdio"}},
+	}}
+	launch, err := definition.ACP([]string{"--debug"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if launch.Command != "custom-acp" || !reflect.DeepEqual(launch.Args, []string{"--stdio", "--debug"}) {
+		t.Fatalf("unexpected override launch: %#v", launch)
+	}
+	if launch.InstallHint != "" {
+		t.Fatalf("custom override inherited install hint: %#v", launch)
+	}
+}
+
+func TestGenericACPRequiresConfiguration(t *testing.T) {
+	definition := Definition{Name: "custom", Config: config.AgentConfig{Adapter: "generic", Command: "custom"}}
+	_, err := definition.ACP(nil)
+	if err == nil || !strings.Contains(err.Error(), "configure agents.custom.acp") {
+		t.Fatalf("expected unsupported ACP error, got %v", err)
 	}
 }
 
