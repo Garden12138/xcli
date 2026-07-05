@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
-	"github.com/Garden12138/xcli/internal/agent"
 	"github.com/Garden12138/xcli/internal/routing"
 	"github.com/Garden12138/xcli/internal/runstore"
 	xruntime "github.com/Garden12138/xcli/internal/runtime"
@@ -100,6 +100,7 @@ func (a *app) newRunCommand() *cobra.Command {
 	var selectedAgent string
 	var cwdFlag string
 	var asJSON bool
+	var detach bool
 	command := &cobra.Command{
 		Use:   "run [agent] <prompt> [-- native-args...]",
 		Short: "Run one non-interactive agent task",
@@ -111,7 +112,7 @@ func (a *app) newRunCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(command *cobra.Command, args []string) error {
-			cfg, _, registry, err := a.load()
+			cfg, configPath, registry, err := a.load()
 			if err != nil {
 				return err
 			}
@@ -161,6 +162,23 @@ func (a *app) newRunCommand() *cobra.Command {
 				SelectionSource: selection.Source, RouteRule: selection.Rule, Cwd: cwd,
 				StartedAt: time.Now().UTC(), Status: "running",
 			}
+			if detach {
+				if _, err := exec.LookPath(spec.Command); err != nil {
+					return fmt.Errorf("agent command %q is not available: %w", spec.Command, err)
+				}
+				view, err := startDetachedRun(store, detachedRunOptions{
+					ConfigPath: configPath, Agent: name, Prompt: prompt, NativeArgs: nativeArgs,
+					Cwd: cwd, Structured: structured, RecordOutput: cfg.Recording.Output, Record: record,
+				})
+				if err != nil {
+					return err
+				}
+				if asJSON {
+					return encodeJSON(command.OutOrStdout(), view)
+				}
+				_, err = fmt.Fprintf(command.OutOrStdout(), "Started job %s (pid %d)\n", view.ID, view.PID)
+				return err
+			}
 			ctx, cancel := signalContext(command.Context())
 			defer cancel()
 			capture := structured || cfg.Recording.Output
@@ -168,10 +186,10 @@ func (a *app) newRunCommand() *cobra.Command {
 			if structured {
 				stdout = nil
 			}
-			processResult, runErr := xruntime.RunProcess(ctx, spec, xruntime.ProcessOptions{
-				Dir: cwd, Env: environment, Stdout: stdout, Stderr: command.ErrOrStderr(),
-				CaptureStdout: capture, SeparateProcess: asJSON,
-			})
+			outcome, runErr := executeNonInteractive(
+				ctx, definition, name, spec, cwd, environment, structured,
+				stdout, command.ErrOrStderr(), capture, asJSON,
+			)
 			record.EndedAt = time.Now().UTC()
 			if runErr != nil {
 				record.Status = "failed"
@@ -179,14 +197,11 @@ func (a *app) newRunCommand() *cobra.Command {
 				_ = store.Save(record)
 				return runErr
 			}
+			processResult := outcome.Process
 			record.ExitCode = processResult.ExitCode
 			record.Status = processStatus(processResult)
-			var normalized agent.RunResult
 			if structured {
-				normalized = agent.ParseStructured(definition.Config.Adapter, definition.Config.Output, processResult.Stdout)
-				normalized.Agent = name
-				normalized.ExitCode = processResult.ExitCode
-				normalized.Status = record.Status
+				normalized := outcome.Result
 				record.SessionID = normalized.SessionID
 				record.Usage = normalized.Usage
 				if asJSON {
@@ -218,6 +233,7 @@ func (a *app) newRunCommand() *cobra.Command {
 	command.Flags().StringVar(&selectedAgent, "agent", "", "agent to run (overrides positional and default selection)")
 	command.Flags().StringVar(&cwdFlag, "cwd", "", "working directory")
 	command.Flags().BoolVar(&asJSON, "json", false, "return a normalized JSON result")
+	command.Flags().BoolVar(&detach, "detach", false, "run in the background")
 	return command
 }
 

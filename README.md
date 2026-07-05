@@ -87,6 +87,10 @@ xcli route "Review the authentication changes"
 xcli resume <run-id>
 xcli resume <run-id> "Continue with the next step" --json
 
+# Run a non-interactive task in the background
+xcli run --detach "Run the full test suite"
+xcli jobs list
+
 # Run a workflow (parallelism is opt-in)
 xcli workflow validate examples/implement-and-review.yaml
 xcli workflow run examples/implement-and-review.yaml \
@@ -223,6 +227,29 @@ Record lookup always happens first. If no matching record exists, xcli treats th
 
 Interactive resumes create `use` records and remain excluded from `xcli usage`. Non-interactive resumes create ordinary `run` tasks with `selection_source: resume`, plus `resumed_from` and optional `resumed_step` metadata. If the native client reports a new session ID, the new record uses it; otherwise it retains the requested ID.
 
+### Background jobs
+
+Add `--detach` to a non-interactive `run` to start it in an independent process session and return immediately. Agent selection, prompt routing, cwd, environment profiles, structured parsing, usage capture, and native arguments stay the same as a foreground run:
+
+```bash
+xcli run --detach "Run the slow integration tests"
+xcli run codex --detach --json "Review the repository" -- --sandbox workspace-write
+
+xcli jobs list
+xcli jobs show <run-id>
+xcli jobs logs <run-id>
+xcli jobs logs <run-id> --follow
+xcli jobs stop <run-id>
+```
+
+`run --detach --json` returns the initial Job object rather than a final `RunResult`. Job JSON contains the ID, agent, status, worker PID, cwd, timestamps, and private log path, then adds exit code, session ID, and usage when available. `jobs list` includes only background records; `jobs show` always returns one Job as JSON.
+
+Each job keeps a private `0600` normalized log. Native stderr is appended live. Plain generic stdout is appended live, while structured agents append only their normalized final text when they finish, so `jobs logs` does not expose JSONL events. Raw structured stdout is still saved only when `recording.output` is enabled. These logs may contain source code, diagnostics, or secrets and have no automatic retention policy.
+
+`jobs stop` first sends TERM to the complete job process group, waits five seconds by default, then escalates to KILL. Use `--timeout` to change the grace period or `--force` to kill immediately. Repeating stop on a completed job is safe. xcli verifies the job's held lock before signaling its PID; a nonterminal record without a live lock becomes `orphaned` instead of risking a signal to an unrelated reused PID.
+
+Background jobs survive the launching terminal but not a machine restart. This first release has no daemon, restart, attach, deletion, background workflow, background resume, or interactive background mode.
+
 ### Network profiles
 
 A child process inherits the current environment, then xcli applies the selected network profile and agent-specific environment variables. A direct profile can remove both upper- and lower-case proxy variables:
@@ -277,7 +304,7 @@ Parallel steps keep the existing shared `cwd` behavior. xcli does not create iso
 
 ## Run records, usage, and privacy
 
-xcli stores private (`0600`) metadata under `$XDG_DATA_HOME/xcli/runs` or `~/.local/share/xcli/runs`. Metadata includes the agent, working directory, timestamps, status, exit code, native session ID, resume parent/step when applicable, and normalized token usage when the structured output exposes them.
+xcli stores private (`0600`) metadata under `$XDG_DATA_HOME/xcli/runs` or `~/.local/share/xcli/runs`. Metadata includes the agent, working directory, timestamps, status, exit code, native session ID, resume parent/step, background PID/log information when applicable, and normalized token usage when the structured output exposes them.
 
 Full output is disabled by default because it may contain source code or secrets. Enable it explicitly with workflow `--record-output` or `recording.output: true`.
 
@@ -305,4 +332,4 @@ Codex and Gemini report tokens but not a dollar estimate. Claude and OpenCode ma
 - Unknown YAML fields, invalid templates, missing networks, and forward workflow dependencies fail validation.
 - xcli does not add telemetry or automatically trust repository configuration.
 
-CAP, project-level or bidirectional MCP synchronization, daemons, process control, Windows ConPTY, and a web UI are intentionally deferred beyond v0.2.
+CAP, project-level or bidirectional MCP synchronization, daemons, background workflows and interactive sessions, job restart/attach, Windows ConPTY, and a web UI are intentionally deferred beyond v0.2.
