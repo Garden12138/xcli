@@ -22,6 +22,7 @@ type Record struct {
 	SelectionSource string       `json:"selection_source,omitempty"`
 	RouteRule       string       `json:"route_rule,omitempty"`
 	Workflow        string       `json:"workflow,omitempty"`
+	WorkflowFile    string       `json:"workflow_file,omitempty"`
 	MaxParallel     int          `json:"max_parallel,omitempty"`
 	Cwd             string       `json:"cwd"`
 	StartedAt       time.Time    `json:"started_at"`
@@ -134,6 +135,16 @@ func (s *Store) Load(id string) (Record, error) {
 		return Record{}, fmt.Errorf("decode run record: %w", err)
 	}
 	return record, nil
+}
+
+func (s *Store) Delete(id string) error {
+	if id == "" || strings.ContainsAny(id, `/\\`) {
+		return errors.New("invalid run id")
+	}
+	if err := os.Remove(filepath.Join(s.root, id+".json")); err != nil {
+		return fmt.Errorf("delete run record: %w", err)
+	}
+	return nil
 }
 
 func (s *Store) List() ([]Record, error) {

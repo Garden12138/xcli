@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/Garden12138/xcli/internal/agent"
@@ -17,17 +19,22 @@ const (
 )
 
 type View struct {
-	ID        string       `json:"id"`
-	Agent     string       `json:"agent"`
-	Status    string       `json:"status"`
-	PID       int          `json:"pid"`
-	Cwd       string       `json:"cwd"`
-	StartedAt time.Time    `json:"started_at"`
-	EndedAt   *time.Time   `json:"ended_at,omitempty"`
-	ExitCode  *int         `json:"exit_code,omitempty"`
-	SessionID string       `json:"session_id,omitempty"`
-	Usage     *agent.Usage `json:"usage,omitempty"`
-	LogFile   string       `json:"log_file,omitempty"`
+	ID           string                `json:"id"`
+	Kind         string                `json:"kind,omitempty"`
+	Agent        string                `json:"agent"`
+	Workflow     string                `json:"workflow,omitempty"`
+	WorkflowFile string                `json:"workflow_file,omitempty"`
+	MaxParallel  int                   `json:"max_parallel,omitempty"`
+	Status       string                `json:"status"`
+	PID          int                   `json:"pid"`
+	Cwd          string                `json:"cwd"`
+	StartedAt    time.Time             `json:"started_at"`
+	EndedAt      *time.Time            `json:"ended_at,omitempty"`
+	ExitCode     *int                  `json:"exit_code,omitempty"`
+	SessionID    string                `json:"session_id,omitempty"`
+	Usage        *agent.Usage          `json:"usage,omitempty"`
+	LogFile      string                `json:"log_file,omitempty"`
+	Steps        []runstore.StepRecord `json:"steps,omitempty"`
 }
 
 type Files struct {
@@ -54,10 +61,13 @@ func IsTerminal(status string) bool {
 
 func ToView(record runstore.Record) View {
 	view := View{
-		ID: record.ID, Agent: record.Agent, Status: record.Status, PID: record.PID,
+		ID: record.ID, Kind: record.Kind, Agent: record.Agent, Workflow: record.Workflow,
+		WorkflowFile: record.WorkflowFile, MaxParallel: record.MaxParallel,
+		Status: record.Status, PID: record.PID,
 		Cwd: record.Cwd, StartedAt: record.StartedAt, SessionID: record.SessionID,
 		Usage: record.Usage, LogFile: record.LogFile,
 	}
+	view.Steps = append([]runstore.StepRecord(nil), record.Steps...)
 	if IsTerminal(record.Status) {
 		endedAt := record.EndedAt
 		exitCode := record.ExitCode
@@ -145,6 +155,7 @@ func (m Manager) Reconcile(record runstore.Record) (runstore.Record, error) {
 	record.Status = "orphaned"
 	record.ExitCode = 1
 	record.EndedAt = m.now().UTC()
+	markUnfinishedSteps(&record, "orphaned", 1, "background worker exited without a terminal record")
 	if err := m.Store.Save(record); err != nil {
 		return runstore.Record{}, err
 	}
@@ -167,10 +178,78 @@ func (m Manager) MarkKilled(record runstore.Record) (runstore.Record, error) {
 	record.Status = "killed"
 	record.ExitCode = 137
 	record.EndedAt = m.now().UTC()
+	markUnfinishedSteps(&record, "killed", 137, "background worker was killed")
 	if err := m.Store.Save(record); err != nil {
 		return runstore.Record{}, err
 	}
 	return record, nil
+}
+
+func (m Manager) MarkFailed(record runstore.Record, message string) (runstore.Record, error) {
+	record.Status = "failed"
+	record.ExitCode = 1
+	record.EndedAt = m.now().UTC()
+	markUnfinishedSteps(&record, "failed", 1, message)
+	if err := m.Store.Save(record); err != nil {
+		return runstore.Record{}, err
+	}
+	return record, nil
+}
+
+func (m Manager) Delete(id string) (runstore.Record, error) {
+	record, err := m.Load(id)
+	if err != nil {
+		return runstore.Record{}, err
+	}
+	if !IsTerminal(record.Status) {
+		return runstore.Record{}, fmt.Errorf("job %q is still %s; stop it before deleting", id, record.Status)
+	}
+	directory, err := jobDirectory(m.Store, id)
+	if err != nil {
+		return runstore.Record{}, err
+	}
+	if err := os.RemoveAll(directory); err != nil {
+		return runstore.Record{}, fmt.Errorf("delete job artifacts: %w", err)
+	}
+	if err := m.Store.Delete(id); err != nil {
+		return runstore.Record{}, err
+	}
+	return record, nil
+}
+
+func (m Manager) PruneCandidates(cutoff time.Time) ([]runstore.Record, error) {
+	records, err := m.List()
+	if err != nil {
+		return nil, err
+	}
+	result := make([]runstore.Record, 0)
+	for _, record := range records {
+		if !IsTerminal(record.Status) || record.EndedAt.IsZero() || record.EndedAt.After(cutoff) {
+			continue
+		}
+		result = append(result, record)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].EndedAt.Equal(result[j].EndedAt) {
+			return result[i].ID < result[j].ID
+		}
+		return result[i].EndedAt.Before(result[j].EndedAt)
+	})
+	return result, nil
+}
+
+func markUnfinishedSteps(record *runstore.Record, status string, exitCode int, message string) {
+	endedAt := record.EndedAt
+	for index := range record.Steps {
+		step := &record.Steps[index]
+		if step.Status != "pending" && step.Status != "running" && step.Status != "" {
+			continue
+		}
+		step.Status = status
+		step.ExitCode = exitCode
+		step.Error = message
+		step.EndedAt = endedAt
+	}
 }
 
 func (m Manager) now() time.Time {
@@ -181,7 +260,7 @@ func (m Manager) now() time.Time {
 }
 
 func jobDirectory(store *runstore.Store, id string) (string, error) {
-	if id == "" || filepath.Base(id) != id || id == "." || id == ".." {
+	if id == "" || filepath.Base(id) != id || strings.ContainsAny(id, `/\\`) || id == "." || id == ".." {
 		return "", errors.New("invalid job id")
 	}
 	return filepath.Join(store.Root(), id), nil

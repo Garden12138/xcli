@@ -55,3 +55,22 @@ func TestLoadLegacyRecordWithoutRoutingMetadata(t *testing.T) {
 		t.Fatalf("unexpected legacy record: %#v", record)
 	}
 }
+
+func TestDeleteRemovesOnlyValidatedRecord(t *testing.T) {
+	store := &Store{root: t.TempDir()}
+	record := Record{ID: "run-delete", Kind: "run", Status: "success"}
+	if err := store.Save(record); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Delete(record.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Load(record.ID); !os.IsNotExist(err) {
+		t.Fatalf("deleted record load error = %v", err)
+	}
+	for _, id := range []string{"", "../outside", `..\\outside`} {
+		if err := store.Delete(id); err == nil {
+			t.Fatalf("Delete(%q) succeeded", id)
+		}
+	}
+}

@@ -94,7 +94,9 @@ xcli resume <run-id> "Continue with the next step" --json
 
 # Run a non-interactive task in the background
 xcli run --detach "Run the full test suite"
+xcli workflow run examples/parallel-review.yaml --detach
 xcli jobs list
+xcli jobs wait <run-id>
 
 # Run a workflow (parallelism is opt-in)
 xcli workflow validate examples/implement-and-review.yaml
@@ -265,26 +267,32 @@ Interactive resumes create `use` records and remain excluded from `xcli usage`. 
 
 ### Background jobs
 
-Add `--detach` to a non-interactive `run` to start it in an independent process session and return immediately. Agent selection, prompt routing, cwd, environment profiles, structured parsing, usage capture, and native arguments stay the same as a foreground run:
+Add `--detach` to a non-interactive `run` or `workflow run` to start it in an independent process session and return immediately. Agent selection, cwd, environment profiles, structured parsing, usage capture, workflow parallelism, and native arguments stay the same as foreground execution:
 
 ```bash
 xcli run --detach "Run the slow integration tests"
 xcli run codex --detach --json "Review the repository" -- --sandbox workspace-write
+xcli workflow run examples/parallel-review.yaml --detach --json
 
 xcli jobs list
 xcli jobs show <run-id>
 xcli jobs logs <run-id>
 xcli jobs logs <run-id> --follow
+xcli jobs wait <run-id> --timeout 30m
 xcli jobs stop <run-id>
+xcli jobs delete <run-id>
+xcli jobs prune --older-than 720h --dry-run
 ```
 
-`run --detach --json` returns the initial Job object rather than a final `RunResult`. Job JSON contains the ID, agent, status, worker PID, cwd, timestamps, and private log path, then adds exit code, session ID, and usage when available. `jobs list` includes only background records; `jobs show` always returns one Job as JSON.
+Detached `--json` returns the initial Job object rather than a final result. Job JSON contains the kind, ID, agent or workflow, status, worker PID, cwd, timestamps, and private log path. Workflow jobs also expose their parallelism and current step states; terminal jobs add the exit code, session IDs, and usage when available. `jobs list` includes only background records, and `jobs show` always returns one Job as JSON.
 
-Each job keeps a private `0600` normalized log. Native stderr is appended live. Plain generic stdout is appended live, while structured agents append only their normalized final text when they finish, so `jobs logs` does not expose JSONL events. Raw structured stdout is still saved only when `recording.output` is enabled. These logs may contain source code, diagnostics, or secrets and have no automatic retention policy.
+Each job keeps a private `0600` normalized log. Native stderr is appended live. Plain generic run stdout is appended live, while structured runs append only their normalized final text. Workflow logs contain progress, native stderr, and the final step summary; step output is saved only when output recording is enabled. Raw structured events never enter the normalized log. Logs may contain source code, diagnostics, or secrets and have no automatic retention policy.
 
 `jobs stop` first sends TERM to the complete job process group, waits five seconds by default, then escalates to KILL. Use `--timeout` to change the grace period or `--force` to kill immediately. Repeating stop on a completed job is safe. xcli verifies the job's held lock before signaling its PID; a nonterminal record without a live lock becomes `orphaned` instead of risking a signal to an unrelated reused PID.
 
-Background jobs survive the launching terminal but not a machine restart. This first release has no daemon, restart, attach, deletion, background workflow, background resume, or interactive background mode.
+`jobs wait` exits with the job's final exit code. Its timeout (exit 124) and Ctrl+C (exit 130) stop waiting without stopping the job. `jobs delete` removes one terminal job after confirmation. `jobs prune` requires an explicit age, previews deterministically, and supports `--dry-run`; automation must pass `--yes`. Neither command deletes running jobs, and xcli never applies retention automatically.
+
+Detached launch inputs are transferred to the worker through an anonymous pipe. Prompts, workflow definitions, variable values, and native arguments are not placed in worker argv or run metadata. Background jobs survive the launching terminal but not a machine restart. There is still no daemon, restart, attach, background resume, or interactive background mode.
 
 ### Network profiles
 
@@ -327,6 +335,8 @@ steps:
 
 Dependencies and template references must still point to earlier declarations, and execution summaries remain in declaration order even when completion order differs. See [`examples/parallel-review.yaml`](examples/parallel-review.yaml) for a complete fan-out/fan-in workflow.
 
+Use `workflow run <file> --detach` to run the same scheduler as a background job. `jobs show` reports pending and running steps while it executes, and `jobs logs --follow` streams progress until the workflow reaches a terminal state.
+
 Supported references are:
 
 - `{{ vars.name }}`
@@ -368,7 +378,7 @@ Codex and Gemini report tokens but not a dollar estimate. Claude and OpenCode ma
 - Unknown YAML fields, invalid templates, missing networks, and forward workflow dependencies fail validation.
 - xcli does not add telemetry or automatically trust repository configuration.
 
-CAP, automatic/continuous MCP reconciliation, project auto-discovery, vendor-specific advanced MCP fields, daemons, background workflows and interactive sessions, job restart/attach, Windows ConPTY, and a web UI are intentionally deferred beyond v0.3.
+CAP, automatic/continuous MCP reconciliation, project auto-discovery, vendor-specific advanced MCP fields, daemons, background resume and interactive sessions, job restart/attach, Windows ConPTY, and a web UI remain deferred.
 
 ## License
 

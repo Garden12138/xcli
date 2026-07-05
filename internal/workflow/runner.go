@@ -49,6 +49,15 @@ type RunOptions struct {
 	MaxParallel       *int
 }
 
+type PreparedRun struct {
+	SourcePath       string            `json:"source_path"`
+	Definition       Workflow          `json:"definition"`
+	WorkingDirectory string            `json:"working_directory"`
+	Variables        map[string]string `json:"variables,omitempty"`
+	RecordOutput     bool              `json:"record_output,omitempty"`
+	MaxParallel      int               `json:"max_parallel"`
+}
+
 type Runner struct {
 	Config   config.Config
 	Registry *agent.Registry
@@ -82,17 +91,25 @@ func (w *lockedWriter) Write(data []byte) (int, error) {
 }
 
 func (r *Runner) Run(ctx context.Context, sourcePath string, workflow Workflow, options RunOptions) (Execution, error) {
+	prepared, err := r.Prepare(sourcePath, workflow, options)
+	if err != nil {
+		return Execution{}, err
+	}
+	return r.RunPrepared(ctx, prepared, nil)
+}
+
+func (r *Runner) Prepare(sourcePath string, workflow Workflow, options RunOptions) (PreparedRun, error) {
 	networks := make(map[string]struct{}, len(r.Config.Networks))
 	for name := range r.Config.Networks {
 		networks[name] = struct{}{}
 	}
 	if err := Validate(workflow, r.Registry, networks); err != nil {
-		return Execution{}, err
+		return PreparedRun{}, err
 	}
 
 	workingDirectory, err := resolveDirectory(filepath.Dir(sourcePath), workflow.Cwd)
 	if err != nil {
-		return Execution{}, err
+		return PreparedRun{}, err
 	}
 	variables := make(map[string]string, len(workflow.Vars)+len(options.VariableOverrides))
 	for key, value := range workflow.Vars {
@@ -100,7 +117,7 @@ func (r *Runner) Run(ctx context.Context, sourcePath string, workflow Workflow, 
 	}
 	for key, value := range options.VariableOverrides {
 		if _, ok := workflow.Vars[key]; !ok {
-			return Execution{}, fmt.Errorf("cannot override undeclared workflow variable %q", key)
+			return PreparedRun{}, fmt.Errorf("cannot override undeclared workflow variable %q", key)
 		}
 		variables[key] = value
 	}
@@ -110,19 +127,47 @@ func (r *Runner) Run(ctx context.Context, sourcePath string, workflow Workflow, 
 	}
 	if options.MaxParallel != nil {
 		if *options.MaxParallel <= 0 {
-			return Execution{}, errors.New("max parallel must be greater than zero")
+			return PreparedRun{}, errors.New("max parallel must be greater than zero")
 		}
 		maxParallel = *options.MaxParallel
 	}
+	return PreparedRun{
+		SourcePath: sourcePath, Definition: workflow, WorkingDirectory: workingDirectory,
+		Variables: variables, RecordOutput: options.RecordOutput, MaxParallel: maxParallel,
+	}, nil
+}
 
+func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial *runstore.Record) (Execution, error) {
+	workflow := prepared.Definition
 	runID := runstore.NewID("workflow")
-	execution := Execution{
-		ID: runID, Name: workflow.Name, Status: "success", MaxParallel: maxParallel,
-		Cwd: workingDirectory, Steps: make([]StepResult, len(workflow.Steps)),
+	startedAt := time.Now().UTC()
+	record := runstore.Record{}
+	liveProgress := initial != nil
+	if initial != nil {
+		record = *initial
+		runID = record.ID
+		startedAt = record.StartedAt
 	}
-	record := runstore.Record{
-		ID: runID, Kind: "workflow", Workflow: workflow.Name, MaxParallel: maxParallel, Cwd: workingDirectory,
-		StartedAt: time.Now().UTC(), Status: "running",
+	execution := Execution{
+		ID: runID, Name: workflow.Name, Status: "success", MaxParallel: prepared.MaxParallel,
+		Cwd: prepared.WorkingDirectory, Steps: make([]StepResult, len(workflow.Steps)),
+	}
+	for index, step := range workflow.Steps {
+		execution.Steps[index] = StepResult{ID: step.ID, Agent: step.Agent, Status: "pending"}
+	}
+	record.ID = runID
+	record.Kind = "workflow"
+	record.Workflow = workflow.Name
+	record.WorkflowFile = prepared.SourcePath
+	record.MaxParallel = prepared.MaxParallel
+	record.Cwd = prepared.WorkingDirectory
+	record.StartedAt = startedAt
+	record.Status = "running"
+	record.Steps = executionStepRecords(execution.Steps, prepared.RecordOutput)
+	if liveProgress {
+		if err := r.Store.Save(record); err != nil {
+			return execution, err
+		}
 	}
 
 	tempDir, err := os.MkdirTemp("", "xcli-workflow-*")
@@ -144,7 +189,7 @@ func (r *Runner) Run(ctx context.Context, sourcePath string, workflow Workflow, 
 	for index, step := range workflow.Steps {
 		dependencies[index] = effectiveDependencies(step)
 	}
-	templateData := templateContext{Vars: variables, Steps: map[string]templateStep{}}
+	templateData := templateContext{Vars: prepared.Variables, Steps: map[string]templateStep{}}
 	statuses := make(map[string]string, len(workflow.Steps))
 	states := make([]stepState, len(workflow.Steps))
 	completed := make(chan stepCompletion, len(workflow.Steps))
@@ -158,8 +203,23 @@ func (r *Runner) Run(ctx context.Context, sourcePath string, workflow Workflow, 
 	fatalIndex := -1
 	stopReason := ""
 	externalDone := ctx.Done()
+	progressErr := error(nil)
+	persistProgress := func() {
+		if !liveProgress || progressErr != nil {
+			return
+		}
+		record.Steps = executionStepRecords(execution.Steps, prepared.RecordOutput)
+		if err := r.Store.Save(record); err != nil {
+			progressErr = err
+			stopping = true
+			stopReason = "workflow state could not be persisted"
+			externalDone = nil
+			cancelWorkflow()
+		}
+	}
 
 	for finished < len(workflow.Steps) {
+		stateChanged := false
 		if !stopping && ctx.Err() != nil {
 			stopping = true
 			externalCanceled = true
@@ -170,7 +230,7 @@ func (r *Runner) Run(ctx context.Context, sourcePath string, workflow Workflow, 
 
 		if !stopping {
 			for index, step := range workflow.Steps {
-				if running >= maxParallel {
+				if running >= prepared.MaxParallel {
 					break
 				}
 				if states[index] != stepPending {
@@ -180,6 +240,7 @@ func (r *Runner) Run(ctx context.Context, sourcePath string, workflow Workflow, 
 				if failedDependency != "" {
 					result := skippedStep(step, fmt.Sprintf("dependency %q did not succeed", failedDependency))
 					execution.Steps[index] = result
+					stateChanged = true
 					states[index] = stepFinished
 					statuses[step.ID] = result.Status
 					finished++
@@ -191,11 +252,14 @@ func (r *Runner) Run(ctx context.Context, sourcePath string, workflow Workflow, 
 
 				states[index] = stepRunning
 				running++
+				execution.Steps[index].Status = "running"
+				execution.Steps[index].StartedAt = time.Now().UTC()
+				stateChanged = true
 				stepContext := copyTemplateContext(templateData)
 				go func(index int, step Step, data templateContext) {
 					result := stepRunner.runStep(
-						workflowContext, workingDirectory, tempDir, step, data,
-						options.RecordOutput, runID,
+						workflowContext, prepared.WorkingDirectory, tempDir, step, data,
+						prepared.RecordOutput, runID,
 					)
 					completed <- stepCompletion{index: index, result: result}
 				}(index, step, stepContext)
@@ -209,10 +273,14 @@ func (r *Runner) Run(ctx context.Context, sourcePath string, workflow Workflow, 
 				}
 				result := skippedStep(step, stopReason)
 				execution.Steps[index] = result
+				stateChanged = true
 				states[index] = stepFinished
 				statuses[step.ID] = result.Status
 				finished++
 			}
+		}
+		if stateChanged {
+			persistProgress()
 		}
 
 		if finished == len(workflow.Steps) {
@@ -233,6 +301,7 @@ func (r *Runner) Run(ctx context.Context, sourcePath string, workflow Workflow, 
 				result.Error = stopReason
 			}
 			execution.Steps[index] = result
+			persistProgress()
 			step := workflow.Steps[index]
 			statuses[step.ID] = result.Status
 			if result.Status == "success" {
@@ -263,18 +332,8 @@ func (r *Runner) Run(ctx context.Context, sourcePath string, workflow Workflow, 
 	record.Status = execution.Status
 	record.ExitCode = execution.ExitCode
 	record.Usage = execution.Usage
-	for _, step := range execution.Steps {
-		outputFile := ""
-		if options.RecordOutput {
-			outputFile = step.OutputFile
-		}
-		record.Steps = append(record.Steps, runstore.StepRecord{
-			ID: step.ID, Agent: step.Agent, Status: step.Status, ExitCode: step.ExitCode,
-			SessionID: step.SessionID, OutputFile: outputFile, StartedAt: step.StartedAt,
-			EndedAt: step.EndedAt, Attempts: step.Attempts, Error: step.Error, Usage: step.Usage,
-		})
-	}
-	if !options.RecordOutput {
+	record.Steps = executionStepRecords(execution.Steps, prepared.RecordOutput)
+	if !prepared.RecordOutput {
 		for index := range execution.Steps {
 			execution.Steps[index].OutputFile = ""
 		}
@@ -282,7 +341,26 @@ func (r *Runner) Run(ctx context.Context, sourcePath string, workflow Workflow, 
 	if err := r.Store.Save(record); err != nil {
 		return execution, err
 	}
+	if progressErr != nil {
+		return execution, progressErr
+	}
 	return execution, nil
+}
+
+func executionStepRecords(steps []StepResult, recordOutput bool) []runstore.StepRecord {
+	records := make([]runstore.StepRecord, 0, len(steps))
+	for _, step := range steps {
+		outputFile := ""
+		if recordOutput {
+			outputFile = step.OutputFile
+		}
+		records = append(records, runstore.StepRecord{
+			ID: step.ID, Agent: step.Agent, Status: step.Status, ExitCode: step.ExitCode,
+			SessionID: step.SessionID, OutputFile: outputFile, StartedAt: step.StartedAt,
+			EndedAt: step.EndedAt, Attempts: step.Attempts, Error: step.Error, Usage: step.Usage,
+		})
+	}
+	return records
 }
 
 func effectiveDependencies(step Step) []string {

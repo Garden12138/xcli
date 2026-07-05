@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Version = "0.3.0-dev"
+var Version = "0.4.0-dev"
 
 type ExitError struct {
 	Code    int

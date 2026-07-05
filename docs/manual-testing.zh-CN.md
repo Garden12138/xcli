@@ -435,15 +435,17 @@ JOB_ID=$(printf '%s\n' "$JOB_STARTED" | awk '{print $3}')
 "$XCLI_BIN" --config "$XCLI_CONFIG" jobs list
 "$XCLI_BIN" --config "$XCLI_CONFIG" jobs show "$JOB_ID"
 "$XCLI_BIN" --config "$XCLI_CONFIG" jobs logs "$JOB_ID" --follow
+"$XCLI_BIN" --config "$XCLI_CONFIG" jobs wait "$JOB_ID" --json
 ```
 
 预期结果：
 
 - 启动命令立即输出 `Started job <id> (pid <pid>)`，不等待两秒任务完成。
-- `jobs list` 固定显示 `ID / AGENT / STATUS / PID / STARTED / ENDED`，不包含前台 run/use/workflow。
+- `jobs list` 固定显示 `ID / KIND / AGENT/WORKFLOW / STATUS / PID / STARTED / ENDED`，不包含前台 run/use/workflow。
 - `jobs show` 返回合法 Job JSON，完成后状态为 `success`、退出码为 `0`。
 - `jobs logs --follow` 先等待并输出后台日志，在任务完成后自动退出；日志文件权限为 `0600`。
 - 对 generic Agent，stderr 与 stdout 都会实时进入日志；任务作为一个普通 run task 计入 `usage`。
+- `jobs wait` 输出最终 Job，并以 Job 的退出码结束。
 
 验证优雅停止、强杀和幂等性：
 
@@ -463,6 +465,21 @@ KILL_ID=$(printf '%s\n' "$KILL_STARTED" | awk '{print $3}')
 预期结果：优雅停止变为 `canceled`、退出码 `130`；重复停止不再发送信号且仍成功；强杀变为 `killed`、退出码 `137`。子进程组内不应残留 `sleep` 进程。
 
 内置 Agent 的后台日志只包含实时 stderr 和完成后的归一化最终文本，不应出现 JSONL 事件。只有将 `recording.output` 改为 `true` 后，原始结构化 stdout 才会另外保存为 `output.log`。后台日志可能包含源码或敏感诊断，测试结束后应随隔离目录一同删除。
+
+验证等待超时与显式清理：
+
+```bash
+WAIT_STARTED=$("$XCLI_BIN" --config "$XCLI_CONFIG" run --detach \
+  fake "wait timeout" -- --sleep 60)
+WAIT_ID=$(printf '%s\n' "$WAIT_STARTED" | awk '{print $3}')
+"$XCLI_BIN" --config "$XCLI_CONFIG" jobs wait "$WAIT_ID" --timeout 100ms --json
+echo "exit_code=$?"
+"$XCLI_BIN" --config "$XCLI_CONFIG" jobs stop "$WAIT_ID" --force
+"$XCLI_BIN" --config "$XCLI_CONFIG" jobs delete "$WAIT_ID" --yes --json
+"$XCLI_BIN" --config "$XCLI_CONFIG" jobs prune --older-than 1h --dry-run --json
+```
+
+等待超时应返回 124，但 Job 仍保持运行，随后可显式停止并删除。`prune --dry-run` 只返回候选项；省略 `--dry-run` 的非交互清理必须传 `--yes`。运行中的 Job、前台记录和没有 `ended_at` 的旧记录都不会被批量删除。
 
 ### 8.4 ACP stdio 透传
 
@@ -748,6 +765,25 @@ echo "exit_code=$?"
 
 预期结果：两个运行中的步骤均被取消，`later` 被跳过，工作流返回退出码 `130`，不会遗留休眠进程。
 
+### 10.7 后台工作流与输入隐私
+
+使用前面的依赖工作流启动后台 Job，并通过变量传入只用于测试的标记值：
+
+```bash
+WORKFLOW_JOB=$("$XCLI_BIN" --config "$XCLI_CONFIG" workflow run \
+  "$XCLI_TEST_ROOT/success-workflow.yaml" \
+  --detach --json --var message=WORKFLOW_PRIVATE_MARKER)
+printf '%s\n' "$WORKFLOW_JOB"
+WORKFLOW_JOB_ID=$(printf '%s\n' "$WORKFLOW_JOB" | sed -n 's/.*"id": "\([^"]*\)".*/\1/p')
+
+"$XCLI_BIN" --config "$XCLI_CONFIG" jobs show "$WORKFLOW_JOB_ID"
+"$XCLI_BIN" --config "$XCLI_CONFIG" jobs logs "$WORKFLOW_JOB_ID" --follow
+"$XCLI_BIN" --config "$XCLI_CONFIG" jobs wait "$WORKFLOW_JOB_ID" --json
+grep -R "WORKFLOW_PRIVATE_MARKER" "$XDG_DATA_HOME/xcli/runs" && echo LEAKED || true
+```
+
+启动应立即返回；`jobs show` 在执行期间展示 `pending/running`，完成后展示每步终态、实际并行度与 usage。默认日志只包含进度、stderr 和最终摘要。最后的 grep 不应找到标记值，证明变量和 prompt 没有写入运行元数据；也可用 `ps` 确认 worker argv 只有配置路径、内部命令和 Job ID。
+
 ## 11. 运行记录与隐私
 
 ```bash
@@ -868,11 +904,14 @@ printf '# Manual test\n' > "$XCLI_TEST_ROOT/real-work/README.md"
 "$XCLI_BIN" --config "$XCLI_CONFIG" jobs list
 "$XCLI_BIN" --config "$XCLI_CONFIG" jobs logs <run-id> --follow
 "$XCLI_BIN" --config "$XCLI_CONFIG" jobs show <run-id>
+"$XCLI_BIN" --config "$XCLI_CONFIG" jobs wait <run-id>
 ```
 
 确认启动命令立即返回，日志中没有 Codex JSONL，完成后的 Job 包含 session ID 和 usage。再启动一个耗时任务并执行 `jobs stop <run-id>`，确认整个原生 Agent 进程组退出且记录为 `canceled`。
 
 关闭启动终端后任务仍应继续；机器重启后不恢复任务，下一次 `jobs list/show` 会将遗留的非终态记录标为 `orphaned`。不要对生产中的重要任务测试 `--force`。
+
+还可将上一节的只读双 Agent workflow 加上 `--detach --json`，确认 workflow Job 能脱离终端完成并持续记录步骤状态。输入通过匿名管道发送，prompt 和 `--var` 值不应出现在 worker 进程参数或 Job JSON 中。
 
 ### 12.5 真实 ACP 客户端
 
@@ -1046,7 +1085,8 @@ YAML
 - [ ] 默认 Agent、位置参数和 `--agent` 优先级正确。
 - [ ] `use` 保留终端 stdio，内置 Agent 的普通 `run` 只输出归一化最终文本。
 - [ ] `resume` 能恢复普通记录、workflow 步骤和显式 Agent 的原生 session ID，且交互/非交互记录语义正确。
-- [ ] `run --detach` 能跨终端运行，`jobs` 可查看归一化日志并安全执行优雅停止或强杀。
+- [ ] `run/workflow --detach` 能跨终端运行，`jobs` 可查看步骤与日志、等待退出码，并安全停止任务。
+- [ ] `jobs delete/prune` 只显式清理终态后台 Job，dry-run 与非交互确认保护有效。
 - [ ] `acp` 保持协议 stdio 字节不变，复用 cwd/环境配置且不创建运行记录。
 - [ ] `mcp serve` 使用最小环境并保持协议 stdio；`mcp plan/sync` 能检测冲突且重复执行为 noop。
 - [ ] 项目级 MCP 文件不含机器绝对路径，保留 JSONC/TOML 注释，跨项目 ownership 相互隔离。

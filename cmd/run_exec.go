@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"context"
-	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -12,15 +12,18 @@ import (
 	"time"
 
 	"github.com/Garden12138/xcli/internal/agent"
+	"github.com/Garden12138/xcli/internal/config"
 	"github.com/Garden12138/xcli/internal/jobs"
 	"github.com/Garden12138/xcli/internal/runstore"
 	xruntime "github.com/Garden12138/xcli/internal/runtime"
+	"github.com/Garden12138/xcli/internal/workflow"
 	"github.com/spf13/cobra"
 )
 
 const (
-	jobLockFD = 3
-	jobGateFD = 4
+	jobLockFD    = 3
+	jobGateFD    = 4
+	jobPayloadFD = 5
 )
 
 var executablePath = os.Executable
@@ -87,9 +90,36 @@ type detachedRunOptions struct {
 	Record       runstore.Record
 }
 
+type detachedRunPayload struct {
+	Agent        string   `json:"agent"`
+	Prompt       string   `json:"prompt"`
+	NativeArgs   []string `json:"native_args,omitempty"`
+	Cwd          string   `json:"cwd"`
+	Structured   bool     `json:"structured,omitempty"`
+	RecordOutput bool     `json:"record_output,omitempty"`
+}
+
+type detachedJobPayload struct {
+	Kind     string                `json:"kind"`
+	Run      *detachedRunPayload   `json:"run,omitempty"`
+	Workflow *workflow.PreparedRun `json:"workflow,omitempty"`
+}
+
 func startDetachedRun(store *runstore.Store, options detachedRunOptions) (jobs.View, error) {
+	payload := detachedJobPayload{Kind: "run", Run: &detachedRunPayload{
+		Agent: options.Agent, Prompt: options.Prompt, NativeArgs: options.NativeArgs,
+		Cwd: options.Cwd, Structured: options.Structured, RecordOutput: options.RecordOutput,
+	}}
+	return startDetachedJob(store, options.ConfigPath, options.Record, payload)
+}
+
+func startDetachedWorkflow(store *runstore.Store, configPath string, record runstore.Record, prepared workflow.PreparedRun) (jobs.View, error) {
+	return startDetachedJob(store, configPath, record, detachedJobPayload{Kind: "workflow", Workflow: &prepared})
+}
+
+func startDetachedJob(store *runstore.Store, configPath string, record runstore.Record, payload detachedJobPayload) (jobs.View, error) {
 	manager := jobs.Manager{Store: store}
-	files, err := manager.CreateFiles(options.Record.ID)
+	files, err := manager.CreateFiles(record.ID)
 	if err != nil {
 		return jobs.View{}, err
 	}
@@ -102,30 +132,21 @@ func startDetachedRun(store *runstore.Store, options detachedRunOptions) (jobs.V
 	}
 	defer gateRead.Close()
 	defer gateWrite.Close()
+	payloadRead, payloadWrite, err := os.Pipe()
+	if err != nil {
+		return jobs.View{}, fmt.Errorf("create job payload pipe: %w", err)
+	}
+	defer payloadRead.Close()
+	defer payloadWrite.Close()
 
 	executable, err := executablePath()
 	if err != nil {
 		return jobs.View{}, fmt.Errorf("resolve xcli executable: %w", err)
 	}
-	prompt := base64.RawStdEncoding.EncodeToString([]byte(options.Prompt))
-	args := []string{
-		"--config", options.ConfigPath, "__run-job",
-		"--cwd", options.Cwd,
-	}
-	if options.Structured {
-		args = append(args, "--structured")
-	}
-	if options.RecordOutput {
-		args = append(args, "--record-output")
-	}
-	args = append(args, options.Record.ID, options.Agent, prompt)
-	if len(options.NativeArgs) > 0 {
-		args = append(args, "--")
-		args = append(args, options.NativeArgs...)
-	}
+	args := []string{"--config", configPath, "__job-worker", record.ID}
 	worker := detachedCommand(executable, args...)
 	jobs.ConfigureDetached(worker)
-	worker.ExtraFiles = []*os.File{files.Lock, gateRead}
+	worker.ExtraFiles = []*os.File{files.Lock, gateRead, payloadRead}
 	devNull, err := os.OpenFile(os.DevNull, os.O_RDWR, 0)
 	if err != nil {
 		return jobs.View{}, err
@@ -135,7 +156,6 @@ func startDetachedRun(store *runstore.Store, options detachedRunOptions) (jobs.V
 	worker.Stdout = devNull
 	worker.Stderr = devNull
 
-	record := options.Record
 	record.Background = true
 	record.LogFile = files.LogPath
 	record.Status = "running"
@@ -147,63 +167,75 @@ func startDetachedRun(store *runstore.Store, options detachedRunOptions) (jobs.V
 		return jobs.View{}, fmt.Errorf("start background worker: %w", err)
 	}
 	record.PID = worker.Process.Pid
+	_ = gateRead.Close()
+	_ = payloadRead.Close()
 	if err := store.Save(record); err != nil {
 		_ = jobs.Terminate(worker.Process.Pid, true)
 		return jobs.View{}, err
 	}
+	if err := json.NewEncoder(payloadWrite).Encode(payload); err != nil {
+		_ = jobs.Terminate(worker.Process.Pid, true)
+		markDetachedStartFailed(store, &record)
+		return jobs.View{}, fmt.Errorf("send background job payload: %w", err)
+	}
+	if err := payloadWrite.Close(); err != nil {
+		_ = jobs.Terminate(worker.Process.Pid, true)
+		markDetachedStartFailed(store, &record)
+		return jobs.View{}, fmt.Errorf("close background job payload: %w", err)
+	}
 	if err := gateWrite.Close(); err != nil {
 		_ = jobs.Terminate(worker.Process.Pid, true)
+		markDetachedStartFailed(store, &record)
 		return jobs.View{}, fmt.Errorf("release background worker: %w", err)
 	}
 	_ = worker.Process.Release()
 	return jobs.ToView(record), nil
 }
 
+func markDetachedStartFailed(store *runstore.Store, record *runstore.Record) {
+	updated, err := (jobs.Manager{Store: store}).MarkFailed(*record, "background worker could not be started")
+	if err == nil {
+		*record = updated
+	}
+}
+
 func (a *app) newJobWorkerCommand() *cobra.Command {
-	var cwd string
-	var structured bool
-	var recordOutput bool
 	command := &cobra.Command{
-		Use:    "__run-job <id> <agent> <prompt-base64> [-- native-args...]",
+		Use:    "__job-worker <id>",
 		Hidden: true,
-		Args: func(command *cobra.Command, args []string) error {
-			before, _ := splitNativeArgs(command, args)
-			if len(before) != 3 {
-				return errors.New("invalid background worker arguments")
-			}
-			return nil
-		},
+		Args:   cobra.ExactArgs(1),
 		RunE: func(command *cobra.Command, args []string) error {
-			before, nativeArgs := splitNativeArgs(command, args)
-			promptBytes, err := base64.RawStdEncoding.DecodeString(before[2])
-			if err != nil {
-				return fmt.Errorf("decode job prompt: %w", err)
-			}
-			return a.runJobWorker(command, before[0], before[1], string(promptBytes), cwd, structured, recordOutput, nativeArgs)
+			return a.runJobWorker(command, args[0])
 		},
 	}
-	command.Flags().StringVar(&cwd, "cwd", "", "worker cwd")
-	command.Flags().BoolVar(&structured, "structured", false, "capture structured output")
-	command.Flags().BoolVar(&recordOutput, "record-output", false, "persist raw output")
 	return command
 }
 
-func (a *app) runJobWorker(
-	command *cobra.Command,
-	id string,
-	name string,
-	prompt string,
-	cwd string,
-	structured bool,
-	recordOutput bool,
-	nativeArgs []string,
-) error {
+func (a *app) runJobWorker(command *cobra.Command, id string) error {
+	ctx, cancel := signalContext(command.Context())
+	defer cancel()
 	lockFile := os.NewFile(jobLockFD, "job-lock")
 	gateFile := os.NewFile(jobGateFD, "job-gate")
-	if lockFile == nil || gateFile == nil {
+	payloadFile := os.NewFile(jobPayloadFD, "job-payload")
+	if lockFile == nil || gateFile == nil || payloadFile == nil {
 		return errors.New("background worker file descriptors are unavailable")
 	}
 	defer lockFile.Close()
+	var payload detachedJobPayload
+	decoder := json.NewDecoder(payloadFile)
+	if err := decoder.Decode(&payload); err != nil {
+		payloadFile.Close()
+		return fmt.Errorf("decode background job payload: %w", err)
+	}
+	var extra interface{}
+	if err := decoder.Decode(&extra); err != io.EOF {
+		payloadFile.Close()
+		if err == nil {
+			return errors.New("decode background job payload: multiple JSON values")
+		}
+		return fmt.Errorf("decode background job payload: %w", err)
+	}
+	payloadFile.Close()
 	if _, err := io.Copy(io.Discard, gateFile); err != nil {
 		gateFile.Close()
 		return fmt.Errorf("wait for job startup gate: %w", err)
@@ -231,10 +263,10 @@ func (a *app) runJobWorker(
 	logWriter := &synchronizedWriter{writer: logFile}
 	fail := func(runErr error) error {
 		fmt.Fprintln(logWriter, "Error:", runErr)
-		record.Status = "failed"
-		record.ExitCode = 1
-		record.EndedAt = time.Now().UTC()
-		if saveErr := store.Save(record); saveErr != nil {
+		if latest, loadErr := store.Load(id); loadErr == nil {
+			record = latest
+		}
+		if _, saveErr := manager.MarkFailed(record, runErr.Error()); saveErr != nil {
 			return saveErr
 		}
 		return runErr
@@ -244,11 +276,51 @@ func (a *app) runJobWorker(
 	if err != nil {
 		return fail(err)
 	}
-	definition, err := registry.Get(name)
+
+	switch payload.Kind {
+	case "run":
+		if payload.Run == nil {
+			return fail(errors.New("background run payload is missing"))
+		}
+		return a.runDetachedRunWorker(ctx, cfg, registry, store, &record, logWriter, *payload.Run, fail)
+	case "workflow":
+		if payload.Workflow == nil {
+			return fail(errors.New("background workflow payload is missing"))
+		}
+		runner := workflow.Runner{
+			Config: cfg, Registry: registry, Store: store, Progress: logWriter, Stderr: logWriter,
+		}
+		execution, runErr := runner.RunPrepared(ctx, *payload.Workflow, &record)
+		if runErr != nil {
+			return fail(runErr)
+		}
+		if err := writeWorkflowExecution(logWriter, execution); err != nil {
+			return fail(err)
+		}
+		if execution.ExitCode != 0 {
+			return &ExitError{Code: execution.ExitCode}
+		}
+		return nil
+	default:
+		return fail(fmt.Errorf("unsupported background job kind %q", payload.Kind))
+	}
+}
+
+func (a *app) runDetachedRunWorker(
+	ctx context.Context,
+	cfg config.Config,
+	registry *agent.Registry,
+	store *runstore.Store,
+	record *runstore.Record,
+	logWriter io.Writer,
+	payload detachedRunPayload,
+	fail func(error) error,
+) error {
+	definition, err := registry.Get(payload.Agent)
 	if err != nil {
 		return fail(err)
 	}
-	spec, err := definition.Run(prompt, structured, nativeArgs)
+	spec, err := definition.Run(payload.Prompt, payload.Structured, payload.NativeArgs)
 	if err != nil {
 		return fail(err)
 	}
@@ -257,15 +329,13 @@ func (a *app) runJobWorker(
 		return fail(err)
 	}
 
-	ctx, cancel := signalContext(command.Context())
-	defer cancel()
 	var stdout io.Writer = logWriter
-	if structured {
+	if payload.Structured {
 		stdout = nil
 	}
 	outcome, err := executeNonInteractive(
-		ctx, definition, name, spec, cwd, environment, structured,
-		stdout, logWriter, structured || recordOutput, false,
+		ctx, definition, payload.Agent, spec, payload.Cwd, environment, payload.Structured,
+		stdout, logWriter, payload.Structured || payload.RecordOutput, false,
 	)
 	record.EndedAt = time.Now().UTC()
 	if err != nil {
@@ -277,7 +347,7 @@ func (a *app) runJobWorker(
 	}
 	record.ExitCode = outcome.Process.ExitCode
 	record.Status = processStatus(outcome.Process)
-	if structured {
+	if payload.Structured {
 		record.SessionID = outcome.Result.SessionID
 		record.Usage = outcome.Result.Usage
 		if outcome.Result.Output != "" {
@@ -286,14 +356,14 @@ func (a *app) runJobWorker(
 			}
 		}
 	}
-	if recordOutput {
+	if payload.RecordOutput {
 		path, err := store.SaveOutput(record.ID, "output.log", outcome.Process.Stdout)
 		if err != nil {
 			return fail(err)
 		}
 		record.OutputFile = path
 	}
-	if err := store.Save(record); err != nil {
+	if err := store.Save(*record); err != nil {
 		return err
 	}
 	if outcome.Process.ExitCode != 0 {

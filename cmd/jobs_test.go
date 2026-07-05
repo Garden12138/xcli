@@ -51,6 +51,7 @@ func TestBackgroundWorkerHelper(t *testing.T) {
 
 func TestDetachedRunLifecycleLogsAndUsage(t *testing.T) {
 	installDetachedTestHelper(t)
+	capturedArgs := captureDetachedArguments(t)
 	directory := t.TempDir()
 	work := filepath.Join(directory, "work")
 	if err := os.Mkdir(work, 0o700); err != nil {
@@ -87,6 +88,9 @@ func TestDetachedRunLifecycleLogsAndUsage(t *testing.T) {
 	})
 	if err := root.Execute(); err != nil {
 		t.Fatalf("detach: %v (stderr: %s)", err, stderr.String())
+	}
+	if strings.Contains(strings.Join(*capturedArgs, " "), "hello world") {
+		t.Fatalf("prompt leaked into worker argv: %#v", *capturedArgs)
 	}
 	var launched jobs.View
 	if err := json.Unmarshal(stdout.Bytes(), &launched); err != nil {
@@ -154,6 +158,314 @@ func TestDetachedRunLifecycleLogsAndUsage(t *testing.T) {
 	}
 	if report.Totals.Tasks != 1 || report.Totals.TrackedTasks != 0 {
 		t.Fatalf("unexpected usage report: %#v", report)
+	}
+}
+
+func TestDetachedWorkflowLifecycleStateAndPrivacy(t *testing.T) {
+	installDetachedTestHelper(t)
+	capturedArgs := captureDetachedArguments(t)
+	directory := t.TempDir()
+	script := filepath.Join(directory, "workflow-agent")
+	scriptData := "#!/bin/sh\n" +
+		"printf 'step started\\n' >&2\n" +
+		"sleep 0.25\n" +
+		"printf 'step output\\n'\n"
+	if err := os.WriteFile(script, []byte(scriptData), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(directory, "config.yaml")
+	cfg := config.Defaults()
+	cfg.Agents["worker"] = config.AgentConfig{
+		Adapter: "generic", Command: script, RunArgs: []string{"{{ prompt }}"}, Output: "text",
+	}
+	if err := config.Save(configPath, cfg); err != nil {
+		t.Fatal(err)
+	}
+	workflowPath := filepath.Join(directory, "workflow.yaml")
+	workflowData := "version: 1\n" +
+		"name: detached-test\n" +
+		"max_parallel: 2\n" +
+		"vars:\n  secret: default-value\n" +
+		"steps:\n" +
+		"  - id: first\n    agent: worker\n    prompt: 'first {{ vars.secret }}'\n" +
+		"  - id: second\n    agent: worker\n    prompt: 'second {{ vars.secret }}'\n"
+	if err := os.WriteFile(workflowPath, []byte(workflowData), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	setCommandEnvironment(t, "XDG_DATA_HOME", filepath.Join(directory, "data"))
+
+	const secret = "workflow-super-secret"
+	root := newRootCommand()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	root.SetOut(&stdout)
+	root.SetErr(&stderr)
+	root.SetArgs([]string{
+		"--config", configPath, "workflow", "run", workflowPath,
+		"--detach", "--json", "--var", "secret=" + secret,
+	})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("detach workflow: %v (stderr: %s)", err, stderr.String())
+	}
+	var launched jobs.View
+	if err := json.Unmarshal(stdout.Bytes(), &launched); err != nil {
+		t.Fatalf("decode workflow launch %q: %v", stdout.String(), err)
+	}
+	if launched.Kind != "workflow" || launched.Workflow != "detached-test" || launched.MaxParallel != 2 || len(launched.Steps) != 2 {
+		t.Fatalf("unexpected workflow launch: %#v", launched)
+	}
+	if strings.Contains(strings.Join(*capturedArgs, " "), secret) || strings.Contains(strings.Join(*capturedArgs, " "), "first {{ vars.secret }}") {
+		t.Fatalf("workflow input leaked into worker argv: %#v", *capturedArgs)
+	}
+
+	store, err := newStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	waitForStepStatus(t, store, launched.ID, "running")
+	recordData, err := os.ReadFile(filepath.Join(store.Root(), launched.ID+".json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(recordData), secret) || strings.Contains(string(recordData), "first {{ vars.secret }}") {
+		t.Fatalf("workflow input leaked into run record: %s", recordData)
+	}
+
+	root = newRootCommand()
+	stdout.Reset()
+	stderr.Reset()
+	root.SetOut(&stdout)
+	root.SetErr(&stderr)
+	root.SetArgs([]string{"jobs", "wait", launched.ID, "--json"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("wait workflow: %v (stderr: %s)", err, stderr.String())
+	}
+	var finished jobs.View
+	if err := json.Unmarshal(stdout.Bytes(), &finished); err != nil {
+		t.Fatal(err)
+	}
+	if finished.Status != "success" || finished.ExitCode == nil || *finished.ExitCode != 0 || len(finished.Steps) != 2 {
+		t.Fatalf("unexpected finished workflow: %#v", finished)
+	}
+	for _, step := range finished.Steps {
+		if step.Status != "success" || step.OutputFile != "" {
+			t.Fatalf("unexpected finished step: %#v", step)
+		}
+	}
+	logData, err := os.ReadFile(finished.LogFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(logData), "Workflow detached-test: success") || strings.Contains(string(logData), secret) {
+		t.Fatalf("unexpected workflow log: %q", logData)
+	}
+}
+
+func TestJobsWaitTimeoutAndFailedExitCode(t *testing.T) {
+	installDetachedTestHelper(t)
+	directory := t.TempDir()
+	script := filepath.Join(directory, "slow-agent")
+	if err := os.WriteFile(script, []byte("#!/bin/sh\ntrap 'exit 130' TERM INT\nwhile :; do sleep 1; done\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(directory, "config.yaml")
+	cfg := config.Defaults()
+	cfg.DefaultAgent = "slow"
+	cfg.Agents["slow"] = config.AgentConfig{Adapter: "generic", Command: script, RunArgs: []string{"{{ prompt }}"}}
+	if err := config.Save(configPath, cfg); err != nil {
+		t.Fatal(err)
+	}
+	setCommandEnvironment(t, "XDG_DATA_HOME", filepath.Join(directory, "data"))
+	launched := launchTextJob(t, configPath, "wait-test")
+
+	root := newRootCommand()
+	var stdout bytes.Buffer
+	root.SetOut(&stdout)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"jobs", "wait", launched.ID, "--timeout", "30ms", "--json"})
+	err := root.Execute()
+	var exitErr *ExitError
+	if !errors.As(err, &exitErr) || exitErr.Code != 124 {
+		t.Fatalf("wait timeout error = %v", err)
+	}
+	var waiting jobs.View
+	if err := json.Unmarshal(stdout.Bytes(), &waiting); err != nil || waiting.Status != "running" {
+		t.Fatalf("wait timeout view = %#v, %v", waiting, err)
+	}
+
+	root = newRootCommand()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"jobs", "stop", launched.ID, "--force"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	store, err := newStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	endedAt := time.Now().UTC()
+	if err := store.Save(runstore.Record{
+		ID: "run-failed-wait", Kind: "run", Agent: "slow", Background: true,
+		Cwd: directory, StartedAt: endedAt.Add(-time.Second), EndedAt: endedAt,
+		Status: "failed", ExitCode: 7,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	root = newRootCommand()
+	stdout.Reset()
+	root.SetOut(&stdout)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"jobs", "wait", "run-failed-wait"})
+	err = root.Execute()
+	if !errors.As(err, &exitErr) || exitErr.Code != 7 || !strings.Contains(stdout.String(), "failed") {
+		t.Fatalf("failed wait = %q, %v", stdout.String(), err)
+	}
+}
+
+func TestDetachedWorkflowStopsRunningStepsAndSkipsPending(t *testing.T) {
+	installDetachedTestHelper(t)
+	directory := t.TempDir()
+	script := filepath.Join(directory, "slow-workflow-agent")
+	scriptData := "#!/bin/sh\n" +
+		"trap 'exit 130' TERM INT\n" +
+		"printf 'workflow step ready\\n' >&2\n" +
+		"while :; do sleep 1; done\n"
+	if err := os.WriteFile(script, []byte(scriptData), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(directory, "config.yaml")
+	cfg := config.Defaults()
+	cfg.Agents["slow"] = config.AgentConfig{Adapter: "generic", Command: script, RunArgs: []string{"{{ prompt }}"}}
+	if err := config.Save(configPath, cfg); err != nil {
+		t.Fatal(err)
+	}
+	workflowPath := filepath.Join(directory, "slow.yaml")
+	workflowData := "version: 1\nname: slow\nsteps:\n" +
+		"  - id: running\n    agent: slow\n    prompt: first\n" +
+		"  - id: pending\n    agent: slow\n    prompt: second\n"
+	if err := os.WriteFile(workflowPath, []byte(workflowData), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	setCommandEnvironment(t, "XDG_DATA_HOME", filepath.Join(directory, "data"))
+
+	root := newRootCommand()
+	var stdout bytes.Buffer
+	root.SetOut(&stdout)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"--config", configPath, "workflow", "run", workflowPath, "--detach", "--json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	var launched jobs.View
+	if err := json.Unmarshal(stdout.Bytes(), &launched); err != nil {
+		t.Fatal(err)
+	}
+	waitForLog(t, launched.LogFile, "workflow step ready")
+
+	root = newRootCommand()
+	stdout.Reset()
+	root.SetOut(&stdout)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"jobs", "stop", launched.ID, "--timeout", "3s", "--json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	var stopped jobs.View
+	if err := json.Unmarshal(stdout.Bytes(), &stopped); err != nil {
+		t.Fatal(err)
+	}
+	if stopped.Status != "canceled" || len(stopped.Steps) != 2 || stopped.Steps[0].Status != "canceled" || stopped.Steps[1].Status != "skipped" {
+		t.Fatalf("unexpected stopped workflow: %#v", stopped)
+	}
+}
+
+func TestJobsDeleteAndPruneSafety(t *testing.T) {
+	directory := t.TempDir()
+	setCommandEnvironment(t, "XDG_DATA_HOME", filepath.Join(directory, "data"))
+	store, err := newStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	manager := jobs.Manager{Store: store}
+	now := time.Now().UTC()
+	createFinishedJob := func(id string, endedAt time.Time) {
+		t.Helper()
+		files, err := manager.CreateFiles(id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		files.Log.Close()
+		files.Lock.Close()
+		if err := store.Save(runstore.Record{
+			ID: id, Kind: "run", Agent: "fake", Background: true, LogFile: files.LogPath,
+			Cwd: directory, StartedAt: endedAt.Add(-time.Minute), EndedAt: endedAt,
+			Status: "success",
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	createFinishedJob("run-delete", now.Add(-48*time.Hour))
+	createFinishedJob("run-old", now.Add(-24*time.Hour))
+	createFinishedJob("run-new", now.Add(-time.Hour))
+
+	root := newRootCommand()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetIn(&bytes.Buffer{})
+	root.SetArgs([]string{"jobs", "delete", "run-delete"})
+	if err := root.Execute(); err == nil || !strings.Contains(err.Error(), "without a terminal") {
+		t.Fatalf("delete without confirmation = %v", err)
+	}
+	root = newRootCommand()
+	var stdout bytes.Buffer
+	root.SetOut(&stdout)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"jobs", "delete", "run-delete", "--yes", "--json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Load("run-delete"); !os.IsNotExist(err) {
+		t.Fatalf("deleted record still exists: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(store.Root(), "run-delete")); !os.IsNotExist(err) {
+		t.Fatalf("deleted artifacts still exist: %v", err)
+	}
+
+	root = newRootCommand()
+	stdout.Reset()
+	root.SetOut(&stdout)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"jobs", "prune", "--older-than", "12h", "--dry-run", "--json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	var preview jobCleanupResult
+	if err := json.Unmarshal(stdout.Bytes(), &preview); err != nil || !preview.DryRun || len(preview.Candidates) != 1 || preview.Candidates[0].ID != "run-old" {
+		t.Fatalf("unexpected prune preview: %#v, %v", preview, err)
+	}
+	if _, err := store.Load("run-old"); err != nil {
+		t.Fatalf("dry run deleted old job: %v", err)
+	}
+
+	root = newRootCommand()
+	stdout.Reset()
+	root.SetOut(&stdout)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"jobs", "prune", "--older-than", "12h", "--yes", "--json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	var applied jobCleanupResult
+	if err := json.Unmarshal(stdout.Bytes(), &applied); err != nil || len(applied.Deleted) != 1 || applied.Deleted[0] != "run-old" {
+		t.Fatalf("unexpected prune result: %#v, %v", applied, err)
+	}
+	if _, err := store.Load("run-old"); !os.IsNotExist(err) {
+		t.Fatalf("pruned record still exists: %v", err)
+	}
+	if _, err := store.Load("run-new"); err != nil {
+		t.Fatalf("new record was pruned: %v", err)
 	}
 }
 
@@ -400,6 +712,18 @@ func installDetachedTestHelper(t *testing.T) {
 	t.Cleanup(func() { detachedCommand = previous })
 }
 
+func captureDetachedArguments(t *testing.T) *[]string {
+	t.Helper()
+	previous := detachedCommand
+	captured := []string{}
+	detachedCommand = func(name string, args ...string) *exec.Cmd {
+		captured = append([]string(nil), args...)
+		return previous(name, args...)
+	}
+	t.Cleanup(func() { detachedCommand = previous })
+	return &captured
+}
+
 func waitForJob(t *testing.T, store *runstore.Store, id, status string) runstore.Record {
 	t.Helper()
 	deadline := time.Now().Add(5 * time.Second)
@@ -427,6 +751,24 @@ func waitForLog(t *testing.T, path, needle string) {
 	}
 	data, err := os.ReadFile(path)
 	t.Fatalf("log did not contain %q: %q, %v", needle, string(data), err)
+}
+
+func waitForStepStatus(t *testing.T, store *runstore.Store, id, status string) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		record, err := store.Load(id)
+		if err == nil {
+			for _, step := range record.Steps {
+				if step.Status == status {
+					return
+				}
+			}
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	record, err := store.Load(id)
+	t.Fatalf("job %s had no %s step: record=%#v err=%v", id, status, record, err)
 }
 
 func launchTextJob(t *testing.T, configPath, prompt string) jobs.View {
