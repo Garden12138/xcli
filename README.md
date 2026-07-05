@@ -77,6 +77,7 @@ xcli acp codex
 # Preview and synchronize declared MCP servers
 xcli mcp plan
 xcli mcp sync
+xcli mcp plan --scope project --project .
 
 # Run one task; agent-specific arguments follow --
 xcli run codex "Review the current changes"
@@ -154,7 +155,7 @@ xcli does not parse, capture, or persist ACP messages. One connection may contai
 
 ### MCP configuration synchronization
 
-Declare a user-level set of MCP servers once and synchronize it to installed Claude, Codex, Gemini, and OpenCode clients:
+Declare MCP servers once and synchronize them to installed Claude, Codex, Gemini, and OpenCode clients at user or project scope:
 
 ```yaml
 mcp:
@@ -176,7 +177,7 @@ mcp:
 
 `targets` defaults to all four built-in adapters. Relative `cwd` values resolve from the xcli configuration directory. `env_vars` names are copied only when `xcli mcp serve` starts the local server and must exist at that time; use them instead of putting secrets in `env`.
 
-For stdio servers, native clients launch the stable xcli executable, which then applies the configured command, working directory, and minimal environment. HTTP URLs are written directly and each native client owns its OAuth login. The first release does not synchronize SSE, static authentication headers, project configuration, tool policies, or vendor-specific OAuth fields.
+For stdio servers, native clients launch xcli, which then applies the configured command, working directory, and minimal environment. HTTP URLs are written directly and each native client owns its OAuth login. The first release does not synchronize SSE, static authentication headers, tool policies, or vendor-specific OAuth fields.
 
 ```bash
 xcli mcp plan
@@ -185,9 +186,22 @@ xcli mcp sync
 xcli mcp sync --yes
 ```
 
-`sync` always shows the sorted add/update/remove plan before asking for confirmation; automation must pass `--yes`. xcli tracks only entries it owns in `$XDG_DATA_HOME/xcli/mcp-sync.json`. Same-name native entries, ownership from another xcli config, and external edits are conflicts; inspect them before using `--force`. Removing a server or target from xcli schedules removal only for an unchanged managed entry.
+User scope is the default and keeps the existing machine-local behavior. Its stdio launcher and source configuration paths are absolute. If xcli was built under a temporary directory, pass a stable installed path with `--launcher`; moving either path requires another sync. User-level OpenCode JSONC edits preserve comments and unrelated settings, create an `.xcli.bak` backup, and are written atomically.
 
-The stdio launcher and source configuration paths are absolute. If xcli was built under a temporary directory, pass a stable installed path with `--launcher`; moving either path requires another sync. OpenCode JSONC edits preserve comments and unrelated settings, create an `.xcli.bak` backup, and are written atomically.
+Project scope writes portable shared configuration and requires the xcli source configuration to live inside the selected project:
+
+```bash
+xcli --config .xcli/config.yaml mcp plan --scope project --project .
+xcli --config .xcli/config.yaml mcp sync --scope project --project . --yes
+```
+
+The project launcher defaults to the literal PATH command `xcli`. `--launcher` may select another PATH command name, but absolute paths and path separators are rejected. Project stdio entries store only that command name, `mcp serve --project-config <relative-path> <server>`, and environment variable names—never the current machine's launcher/config paths or variable values. Every project member must install the launcher in PATH and keep the source configuration at the same relative location.
+
+Project files are `.mcp.json` (Claude), `.codex/config.toml` (Codex), `.gemini/settings.json` (Gemini), and `opencode.json` (OpenCode). JSONC/TOML comments and unrelated settings are preserved; new files use `0644`, existing modes are retained, and atomic writes leave no backup file in the repository. Codex loads project configuration only for trusted projects; Claude project approval and native OAuth flows remain client responsibilities.
+
+See [`examples/project-mcp.yaml`](examples/project-mcp.yaml) for a shareable source configuration.
+
+`sync` always shows the sorted add/update/remove plan before asking for confirmation; automation must pass `--yes`. xcli tracks only entries it owns in the scope/project namespaces of `$XDG_DATA_HOME/xcli/mcp-sync.json`; version 1 user ownership is migrated automatically. Same-name native entries, ownership from another xcli source/scope/project, and external edits are conflicts; inspect them before using `--force`. Removing a server or target from xcli schedules removal only for an unchanged managed entry.
 
 ### Prompt routing
 
@@ -332,4 +346,4 @@ Codex and Gemini report tokens but not a dollar estimate. Claude and OpenCode ma
 - Unknown YAML fields, invalid templates, missing networks, and forward workflow dependencies fail validation.
 - xcli does not add telemetry or automatically trust repository configuration.
 
-CAP, project-level or bidirectional MCP synchronization, daemons, background workflows and interactive sessions, job restart/attach, Windows ConPTY, and a web UI are intentionally deferred beyond v0.2.
+CAP, bidirectional MCP import/merge, automatic project discovery, vendor-specific advanced MCP fields, daemons, background workflows and interactive sessions, job restart/attach, Windows ConPTY, and a web UI are intentionally deferred beyond v0.2.

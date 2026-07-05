@@ -622,6 +622,182 @@ esac
 	}
 }
 
+func TestProjectMCPPlanSyncWritesPortableCodexConfiguration(t *testing.T) {
+	directory := t.TempDir()
+	project := filepath.Join(directory, "project")
+	configPath := filepath.Join(project, ".xcli", "config.yaml")
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	bin := filepath.Join(directory, "bin")
+	if err := os.MkdirAll(bin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cli := filepath.Join(bin, "fake-codex")
+	launcherName := "xcli-portable"
+	if err := os.WriteFile(cli, []byte("#!/bin/sh\n[ \"$1\" = --version ] && echo 'codex 1.0'\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(bin, launcherName), []byte("#!/bin/sh\nexit 0\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	cfg := config.Defaults()
+	codex := cfg.Agents["codex"]
+	codex.Command = cli
+	cfg.Agents["codex"] = codex
+	cfg.MCP.Servers = map[string]config.MCPServer{
+		"tools": {Transport: "stdio", Command: "server", EnvVars: []string{"TOKEN"}, Targets: []string{"codex"}},
+		"docs":  {Transport: "http", URL: "https://example.com/mcp", Targets: []string{"codex"}},
+	}
+	if err := config.Save(configPath, cfg); err != nil {
+		t.Fatal(err)
+	}
+	setCommandEnvironment(t, "PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	setCommandEnvironment(t, "XDG_DATA_HOME", filepath.Join(directory, "data"))
+
+	execute := func(arguments ...string) (mcp.Plan, error) {
+		t.Helper()
+		root := newRootCommand()
+		var stdout bytes.Buffer
+		root.SetOut(&stdout)
+		root.SetErr(&bytes.Buffer{})
+		root.SetArgs(append([]string{"--config", configPath, "mcp"}, arguments...))
+		err := root.Execute()
+		if err != nil {
+			return mcp.Plan{}, err
+		}
+		var plan mcp.Plan
+		if err := json.Unmarshal(stdout.Bytes(), &plan); err != nil {
+			t.Fatalf("decode project MCP plan %q: %v", stdout.String(), err)
+		}
+		return plan, nil
+	}
+
+	plan, err := execute("plan", "--scope", "project", "--project", project, "--target", "codex", "--launcher", launcherName, "--json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	canonicalProject, _ := filepath.EvalSymlinks(project)
+	if plan.Scope != mcp.ScopeProject || plan.ProjectDir != canonicalProject || plan.Launcher != launcherName || len(plan.Changes) != 2 {
+		t.Fatalf("unexpected project plan: %#v", plan)
+	}
+	plan, err = execute("sync", "--scope", "project", "--project", project, "--target", "codex", "--launcher", launcherName, "--yes", "--json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !plan.Applied {
+		t.Fatalf("project plan was not applied: %#v", plan)
+	}
+	projectCodex := filepath.Join(project, ".codex", "config.toml")
+	data, err := os.ReadFile(projectCodex)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	for _, value := range []string{
+		`command = "xcli-portable"`,
+		`args = ["mcp","serve","--project-config",".xcli/config.yaml","tools"]`,
+		`url = "https://example.com/mcp"`,
+	} {
+		if !strings.Contains(text, value) {
+			t.Fatalf("project Codex config %q missing %q", text, value)
+		}
+	}
+	if strings.Contains(text, canonicalProject) || strings.Contains(text, configPath) {
+		t.Fatalf("project configuration contains a machine-specific path: %s", text)
+	}
+	info, err := os.Stat(projectCodex)
+	if err != nil || info.Mode().Perm() != 0o644 {
+		t.Fatalf("new project config mode = %v, %v", info.Mode().Perm(), err)
+	}
+	plan, err = execute("plan", "--scope", "project", "--project", project, "--target", "codex", "--launcher", launcherName, "--json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, change := range plan.Changes {
+		if change.Action != mcp.ActionNoop {
+			t.Fatalf("repeated project plan is not idempotent: %#v", plan)
+		}
+	}
+}
+
+func TestProjectMCPValidation(t *testing.T) {
+	directory := t.TempDir()
+	project := filepath.Join(directory, "project")
+	if err := os.MkdirAll(project, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	outsideConfig := filepath.Join(directory, "config.yaml")
+	if err := config.Save(outsideConfig, config.Defaults()); err != nil {
+		t.Fatal(err)
+	}
+	insideConfig := filepath.Join(project, ".xcli", "config.yaml")
+	if err := config.Save(insideConfig, config.Defaults()); err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{name: "missing project", args: []string{"--config", outsideConfig, "mcp", "plan", "--scope", "project"}, want: "--project is required"},
+		{name: "project with user scope", args: []string{"--config", outsideConfig, "mcp", "plan", "--project", project}, want: "only valid with --scope project"},
+		{name: "source outside project", args: []string{"--config", outsideConfig, "mcp", "plan", "--scope", "project", "--project", project}, want: "outside project"},
+		{name: "absolute launcher", args: []string{"--config", insideConfig, "mcp", "plan", "--scope", "project", "--project", project, "--launcher", "/usr/bin/xcli"}, want: "PATH command name"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := newRootCommand()
+			root.SetOut(&bytes.Buffer{})
+			root.SetErr(&bytes.Buffer{})
+			root.SetArgs(test.args)
+			if err := root.Execute(); err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("expected %q error, got %v", test.want, err)
+			}
+		})
+	}
+}
+
+func TestMCPServeFindsProjectConfigurationFromChildDirectory(t *testing.T) {
+	directory := t.TempDir()
+	project := filepath.Join(directory, "project")
+	child := filepath.Join(project, "src", "nested")
+	if err := os.MkdirAll(child, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	server := filepath.Join(directory, "fake-project-mcp")
+	if err := os.WriteFile(server, []byte("#!/bin/sh\nprintf '%s|' \"$PWD\"\ncat\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(project, ".xcli", "config.yaml")
+	cfg := config.Defaults()
+	cfg.MCP.Servers = map[string]config.MCPServer{"local": {Transport: "stdio", Command: server}}
+	if err := config.Save(configPath, cfg); err != nil {
+		t.Fatal(err)
+	}
+	previous, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(child); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(previous)
+	root := newRootCommand()
+	var stdout bytes.Buffer
+	root.SetIn(strings.NewReader("payload"))
+	root.SetOut(&stdout)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"mcp", "serve", "--project-config", ".xcli/config.yaml", "local"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	canonicalChild, _ := filepath.EvalSymlinks(child)
+	if stdout.String() != canonicalChild+"|payload" {
+		t.Fatalf("project MCP stdio/cwd changed: %q", stdout.String())
+	}
+}
+
 func TestMCPServePassesThroughAndFiltersEnvironment(t *testing.T) {
 	directory := t.TempDir()
 	work := filepath.Join(directory, "work")

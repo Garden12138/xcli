@@ -1,0 +1,26 @@
+version: 1
+
+# Keep this file inside the repository, for example at .xcli/config.yaml, then run:
+# xcli --config .xcli/config.yaml mcp sync --scope project --project .
+mcp:
+  servers:
+    docs:
+      transport: http
+      url: https://example.com/mcp
+
+    local-tools:
+      transport: stdio
+      command: npx
+      args:
+        - -y
+        - "@example/mcp-server"
+      cwd: ..
+      env:
+        LOG_LEVEL: info
+      env_vars:
+        - SERVICE_TOKEN
+      targets:
+        - claude
+        - codex
+        - gemini
+        - opencode

@@ -8,6 +8,9 @@ import (
 )
 
 const (
+	ScopeUser    = "user"
+	ScopeProject = "project"
+
 	ActionAdd         = "add"
 	ActionUpdate      = "update"
 	ActionRemove      = "remove"
@@ -53,6 +56,8 @@ type Change struct {
 type Plan struct {
 	SourceConfig string   `json:"source_config"`
 	Launcher     string   `json:"launcher,omitempty"`
+	Scope        string   `json:"scope"`
+	ProjectDir   string   `json:"project_dir,omitempty"`
 	Targets      []string `json:"targets"`
 	Applicable   bool     `json:"applicable"`
 	Applied      bool     `json:"applied"`

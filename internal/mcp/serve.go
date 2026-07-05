@@ -58,6 +58,53 @@ func BuildServeSpec(cfg config.Config, configPath, name string, parent []string)
 	}, nil
 }
 
+// ResolveProjectConfig walks from start toward the filesystem root looking for
+// a project-relative xcli configuration. A symlink may point within a candidate
+// project root, but it may not escape that root.
+func ResolveProjectConfig(start, relative string) (string, error) {
+	if relative == "" || filepath.IsAbs(relative) {
+		return "", fmt.Errorf("project configuration path %q must be relative", relative)
+	}
+	relative = filepath.Clean(filepath.FromSlash(relative))
+	if relative == "." || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("project configuration path %q escapes the project", relative)
+	}
+	current, err := filepath.Abs(start)
+	if err != nil {
+		return "", err
+	}
+	if resolved, resolveErr := filepath.EvalSymlinks(current); resolveErr == nil {
+		current = resolved
+	}
+	for {
+		candidate := filepath.Join(current, relative)
+		info, statErr := os.Stat(candidate)
+		if statErr == nil {
+			if !info.Mode().IsRegular() {
+				return "", fmt.Errorf("project configuration %s is not a regular file", candidate)
+			}
+			resolved, err := filepath.EvalSymlinks(candidate)
+			if err != nil {
+				return "", err
+			}
+			inside, err := filepath.Rel(current, resolved)
+			if err != nil || inside == ".." || strings.HasPrefix(inside, ".."+string(filepath.Separator)) {
+				return "", fmt.Errorf("project configuration symlink %s escapes project %s", candidate, current)
+			}
+			return resolved, nil
+		}
+		if !os.IsNotExist(statErr) {
+			return "", statErr
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			break
+		}
+		current = parent
+	}
+	return "", fmt.Errorf("project configuration %q was not found from %s or its parents", filepath.ToSlash(relative), start)
+}
+
 func serveDirectory(configPath, cwd string) (string, error) {
 	if cwd == "" {
 		return os.Getwd()

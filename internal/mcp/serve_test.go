@@ -64,3 +64,35 @@ func TestBuildServeSpecRejectsMissingEnvironmentAndHTTP(t *testing.T) {
 		t.Fatalf("expected unknown server error, got %v", err)
 	}
 }
+
+func TestResolveProjectConfigFromChildAndRejectsSymlinkEscape(t *testing.T) {
+	project := t.TempDir()
+	child := filepath.Join(project, "src", "nested")
+	if err := os.MkdirAll(child, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(project, ".xcli", "config.yaml")
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(configPath, []byte("version: 1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	resolved, err := ResolveProjectConfig(child, ".xcli/config.yaml")
+	want, resolveErr := filepath.EvalSymlinks(configPath)
+	if err != nil || resolveErr != nil || resolved != want {
+		t.Fatalf("resolved = %q, %v; want %q (%v)", resolved, err, want, resolveErr)
+	}
+
+	outside := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(outside, []byte("version: 1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(project, "linked.yaml")
+	if err := os.Symlink(outside, link); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ResolveProjectConfig(child, "linked.yaml"); err == nil || !strings.Contains(err.Error(), "escapes project") {
+		t.Fatalf("expected symlink escape error, got %v", err)
+	}
+}

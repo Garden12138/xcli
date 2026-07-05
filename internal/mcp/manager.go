@@ -211,6 +211,11 @@ func parseJSONEntries(data []byte, key string, parse func(json.RawMessage) (Entr
 	for name, raw := range servers {
 		if entry, ok := parse(raw); ok {
 			result[name] = entry
+		} else {
+			// Preserve name occupancy even when a vendor entry uses fields that
+			// xcli does not understand. A desired server with the same name must
+			// conflict instead of silently taking it over.
+			result[name] = Entry{Transport: "unknown"}
 		}
 	}
 	return result, nil
@@ -276,6 +281,8 @@ func parseCodexEntries(data []byte) (map[string]Entry, error) {
 			result[value.Name] = Entry{Transport: "stdio", Command: value.Transport.Command, Args: value.Transport.Args, EnvVars: sortedStrings(value.Transport.EnvVars)}
 		case "streamable_http", "http":
 			result[value.Name] = Entry{Transport: "http", URL: value.Transport.URL}
+		default:
+			result[value.Name] = Entry{Transport: "unknown"}
 		}
 	}
 	return result, nil

@@ -43,7 +43,7 @@ func TestPlanApplyNoopPruneLifecycle(t *testing.T) {
 	cfg.MCP.Servers = map[string]config.MCPServer{"tools": {Transport: "stdio", Command: "server", EnvVars: []string{"TOKEN"}}}
 	manager := &fakeManager{entries: map[string]Entry{}}
 	managers := map[string]Manager{"codex": manager}
-	state := &State{Version: stateVersion, Entries: map[string]map[string]Ownership{}, path: filepath.Join(directory, "state.json")}
+	state := newState(filepath.Join(directory, "state.json"))
 
 	plan, err := BuildPlan(context.Background(), cfg, managers, state, BuildOptions{SourceConfig: source, Launcher: launcher, Targets: []string{"codex"}})
 	if err != nil {
@@ -95,7 +95,7 @@ func TestPlanConflictsAndForce(t *testing.T) {
 	cfg.MCP.Servers = map[string]config.MCPServer{"docs": {Transport: "http", URL: desired.URL}}
 	manager := &fakeManager{entries: map[string]Entry{"docs": {Transport: "http", URL: "https://native.example/mcp"}}}
 	managers := map[string]Manager{"codex": manager}
-	state := &State{Version: stateVersion, Entries: map[string]map[string]Ownership{}, path: filepath.Join(directory, "state.json")}
+	state := newState(filepath.Join(directory, "state.json"))
 
 	plan, err := BuildPlan(context.Background(), cfg, managers, state, BuildOptions{SourceConfig: source, Targets: []string{"codex"}})
 	if err != nil {
@@ -141,7 +141,7 @@ func TestPlanTargetsAndUnavailableAreSorted(t *testing.T) {
 		"zeta":  {Transport: "http", URL: "https://z.example/mcp", Targets: []string{"codex"}},
 		"alpha": {Transport: "http", URL: "https://a.example/mcp"},
 	}
-	state := &State{Version: stateVersion, Entries: map[string]map[string]Ownership{}}
+	state := newState("")
 	manager := &fakeManager{entries: map[string]Entry{}}
 	plan, err := BuildPlan(context.Background(), cfg, map[string]Manager{"codex": manager}, state, BuildOptions{
 		SourceConfig: "/config", Targets: []string{"codex"}, Unavailable: []string{"claude"},
@@ -159,7 +159,7 @@ func TestApplyFailureDoesNotClaimOwnership(t *testing.T) {
 	cfg := config.Defaults()
 	cfg.MCP.Servers = map[string]config.MCPServer{"docs": {Transport: "http", URL: "https://example.com/mcp"}}
 	manager := &fakeManager{entries: map[string]Entry{}, fail: true}
-	state := &State{Version: stateVersion, Entries: map[string]map[string]Ownership{}, path: filepath.Join(directory, "state.json")}
+	state := newState(filepath.Join(directory, "state.json"))
 	plan, err := BuildPlan(context.Background(), cfg, map[string]Manager{"codex": manager}, state, BuildOptions{SourceConfig: "/config", Targets: []string{"codex"}})
 	if err != nil {
 		t.Fatal(err)
@@ -169,6 +169,50 @@ func TestApplyFailureDoesNotClaimOwnership(t *testing.T) {
 	}
 	if _, ok := state.Get("codex", "docs"); ok || plan.Changes[0].Status != StatusFailed {
 		t.Fatalf("failed change claimed ownership: %#v %#v", state, plan)
+	}
+}
+
+func TestProjectPlanUsesPortableLauncherAndIsolatesOwnership(t *testing.T) {
+	directory := t.TempDir()
+	source := filepath.Join(directory, "config", "xcli.yaml")
+	cfg := config.Defaults()
+	cfg.MCP.Servers = map[string]config.MCPServer{
+		"tools": {Transport: "stdio", Command: "server", EnvVars: []string{"TOKEN"}},
+	}
+	state := newState(filepath.Join(directory, "state.json"))
+	managerA := &fakeManager{entries: map[string]Entry{}}
+	optionsA := BuildOptions{
+		SourceConfig: source, Launcher: "xcli", Scope: ScopeProject,
+		ProjectDir: directory, ProjectConfig: "config/xcli.yaml", Targets: []string{"codex"},
+	}
+	planA, err := BuildPlan(context.Background(), cfg, map[string]Manager{"codex": managerA}, state, optionsA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertChange(t, planA, ActionAdd, StatusPlanned)
+	desired := planA.Changes[0].desired
+	if desired.Command != "xcli" || strings.Join(desired.Args, " ") != "mcp serve --project-config config/xcli.yaml tools" {
+		t.Fatalf("unexpected portable entry: %#v", desired)
+	}
+	if err := ApplyPlan(context.Background(), &planA, map[string]Manager{"codex": managerA}, state); err != nil {
+		t.Fatal(err)
+	}
+
+	projectB := filepath.Join(directory, "second")
+	managerB := &fakeManager{entries: map[string]Entry{}}
+	optionsB := optionsA
+	optionsB.ProjectDir = projectB
+	optionsB.SourceConfig = filepath.Join(projectB, "config", "xcli.yaml")
+	planB, err := BuildPlan(context.Background(), cfg, map[string]Manager{"codex": managerB}, state, optionsB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertChange(t, planB, ActionAdd, StatusPlanned)
+	if _, ok := state.GetIn(NamespaceKey(ScopeProject, directory), "codex", "tools"); !ok {
+		t.Fatal("first project ownership was not recorded")
+	}
+	if _, ok := state.GetIn(NamespaceKey(ScopeProject, projectB), "codex", "tools"); ok {
+		t.Fatal("ownership leaked into second project")
 	}
 }
 

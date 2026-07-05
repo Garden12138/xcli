@@ -27,13 +27,15 @@ func (a *app) newMCPCommand() *cobra.Command {
 func (a *app) newMCPPlanCommand() *cobra.Command {
 	var targets []string
 	var launcher string
+	var scope string
+	var project string
 	var asJSON bool
 	command := &cobra.Command{
 		Use:   "plan",
-		Short: "Preview user-level MCP configuration changes",
+		Short: "Preview MCP configuration changes",
 		Args:  cobra.NoArgs,
 		RunE: func(command *cobra.Command, _ []string) error {
-			plan, _, _, err := a.buildMCPPlan(command, targets, launcher, false)
+			plan, _, _, err := a.buildMCPPlan(command, targets, launcher, scope, project, false)
 			if err != nil {
 				return err
 			}
@@ -47,7 +49,9 @@ func (a *app) newMCPPlanCommand() *cobra.Command {
 		},
 	}
 	command.Flags().StringArrayVar(&targets, "target", nil, "MCP target to include (repeatable)")
-	command.Flags().StringVar(&launcher, "launcher", "", "stable xcli executable for stdio MCP servers")
+	command.Flags().StringVar(&launcher, "launcher", "", "stdio launcher (user path or project PATH command)")
+	command.Flags().StringVar(&scope, "scope", mcp.ScopeUser, "configuration scope: user or project")
+	command.Flags().StringVar(&project, "project", "", "project directory (required for project scope)")
 	command.Flags().BoolVar(&asJSON, "json", false, "print JSON output")
 	return command
 }
@@ -55,6 +59,8 @@ func (a *app) newMCPPlanCommand() *cobra.Command {
 func (a *app) newMCPSyncCommand() *cobra.Command {
 	var targets []string
 	var launcher string
+	var scope string
+	var project string
 	var yes bool
 	var force bool
 	var asJSON bool
@@ -63,7 +69,7 @@ func (a *app) newMCPSyncCommand() *cobra.Command {
 		Short: "Synchronize managed MCP servers to installed agents",
 		Args:  cobra.NoArgs,
 		RunE: func(command *cobra.Command, _ []string) error {
-			plan, managers, state, err := a.buildMCPPlan(command, targets, launcher, force)
+			plan, managers, state, err := a.buildMCPPlan(command, targets, launcher, scope, project, force)
 			if err != nil {
 				return err
 			}
@@ -82,6 +88,11 @@ func (a *app) newMCPSyncCommand() *cobra.Command {
 				return &ExitError{Code: 1}
 			}
 			if !hasMCPChanges(plan) {
+				if state.NeedsSave() {
+					if err := state.Save(); err != nil {
+						return err
+					}
+				}
 				plan.Applied = true
 				if asJSON {
 					return writeMCPPlan(command, plan, true)
@@ -89,7 +100,7 @@ func (a *app) newMCPSyncCommand() *cobra.Command {
 				fmt.Fprintln(command.OutOrStdout(), "MCP configuration is already synchronized.")
 				return nil
 			}
-			if launcher == "" && plan.UsesLauncherChanges() && pathWithinTemp(plan.Launcher) {
+			if plan.Scope == mcp.ScopeUser && launcher == "" && plan.UsesLauncherChanges() && pathWithinTemp(plan.Launcher) {
 				return errors.New("refusing to synchronize a temporary xcli launcher; install xcli or pass --launcher")
 			}
 			if !yes {
@@ -122,7 +133,9 @@ func (a *app) newMCPSyncCommand() *cobra.Command {
 		},
 	}
 	command.Flags().StringArrayVar(&targets, "target", nil, "MCP target to include (repeatable)")
-	command.Flags().StringVar(&launcher, "launcher", "", "stable xcli executable for stdio MCP servers")
+	command.Flags().StringVar(&launcher, "launcher", "", "stdio launcher (user path or project PATH command)")
+	command.Flags().StringVar(&scope, "scope", mcp.ScopeUser, "configuration scope: user or project")
+	command.Flags().StringVar(&project, "project", "", "project directory (required for project scope)")
 	command.Flags().BoolVarP(&yes, "yes", "y", false, "apply without a confirmation prompt")
 	command.Flags().BoolVar(&force, "force", false, "take over or overwrite conflicting MCP entries")
 	command.Flags().BoolVar(&asJSON, "json", false, "print JSON output")
@@ -130,14 +143,36 @@ func (a *app) newMCPSyncCommand() *cobra.Command {
 }
 
 func (a *app) newMCPServeCommand() *cobra.Command {
-	return &cobra.Command{
+	var projectConfig string
+	command := &cobra.Command{
 		Use:   "serve <server>",
 		Short: "Run a configured stdio MCP server",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(command *cobra.Command, args []string) error {
-			cfg, path, _, err := a.load()
-			if err != nil {
-				return err
+			var cfg config.Config
+			var path string
+			if projectConfig != "" {
+				if a.configPath != "" {
+					return errors.New("--project-config cannot be combined with --config")
+				}
+				cwd, err := os.Getwd()
+				if err != nil {
+					return err
+				}
+				path, err = mcp.ResolveProjectConfig(cwd, projectConfig)
+				if err != nil {
+					return err
+				}
+				cfg, _, err = config.Load(path)
+				if err != nil {
+					return err
+				}
+			} else {
+				var err error
+				cfg, path, _, err = a.load()
+				if err != nil {
+					return err
+				}
 			}
 			spec, err := mcp.BuildServeSpec(cfg, path, args[0], os.Environ())
 			if err != nil {
@@ -161,14 +196,32 @@ func (a *app) newMCPServeCommand() *cobra.Command {
 			return nil
 		},
 	}
+	command.Flags().StringVar(&projectConfig, "project-config", "", "project-relative xcli configuration path")
+	return command
 }
 
-func (a *app) buildMCPPlan(command *cobra.Command, requested []string, launcherValue string, force bool) (mcp.Plan, map[string]mcp.Manager, *mcp.State, error) {
+func (a *app) buildMCPPlan(command *cobra.Command, requested []string, launcherValue, scope, projectValue string, force bool) (mcp.Plan, map[string]mcp.Manager, *mcp.State, error) {
 	cfg, source, registry, err := a.load()
 	if err != nil {
 		return mcp.Plan{}, nil, nil, err
 	}
-	launcher, err := resolveLauncher(launcherValue)
+	var launcher string
+	var projectDir string
+	var projectConfig string
+	switch scope {
+	case mcp.ScopeUser:
+		if projectValue != "" {
+			return mcp.Plan{}, nil, nil, errors.New("--project is only valid with --scope project")
+		}
+		launcher, err = resolveLauncher(launcherValue)
+	case mcp.ScopeProject:
+		projectDir, source, projectConfig, err = resolveMCPProject(projectValue, source)
+		if err == nil {
+			launcher, err = resolvePortableLauncher(launcherValue)
+		}
+	default:
+		err = fmt.Errorf("invalid MCP scope %q; expected user or project", scope)
+	}
 	if err != nil {
 		return mcp.Plan{}, nil, nil, err
 	}
@@ -176,7 +229,12 @@ func (a *app) buildMCPPlan(command *cobra.Command, requested []string, launcherV
 	if err != nil {
 		return mcp.Plan{}, nil, nil, err
 	}
-	managers, err := mcp.NewManagers(cfg)
+	var managers map[string]mcp.Manager
+	if scope == mcp.ScopeProject {
+		managers, err = mcp.NewProjectManagers(cfg, projectDir)
+	} else {
+		managers, err = mcp.NewManagers(cfg)
+	}
 	if err != nil {
 		return mcp.Plan{}, nil, nil, err
 	}
@@ -185,9 +243,72 @@ func (a *app) buildMCPPlan(command *cobra.Command, requested []string, launcherV
 		return mcp.Plan{}, nil, nil, err
 	}
 	plan, err := mcp.BuildPlan(command.Context(), cfg, managers, state, mcp.BuildOptions{
-		SourceConfig: source, Launcher: launcher, Targets: targets, Unavailable: unavailable, Force: force,
+		SourceConfig: source, Launcher: launcher, Scope: scope, ProjectDir: projectDir,
+		ProjectConfig: projectConfig, Targets: targets, Unavailable: unavailable, Force: force,
 	})
 	return plan, managers, state, err
+}
+
+func resolveMCPProject(value, source string) (string, string, string, error) {
+	if value == "" {
+		return "", "", "", errors.New("--project is required with --scope project")
+	}
+	project, err := canonicalExistingPath(value, true)
+	if err != nil {
+		return "", "", "", fmt.Errorf("resolve MCP project: %w", err)
+	}
+	canonicalSource, err := canonicalExistingPath(source, false)
+	if err != nil {
+		return "", "", "", fmt.Errorf("resolve MCP source configuration: %w", err)
+	}
+	relative, err := filepath.Rel(project, canonicalSource)
+	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return "", "", "", fmt.Errorf("MCP source configuration %s is outside project %s", canonicalSource, project)
+	}
+	return project, canonicalSource, filepath.ToSlash(relative), nil
+}
+
+func canonicalExistingPath(value string, wantDirectory bool) (string, error) {
+	absolute, err := filepath.Abs(value)
+	if err != nil {
+		return "", err
+	}
+	canonical, err := filepath.EvalSymlinks(absolute)
+	if err != nil {
+		return "", err
+	}
+	info, err := os.Stat(canonical)
+	if err != nil {
+		return "", err
+	}
+	if wantDirectory && !info.IsDir() {
+		return "", fmt.Errorf("%s is not a directory", canonical)
+	}
+	if !wantDirectory && !info.Mode().IsRegular() {
+		return "", fmt.Errorf("%s is not a regular file", canonical)
+	}
+	return canonical, nil
+}
+
+func resolvePortableLauncher(value string) (string, error) {
+	if value == "" {
+		value = "xcli"
+	}
+	if filepath.IsAbs(value) || strings.ContainsAny(value, `/\\`) {
+		return "", fmt.Errorf("project MCP launcher %q must be a PATH command name", value)
+	}
+	path, err := exec.LookPath(value)
+	if err != nil {
+		return "", fmt.Errorf("resolve project MCP launcher %q: %w", value, err)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", err
+	}
+	if info.IsDir() || info.Mode()&0o111 == 0 {
+		return "", fmt.Errorf("project MCP launcher %q is not executable", value)
+	}
+	return value, nil
 }
 
 func resolveMCPTargets(command *cobra.Command, cfg config.Config, registry *agent.Registry, requested []string) ([]string, []string, error) {

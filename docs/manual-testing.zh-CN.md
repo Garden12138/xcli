@@ -929,7 +929,34 @@ command -v codex-acp claude-agent-acp
 
 HTTP OAuth 仍需分别使用各 Agent 的原生 MCP 登录流程；xcli 不复制认证状态。stdio 同步写入 `$XCLI_BIN` 与 `$XCLI_CONFIG` 的绝对路径，移动文件后需重新同步。
 
-### 12.7 真实交互模式
+### 12.7 项目级 MCP 同步
+
+在一个临时 Git 项目内创建 `.xcli/config.yaml`（可从 `examples/project-mcp.yaml` 复制并换成可用的测试 server），确保已安装的 xcli 命令名在 PATH 中：
+
+```bash
+PROJECT="$XCLI_TEST_ROOT/mcp-project"
+mkdir -p "$PROJECT/.xcli"
+cp examples/project-mcp.yaml "$PROJECT/.xcli/config.yaml"
+
+"$XCLI_BIN" --config "$PROJECT/.xcli/config.yaml" mcp plan \
+  --scope project --project "$PROJECT" --target codex --launcher xcli --json
+
+"$XCLI_BIN" --config "$PROJECT/.xcli/config.yaml" mcp sync \
+  --scope project --project "$PROJECT" --target codex --launcher xcli
+```
+
+预期结果：
+
+- JSON 固定包含 `scope: "project"` 与规范化的 `project_dir`。
+- `.codex/config.toml` 中 stdio command 是 `xcli`，参数包含 `mcp serve --project-config .xcli/config.yaml`，不包含 `$XCLI_BIN`、项目或源配置的绝对路径。
+- Claude/Gemini/OpenCode 分别写入 `.mcp.json`、`.gemini/settings.json`、`opencode.json`；已有注释和无关字段保留。
+- 新文件权限为 `0644`，仓库内没有 `.xcli.bak`；重复 plan 为 `noop`。
+- 从项目子目录启动同步后的 stdio server 时，`mcp serve --project-config` 能向父目录找到源配置；指向项目外的符号链接会被拒绝。
+- 将同名 server 同步到另一个项目不会接管第一个项目的 ownership；user scope 也保持隔离。
+
+清理前从源配置删除测试 server 并同步，确认只删除未漂移的托管条目。不要提交包含真实静态凭据的 `env`；团队密钥只声明 `env_vars` 名称。
+
+### 12.8 真实交互模式
 
 ```bash
 "$XCLI_BIN" --config "$XCLI_CONFIG" use \
@@ -988,6 +1015,7 @@ YAML
 - [ ] `run --detach` 能跨终端运行，`jobs` 可查看归一化日志并安全执行优雅停止或强杀。
 - [ ] `acp` 保持协议 stdio 字节不变，复用 cwd/环境配置且不创建运行记录。
 - [ ] `mcp serve` 使用最小环境并保持协议 stdio；`mcp plan/sync` 能检测冲突且重复执行为 noop。
+- [ ] 项目级 MCP 文件不含机器绝对路径，保留 JSONC/TOML 注释，跨项目 ownership 相互隔离。
 - [ ] `--json` 返回合法、稳定的归一化结构。
 - [ ] `--` 后参数不被 xcli 或 shell 重新解释。
 - [ ] `--cwd`、网络变量清除和 Agent 环境变量生效。

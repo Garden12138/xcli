@@ -9,17 +9,31 @@ import (
 )
 
 type BuildOptions struct {
-	SourceConfig string
-	Launcher     string
-	Targets      []string
-	Unavailable  []string
-	Force        bool
+	SourceConfig  string
+	Launcher      string
+	Scope         string
+	ProjectDir    string
+	ProjectConfig string
+	Targets       []string
+	Unavailable   []string
+	Force         bool
 }
 
 func BuildPlan(ctx context.Context, cfg config.Config, managers map[string]Manager, state *State, options BuildOptions) (Plan, error) {
+	if options.Scope == "" {
+		options.Scope = ScopeUser
+	}
+	if options.Scope != ScopeUser && options.Scope != ScopeProject {
+		return Plan{}, fmt.Errorf("unsupported MCP scope %q", options.Scope)
+	}
+	if options.Scope == ScopeProject && (options.ProjectDir == "" || options.ProjectConfig == "") {
+		return Plan{}, fmt.Errorf("project MCP scope requires a project directory and relative source configuration")
+	}
 	plan := Plan{
 		SourceConfig: options.SourceConfig,
 		Launcher:     options.Launcher,
+		Scope:        options.Scope,
+		ProjectDir:   options.ProjectDir,
 		Targets:      append(append([]string(nil), options.Targets...), options.Unavailable...),
 		Applicable:   true,
 		Changes:      []Change{},
@@ -46,12 +60,13 @@ func BuildPlan(ctx context.Context, cfg config.Config, managers map[string]Manag
 		if err != nil {
 			return Plan{}, fmt.Errorf("read %s MCP configuration: %w", target, err)
 		}
-		desired := desiredEntries(cfg, options.SourceConfig, options.Launcher, target)
+		desired := desiredEntries(cfg, options, target)
 		names := map[string]bool{}
 		for name := range desired {
 			names[name] = true
 		}
-		for name, owner := range state.Entries[target] {
+		namespace := NamespaceKey(options.Scope, options.ProjectDir)
+		for name, owner := range state.EntriesFor(namespace)[target] {
 			if owner.SourceConfig == options.SourceConfig {
 				names[name] = true
 			}
@@ -62,7 +77,7 @@ func BuildPlan(ctx context.Context, cfg config.Config, managers map[string]Manag
 		}
 		sort.Strings(ordered)
 		for _, name := range ordered {
-			change := planChange(target, name, options.SourceConfig, current, desired, state, options.Force)
+			change := planChange(target, name, options.SourceConfig, namespace, current, desired, state, options.Force)
 			if change.Action == ActionConflict {
 				plan.Applicable = false
 			}
@@ -73,7 +88,7 @@ func BuildPlan(ctx context.Context, cfg config.Config, managers map[string]Manag
 	return plan, nil
 }
 
-func desiredEntries(cfg config.Config, sourceConfig, launcher, target string) map[string]Entry {
+func desiredEntries(cfg config.Config, options BuildOptions, target string) map[string]Entry {
 	result := map[string]Entry{}
 	for name, server := range cfg.MCP.Servers {
 		if !serverTargets(server, target) {
@@ -84,9 +99,17 @@ func desiredEntries(cfg config.Config, sourceConfig, launcher, target string) ma
 			continue
 		}
 		result[name] = Entry{
-			Transport: "stdio", Command: launcher,
-			Args:    []string{"--config", sourceConfig, "mcp", "serve", name},
+			Transport: "stdio", Command: options.Launcher,
 			EnvVars: append([]string(nil), server.EnvVars...),
+		}
+		if options.Scope == ScopeProject {
+			entry := result[name]
+			entry.Args = []string{"mcp", "serve", "--project-config", options.ProjectConfig, name}
+			result[name] = entry
+		} else {
+			entry := result[name]
+			entry.Args = []string{"--config", options.SourceConfig, "mcp", "serve", name}
+			result[name] = entry
 		}
 	}
 	return result
@@ -104,10 +127,10 @@ func serverTargets(server config.MCPServer, target string) bool {
 	return false
 }
 
-func planChange(target, name, source string, current, desired map[string]Entry, state *State, force bool) Change {
+func planChange(target, name, source, namespace string, current, desired map[string]Entry, state *State, force bool) Change {
 	currentEntry, hasCurrent := current[name]
 	desiredEntry, hasDesired := desired[name]
-	owner, owned := state.Get(target, name)
+	owner, owned := state.GetIn(namespace, target, name)
 	change := Change{Target: target, Server: name, Status: StatusPlanned}
 	if hasCurrent {
 		change.current = entryPointer(currentEntry)
@@ -191,6 +214,7 @@ func ApplyPlan(ctx context.Context, plan *Plan, managers map[string]Manager, sta
 	if err := state.Save(); err != nil {
 		return err
 	}
+	namespace := NamespaceKey(plan.Scope, plan.ProjectDir)
 	for index := range plan.Changes {
 		change := &plan.Changes[index]
 		if change.Action == ActionNoop || change.Action == ActionUnavailable || change.Action == ActionConflict {
@@ -205,9 +229,9 @@ func ApplyPlan(ctx context.Context, plan *Plan, managers map[string]Manager, sta
 			}
 		}
 		if change.Action == ActionRemove {
-			state.Delete(change.Target, change.Server)
+			state.DeleteIn(namespace, change.Target, change.Server)
 		} else {
-			state.Set(change.Target, change.Server, Ownership{
+			state.SetIn(namespace, change.Target, change.Server, Ownership{
 				SourceConfig: plan.SourceConfig,
 				Fingerprint:  change.desired.Fingerprint(),
 			})

@@ -185,3 +185,131 @@ func TestSetCodexEnvVarsPreservesOtherConfiguration(t *testing.T) {
 		t.Fatalf("Codex config was not patched safely: %s", text)
 	}
 }
+
+func TestProjectJSONManagersPreserveCommentsAndUnrelatedConfiguration(t *testing.T) {
+	directory := t.TempDir()
+	managers, err := NewProjectManagers(config.Defaults(), directory)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fixtures := map[string]struct {
+		path string
+		data string
+	}{
+		"claude": {
+			path: filepath.Join(directory, ".mcp.json"),
+			data: "{\n  // claude comment\n  \"keep\": true,\n  \"mcpServers\": {\"native\": {\"type\": \"http\", \"url\": \"https://native.example/mcp\"}}\n}\n",
+		},
+		"gemini": {
+			path: filepath.Join(directory, ".gemini", "settings.json"),
+			data: "{\n  // gemini comment\n  \"keep\": true,\n  \"mcpServers\": {\"native\": {\"httpUrl\": \"https://native.example/mcp\"}}\n}\n",
+		},
+		"opencode": {
+			path: filepath.Join(directory, "opencode.json"),
+			data: "{\n  // opencode comment\n  \"keep\": true,\n  \"mcp\": {\"native\": {\"type\": \"remote\", \"url\": \"https://native.example/mcp\"}}\n}\n",
+		},
+	}
+	desired := Entry{
+		Transport: "stdio", Command: "xcli",
+		Args: []string{"mcp", "serve", "--project-config", ".xcli/config.yaml", "tools"}, EnvVars: []string{"TOKEN"},
+	}
+	for target, fixture := range fixtures {
+		t.Run(target, func(t *testing.T) {
+			if err := os.MkdirAll(filepath.Dir(fixture.path), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(fixture.path, []byte(fixture.data), 0o640); err != nil {
+				t.Fatal(err)
+			}
+			change := Change{Target: target, Server: "tools", Action: ActionAdd, desired: &desired}
+			if err := managers[target].Apply(context.Background(), change); err != nil {
+				t.Fatal(err)
+			}
+			data, err := os.ReadFile(fixture.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(string(data), target+" comment") || !strings.Contains(string(data), `"keep"`) || !strings.Contains(string(data), `"native"`) {
+				t.Fatalf("project config lost comments or unrelated data: %s", data)
+			}
+			entries, err := managers[target].Load(context.Background())
+			if err != nil || entries["tools"].Command != "xcli" || len(entries["tools"].EnvVars) != 1 || entries["native"].URL == "" {
+				t.Fatalf("unexpected project entries: %#v, %v", entries, err)
+			}
+			info, err := os.Stat(fixture.path)
+			if err != nil || info.Mode().Perm() != 0o640 {
+				t.Fatalf("project config mode = %v, %v", info.Mode().Perm(), err)
+			}
+			if _, err := os.Stat(fixture.path + ".xcli.bak"); !os.IsNotExist(err) {
+				t.Fatalf("project sync left a backup file: %v", err)
+			}
+			current := entries["tools"]
+			if err := managers[target].Apply(context.Background(), Change{Target: target, Server: "tools", Action: ActionRemove, current: &current}); err != nil {
+				t.Fatal(err)
+			}
+			entries, err = managers[target].Load(context.Background())
+			if err != nil || entries["tools"].Command != "" || entries["native"].URL == "" {
+				t.Fatalf("project removal damaged unrelated entries: %#v, %v", entries, err)
+			}
+		})
+	}
+}
+
+func TestProjectCodexManagerPreservesTOMLCommentsAndPermissions(t *testing.T) {
+	directory := t.TempDir()
+	path := filepath.Join(directory, ".codex", "config.toml")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	original := "# keep comment\nmodel = \"gpt-5\"\n\n[mcp_servers.\"native\"]\nurl = \"https://native.example/mcp\"\n\n[other]\nenabled = true\n"
+	if err := os.WriteFile(path, []byte(original), 0o640); err != nil {
+		t.Fatal(err)
+	}
+	manager := &projectCodexManager{path: path}
+	desired := Entry{Transport: "stdio", Command: "xcli", Args: []string{"mcp", "serve", "--project-config", "config.yaml", "tools"}, EnvVars: []string{"Z", "A"}}
+	if err := manager.Apply(context.Background(), Change{Target: "codex", Server: "tools", Action: ActionAdd, desired: &desired}); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	for _, value := range []string{"# keep comment", `model = "gpt-5"`, `[other]`, `[mcp_servers."tools"]`, `env_vars = ["A","Z"]`} {
+		if !strings.Contains(text, value) {
+			t.Fatalf("Codex project config %q missing %q", text, value)
+		}
+	}
+	entries, err := manager.Load(context.Background())
+	if err != nil || entries["tools"].Command != "xcli" || entries["native"].URL == "" {
+		t.Fatalf("unexpected Codex project entries: %#v, %v", entries, err)
+	}
+	info, err := os.Stat(path)
+	if err != nil || info.Mode().Perm() != 0o640 {
+		t.Fatalf("Codex project mode = %v, %v", info.Mode().Perm(), err)
+	}
+	current := entries["tools"]
+	if err := manager.Apply(context.Background(), Change{Target: "codex", Server: "tools", Action: ActionRemove, current: &current}); err != nil {
+		t.Fatal(err)
+	}
+	entries, err = manager.Load(context.Background())
+	if err != nil || entries["tools"].Command != "" || entries["native"].URL == "" {
+		t.Fatalf("Codex project removal damaged unrelated entries: %#v, %v", entries, err)
+	}
+}
+
+func TestProjectCodexUpdateReplacesWholeServerTable(t *testing.T) {
+	current := Entry{Transport: "http", URL: "https://old.example/mcp"}
+	desired := Entry{Transport: "http", URL: "https://new.example/mcp"}
+	data := []byte("[mcp_servers.\"tools\"]\nurl = \"https://old.example/mcp\"\n\n[mcp_servers.\"tools\".headers]\nAuthorization = \"old\"\n\n# keep other comment\n[other]\nkeep = true\n")
+	updated, err := updateCodexProjectDocument(data, Change{
+		Server: "tools", Action: ActionUpdate, current: &current, desired: &desired,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(updated)
+	if strings.Contains(text, "headers") || strings.Contains(text, "Authorization") || !strings.Contains(text, "https://new.example/mcp") || !strings.Contains(text, "# keep other comment\n[other]\nkeep = true") {
+		t.Fatalf("Codex full table replacement was not targeted: %s", text)
+	}
+}
