@@ -26,7 +26,7 @@
 从 `darwin_amd64`、`darwin_arm64`、`linux_amd64` 或 `linux_arm64` 中选择对应平台，然后校验并安装：
 
 ```bash
-VERSION=0.3.0
+VERSION=0.4.0
 PLATFORM=darwin_arm64
 ARCHIVE="xcli_${VERSION}_${PLATFORM}.tar.gz"
 

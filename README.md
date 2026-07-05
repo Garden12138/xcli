@@ -26,7 +26,7 @@ Download a prebuilt archive from the [GitHub Releases](https://github.com/Garden
 Choose one of `darwin_amd64`, `darwin_arm64`, `linux_amd64`, or `linux_arm64`, then verify and install the archive:
 
 ```bash
-VERSION=0.3.0
+VERSION=0.4.0
 PLATFORM=darwin_arm64
 ARCHIVE="xcli_${VERSION}_${PLATFORM}.tar.gz"
 
