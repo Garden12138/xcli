@@ -181,6 +181,7 @@ type codexProjectDocument struct {
 type codexProjectEntry struct {
 	Command string   `toml:"command"`
 	Args    []string `toml:"args"`
+	Cwd     string   `toml:"cwd"`
 	EnvVars []string `toml:"env_vars"`
 	URL     string   `toml:"url"`
 }
@@ -204,7 +205,7 @@ func parseCodexProjectEntries(data []byte) (map[string]Entry, error) {
 	result := map[string]Entry{}
 	for name, value := range document.MCPServers {
 		if value.Command != "" {
-			result[name] = Entry{Transport: "stdio", Command: value.Command, Args: value.Args, EnvVars: sortedStrings(value.EnvVars)}
+			result[name] = Entry{Transport: "stdio", Command: value.Command, Args: value.Args, Cwd: value.Cwd, EnvVars: sortedStrings(value.EnvVars)}
 		} else if value.URL != "" {
 			result[name] = Entry{Transport: "http", URL: value.URL}
 		} else {

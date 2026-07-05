@@ -19,8 +19,8 @@ import (
 )
 
 func (a *app) newMCPCommand() *cobra.Command {
-	command := &cobra.Command{Use: "mcp", Short: "Plan, synchronize, and serve MCP configurations"}
-	command.AddCommand(a.newMCPPlanCommand(), a.newMCPSyncCommand(), a.newMCPServeCommand())
+	command := &cobra.Command{Use: "mcp", Short: "Import, plan, synchronize, and serve MCP configurations"}
+	command.AddCommand(a.newMCPPlanCommand(), a.newMCPSyncCommand(), a.newMCPImportCommand(), a.newMCPServeCommand())
 	return command
 }
 

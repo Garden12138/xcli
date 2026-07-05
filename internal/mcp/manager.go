@@ -227,13 +227,14 @@ func parseClaudeEntry(raw json.RawMessage) (Entry, bool) {
 		Command string            `json:"command"`
 		Args    []string          `json:"args"`
 		Env     map[string]string `json:"env"`
+		Cwd     string            `json:"cwd"`
 		URL     string            `json:"url"`
 	}
 	if json.Unmarshal(raw, &value) != nil {
 		return Entry{}, false
 	}
 	if value.Command != "" || value.Type == "stdio" {
-		return Entry{Transport: "stdio", Command: value.Command, Args: value.Args, EnvVars: referencedEnvVars(value.Env, "${%s}")}, true
+		return Entry{Transport: "stdio", Command: value.Command, Args: value.Args, Cwd: value.Cwd, EnvVars: referencedEnvVars(value.Env, "${%s}")}, true
 	}
 	if value.URL != "" && (value.Type == "http" || value.Type == "streamable-http") {
 		return Entry{Transport: "http", URL: value.URL}, true
@@ -246,13 +247,14 @@ func parseGeminiEntry(raw json.RawMessage) (Entry, bool) {
 		Command string            `json:"command"`
 		Args    []string          `json:"args"`
 		Env     map[string]string `json:"env"`
+		Cwd     string            `json:"cwd"`
 		HTTPURL string            `json:"httpUrl"`
 	}
 	if json.Unmarshal(raw, &value) != nil {
 		return Entry{}, false
 	}
 	if value.Command != "" {
-		return Entry{Transport: "stdio", Command: value.Command, Args: value.Args, EnvVars: referencedEnvVars(value.Env, "$%s")}, true
+		return Entry{Transport: "stdio", Command: value.Command, Args: value.Args, Cwd: value.Cwd, EnvVars: referencedEnvVars(value.Env, "$%s")}, true
 	}
 	if value.HTTPURL != "" {
 		return Entry{Transport: "http", URL: value.HTTPURL}, true
@@ -267,6 +269,7 @@ func parseCodexEntries(data []byte) (map[string]Entry, error) {
 			Type    string   `json:"type"`
 			Command string   `json:"command"`
 			Args    []string `json:"args"`
+			Cwd     string   `json:"cwd"`
 			EnvVars []string `json:"env_vars"`
 			URL     string   `json:"url"`
 		} `json:"transport"`
@@ -278,7 +281,7 @@ func parseCodexEntries(data []byte) (map[string]Entry, error) {
 	for _, value := range values {
 		switch value.Transport.Type {
 		case "stdio":
-			result[value.Name] = Entry{Transport: "stdio", Command: value.Transport.Command, Args: value.Transport.Args, EnvVars: sortedStrings(value.Transport.EnvVars)}
+			result[value.Name] = Entry{Transport: "stdio", Command: value.Transport.Command, Args: value.Transport.Args, Cwd: value.Transport.Cwd, EnvVars: sortedStrings(value.Transport.EnvVars)}
 		case "streamable_http", "http":
 			result[value.Name] = Entry{Transport: "http", URL: value.Transport.URL}
 		default:
@@ -310,13 +313,14 @@ func parseOpenCodeEntry(raw json.RawMessage) (Entry, bool) {
 		Type        string            `json:"type"`
 		Command     []string          `json:"command"`
 		Environment map[string]string `json:"environment"`
+		Cwd         string            `json:"cwd"`
 		URL         string            `json:"url"`
 	}
 	if json.Unmarshal(raw, &value) != nil {
 		return Entry{}, false
 	}
 	if value.Type == "local" && len(value.Command) > 0 {
-		return Entry{Transport: "stdio", Command: value.Command[0], Args: value.Command[1:], EnvVars: referencedEnvVars(value.Environment, "{env:%s}")}, true
+		return Entry{Transport: "stdio", Command: value.Command[0], Args: value.Command[1:], Cwd: value.Cwd, EnvVars: referencedEnvVars(value.Environment, "{env:%s}")}, true
 	}
 	if value.Type == "remote" && value.URL != "" {
 		return Entry{Transport: "http", URL: value.URL}, true

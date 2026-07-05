@@ -956,7 +956,41 @@ cp examples/project-mcp.yaml "$PROJECT/.xcli/config.yaml"
 
 清理前从源配置删除测试 server 并同步，确认只删除未漂移的托管条目。不要提交包含真实静态凭据的 `env`；团队密钥只声明 `env_vars` 名称。
 
-### 12.8 真实交互模式
+### 12.8 原生 MCP 安全导入
+
+在临时项目中创建独立的 xcli 源配置与 Claude 项目配置，避免修改真实用户配置：
+
+```bash
+IMPORT_PROJECT="$XCLI_TEST_ROOT/mcp-import"
+mkdir -p "$IMPORT_PROJECT/.xcli"
+cat > "$IMPORT_PROJECT/.xcli/config.yaml" <<'YAML'
+version: 1
+# This comment must survive import.
+YAML
+cp examples/native-mcp-claude.json "$IMPORT_PROJECT/.mcp.json"
+
+shasum "$IMPORT_PROJECT/.mcp.json"
+
+"$XCLI_BIN" --config "$IMPORT_PROJECT/.xcli/config.yaml" mcp import plan \
+  --scope project --project "$IMPORT_PROJECT" --target claude --json
+
+"$XCLI_BIN" --config "$IMPORT_PROJECT/.xcli/config.yaml" mcp import apply \
+  --scope project --project "$IMPORT_PROJECT" --target claude --yes
+
+shasum "$IMPORT_PROJECT/.mcp.json"
+```
+
+预期结果：
+
+- plan 使用 `SERVER / TARGETS / ACTION / STATUS / DETAIL`，JSON 包含 scope、project、targets、applicable、applied 和 changes。
+- `.mcp.json` 两次校验和相同；import 只修改 `.xcli/config.yaml` 与私有 ownership state。
+- xcli YAML 中已有注释和无关字段保留，新条目显式包含 `targets: [claude]`。
+- `local-tools.cwd` 从项目根的 `tools` 改写为相对 `.xcli/config.yaml` 的 `../tools`。
+- 再次 import 为 `noop`；HTTP 条目的 `mcp plan` 为 `noop`，直接 stdio 条目计划为 launcher `update`。
+
+随后在 `.mcp.json` 增加一个包含静态环境值、header 或 timeout 的测试条目，确认它显示为 `unsupported/skipped`，值不会出现在文本/JSON 计划、xcli YAML 或 state 中，且不阻止其他安全条目导入。创建两个 Agent 的同名不同 URL，确认即使传 `--force` 也会报告 conflict。
+
+### 12.9 真实交互模式
 
 ```bash
 "$XCLI_BIN" --config "$XCLI_CONFIG" use \
@@ -965,7 +999,7 @@ cp examples/project-mcp.yaml "$PROJECT/.xcli/config.yaml"
 
 确认终端颜色、键盘输入、Ctrl+C 和原生权限提示与直接运行 `codex` 时一致。退出后使用 `xcli runs list` 检查元数据记录。
 
-### 12.8 双 Agent 串行工作流
+### 12.10 双 Agent 串行工作流
 
 仅在 Codex 和 Claude 均已安装并完成认证后执行：
 

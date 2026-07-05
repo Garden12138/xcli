@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "docs": {
+      "type": "http",
+      "url": "https://example.com/mcp"
+    },
+    "local-tools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@example/mcp-server"],
+      "cwd": "tools",
+      "env": {
+        "SERVICE_TOKEN": "${SERVICE_TOKEN}"
+      }
+    }
+  }
+}

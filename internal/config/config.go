@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -150,25 +151,38 @@ func Load(explicit string) (Config, string, error) {
 	}
 	defer f.Close()
 
+	cfg, err := DecodeReader(f, path)
+	return cfg, path, err
+}
+
+// Decode validates one xcli YAML document from memory while applying the same
+// built-in defaults as Load.
+func Decode(data []byte, label string) (Config, error) {
+	return DecodeReader(bytes.NewReader(data), label)
+}
+
+// DecodeReader validates one xcli YAML document while applying built-in defaults.
+func DecodeReader(reader io.Reader, label string) (Config, error) {
+	base := Defaults()
 	var user Config
-	decoder := yaml.NewDecoder(f)
+	decoder := yaml.NewDecoder(reader)
 	decoder.KnownFields(true)
 	if err := decoder.Decode(&user); err != nil {
-		return Config{}, path, fmt.Errorf("decode config %s: %w", path, err)
+		return Config{}, fmt.Errorf("decode config %s: %w", label, err)
 	}
 	var extra interface{}
 	if err := decoder.Decode(&extra); err != io.EOF {
 		if err == nil {
-			return Config{}, path, fmt.Errorf("decode config %s: multiple YAML documents are not supported", path)
+			return Config{}, fmt.Errorf("decode config %s: multiple YAML documents are not supported", label)
 		}
-		return Config{}, path, fmt.Errorf("decode config %s: %w", path, err)
+		return Config{}, fmt.Errorf("decode config %s: %w", label, err)
 	}
 
 	merged := merge(base, user)
 	if err := merged.Validate(); err != nil {
-		return Config{}, path, fmt.Errorf("validate config %s: %w", path, err)
+		return Config{}, fmt.Errorf("validate config %s: %w", label, err)
 	}
-	return merged, path, nil
+	return merged, nil
 }
 
 func merge(base, user Config) Config {

@@ -79,6 +79,10 @@ xcli mcp plan
 xcli mcp sync
 xcli mcp plan --scope project --project .
 
+# 安全导入现有原生 MCP 条目
+xcli mcp import plan
+xcli mcp import apply
+
 # 执行单次任务；Agent 专属参数放在 -- 之后
 xcli run codex "审查当前变更"
 xcli run "修复失败的测试" -- --sandbox workspace-write
@@ -202,6 +206,24 @@ xcli --config .xcli/config.yaml mcp sync --scope project --project . --yes
 可共享的源配置示例见 [`examples/project-mcp.yaml`](examples/project-mcp.yaml)。
 
 `sync` 始终先展示排序后的新增、更新和删除计划，再请求确认；自动化必须传入 `--yes`。xcli 只管理记录在 `$XDG_DATA_HOME/xcli/mcp-sync.json` 的对应 scope/project namespace 中的自有条目，v1 用户级 ownership 会自动迁移。同名原生条目、其他 xcli 来源/scope/project 的所有权以及外部修改都会成为冲突；使用 `--force` 前应先检查。删除 xcli 中的 server 或 target 时，只会计划删除仍未漂移的托管条目。
+
+### 导入原生 MCP 配置
+
+使用 import 工作流可将已有公共 MCP 定义拉入 xcli，且不会修改原生文件：
+
+```bash
+xcli mcp import plan
+xcli mcp import apply
+
+xcli --config .xcli/config.yaml mcp import plan --scope project --project .
+xcli --config .xcli/config.yaml mcp import apply --scope project --project . --yes
+```
+
+import 直接读取原生配置文件，不要求对应 CLI 已安装。未传 `--target` 时扫描当前 scope 下实际存在的文件；显式选择但文件不存在的 target 视为空。多个 Agent 中同名且等价的定义会合并为一个带显式 targets 的 server；不同原生定义会冲突。`--force` 可以覆盖不同的 xcli 定义、接受原生漂移或接管 ownership。导入仅增量合并，不会因为原生端缺失而删除 xcli server。
+
+只有能够无损映射到 xcli stdio 或 Streamable HTTP 结构的定义才会导入。静态环境变量值、headers、OAuth、SSE/WebSocket、禁用状态、timeout/tool policy、变量展开命令及其他厂商字段会显示为 `unsupported` 并跳过，且不会暴露其中的值。项目相对 cwd 会改写为相对 xcli 源配置的路径；项目绝对路径和语义不稳定的用户级相对 cwd 会跳过。
+
+`import apply` 会保留 YAML 注释、顺序、无关设置和文件权限。user 源配置不存在时会创建最小、私有（`0600`）的版本 1 配置。应用后条目会登记 ownership，因此 HTTP 条目可立即成为 sync noop，直接 stdio 条目则会在下一次 `mcp sync` 中转换为 xcli launcher。已有 xcli launcher wrapper 会被识别，不会递归导入。可导入的原生示例见 [`examples/native-mcp-claude.json`](examples/native-mcp-claude.json)。
 
 ### 提示词路由
 
@@ -346,4 +368,4 @@ Codex 和 Gemini 提供 Token 统计但不提供美元估算；Claude 和 OpenCo
 - 未知 YAML 字段、无效模板、缺失网络配置和前向工作流依赖都会导致校验失败。
 - xcli 不添加遥测，也不会自动信任仓库配置。
 
-CAP、双向 MCP 导入/合并、项目自动发现、厂商高级 MCP 字段、守护进程、后台 workflow 与交互会话、任务 restart/attach、Windows ConPTY 和 Web UI 均明确延后到 v0.2 之后。
+CAP、自动/持续 MCP 对账、项目自动发现、厂商高级 MCP 字段、守护进程、后台 workflow 与交互会话、任务 restart/attach、Windows ConPTY 和 Web UI 均明确延后到 v0.2 之后。

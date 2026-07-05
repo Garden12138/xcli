@@ -79,6 +79,10 @@ xcli mcp plan
 xcli mcp sync
 xcli mcp plan --scope project --project .
 
+# Safely import existing native MCP entries
+xcli mcp import plan
+xcli mcp import apply
+
 # Run one task; agent-specific arguments follow --
 xcli run codex "Review the current changes"
 xcli run "Fix the failing tests" -- --sandbox workspace-write
@@ -202,6 +206,24 @@ Project files are `.mcp.json` (Claude), `.codex/config.toml` (Codex), `.gemini/s
 See [`examples/project-mcp.yaml`](examples/project-mcp.yaml) for a shareable source configuration.
 
 `sync` always shows the sorted add/update/remove plan before asking for confirmation; automation must pass `--yes`. xcli tracks only entries it owns in the scope/project namespaces of `$XDG_DATA_HOME/xcli/mcp-sync.json`; version 1 user ownership is migrated automatically. Same-name native entries, ownership from another xcli source/scope/project, and external edits are conflicts; inspect them before using `--force`. Removing a server or target from xcli schedules removal only for an unchanged managed entry.
+
+### Importing native MCP configuration
+
+Use the import workflow to pull existing common MCP definitions into xcli without modifying the native files:
+
+```bash
+xcli mcp import plan
+xcli mcp import apply
+
+xcli --config .xcli/config.yaml mcp import plan --scope project --project .
+xcli --config .xcli/config.yaml mcp import apply --scope project --project . --yes
+```
+
+Import reads native configuration files directly and does not require the corresponding CLI to be installed. Without `--target`, it scans the files that exist in the selected scope; an explicitly selected target with no file is treated as empty. Equivalent same-name definitions are merged into one server with explicit target coverage. Different native definitions conflict, while `--force` can replace a different xcli definition, accept native drift, or take over ownership. Import is additive and never deletes an xcli server merely because it is absent natively.
+
+Only definitions that map losslessly to xcli's stdio or Streamable HTTP schema are imported. Static environment values, headers, OAuth options, SSE/WebSocket, disabled entries, timeout/tool policy fields, variable-expanded commands, and other vendor fields are reported as `unsupported` and skipped without exposing their values. Project-relative working directories are rewritten relative to the xcli source; machine-specific project paths and ambiguous user-relative directories are skipped.
+
+`import apply` preserves YAML comments, ordering, unrelated settings, and file permissions. A missing user source is created as a minimal private (`0600`) version 1 configuration. Applied entries are explicitly claimed in the ownership state, so HTTP entries can immediately be a sync noop and direct stdio entries can be converted to the xcli launcher by the next `mcp sync`. Existing xcli launcher wrappers are recognized and never recursively imported. See [`examples/native-mcp-claude.json`](examples/native-mcp-claude.json) for an importable native fixture.
 
 ### Prompt routing
 
@@ -346,4 +368,4 @@ Codex and Gemini report tokens but not a dollar estimate. Claude and OpenCode ma
 - Unknown YAML fields, invalid templates, missing networks, and forward workflow dependencies fail validation.
 - xcli does not add telemetry or automatically trust repository configuration.
 
-CAP, bidirectional MCP import/merge, automatic project discovery, vendor-specific advanced MCP fields, daemons, background workflows and interactive sessions, job restart/attach, Windows ConPTY, and a web UI are intentionally deferred beyond v0.2.
+CAP, automatic/continuous MCP reconciliation, project auto-discovery, vendor-specific advanced MCP fields, daemons, background workflows and interactive sessions, job restart/attach, Windows ConPTY, and a web UI are intentionally deferred beyond v0.2.

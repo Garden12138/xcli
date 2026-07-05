@@ -30,6 +30,7 @@ type Entry struct {
 	Transport string   `json:"transport"`
 	Command   string   `json:"command,omitempty"`
 	Args      []string `json:"args,omitempty"`
+	Cwd       string   `json:"cwd,omitempty"`
 	EnvVars   []string `json:"env_vars,omitempty"`
 	URL       string   `json:"url,omitempty"`
 }
