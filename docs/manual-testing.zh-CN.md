@@ -16,6 +16,7 @@
 | 默认 Agent 切换 | ✓ | ✓ |
 | 交互模式 `use` | ✓ | ✓ |
 | ACP stdio 入口 | ✓ | ✓ |
+| MCP serve 与用户级同步 | ✓ | ✓ |
 | 单次运行 `run` | ✓ | ✓ |
 | 原生参数透传 | ✓ | 可选 |
 | JSON 归一化结果 | ✓ | ✓ |
@@ -105,6 +106,13 @@ case "${1:-}" in
     cat
     ;;
 
+  mcp-server)
+    shift
+    printf 'mcp_cwd=%s static=%s token=%s native_args=%s\n' \
+      "$PWD" "${MCP_STATIC:-<unset>}" "${MCP_TOKEN:-<unset>}" "$*" >&2
+    cat
+    ;;
+
   run)
     shift
     prompt="${1:-}"
@@ -188,6 +196,23 @@ networks:
       - http_proxy
       - https_proxy
       - all_proxy
+
+mcp:
+  servers:
+    fake-tools:
+      transport: stdio
+      command: $XCLI_TEST_ROOT/bin/fake-agent
+      args: ["mcp-server"]
+      cwd: work
+      env:
+        MCP_STATIC: configured
+      env_vars: [MCP_TOKEN]
+      targets: [codex]
+
+    fake-docs:
+      transport: http
+      url: https://example.com/mcp
+      targets: [codex]
 
 recording:
   output: false
@@ -331,7 +356,32 @@ cat "$XCLI_TEST_ROOT/acp.stderr"
 
 将 `fake` 从命令中省略也应得到相同结果，因为它是 `default_agent`。ACP 选择不使用提示词路由。
 
-### 8.3 原生认证入口
+### 8.3 MCP stdio launcher
+
+```bash
+export MCP_TOKEN=runtime-secret
+MCP_MESSAGE='{"jsonrpc":"2.0","id":2,"method":"initialize"}'
+
+printf '%s' "$MCP_MESSAGE" | "$XCLI_BIN" --config "$XCLI_CONFIG" \
+  mcp serve fake-tools \
+  > "$XCLI_TEST_ROOT/mcp.stdout" \
+  2> "$XCLI_TEST_ROOT/mcp.stderr"
+
+printf '%s' "$MCP_MESSAGE" | cmp - "$XCLI_TEST_ROOT/mcp.stdout"
+cat "$XCLI_TEST_ROOT/mcp.stderr"
+```
+
+预期结果：
+
+- `cmp` 不输出差异，协议 stdout 未被 xcli 污染。
+- stderr 包含 `mcp_cwd=<临时目录>/work`、`static=configured` 和 `token=runtime-secret`。
+- `env_vars` 只保存变量名，敏感值在启动时读取。
+- 删除 `MCP_TOKEN` 后重新执行会在启动进程前报缺失变量。
+- `xcli runs list` 不会因为 `mcp serve` 新增记录。
+
+`mcp serve` 是同步后的原生 Agent 实际调用入口；日常使用不需要手工运行。它只接受 server 名称，不向真实 MCP 命令追加 CLI 参数。
+
+### 8.4 原生认证入口
 
 ```bash
 "$XCLI_BIN" --config "$XCLI_CONFIG" auth login fake
@@ -686,7 +736,34 @@ command -v codex-acp claude-agent-acp
 
 不要在普通终端中裸运行 `xcli acp` 后等待人类可读提示；该命令专门等待 ACP 客户端发送协议消息。
 
-### 12.4 真实交互模式
+### 12.4 用户级 MCP 同步
+
+以下示例只同步到 Codex，并使用无鉴权 HTTP server 验证计划和幂等性。它会修改真实 Codex 用户配置；测试前先查看计划：
+
+```bash
+"$XCLI_BIN" --config "$XCLI_CONFIG" mcp plan \
+  --target codex --launcher "$XCLI_BIN"
+
+"$XCLI_BIN" --config "$XCLI_CONFIG" mcp sync \
+  --target codex --launcher "$XCLI_BIN"
+
+"$XCLI_BIN" --config "$XCLI_CONFIG" mcp plan \
+  --target codex --launcher "$XCLI_BIN" --json
+```
+
+预期结果：
+
+- 首次计划包含 `add`；同步前完整展示变更并要求确认。
+- 再次计划中的托管条目为 `noop`。
+- `$XDG_DATA_HOME/xcli/mcp-sync.json` 权限为 `0600`，且不包含 `MCP_TOKEN` 的值。
+- 同名原生条目不会被覆盖，而是显示 `conflict`；只有检查后显式使用 `--force` 才能接管。
+- 未传 `--target` 时只选择当前已安装的规范 Agent。
+
+清理时从 `$XCLI_CONFIG` 的 `mcp.servers` 删除测试 server，再运行同一条 `mcp sync` 并确认 `remove` 计划。不要直接删除原生条目，否则下一次计划会按外部漂移报告冲突。
+
+HTTP OAuth 仍需分别使用各 Agent 的原生 MCP 登录流程；xcli 不复制认证状态。stdio 同步写入 `$XCLI_BIN` 与 `$XCLI_CONFIG` 的绝对路径，移动文件后需重新同步。
+
+### 12.5 真实交互模式
 
 ```bash
 "$XCLI_BIN" --config "$XCLI_CONFIG" use \
@@ -695,7 +772,7 @@ command -v codex-acp claude-agent-acp
 
 确认终端颜色、键盘输入、Ctrl+C 和原生权限提示与直接运行 `codex` 时一致。退出后使用 `xcli runs list` 检查元数据记录。
 
-### 12.5 双 Agent 串行工作流
+### 12.6 双 Agent 串行工作流
 
 仅在 Codex 和 Claude 均已安装并完成认证后执行：
 
@@ -742,6 +819,7 @@ YAML
 - [ ] 默认 Agent、位置参数和 `--agent` 优先级正确。
 - [ ] `use` 保留终端 stdio，内置 Agent 的普通 `run` 只输出归一化最终文本。
 - [ ] `acp` 保持协议 stdio 字节不变，复用 cwd/环境配置且不创建运行记录。
+- [ ] `mcp serve` 使用最小环境并保持协议 stdio；`mcp plan/sync` 能检测冲突且重复执行为 noop。
 - [ ] `--json` 返回合法、稳定的归一化结构。
 - [ ] `--` 后参数不被 xcli 或 shell 重新解释。
 - [ ] `--cwd`、网络变量清除和 Agent 环境变量生效。

@@ -4,6 +4,7 @@ go 1.26
 
 require (
 	github.com/spf13/cobra v1.10.1
+	github.com/tailscale/hujson v0.0.0-20221223112325-20486734a56a
 	gopkg.in/yaml.v3 v3.0.1
 )
 

@@ -74,6 +74,10 @@ xcli use
 # Expose the selected agent to an ACP client over stdio
 xcli acp codex
 
+# Preview and synchronize declared MCP servers
+xcli mcp plan
+xcli mcp sync
+
 # Run one task; agent-specific arguments follow --
 xcli run codex "Review the current changes"
 xcli run "Fix the failing tests" -- --sandbox workspace-write
@@ -139,6 +143,43 @@ npm install -g @agentclientprotocol/codex-acp
 The optional `agents.<name>.acp` block is a complete command override: its arguments replace ordinary agent `args`, while arguments after `--` are appended. Generic agents must define this block before they can be used with `xcli acp`.
 
 xcli does not parse, capture, or persist ACP messages. One connection may contain multiple sessions and tasks, so ACP processes do not create run records and do not contribute to `xcli usage`. Protocol version negotiation, authentication, permissions, and capability handling remain the responsibility of the downstream ACP server and client.
+
+### MCP configuration synchronization
+
+Declare a user-level set of MCP servers once and synchronize it to installed Claude, Codex, Gemini, and OpenCode clients:
+
+```yaml
+mcp:
+  servers:
+    local-tools:
+      transport: stdio
+      command: npx
+      args: ["-y", "@example/mcp-server"]
+      cwd: ./tools
+      env:
+        LOG_LEVEL: info
+      env_vars: [SERVICE_TOKEN]
+      targets: [claude, codex, gemini, opencode]
+
+    docs:
+      transport: http
+      url: https://example.com/mcp
+```
+
+`targets` defaults to all four built-in adapters. Relative `cwd` values resolve from the xcli configuration directory. `env_vars` names are copied only when `xcli mcp serve` starts the local server and must exist at that time; use them instead of putting secrets in `env`.
+
+For stdio servers, native clients launch the stable xcli executable, which then applies the configured command, working directory, and minimal environment. HTTP URLs are written directly and each native client owns its OAuth login. The first release does not synchronize SSE, static authentication headers, project configuration, tool policies, or vendor-specific OAuth fields.
+
+```bash
+xcli mcp plan
+xcli mcp plan --target codex --json
+xcli mcp sync
+xcli mcp sync --yes
+```
+
+`sync` always shows the sorted add/update/remove plan before asking for confirmation; automation must pass `--yes`. xcli tracks only entries it owns in `$XDG_DATA_HOME/xcli/mcp-sync.json`. Same-name native entries, ownership from another xcli config, and external edits are conflicts; inspect them before using `--force`. Removing a server or target from xcli schedules removal only for an unchanged managed entry.
+
+The stdio launcher and source configuration paths are absolute. If xcli was built under a temporary directory, pass a stable installed path with `--launcher`; moving either path requires another sync. OpenCode JSONC edits preserve comments and unrelated settings, create an `.xcli.bak` backup, and are written atomically.
 
 ### Prompt routing
 
@@ -240,4 +281,4 @@ Codex and Gemini report tokens but not a dollar estimate. Claude and OpenCode ma
 - Unknown YAML fields, invalid templates, missing networks, and forward workflow dependencies fail validation.
 - xcli does not add telemetry or automatically trust repository configuration.
 
-CAP, MCP synchronization, daemons, process control, session resume, Windows ConPTY, and a web UI are intentionally deferred beyond v0.2.
+CAP, project-level or bidirectional MCP synchronization, daemons, process control, session resume, Windows ConPTY, and a web UI are intentionally deferred beyond v0.2.

@@ -98,6 +98,83 @@ func TestLoadRejectsInvalidACPConfig(t *testing.T) {
 	}
 }
 
+func TestLoadMCPServers(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	data := `version: 1
+mcp:
+  servers:
+    local-tools:
+      transport: stdio
+      command: npx
+      args: ["-y", "@example/mcp"]
+      cwd: ./tools
+      env:
+        LOG_LEVEL: info
+      env_vars: [SERVICE_TOKEN]
+      targets: [codex, claude]
+    docs:
+      transport: http
+      url: https://example.com/mcp
+`
+	if err := os.WriteFile(path, []byte(data), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, _, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	local := cfg.MCP.Servers["local-tools"]
+	if local.Command != "npx" || local.Cwd != "./tools" || len(local.EnvVars) != 1 || len(local.Targets) != 2 {
+		t.Fatalf("unexpected local MCP server: %#v", local)
+	}
+	if remote := cfg.MCP.Servers["docs"]; remote.Transport != "http" || remote.URL != "https://example.com/mcp" {
+		t.Fatalf("unexpected remote MCP server: %#v", remote)
+	}
+}
+
+func TestValidateMCPServers(t *testing.T) {
+	tests := []struct {
+		name       string
+		serverName string
+		server     MCPServer
+		want       string
+	}{
+		{name: "reserved name", serverName: "workspace", server: MCPServer{Transport: "stdio", Command: "server"}, want: "invalid MCP server name"},
+		{name: "unsafe name", serverName: "bad_name", server: MCPServer{Transport: "stdio", Command: "server"}, want: "invalid MCP server name"},
+		{name: "missing stdio command", serverName: "test", server: MCPServer{Transport: "stdio"}, want: "requires command"},
+		{name: "stdio URL", serverName: "test", server: MCPServer{Transport: "stdio", Command: "server", URL: "https://example.com"}, want: "cannot set url"},
+		{name: "HTTP stdio fields", serverName: "test", server: MCPServer{Transport: "http", URL: "https://example.com", Args: []string{"x"}}, want: "cannot set stdio fields"},
+		{name: "invalid HTTP URL", serverName: "test", server: MCPServer{Transport: "http", URL: "file:///tmp/mcp"}, want: "invalid HTTP url"},
+		{name: "unknown transport", serverName: "test", server: MCPServer{Transport: "sse", URL: "https://example.com"}, want: "unsupported transport"},
+		{name: "duplicate env", serverName: "test", server: MCPServer{Transport: "stdio", Command: "server", Env: map[string]string{"TOKEN": "x"}, EnvVars: []string{"TOKEN"}}, want: "repeats environment variable"},
+		{name: "invalid env", serverName: "test", server: MCPServer{Transport: "stdio", Command: "server", EnvVars: []string{"BAD-NAME"}}, want: "invalid env_vars"},
+		{name: "unknown target", serverName: "test", server: MCPServer{Transport: "stdio", Command: "server", Targets: []string{"custom"}}, want: "unsupported target"},
+		{name: "duplicate target", serverName: "test", server: MCPServer{Transport: "stdio", Command: "server", Targets: []string{"codex", "codex"}}, want: "repeats target"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := Defaults()
+			cfg.MCP.Servers = map[string]MCPServer{test.serverName: test.server}
+			err := cfg.Validate()
+			if err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("expected error containing %q, got %v", test.want, err)
+			}
+		})
+	}
+}
+
+func TestLoadRejectsUnknownMCPField(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	data := "version: 1\nmcp:\n  servers:\n    test:\n      transport: http\n      url: https://example.com/mcp\n      oauth: true\n"
+	if err := os.WriteFile(path, []byte(data), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, _, err := Load(path)
+	if err == nil || !strings.Contains(err.Error(), "field oauth not found") {
+		t.Fatalf("expected strict MCP field error, got %v", err)
+	}
+}
+
 func TestLoadRoutingRules(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.yaml")
 	data := `version: 1

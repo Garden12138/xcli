@@ -16,6 +16,7 @@ import (
 
 	"github.com/Garden12138/xcli/internal/agent"
 	"github.com/Garden12138/xcli/internal/config"
+	"github.com/Garden12138/xcli/internal/mcp"
 	"github.com/Garden12138/xcli/internal/routing"
 	"github.com/Garden12138/xcli/internal/workflow"
 )
@@ -490,6 +491,254 @@ func TestACPCommandForwardsCancellation(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("ACP command did not exit after cancellation")
+	}
+	assertFileContent(t, interrupted, "interrupted")
+}
+
+func TestMCPPlanSyncAndIdempotence(t *testing.T) {
+	directory := t.TempDir()
+	home := filepath.Join(directory, "home")
+	if err := os.MkdirAll(home, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	nativeState := filepath.Join(directory, "native.json")
+	if err := os.WriteFile(nativeState, []byte("[]\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	logPath := filepath.Join(directory, "commands.log")
+	cli := filepath.Join(directory, "fake-codex")
+	script := `#!/bin/sh
+case "$1" in
+  --version) echo 'codex-cli 1.0' ;;
+  mcp)
+    case "$2" in
+      list) cat "$XCLI_NATIVE_MCP_STATE" ;;
+      add)
+        printf '%s\n' "$*" >> "$XCLI_NATIVE_MCP_LOG"
+        printf '[{"name":"%s","transport":{"type":"streamable_http","url":"%s"}}]\n' "$3" "$5" > "$XCLI_NATIVE_MCP_STATE"
+        ;;
+      remove)
+        printf '%s\n' "$*" >> "$XCLI_NATIVE_MCP_LOG"
+        printf '[]\n' > "$XCLI_NATIVE_MCP_STATE"
+        ;;
+    esac
+    ;;
+esac
+`
+	if err := os.WriteFile(cli, []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	launcher := filepath.Join(directory, "xcli")
+	if err := os.WriteFile(launcher, []byte("#!/bin/sh\nexit 0\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(directory, "config.yaml")
+	cfg := config.Defaults()
+	codex := cfg.Agents["codex"]
+	codex.Command = cli
+	codex.Env = map[string]string{"XCLI_NATIVE_MCP_STATE": nativeState, "XCLI_NATIVE_MCP_LOG": logPath}
+	cfg.Agents["codex"] = codex
+	cfg.MCP.Servers = map[string]config.MCPServer{
+		"docs": {Transport: "http", URL: "https://example.com/mcp", Targets: []string{"codex"}},
+	}
+	if err := config.Save(configPath, cfg); err != nil {
+		t.Fatal(err)
+	}
+	setCommandEnvironment(t, "HOME", home)
+	dataPath := filepath.Join(directory, "data")
+	setCommandEnvironment(t, "XDG_DATA_HOME", dataPath)
+
+	executeJSON := func(args ...string) (mcp.Plan, error) {
+		t.Helper()
+		root := newRootCommand()
+		var stdout bytes.Buffer
+		root.SetOut(&stdout)
+		root.SetErr(&bytes.Buffer{})
+		root.SetArgs(append([]string{"--config", configPath}, args...))
+		err := root.Execute()
+		if err != nil {
+			return mcp.Plan{}, err
+		}
+		var plan mcp.Plan
+		if err := json.Unmarshal(stdout.Bytes(), &plan); err != nil {
+			t.Fatalf("decode MCP output %q: %v", stdout.String(), err)
+		}
+		return plan, nil
+	}
+
+	plan, err := executeJSON("mcp", "plan", "--target", "codex", "--launcher", launcher, "--json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !plan.Applicable || plan.Applied || len(plan.Changes) != 1 || plan.Changes[0].Action != mcp.ActionAdd {
+		t.Fatalf("unexpected plan: %#v", plan)
+	}
+
+	root := newRootCommand()
+	root.SetIn(strings.NewReader(""))
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"--config", configPath, "mcp", "sync", "--target", "codex", "--launcher", launcher})
+	if err := root.Execute(); err == nil || !strings.Contains(err.Error(), "without a terminal") {
+		t.Fatalf("expected non-interactive confirmation error, got %v", err)
+	}
+
+	plan, err = executeJSON("mcp", "sync", "--target", "codex", "--launcher", launcher, "--yes", "--json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !plan.Applied || plan.Changes[0].Status != mcp.StatusApplied {
+		t.Fatalf("sync was not applied: %#v", plan)
+	}
+	logData, err := os.ReadFile(logPath)
+	if err != nil || !strings.Contains(string(logData), "mcp add docs --url https://example.com/mcp") {
+		t.Fatalf("unexpected native command log %q, %v", logData, err)
+	}
+	statePath := filepath.Join(dataPath, "xcli", "mcp-sync.json")
+	info, err := os.Stat(statePath)
+	if err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("sync state mode = %v, %v", info.Mode().Perm(), err)
+	}
+	plan, err = executeJSON("mcp", "plan", "--target", "codex", "--launcher", launcher, "--json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.Changes) != 1 || plan.Changes[0].Action != mcp.ActionNoop {
+		t.Fatalf("repeated plan is not idempotent: %#v", plan)
+	}
+	cfg.MCP.Servers["local"] = config.MCPServer{Transport: "stdio", Command: "server", Targets: []string{"codex"}}
+	if err := config.Save(configPath, cfg); err != nil {
+		t.Fatal(err)
+	}
+	root = newRootCommand()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"--config", configPath, "mcp", "sync", "--target", "codex", "--yes"})
+	if err := root.Execute(); err == nil || !strings.Contains(err.Error(), "temporary xcli launcher") {
+		t.Fatalf("expected temporary launcher error, got %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dataPath, "xcli", "runs")); !os.IsNotExist(err) {
+		t.Fatalf("MCP sync created run records: %v", err)
+	}
+}
+
+func TestMCPServePassesThroughAndFiltersEnvironment(t *testing.T) {
+	directory := t.TempDir()
+	work := filepath.Join(directory, "work")
+	if err := os.Mkdir(work, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	statePath := filepath.Join(directory, "serve-state")
+	server := filepath.Join(directory, "fake-mcp")
+	script := "#!/bin/sh\n" +
+		"printf '%s|%s|%s|%s' \"$PWD\" \"$SERVICE_TOKEN\" \"$LOG_LEVEL\" \"${OTHER_SECRET-unset}\" > \"$STATE_FILE\"\n" +
+		"printf diagnostic >&2\n" +
+		"cat\n"
+	if err := os.WriteFile(server, []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(directory, "config.yaml")
+	cfg := config.Defaults()
+	cfg.MCP.Servers = map[string]config.MCPServer{
+		"local": {
+			Transport: "stdio", Command: server, Cwd: "work",
+			Env:     map[string]string{"LOG_LEVEL": "debug", "STATE_FILE": statePath},
+			EnvVars: []string{"SERVICE_TOKEN"},
+		},
+	}
+	if err := config.Save(configPath, cfg); err != nil {
+		t.Fatal(err)
+	}
+	setCommandEnvironment(t, "SERVICE_TOKEN", "secret")
+	setCommandEnvironment(t, "OTHER_SECRET", "must-not-leak")
+	dataPath := filepath.Join(directory, "data")
+	setCommandEnvironment(t, "XDG_DATA_HOME", dataPath)
+	payload := `{"jsonrpc":"2.0","id":1}`
+	root := newRootCommand()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	root.SetIn(strings.NewReader(payload))
+	root.SetOut(&stdout)
+	root.SetErr(&stderr)
+	root.SetArgs([]string{"--config", configPath, "mcp", "serve", "local"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if stdout.String() != payload || stderr.String() != "diagnostic" {
+		t.Fatalf("MCP stdio changed: stdout=%q stderr=%q", stdout.String(), stderr.String())
+	}
+	resolvedWork, err := filepath.EvalSymlinks(work)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertFileContent(t, statePath, resolvedWork+"|secret|debug|unset")
+	if _, err := os.Stat(filepath.Join(dataPath, "xcli", "runs")); !os.IsNotExist(err) {
+		t.Fatalf("MCP serve created run records: %v", err)
+	}
+
+	if err := os.Unsetenv("SERVICE_TOKEN"); err != nil {
+		t.Fatal(err)
+	}
+	root = newRootCommand()
+	root.SetArgs([]string{"--config", configPath, "mcp", "serve", "local"})
+	if err := root.Execute(); err == nil || !strings.Contains(err.Error(), "requires environment variable SERVICE_TOKEN") {
+		t.Fatalf("expected missing variable error, got %v", err)
+	}
+}
+
+func TestMCPServeForwardsCancellation(t *testing.T) {
+	directory := t.TempDir()
+	ready := filepath.Join(directory, "ready")
+	interrupted := filepath.Join(directory, "interrupted")
+	server := filepath.Join(directory, "waiting-mcp")
+	script := "#!/bin/sh\n" +
+		"trap 'printf interrupted > \"$INTERRUPTED\"; exit 0' INT\n" +
+		"printf ready > \"$READY\"\n" +
+		"while :; do sleep 0.05; done\n"
+	if err := os.WriteFile(server, []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(directory, "config.yaml")
+	cfg := config.Defaults()
+	cfg.MCP.Servers = map[string]config.MCPServer{
+		"waiting": {
+			Transport: "stdio", Command: server,
+			Env: map[string]string{"READY": ready, "INTERRUPTED": interrupted},
+		},
+	}
+	if err := config.Save(configPath, cfg); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	root := newRootCommand()
+	root.SetContext(ctx)
+	root.SetIn(strings.NewReader(""))
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"--config", configPath, "mcp", "serve", "waiting"})
+	finished := make(chan error, 1)
+	go func() { finished <- root.Execute() }()
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		if _, err := os.Stat(ready); err == nil {
+			break
+		} else if !os.IsNotExist(err) {
+			t.Fatal(err)
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("MCP server did not start")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	cancel()
+	select {
+	case err := <-finished:
+		var exitErr *ExitError
+		if !errors.As(err, &exitErr) || exitErr.Code != 130 {
+			t.Fatalf("expected canceled exit code 130, got %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("MCP serve did not exit after cancellation")
 	}
 	assertFileContent(t, interrupted, "interrupted")
 }

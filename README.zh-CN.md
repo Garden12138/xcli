@@ -74,6 +74,10 @@ xcli use
 # 通过 stdio 向 ACP 客户端暴露所选 Agent
 xcli acp codex
 
+# 预览并同步声明的 MCP server
+xcli mcp plan
+xcli mcp sync
+
 # 执行单次任务；Agent 专属参数放在 -- 之后
 xcli run codex "审查当前变更"
 xcli run "修复失败的测试" -- --sandbox workspace-write
@@ -139,6 +143,43 @@ npm install -g @agentclientprotocol/codex-acp
 可选的 `agents.<name>.acp` 是完整命令覆盖：其中的参数会替代普通 Agent `args`，而 `--` 后的参数会继续追加。generic Agent 必须配置该结构后才能用于 `xcli acp`。
 
 xcli 不解析、捕获或持久化 ACP 消息。一个连接可以承载多个会话和任务，因此 ACP 进程不会创建运行记录，也不会计入 `xcli usage`。协议版本协商、认证、权限和能力处理均由下游 ACP 服务与客户端负责。
+
+### MCP 配置同步
+
+在一处声明用户级 MCP server，并同步到已安装的 Claude、Codex、Gemini 和 OpenCode：
+
+```yaml
+mcp:
+  servers:
+    local-tools:
+      transport: stdio
+      command: npx
+      args: ["-y", "@example/mcp-server"]
+      cwd: ./tools
+      env:
+        LOG_LEVEL: info
+      env_vars: [SERVICE_TOKEN]
+      targets: [claude, codex, gemini, opencode]
+
+    docs:
+      transport: http
+      url: https://example.com/mcp
+```
+
+省略 `targets` 时默认包含四个内置 Adapter。相对 `cwd` 以 xcli 配置目录为基准。`env_vars` 只在 `xcli mcp serve` 启动本地 server 时复制，并且当时必须存在；敏感值应通过它传递，不要写入 `env`。
+
+对于 stdio server，原生客户端启动稳定的 xcli 可执行文件，再由 xcli 应用真实命令、工作目录和最小环境。HTTP URL 直接写入原生配置，各客户端自行完成 OAuth 登录。首版不负责 SSE、静态鉴权 header、项目配置、工具策略或厂商专属 OAuth 字段。
+
+```bash
+xcli mcp plan
+xcli mcp plan --target codex --json
+xcli mcp sync
+xcli mcp sync --yes
+```
+
+`sync` 始终先展示排序后的新增、更新和删除计划，再请求确认；自动化必须传入 `--yes`。xcli 只管理记录在 `$XDG_DATA_HOME/xcli/mcp-sync.json` 中的自有条目。同名原生条目、其他 xcli 配置的所有权以及外部修改都会成为冲突；使用 `--force` 前应先检查。删除 xcli 中的 server 或 target 时，只会计划删除仍未漂移的托管条目。
+
+stdio launcher 和源配置均写入绝对路径。若 xcli 构建在临时目录，需通过 `--launcher` 指定稳定安装路径；移动任一路径后必须重新同步。OpenCode JSONC 修改会保留注释和无关设置、创建 `.xcli.bak` 备份，并使用原子写入。
 
 ### 提示词路由
 
@@ -240,4 +281,4 @@ Codex 和 Gemini 提供 Token 统计但不提供美元估算；Claude 和 OpenCo
 - 未知 YAML 字段、无效模板、缺失网络配置和前向工作流依赖都会导致校验失败。
 - xcli 不添加遥测，也不会自动信任仓库配置。
 
-CAP、MCP 同步、守护进程、进程控制、会话恢复、Windows ConPTY 和 Web UI 均明确延后到 v0.2 之后。
+CAP、项目级或双向 MCP 同步、守护进程、进程控制、会话恢复、Windows ConPTY 和 Web UI 均明确延后到 v0.2 之后。

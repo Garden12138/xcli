@@ -44,6 +44,27 @@ routing:
       prompt_regex: '(?i)(review|audit|审查)'
       agent: claude
 
+mcp:
+  servers:
+    context7:
+      transport: http
+      url: https://mcp.context7.com/mcp
+
+    local-tools:
+      transport: stdio
+      command: npx
+      args:
+        - -y
+        - "@example/mcp-server"
+      cwd: .
+      env:
+        LOG_LEVEL: info
+      env_vars:
+        - SERVICE_TOKEN
+      targets:
+        - codex
+        - claude
+
 networks:
   proxy:
     set:

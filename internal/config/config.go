@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -23,7 +24,23 @@ type Config struct {
 	Agents       map[string]AgentConfig `yaml:"agents,omitempty" json:"agents,omitempty"`
 	Networks     map[string]Network     `yaml:"networks,omitempty" json:"networks,omitempty"`
 	Routing      Routing                `yaml:"routing,omitempty" json:"routing,omitempty"`
+	MCP          MCPConfig              `yaml:"mcp,omitempty" json:"mcp,omitempty"`
 	Recording    Recording              `yaml:"recording,omitempty" json:"recording"`
+}
+
+type MCPConfig struct {
+	Servers map[string]MCPServer `yaml:"servers,omitempty" json:"servers,omitempty"`
+}
+
+type MCPServer struct {
+	Transport string            `yaml:"transport" json:"transport"`
+	Command   string            `yaml:"command,omitempty" json:"command,omitempty"`
+	Args      []string          `yaml:"args,omitempty" json:"args,omitempty"`
+	Cwd       string            `yaml:"cwd,omitempty" json:"cwd,omitempty"`
+	Env       map[string]string `yaml:"env,omitempty" json:"env,omitempty"`
+	EnvVars   []string          `yaml:"env_vars,omitempty" json:"env_vars,omitempty"`
+	URL       string            `yaml:"url,omitempty" json:"url,omitempty"`
+	Targets   []string          `yaml:"targets,omitempty" json:"targets,omitempty"`
 }
 
 type Routing struct {
@@ -210,6 +227,16 @@ func merge(base, user Config) Config {
 	if user.Routing.Rules != nil {
 		base.Routing.Rules = append([]RouteRule(nil), user.Routing.Rules...)
 	}
+	if user.MCP.Servers != nil {
+		base.MCP.Servers = make(map[string]MCPServer, len(user.MCP.Servers))
+		for name, server := range user.MCP.Servers {
+			server.Args = append([]string(nil), server.Args...)
+			server.Env = cloneMap(server.Env)
+			server.EnvVars = append([]string(nil), server.EnvVars...)
+			server.Targets = append([]string(nil), server.Targets...)
+			base.MCP.Servers[name] = server
+		}
+	}
 	base.Recording = user.Recording
 	return base
 }
@@ -308,6 +335,70 @@ func (c Config) Validate() error {
 			if key == "" || strings.ContainsRune(key, '=') {
 				return fmt.Errorf("network %q contains invalid set key %q", name, key)
 			}
+		}
+	}
+	if err := validateMCP(c.MCP); err != nil {
+		return err
+	}
+	return nil
+}
+
+var (
+	mcpNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9.-]*$`)
+	envNamePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+)
+
+var mcpTargets = map[string]bool{"claude": true, "codex": true, "gemini": true, "opencode": true}
+
+func validateMCP(mcp MCPConfig) error {
+	for name, server := range mcp.Servers {
+		if !mcpNamePattern.MatchString(name) || name == "workspace" {
+			return fmt.Errorf("invalid MCP server name %q", name)
+		}
+		switch server.Transport {
+		case "stdio":
+			if strings.TrimSpace(server.Command) == "" {
+				return fmt.Errorf("MCP server %q requires command for stdio transport", name)
+			}
+			if server.URL != "" {
+				return fmt.Errorf("MCP server %q cannot set url for stdio transport", name)
+			}
+		case "http":
+			if server.Command != "" || len(server.Args) > 0 || server.Cwd != "" || len(server.Env) > 0 || len(server.EnvVars) > 0 {
+				return fmt.Errorf("MCP server %q cannot set stdio fields for http transport", name)
+			}
+			parsed, err := url.Parse(server.URL)
+			if err != nil || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+				return fmt.Errorf("MCP server %q has invalid HTTP url %q", name, server.URL)
+			}
+		default:
+			return fmt.Errorf("MCP server %q has unsupported transport %q", name, server.Transport)
+		}
+		seenEnv := map[string]bool{}
+		for key := range server.Env {
+			if !envNamePattern.MatchString(key) {
+				return fmt.Errorf("MCP server %q has invalid environment variable %q", name, key)
+			}
+			seenEnv[key] = true
+		}
+		for _, key := range server.EnvVars {
+			if !envNamePattern.MatchString(key) {
+				return fmt.Errorf("MCP server %q has invalid env_vars entry %q", name, key)
+			}
+			if seenEnv[key] {
+				return fmt.Errorf("MCP server %q repeats environment variable %q", name, key)
+			}
+			seenEnv[key] = true
+		}
+		seenTargets := map[string]bool{}
+		for _, target := range server.Targets {
+			if !mcpTargets[target] {
+				return fmt.Errorf("MCP server %q has unsupported target %q", name, target)
+			}
+			if seenTargets[target] {
+				return fmt.Errorf("MCP server %q repeats target %q", name, target)
+			}
+			seenTargets[target] = true
 		}
 	}
 	return nil
