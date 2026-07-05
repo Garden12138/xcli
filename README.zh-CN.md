@@ -26,7 +26,7 @@
 从 `darwin_amd64`、`darwin_arm64`、`linux_amd64` 或 `linux_arm64` 中选择对应平台，然后校验并安装：
 
 ```bash
-VERSION=0.2.0
+VERSION=0.3.0
 PLATFORM=darwin_arm64
 ARCHIVE="xcli_${VERSION}_${PLATFORM}.tar.gz"
 
@@ -368,4 +368,8 @@ Codex 和 Gemini 提供 Token 统计但不提供美元估算；Claude 和 OpenCo
 - 未知 YAML 字段、无效模板、缺失网络配置和前向工作流依赖都会导致校验失败。
 - xcli 不添加遥测，也不会自动信任仓库配置。
 
-CAP、自动/持续 MCP 对账、项目自动发现、厂商高级 MCP 字段、守护进程、后台 workflow 与交互会话、任务 restart/attach、Windows ConPTY 和 Web UI 均明确延后到 v0.2 之后。
+CAP、自动/持续 MCP 对账、项目自动发现、厂商高级 MCP 字段、守护进程、后台 workflow 与交互会话、任务 restart/attach、Windows ConPTY 和 Web UI 均明确延后到 v0.3 之后。
+
+## 许可证
+
+xcli 采用 [MIT License](LICENSE) 发布。

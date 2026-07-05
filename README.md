@@ -26,7 +26,7 @@ Download a prebuilt archive from the [GitHub Releases](https://github.com/Garden
 Choose one of `darwin_amd64`, `darwin_arm64`, `linux_amd64`, or `linux_arm64`, then verify and install the archive:
 
 ```bash
-VERSION=0.2.0
+VERSION=0.3.0
 PLATFORM=darwin_arm64
 ARCHIVE="xcli_${VERSION}_${PLATFORM}.tar.gz"
 
@@ -368,4 +368,8 @@ Codex and Gemini report tokens but not a dollar estimate. Claude and OpenCode ma
 - Unknown YAML fields, invalid templates, missing networks, and forward workflow dependencies fail validation.
 - xcli does not add telemetry or automatically trust repository configuration.
 
-CAP, automatic/continuous MCP reconciliation, project auto-discovery, vendor-specific advanced MCP fields, daemons, background workflows and interactive sessions, job restart/attach, Windows ConPTY, and a web UI are intentionally deferred beyond v0.2.
+CAP, automatic/continuous MCP reconciliation, project auto-discovery, vendor-specific advanced MCP fields, daemons, background workflows and interactive sessions, job restart/attach, Windows ConPTY, and a web UI are intentionally deferred beyond v0.3.
+
+## License
+
+xcli is available under the [MIT License](LICENSE).
