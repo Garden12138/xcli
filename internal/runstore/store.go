@@ -29,6 +29,8 @@ type Record struct {
 	Status          string       `json:"status"`
 	ExitCode        int          `json:"exit_code"`
 	SessionID       string       `json:"session_id,omitempty"`
+	ResumedFrom     string       `json:"resumed_from,omitempty"`
+	ResumedStep     string       `json:"resumed_step,omitempty"`
 	Usage           *agent.Usage `json:"usage,omitempty"`
 	OutputFile      string       `json:"output_file,omitempty"`
 	Steps           []StepRecord `json:"steps,omitempty"`

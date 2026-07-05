@@ -12,6 +12,7 @@ const (
 	SourcePositional = "positional"
 	SourceRule       = "rule"
 	SourceDefault    = "default"
+	SourceResume     = "resume"
 )
 
 type Decision struct {

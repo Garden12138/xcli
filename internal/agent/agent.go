@@ -178,6 +178,65 @@ func (d Definition) Run(prompt string, structured bool, extra []string) (Command
 	return CommandSpec{Command: d.Config.Command, Args: base}, nil
 }
 
+func (d Definition) Resume(sessionID, prompt string, structured bool, extra []string) (CommandSpec, error) {
+	if strings.TrimSpace(sessionID) == "" {
+		return CommandSpec{}, errors.New("a session id is required")
+	}
+
+	base := append([]string{}, d.Config.Args...)
+	interactive := prompt == ""
+	switch d.Config.Adapter {
+	case "claude":
+		base = append(base, extra...)
+		base = append(base, "--resume", sessionID)
+		if !interactive {
+			base = append(base, "-p", prompt)
+			if structured {
+				base = append(base, "--output-format", "stream-json", "--verbose")
+			}
+		}
+	case "codex":
+		if interactive {
+			base = append(base, "resume")
+			base = append(base, extra...)
+			base = append(base, sessionID)
+		} else {
+			base = append(base, "exec", "resume")
+			if structured {
+				base = append(base, "--json")
+			}
+			base = append(base, extra...)
+			base = append(base, sessionID, prompt)
+		}
+	case "gemini":
+		base = append(base, extra...)
+		base = append(base, "--resume", sessionID)
+		if !interactive {
+			base = append(base, "-p", prompt)
+			if structured {
+				base = append(base, "--output-format", "stream-json")
+			}
+		}
+	case "opencode":
+		if interactive {
+			base = append(base, extra...)
+			base = append(base, "--session", sessionID)
+		} else {
+			base = append(base, "run")
+			if structured {
+				base = append(base, "--format", "json")
+			}
+			base = append(base, extra...)
+			base = append(base, "--session", sessionID, prompt)
+		}
+	case "generic":
+		return CommandSpec{}, fmt.Errorf("agent %q does not support session resume", d.Name)
+	default:
+		return CommandSpec{}, fmt.Errorf("unsupported adapter %q", d.Config.Adapter)
+	}
+	return CommandSpec{Command: d.Config.Command, Args: base}, nil
+}
+
 func (d Definition) Auth() (CommandSpec, error) {
 	if len(d.Config.AuthArgs) == 0 {
 		if d.Config.Adapter == "gemini" {

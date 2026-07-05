@@ -83,6 +83,10 @@ xcli run codex "Review the current changes"
 xcli run "Fix the failing tests" -- --sandbox workspace-write
 xcli route "Review the authentication changes"
 
+# Resume a recorded session, interactively or with a follow-up prompt
+xcli resume <run-id>
+xcli resume <run-id> "Continue with the next step" --json
+
 # Run a workflow (parallelism is opt-in)
 xcli workflow validate examples/implement-and-review.yaml
 xcli workflow run examples/implement-and-review.yaml \
@@ -199,6 +203,26 @@ The first matching rule wins. If none match, xcli uses `default_agent`; if neith
 
 Selection precedence is `--agent`, a configured agent in the first positional argument, the first matching routing rule, then `default_agent`. Explicit selections never evaluate routing rules. Use `xcli route <prompt>` or `xcli route --json <prompt>` to inspect the rule decision without starting an agent or creating a run record. Routing applies only to `run`; interactive sessions and workflow steps retain their explicit agent behavior.
 
+### Session resume
+
+`xcli resume <target> [prompt...]` continues a native session using Claude's `--resume`, Codex's `resume`/`exec resume`, Gemini's `--resume`, or OpenCode's `--session`. With no prompt, xcli connects the terminal directly to the restored interactive session. With a prompt, it uses the same structured output, normalized result, usage capture, and `--json` behavior as `run`:
+
+```bash
+# Restore the agent, session ID, and working directory from an xcli record
+xcli resume run-20260705T010203Z-ab12cd34
+xcli resume run-20260705T010203Z-ab12cd34 "Implement the remaining tests" --json
+
+# A workflow record needs an explicit step
+xcli resume workflow-20260705T020304Z-ef56ab78 --step review "Address the findings"
+
+# Sessions created outside xcli require an explicit configured agent
+xcli resume 7f9f9a2e-1b3c-4c7a-9b0e-000000000000 --agent codex
+```
+
+Record lookup always happens first. If no matching record exists, xcli treats the target as a native session identifier only when `--agent` is present; this prevents a misspelled run ID from silently using `default_agent`. A record supplies its original agent and `cwd`; a matching `--agent` is accepted, a conflicting one fails, and `--cwd` can replace a directory that moved or no longer exists. Resume never evaluates prompt routing or `default_agent`, `--json` requires a follow-up prompt, and generic agents are not supported in this first release.
+
+Interactive resumes create `use` records and remain excluded from `xcli usage`. Non-interactive resumes create ordinary `run` tasks with `selection_source: resume`, plus `resumed_from` and optional `resumed_step` metadata. If the native client reports a new session ID, the new record uses it; otherwise it retains the requested ID.
+
 ### Network profiles
 
 A child process inherits the current environment, then xcli applies the selected network profile and agent-specific environment variables. A direct profile can remove both upper- and lower-case proxy variables:
@@ -253,7 +277,7 @@ Parallel steps keep the existing shared `cwd` behavior. xcli does not create iso
 
 ## Run records, usage, and privacy
 
-xcli stores private (`0600`) metadata under `$XDG_DATA_HOME/xcli/runs` or `~/.local/share/xcli/runs`. Metadata includes the agent, working directory, timestamps, status, exit code, native session ID, and normalized token usage when the structured output exposes them.
+xcli stores private (`0600`) metadata under `$XDG_DATA_HOME/xcli/runs` or `~/.local/share/xcli/runs`. Metadata includes the agent, working directory, timestamps, status, exit code, native session ID, resume parent/step when applicable, and normalized token usage when the structured output exposes them.
 
 Full output is disabled by default because it may contain source code or secrets. Enable it explicitly with workflow `--record-output` or `recording.output: true`.
 
@@ -281,4 +305,4 @@ Codex and Gemini report tokens but not a dollar estimate. Claude and OpenCode ma
 - Unknown YAML fields, invalid templates, missing networks, and forward workflow dependencies fail validation.
 - xcli does not add telemetry or automatically trust repository configuration.
 
-CAP, project-level or bidirectional MCP synchronization, daemons, process control, session resume, Windows ConPTY, and a web UI are intentionally deferred beyond v0.2.
+CAP, project-level or bidirectional MCP synchronization, daemons, process control, Windows ConPTY, and a web UI are intentionally deferred beyond v0.2.

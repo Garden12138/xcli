@@ -38,6 +38,54 @@ func TestBuiltinRunCommands(t *testing.T) {
 	}
 }
 
+func TestBuiltinResumeCommands(t *testing.T) {
+	cfg := config.Defaults()
+	claude := cfg.Agents["claude"]
+	claude.Args = []string{"--setting", "value"}
+	cfg.Agents["claude"] = claude
+
+	tests := []struct {
+		name       string
+		prompt     string
+		extra      []string
+		want       []string
+		structured bool
+	}{
+		{name: "claude-interactive", extra: []string{"--model", "opus"}, want: []string{"--setting", "value", "--model", "opus", "--resume", "session-1"}},
+		{name: "claude-run", prompt: "continue", extra: []string{"--model", "opus"}, structured: true, want: []string{"--setting", "value", "--model", "opus", "--resume", "session-1", "-p", "continue", "--output-format", "stream-json", "--verbose"}},
+		{name: "codex-interactive", extra: []string{"--all"}, want: []string{"resume", "--all", "session-1"}},
+		{name: "codex-run", prompt: "continue", extra: []string{"--sandbox", "workspace-write"}, structured: true, want: []string{"exec", "resume", "--json", "--sandbox", "workspace-write", "session-1", "continue"}},
+		{name: "gemini-interactive", extra: []string{"--model", "pro"}, want: []string{"--model", "pro", "--resume", "session-1"}},
+		{name: "gemini-run", prompt: "continue", extra: []string{"--model", "pro"}, structured: true, want: []string{"--model", "pro", "--resume", "session-1", "-p", "continue", "--output-format", "stream-json"}},
+		{name: "opencode-interactive", extra: []string{"--model", "provider/model"}, want: []string{"--model", "provider/model", "--session", "session-1"}},
+		{name: "opencode-run", prompt: "continue", extra: []string{"--model", "provider/model"}, structured: true, want: []string{"run", "--format", "json", "--model", "provider/model", "--session", "session-1", "continue"}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			name := strings.Split(test.name, "-")[0]
+			definition := Definition{Name: name, Config: cfg.Agents[name]}
+			spec, err := definition.Resume("session-1", test.prompt, test.structured, test.extra)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(spec.Args, test.want) {
+				t.Fatalf("args = %#v, want %#v", spec.Args, test.want)
+			}
+		})
+	}
+}
+
+func TestResumeRejectsMissingSessionAndGenericAgent(t *testing.T) {
+	definition := Definition{Name: "custom", Config: config.AgentConfig{Adapter: "generic", Command: "custom"}}
+	if _, err := definition.Resume("session-1", "", false, nil); err == nil || !strings.Contains(err.Error(), "does not support") {
+		t.Fatalf("expected unsupported resume error, got %v", err)
+	}
+	definition = Definition{Name: "codex", Config: config.Defaults().Agents["codex"]}
+	if _, err := definition.Resume("", "continue", true, nil); err == nil || !strings.Contains(err.Error(), "session id") {
+		t.Fatalf("expected missing session error, got %v", err)
+	}
+}
+
 func TestBuiltinACPCommands(t *testing.T) {
 	cfg := config.Defaults()
 	gemini := cfg.Agents["gemini"]

@@ -83,6 +83,10 @@ xcli run codex "审查当前变更"
 xcli run "修复失败的测试" -- --sandbox workspace-write
 xcli route "审查认证相关改动"
 
+# 以交互方式或追加提示词恢复已记录会话
+xcli resume <run-id>
+xcli resume <run-id> "继续执行下一步" --json
+
 # 运行工作流（并行需显式启用）
 xcli workflow validate examples/implement-and-review.yaml
 xcli workflow run examples/implement-and-review.yaml \
@@ -199,6 +203,26 @@ routing:
 
 选择优先级依次为 `--agent`、首个位置参数中的已配置 Agent、首个命中的路由规则、`default_agent`。显式选择不会计算路由规则。使用 `xcli route <prompt>` 或 `xcli route --json <prompt>` 可以预览路由决定，且不会启动 Agent 或创建运行记录。路由仅用于 `run`；交互会话和工作流步骤继续使用显式 Agent 语义。
 
+### 会话恢复
+
+`xcli resume <target> [prompt...]` 通过 Claude 的 `--resume`、Codex 的 `resume`/`exec resume`、Gemini 的 `--resume` 或 OpenCode 的 `--session` 继续原生会话。没有 prompt 时，xcli 将终端直接连接到恢复后的交互会话；提供 prompt 时，则复用 `run` 的结构化输出、归一化结果、usage 采集和 `--json` 行为：
+
+```bash
+# 从 xcli 记录恢复 Agent、session ID 和工作目录
+xcli resume run-20260705T010203Z-ab12cd34
+xcli resume run-20260705T010203Z-ab12cd34 "实现剩余测试" --json
+
+# workflow 记录必须显式指定步骤
+xcli resume workflow-20260705T020304Z-ef56ab78 --step review "处理审查意见"
+
+# xcli 之外创建的会话必须显式指定已配置 Agent
+xcli resume 7f9f9a2e-1b3c-4c7a-9b0e-000000000000 --agent codex
+```
+
+xcli 始终先查找同名运行记录。未找到时，只有提供 `--agent` 才会将 target 视为原生 session ID，从而避免拼错 run ID 后静默使用 `default_agent`。记录会提供原 Agent 和 `cwd`；相同的 `--agent` 可接受，冲突值会报错，目录移动或失效时可用 `--cwd` 覆盖。resume 不使用提示词路由或 `default_agent`，`--json` 必须同时提供后续 prompt，首版不支持 generic Agent。
+
+交互恢复创建 `use` 记录，继续排除在 `xcli usage` 之外。非交互恢复创建普通 `run` task，并写入 `selection_source: resume`、`resumed_from` 和可选的 `resumed_step`。如果原生客户端报告了新 session ID，新记录会采用它；否则保留请求中的 ID。
+
 ### 网络配置
 
 子进程先继承当前环境，然后 xcli 应用选定的网络配置及 Agent 专属环境变量。直连配置可以同时清除大小写形式的代理变量：
@@ -253,7 +277,7 @@ steps:
 
 ## 运行记录、用量与隐私
 
-xcli 将权限为 `0600` 的私有元数据保存在 `$XDG_DATA_HOME/xcli/runs` 或 `~/.local/share/xcli/runs`。元数据包含 Agent、工作目录、时间、状态、退出码，以及结构化输出能够提供的原生会话 ID 和标准化 Token 用量。
+xcli 将权限为 `0600` 的私有元数据保存在 `$XDG_DATA_HOME/xcli/runs` 或 `~/.local/share/xcli/runs`。元数据包含 Agent、工作目录、时间、状态、退出码、适用时的恢复来源/步骤，以及结构化输出能够提供的原生会话 ID 和标准化 Token 用量。
 
 完整输出默认关闭，因为其中可能包含源代码或密钥。可以通过工作流参数 `--record-output` 或配置项 `recording.output: true` 显式启用。
 
@@ -281,4 +305,4 @@ Codex 和 Gemini 提供 Token 统计但不提供美元估算；Claude 和 OpenCo
 - 未知 YAML 字段、无效模板、缺失网络配置和前向工作流依赖都会导致校验失败。
 - xcli 不添加遥测，也不会自动信任仓库配置。
 
-CAP、项目级或双向 MCP 同步、守护进程、进程控制、会话恢复、Windows ConPTY 和 Web UI 均明确延后到 v0.2 之后。
+CAP、项目级或双向 MCP 同步、守护进程、进程控制、Windows ConPTY 和 Web UI 均明确延后到 v0.2 之后。

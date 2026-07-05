@@ -59,6 +59,7 @@ func newRootCommand() *cobra.Command {
 		a.newMCPCommand(),
 		a.newRouteCommand(),
 		a.newRunCommand(),
+		a.newResumeCommand(),
 		a.newWorkflowCommand(),
 		a.newRunsCommand(),
 		a.newUsageCommand(),
