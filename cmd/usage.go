@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"text/tabwriter"
 
@@ -12,6 +14,8 @@ import (
 func (a *app) newUsageCommand() *cobra.Command {
 	var days int
 	var selectedAgent string
+	var cwd string
+	var project string
 	var asJSON bool
 	command := &cobra.Command{
 		Use:   "usage",
@@ -26,7 +30,24 @@ func (a *app) newUsageCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			report, err := usagereport.Build(records, usagereport.Options{Days: days, Agent: selectedAgent})
+			if cwd != "" && project != "" {
+				return errors.New("--cwd and --project cannot be combined")
+			}
+			if cwd != "" {
+				cwd, err = filepath.Abs(cwd)
+				if err != nil {
+					return err
+				}
+			}
+			if project != "" {
+				project, err = filepath.Abs(project)
+				if err != nil {
+					return err
+				}
+			}
+			report, err := usagereport.Build(records, usagereport.Options{
+				Days: days, Agent: selectedAgent, Cwd: cwd, Project: project,
+			})
 			if err != nil {
 				return err
 			}
@@ -38,6 +59,8 @@ func (a *app) newUsageCommand() *cobra.Command {
 	}
 	command.Flags().IntVar(&days, "days", 0, "include only the most recent N days (0 means all time)")
 	command.Flags().StringVar(&selectedAgent, "agent", "", "include only one agent")
+	command.Flags().StringVar(&cwd, "cwd", "", "include only runs from this exact working directory")
+	command.Flags().StringVar(&project, "project", "", "include runs within this project")
 	command.Flags().BoolVar(&asJSON, "json", false, "print JSON output")
 	return command
 }

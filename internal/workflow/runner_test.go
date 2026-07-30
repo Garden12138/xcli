@@ -473,6 +473,160 @@ func TestValidateRejectsInvalidMaxParallel(t *testing.T) {
 	}
 }
 
+func TestRunnerExecutesCommandStepsWithoutShell(t *testing.T) {
+	directory := t.TempDir()
+	marker := filepath.Join(directory, "should-not-exist")
+	setEnvironment(t, "XDG_DATA_HOME", filepath.Join(directory, "data"))
+	cfg := config.Defaults()
+	store, err := runstore.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner := Runner{
+		Config: cfg, Registry: agent.NewRegistry(cfg), Store: store,
+		Progress: io.Discard, Stderr: io.Discard,
+	}
+	definition := Workflow{Version: 1, Name: "commands", Steps: []Step{
+		{ID: "literal", Command: "printf", Args: []string{"%s", "hello; touch " + marker}},
+		{ID: "forward", Command: "printf", Args: []string{"[%s]", "{{ steps.literal.output }}"}},
+	}}
+
+	execution, err := runner.Run(
+		context.Background(), filepath.Join(directory, "workflow.yaml"), definition, RunOptions{},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if execution.Status != "success" || execution.Steps[0].Output != "hello; touch "+marker ||
+		execution.Steps[1].Output != "[hello; touch "+marker+"]" {
+		t.Fatalf("unexpected command execution: %#v", execution)
+	}
+	if execution.Steps[0].Agent != "" || execution.Steps[0].Usage != nil || execution.Steps[0].SessionID != "" {
+		t.Fatalf("command step exposed agent-only data: %#v", execution.Steps[0])
+	}
+	if _, err := os.Stat(marker); !os.IsNotExist(err) {
+		t.Fatalf("command argument was evaluated by a shell: %v", err)
+	}
+	record, err := store.Load(execution.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if record.Steps[0].Command != "printf" || record.Steps[0].Agent != "" {
+		t.Fatalf("unexpected command record: %#v", record.Steps[0])
+	}
+}
+
+func TestRunnerCommandStepRetriesAndTimesOut(t *testing.T) {
+	directory := t.TempDir()
+	counter := filepath.Join(directory, "counter")
+	retry := writeTestScript(t, directory, "retry-command", "#!/bin/sh\n"+
+		"count=$(cat \"$1\" 2>/dev/null || printf 0)\n"+
+		"count=$((count + 1))\n"+
+		"printf '%s' \"$count\" > \"$1\"\n"+
+		"if [ \"$count\" -lt 2 ]; then exit 7; fi\n"+
+		"printf done\n")
+	slow := writeTestScript(t, directory, "slow-command", "#!/bin/sh\nsleep 30\n")
+	setEnvironment(t, "XDG_DATA_HOME", filepath.Join(directory, "data"))
+	cfg := config.Defaults()
+	store, err := runstore.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner := Runner{Config: cfg, Registry: agent.NewRegistry(cfg), Store: store, Progress: io.Discard, Stderr: io.Discard}
+
+	retryExecution, err := runner.Run(context.Background(), filepath.Join(directory, "retry.yaml"), Workflow{
+		Version: 1, Name: "retry", Steps: []Step{{ID: "retry", Command: retry, Args: []string{counter}, Retries: 1}},
+	}, RunOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if retryExecution.Status != "success" || retryExecution.Steps[0].Attempts != 2 || retryExecution.Steps[0].Output != "done" {
+		t.Fatalf("unexpected retry execution: %#v", retryExecution)
+	}
+
+	timeoutExecution, err := runner.Run(context.Background(), filepath.Join(directory, "timeout.yaml"), Workflow{
+		Version: 1, Name: "timeout", Steps: []Step{{ID: "slow", Command: slow, Timeout: "50ms"}},
+	}, RunOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if timeoutExecution.Status != "timed_out" || timeoutExecution.Steps[0].ExitCode != 124 {
+		t.Fatalf("unexpected timeout execution: %#v", timeoutExecution)
+	}
+}
+
+func TestRunnerCommandOutputRequiresFileReferenceAboveInlineLimit(t *testing.T) {
+	directory := t.TempDir()
+	large := writeTestScript(t, directory, "large-command",
+		"#!/bin/sh\ndd if=/dev/zero bs=131073 count=1 2>/dev/null | tr '\\000' x\n")
+	setEnvironment(t, "XDG_DATA_HOME", filepath.Join(directory, "data"))
+	cfg := config.Defaults()
+	store, err := runstore.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner := Runner{
+		Config: cfg, Registry: agent.NewRegistry(cfg), Store: store,
+		Progress: io.Discard, Stderr: io.Discard,
+	}
+	execution, err := runner.Run(context.Background(), filepath.Join(directory, "large.yaml"), Workflow{
+		Version: 1, Name: "large", Steps: []Step{
+			{ID: "large", Command: large},
+			{ID: "inline", Command: "printf", Args: []string{"%s", "{{ steps.large.output }}"}},
+		},
+	}, RunOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(execution.Steps[0].Output) <= MaxInlineOutput ||
+		execution.Steps[1].Status != "failed" ||
+		!strings.Contains(execution.Steps[1].Error, "exceeds 128 KiB") {
+		t.Fatalf("unexpected large-output execution: %#v", execution)
+	}
+}
+
+func TestValidateCommandStepExclusivity(t *testing.T) {
+	cfg := config.Defaults()
+	registry := agent.NewRegistry(cfg)
+	for _, step := range []Step{
+		{ID: "mixed", Agent: "codex", Prompt: "work", Command: "go"},
+		{ID: "missing"},
+	} {
+		err := Validate(Workflow{Version: 1, Name: "invalid", Steps: []Step{step}}, registry, map[string]struct{}{})
+		if err == nil {
+			t.Fatalf("step %#v unexpectedly validated", step)
+		}
+	}
+	valid := Workflow{Version: 1, Name: "valid", Steps: []Step{{ID: "test", Command: "go", Args: []string{"test", "./..."}}}}
+	if err := Validate(valid, registry, map[string]struct{}{}); err != nil {
+		t.Fatalf("command workflow did not validate: %v", err)
+	}
+}
+
+func TestBuildPlanReportsExecutableAvailability(t *testing.T) {
+	directory := t.TempDir()
+	setEnvironment(t, "XDG_DATA_HOME", filepath.Join(directory, "data"))
+	cfg := config.Defaults()
+	store, err := runstore.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner := Runner{Config: cfg, Registry: agent.NewRegistry(cfg), Store: store}
+	definition := Workflow{Version: 1, Name: "plan", Steps: []Step{
+		{ID: "available", Command: "go", Args: []string{"version"}},
+		{ID: "missing", Command: "definitely-missing-xcli-command"},
+	}}
+	prepared, err := runner.Prepare(filepath.Join(directory, "workflow.yaml"), definition, RunOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	plan := runner.BuildPlan(prepared)
+	if plan.Applicable || plan.Steps[0].Availability != AvailabilityOK ||
+		plan.Steps[1].Availability != AvailabilityMissing || plan.Steps[1].Error == "" {
+		t.Fatalf("unexpected workflow plan: %#v", plan)
+	}
+}
+
 func writeTestScript(t *testing.T, directory, name, data string) string {
 	t.Helper()
 	path := filepath.Join(directory, name)

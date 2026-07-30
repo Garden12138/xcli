@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Version = "0.4.0-dev"
+var Version = "0.5.0-dev"
 
 type ExitError struct {
 	Code    int
@@ -61,6 +61,7 @@ func newRootCommand() *cobra.Command {
 		a.newRunCommand(),
 		a.newJobWorkerCommand(),
 		a.newJobsCommand(),
+		a.newWorktreesCommand(),
 		a.newResumeCommand(),
 		a.newWorkflowCommand(),
 		a.newRunsCommand(),

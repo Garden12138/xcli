@@ -21,12 +21,26 @@ Declarative aliases and custom agents can be added without rebuilding xcli.
 
 ## Install
 
+With Homebrew:
+
+```bash
+brew install Garden12138/tap/xcli
+```
+
+The Homebrew cask uses the same unsigned release archives. xcli does not bypass Gatekeeper or remove quarantine attributes.
+
+With Go 1.26 or newer:
+
+```bash
+go install github.com/Garden12138/xcli@latest
+```
+
 Download a prebuilt archive from the [GitHub Releases](https://github.com/Garden12138/xcli/releases) page. Releases are available for macOS and Linux on amd64 and arm64.
 
 Choose one of `darwin_amd64`, `darwin_arm64`, `linux_amd64`, or `linux_arm64`, then verify and install the archive:
 
 ```bash
-VERSION=0.4.0
+VERSION=0.5.0
 PLATFORM=darwin_arm64
 ARCHIVE="xcli_${VERSION}_${PLATFORM}.tar.gz"
 
@@ -62,6 +76,7 @@ xcli config init
 # Inspect configured and installed agents
 xcli agents
 xcli doctor
+xcli doctor --deep
 
 # Install and authenticate with native tooling
 xcli install codex
@@ -76,6 +91,7 @@ xcli acp codex
 
 # Preview and synchronize declared MCP servers
 xcli mcp plan
+xcli mcp check
 xcli mcp sync
 xcli mcp plan --scope project --project .
 
@@ -86,6 +102,7 @@ xcli mcp import apply
 # Run one task; agent-specific arguments follow --
 xcli run codex "Review the current changes"
 xcli run "Fix the failing tests" -- --sandbox workspace-write
+xcli run --worktree "Implement the isolated change"
 xcli route "Review the authentication changes"
 
 # Resume a recorded session, interactively or with a follow-up prompt
@@ -100,11 +117,13 @@ xcli jobs wait <run-id>
 
 # Run a workflow (parallelism is opt-in)
 xcli workflow validate examples/implement-and-review.yaml
+xcli workflow plan examples/verified-workflow.yaml
 xcli workflow run examples/implement-and-review.yaml \
   --var requirement="Implement the cache invalidation fix"
 
 # Summarize recorded token usage and native cost estimates
 xcli usage --days 7
+xcli usage --project .
 ```
 
 `--var` overrides variables declared by the workflow; undeclared keys are rejected.
@@ -188,9 +207,12 @@ For stdio servers, native clients launch xcli, which then applies the configured
 ```bash
 xcli mcp plan
 xcli mcp plan --target codex --json
+xcli mcp check --json
 xcli mcp sync
 xcli mcp sync --yes
 ```
+
+`mcp check` is read-only and is intended for CI: synchronized state exits 0, drift or conflicts exit 2, and configuration, target, or native-read failures exit 1. It supports the same user/project scopes and target selection as `plan`.
 
 User scope is the default and keeps the existing machine-local behavior. Its stdio launcher and source configuration paths are absolute. If xcli was built under a temporary directory, pass a stable installed path with `--launcher`; moving either path requires another sync. User-level OpenCode JSONC edits preserve comments and unrelated settings, create an `.xcli.bak` backup, and are written atomically.
 
@@ -335,6 +357,20 @@ steps:
 
 Dependencies and template references must still point to earlier declarations, and execution summaries remain in declaration order even when completion order differs. See [`examples/parallel-review.yaml`](examples/parallel-review.yaml) for a complete fan-out/fan-in workflow.
 
+Agent steps can be mixed with deterministic local commands:
+
+```yaml
+- id: test
+  command: go
+  args: [test, ./...]
+  depends_on: [implement]
+  timeout: 10m
+```
+
+`command` is mutually exclusive with `agent` and `prompt`. It is executed directly with its argv—never through a shell—and its stdout is available as `{{ steps.test.output }}`. Command steps have no session ID or usage. See [`examples/verified-workflow.yaml`](examples/verified-workflow.yaml) for a complete example.
+
+Use `workflow plan <file>` to resolve variables, dependencies, effective parallelism, cwd, commands, Agents, and executable availability without creating a run record. Add `--json` for stable machine-readable output and `--worktree` to preflight isolation.
+
 Use `workflow run <file> --detach` to run the same scheduler as a background job. `jobs show` reports pending and running steps while it executes, and `jobs logs --follow` streams progress until the workflow reaches a terminal state.
 
 Supported references are:
@@ -346,7 +382,17 @@ Supported references are:
 
 Inline output is limited to 128 KiB. Larger results must be passed through `output_file`. Steps default to a 30-minute timeout, no retries, and fail-fast behavior. A fatal failure or timeout cancels running sibling steps and skips pending steps. Use `continue_on_error: true` only when independent branches should continue; dependents are still skipped and the workflow still fails.
 
-Parallel steps keep the existing shared `cwd` behavior. xcli does not create isolated worktrees, so steps that can write files should use separate `cwd` values or otherwise coordinate access. Concurrent stderr is streamed live and may be interleaved.
+Parallel steps share the workflow `cwd`. Add `--worktree` to `run` or `workflow run` to create one clean, isolated Git worktree and `xcli/<run-id>` branch for the whole task. The worktree is retained after completion and ignored files such as `.env` are not copied:
+
+```bash
+xcli run --worktree "Implement the change"
+xcli workflow run examples/verified-workflow.yaml --worktree
+xcli worktrees list
+xcli worktrees show <run-id>
+xcli worktrees remove <run-id> --yes
+```
+
+Removal refuses running tasks and uncommitted changes by default. `--force` may discard worktree changes, but the branch is always retained and is never automatically merged or deleted.
 
 ## Run records, usage, and privacy
 
@@ -356,6 +402,8 @@ Full output is disabled by default because it may contain source code or secrets
 
 ```bash
 xcli runs list
+xcli runs list --agent codex --kind run --status success --since 24h --jsonl
+xcli runs list --cwd "$PWD"
 xcli runs show <run-id>
 ```
 
@@ -366,6 +414,8 @@ Use `xcli usage` to aggregate one-off runs and attempted workflow steps. Workflo
 ```bash
 xcli usage
 xcli usage --days 30 --agent claude
+xcli usage --cwd "$PWD"
+xcli usage --project .
 xcli usage --json
 ```
 
@@ -378,7 +428,7 @@ Codex and Gemini report tokens but not a dollar estimate. Claude and OpenCode ma
 - Unknown YAML fields, invalid templates, missing networks, and forward workflow dependencies fail validation.
 - xcli does not add telemetry or automatically trust repository configuration.
 
-CAP, automatic/continuous MCP reconciliation, project auto-discovery, vendor-specific advanced MCP fields, daemons, background resume and interactive sessions, job restart/attach, Windows ConPTY, and a web UI remain deferred.
+Automatic/continuous MCP reconciliation, project auto-discovery, vendor-specific advanced MCP fields, per-step worktrees, automatic merging, daemons, background resume and interactive sessions, job restart/attach, Windows ConPTY, and a web UI remain deferred.
 
 ## License
 

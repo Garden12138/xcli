@@ -1,6 +1,6 @@
 # xcli 手工测试与体验指南
 
-本文用于在 macOS 或 Linux 上手工验证 xcli 的当前实现，基线为 `v0.4.0`（从源码构建时显示 `0.4.0-dev`）。完整流程分为两部分：
+本文用于在 macOS 或 Linux 上手工验证 xcli 的当前实现，基线为 `v0.5.0`（从源码构建时显示 `0.5.0-dev`）。完整流程分为两部分：
 
 1. 使用本地假 Agent 完成零费用、无外部依赖的功能测试。
 2. 使用真实 Agent CLI 验证安装、认证、交互与结构化输出。
@@ -13,16 +13,17 @@
 | --- | --- | --- | --- | --- |
 | 配置 | 默认配置初始化、显式配置路径、严格 YAML 字段/语义校验、`0600` 写入 | `config init/path/validate` | ✓ | — |
 | CLI 基础 | 版本/帮助，以及 Bash、Zsh、Fish、PowerShell 补全脚本生成 | `--version`、`--help`、`completion` | ✓ | — |
-| Agent 管理 | Claude、Codex、Gemini、OpenCode 内置适配器，自定义 generic Agent，安装检测、版本、默认项 | `agents`、`doctor`、`default`、`install` | ✓ / dry-run | ✓ |
+| Agent 管理 | Claude、Codex、Gemini、OpenCode 内置适配器，自定义 generic Agent，安装检测、版本、默认项和 capability 深度检查 | `agents`、`doctor --deep`、`default`、`install` | ✓ / dry-run | ✓ |
 | 运行入口 | 交互运行、非交互运行、工作目录、环境/网络合并、原生 argv 透传 | `use`、`run` | ✓ | ✓ |
 | 选择与路由 | `--agent`、位置 Agent、正则路由、默认 Agent 的确定性优先级和预览 | `route`、`run` | ✓ | ✓ |
 | 结构化结果 | 四个内置 Adapter 的事件解析、统一文本/JSON、session ID 和 usage 提取 | `run --json` | ✓ | ✓ |
 | 会话恢复 | 从 run/workflow 记录或显式原生 session ID 恢复，支持交互与追加 prompt | `resume` | ✓ | ✓ |
 | 后台任务 | 脱离终端运行、日志、等待、停止/强杀、删除、按时间清理和孤儿状态识别 | `run/workflow --detach`、`jobs` | ✓ | ✓ |
-| 工作流 | 变量模板、步骤输出传递、依赖 DAG、并行上限、重试、超时、继续/跳过和取消 | `workflow validate/run` | ✓ | ✓ |
+| 工作流 | Agent/确定性命令混合步骤、执行预检、变量模板、步骤输出传递、依赖 DAG、并行上限、重试、超时、继续/跳过和取消 | `workflow validate/plan/run` | ✓ | ✓ |
 | ACP | stdio 透明代理；Gemini/OpenCode 原生，Claude/Codex 使用外部桥接器 | `acp` | ✓ | ✓ |
-| MCP | stdio launcher、用户/项目级 plan/sync、ownership/漂移/冲突保护、原生配置安全导入 | `mcp serve/plan/sync/import` | serve / import | ✓ |
-| 记录与统计 | 私有运行元数据、可选原始输出、按 Agent/时间汇总 Token 与原生费用估算 | `runs`、`usage` | ✓ | ✓ |
+| Git 隔离 | 单次 run/workflow 独立 worktree、保留分支、安全查看和清理 | `run/workflow --worktree`、`worktrees` | ✓ | ✓ |
+| MCP | stdio launcher、用户/项目级 check/plan/sync、ownership/漂移/冲突保护、原生配置安全导入 | `mcp serve/check/plan/sync/import` | serve / import | ✓ |
+| 记录与统计 | 私有运行元数据、可选原始输出、按 Agent/类型/状态/cwd/时间检索，按 cwd/项目汇总 Token 与原生费用估算 | `runs`、`usage` | ✓ | ✓ |
 
 当前边界也需要一并确认：xcli 启动和编排的是原生 Agent CLI，不直接调用模型 API，不保存原生认证凭据；ACP 消息不会被解析或记录；机器重启后后台 Job 不会自动恢复，只会被识别为 `orphaned`；MCP 首版不处理 SSE、静态 header、工具策略或厂商 OAuth 字段，HTTP OAuth 仍由各原生客户端完成。
 
@@ -51,8 +52,8 @@ export XCLI_BIN=/tmp/xcli
 预期结果：
 
 - 全部 Go 测试通过。
-- 版本输出为 `xcli version 0.4.0-dev`；发布构建则可能为对应的正式版本。
-- 帮助中包含 `run`、`resume`、`jobs`、`workflow`、`acp`、`mcp`、`runs` 和 `usage` 等命令，Zsh 补全脚本可成功生成。
+- 版本输出为 `xcli version 0.5.0-dev`；发布构建则可能为对应的正式版本。
+- 帮助中包含 `run`、`resume`、`jobs`、`worktrees`、`workflow`、`acp`、`mcp`、`runs` 和 `usage` 等命令，Zsh 补全脚本可成功生成。
 
 ## 3. 创建隔离测试环境
 

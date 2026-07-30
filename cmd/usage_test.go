@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -73,6 +74,48 @@ func TestUsageCommandRejectsNegativeDays(t *testing.T) {
 	err := root.Execute()
 	if err == nil || !strings.Contains(err.Error(), "zero or greater") {
 		t.Fatalf("expected days validation error, got %v", err)
+	}
+}
+
+func TestUsageCommandFiltersProjectAndRejectsCombinedPaths(t *testing.T) {
+	setUsageEnvironment(t, "XDG_DATA_HOME", t.TempDir())
+	store, err := runstore.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	project := t.TempDir()
+	other := t.TempDir()
+	for _, record := range []runstore.Record{
+		{ID: "inside", Kind: "run", Agent: "codex", Cwd: project, Status: "success", Usage: &agent.Usage{TotalTokens: 10}},
+		{ID: "isolated", Kind: "run", Agent: "claude", Cwd: filepath.Join(other, "worktree"), Repository: project, Status: "success", Usage: &agent.Usage{TotalTokens: 20}},
+		{ID: "outside", Kind: "run", Agent: "gemini", Cwd: other, Status: "success", Usage: &agent.Usage{TotalTokens: 30}},
+	} {
+		if err := store.Save(record); err != nil {
+			t.Fatal(err)
+		}
+	}
+	root := newRootCommand()
+	var stdout bytes.Buffer
+	root.SetOut(&stdout)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"usage", "--project", project, "--json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	var report usagereport.Report
+	if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
+		t.Fatal(err)
+	}
+	if report.Totals.Tasks != 2 || report.Totals.Usage.TotalTokens != 30 {
+		t.Fatalf("unexpected project report: %#v", report)
+	}
+
+	root = newRootCommand()
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"usage", "--cwd", project, "--project", project})
+	if err := root.Execute(); err == nil {
+		t.Fatal("combined cwd/project filters unexpectedly succeeded")
 	}
 }
 

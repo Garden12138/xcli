@@ -26,6 +26,20 @@ jobs:
           git diff --exit-code
       - run: go vet ./...
       - run: go test -race ./...
+      - name: Enforce coverage floors
+        run: |
+          go test ./... -coverprofile=coverage.out
+          total="$(go tool cover -func=coverage.out | awk '/^total:/{gsub("%", "", $3); print $3}')"
+          awk -v value="$total" 'BEGIN { if (value + 0 < 66.1) exit 1 }'
+          for package in runtime runstore; do
+            value="$(go test -cover "./internal/${package}" | sed -n 's/.*coverage: \([0-9.]*\)%.*/\1/p')"
+            awk -v name="$package" -v value="$value" 'BEGIN {
+              if (value == "" || value + 0 < 60) {
+                print name " coverage is below 60%: " value "%"
+                exit 1
+              }
+            }'
+          done
 
   build:
     runs-on: ubuntu-latest

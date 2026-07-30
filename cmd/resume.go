@@ -92,6 +92,7 @@ func (a *app) newResumeCommand() *cobra.Command {
 			}
 			record := runstore.Record{
 				ID: runstore.NewID(prefix), Kind: kind, Agent: target.Agent,
+				AgentVersion:    definition.Detect(command.Context()).Version,
 				SelectionSource: selectionSource, Cwd: cwd, StartedAt: time.Now().UTC(), Status: "running",
 				SessionID: target.SessionID, ResumedFrom: target.ResumedFrom, ResumedStep: target.ResumedStep,
 			}

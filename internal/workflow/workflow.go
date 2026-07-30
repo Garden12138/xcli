@@ -34,8 +34,9 @@ type Workflow struct {
 
 type Step struct {
 	ID              string   `yaml:"id" json:"id"`
-	Agent           string   `yaml:"agent" json:"agent"`
-	Prompt          string   `yaml:"prompt" json:"prompt"`
+	Agent           string   `yaml:"agent,omitempty" json:"agent,omitempty"`
+	Prompt          string   `yaml:"prompt,omitempty" json:"prompt,omitempty"`
+	Command         string   `yaml:"command,omitempty" json:"command,omitempty"`
 	Args            []string `yaml:"args,omitempty" json:"args,omitempty"`
 	Cwd             string   `yaml:"cwd,omitempty" json:"cwd,omitempty"`
 	Network         string   `yaml:"network,omitempty" json:"network,omitempty"`
@@ -99,14 +100,27 @@ func Validate(workflow Workflow, registry *agent.Registry, networks map[string]s
 		if seen[step.ID] {
 			return fmt.Errorf("duplicate step id %q", step.ID)
 		}
-		if !registry.Has(step.Agent) {
-			return fmt.Errorf("step %q references unknown agent %q", step.ID, step.Agent)
-		}
-		if strings.TrimSpace(step.Prompt) == "" {
-			return fmt.Errorf("step %q has an empty prompt", step.ID)
-		}
-		if err := validateTemplateSyntax(step.Prompt, workflow.Vars, seen); err != nil {
-			return fmt.Errorf("step %q prompt: %w", step.ID, err)
+		commandStep := strings.TrimSpace(step.Command) != ""
+		if commandStep {
+			if step.Agent != "" || step.Prompt != "" {
+				return fmt.Errorf("step %q command is mutually exclusive with agent and prompt", step.ID)
+			}
+			if err := validateTemplateSyntax(step.Command, workflow.Vars, seen); err != nil {
+				return fmt.Errorf("step %q command: %w", step.ID, err)
+			}
+		} else {
+			if strings.TrimSpace(step.Agent) == "" {
+				return fmt.Errorf("step %q must define either command or agent", step.ID)
+			}
+			if !registry.Has(step.Agent) {
+				return fmt.Errorf("step %q references unknown agent %q", step.ID, step.Agent)
+			}
+			if strings.TrimSpace(step.Prompt) == "" {
+				return fmt.Errorf("step %q has an empty prompt", step.ID)
+			}
+			if err := validateTemplateSyntax(step.Prompt, workflow.Vars, seen); err != nil {
+				return fmt.Errorf("step %q prompt: %w", step.ID, err)
+			}
 		}
 		for _, arg := range step.Args {
 			if err := validateTemplateSyntax(arg, workflow.Vars, seen); err != nil {

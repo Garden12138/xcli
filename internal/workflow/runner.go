@@ -18,18 +18,20 @@ import (
 )
 
 type StepResult struct {
-	ID         string       `json:"id"`
-	Agent      string       `json:"agent"`
-	Status     string       `json:"status"`
-	Output     string       `json:"output,omitempty"`
-	OutputFile string       `json:"output_file,omitempty"`
-	SessionID  string       `json:"session_id,omitempty"`
-	Usage      *agent.Usage `json:"usage,omitempty"`
-	ExitCode   int          `json:"exit_code"`
-	Attempts   int          `json:"attempts"`
-	Error      string       `json:"error,omitempty"`
-	StartedAt  time.Time    `json:"started_at,omitempty"`
-	EndedAt    time.Time    `json:"ended_at,omitempty"`
+	ID           string       `json:"id"`
+	Agent        string       `json:"agent,omitempty"`
+	AgentVersion string       `json:"-"`
+	Command      string       `json:"command,omitempty"`
+	Status       string       `json:"status"`
+	Output       string       `json:"output,omitempty"`
+	OutputFile   string       `json:"output_file,omitempty"`
+	SessionID    string       `json:"session_id,omitempty"`
+	Usage        *agent.Usage `json:"usage,omitempty"`
+	ExitCode     int          `json:"exit_code"`
+	Attempts     int          `json:"attempts"`
+	Error        string       `json:"error,omitempty"`
+	StartedAt    time.Time    `json:"started_at,omitempty"`
+	EndedAt      time.Time    `json:"ended_at,omitempty"`
 }
 
 type Execution struct {
@@ -139,6 +141,30 @@ func (r *Runner) Prepare(sourcePath string, workflow Workflow, options RunOption
 
 func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial *runstore.Record) (Execution, error) {
 	workflow := prepared.Definition
+	versionDetectionStarted := time.Now()
+	agentVersions := make(map[string]string)
+	versionChecks := make(map[string]bool)
+	type detectedVersion struct {
+		agent   string
+		version string
+	}
+	versionResults := make(chan detectedVersion, len(workflow.Steps))
+	for _, step := range workflow.Steps {
+		if step.Agent == "" {
+			continue
+		}
+		if versionChecks[step.Agent] {
+			continue
+		}
+		versionChecks[step.Agent] = true
+		definition, err := r.Registry.Get(step.Agent)
+		if err != nil {
+			continue
+		}
+		go func(name string, definition agent.Definition) {
+			versionResults <- detectedVersion{agent: name, version: definition.Detect(ctx).Version}
+		}(step.Agent, definition)
+	}
 	runID := runstore.NewID("workflow")
 	startedAt := time.Now().UTC()
 	record := runstore.Record{}
@@ -153,7 +179,10 @@ func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial 
 		Cwd: prepared.WorkingDirectory, Steps: make([]StepResult, len(workflow.Steps)),
 	}
 	for index, step := range workflow.Steps {
-		execution.Steps[index] = StepResult{ID: step.ID, Agent: step.Agent, Status: "pending"}
+		execution.Steps[index] = StepResult{
+			ID: step.ID, Agent: step.Agent, AgentVersion: agentVersions[step.Agent],
+			Command: step.Command, Status: "pending",
+		}
 	}
 	record.ID = runID
 	record.Kind = "workflow"
@@ -163,6 +192,7 @@ func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial 
 	record.Cwd = prepared.WorkingDirectory
 	record.StartedAt = startedAt
 	record.Status = "running"
+	record.AgentVersions = agentVersions
 	record.Steps = executionStepRecords(execution.Steps, prepared.RecordOutput)
 	if liveProgress {
 		if err := r.Store.Save(record); err != nil {
@@ -239,6 +269,7 @@ func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial 
 				ready, failedDependency := dependencyReadiness(dependencies[index], statuses)
 				if failedDependency != "" {
 					result := skippedStep(step, fmt.Sprintf("dependency %q did not succeed", failedDependency))
+					result.AgentVersion = agentVersions[step.Agent]
 					execution.Steps[index] = result
 					stateChanged = true
 					states[index] = stepFinished
@@ -272,6 +303,7 @@ func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial 
 					continue
 				}
 				result := skippedStep(step, stopReason)
+				result.AgentVersion = agentVersions[step.Agent]
 				execution.Steps[index] = result
 				stateChanged = true
 				states[index] = stepFinished
@@ -294,6 +326,7 @@ func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial 
 		case completion := <-completed:
 			index := completion.index
 			result := completion.result
+			result.AgentVersion = agentVersions[workflow.Steps[index].Agent]
 			running--
 			finished++
 			states[index] = stepFinished
@@ -326,6 +359,26 @@ func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial 
 		}
 	}
 
+	versionBudget := 500*time.Millisecond - time.Since(versionDetectionStarted)
+	if versionBudget < 0 {
+		versionBudget = 0
+	}
+	versionTimer := time.NewTimer(versionBudget)
+	defer versionTimer.Stop()
+	for remaining := len(versionChecks); remaining > 0; remaining-- {
+		select {
+		case detected := <-versionResults:
+			if detected.version != "" {
+				agentVersions[detected.agent] = detected.version
+			}
+		case <-versionTimer.C:
+			remaining = 0
+		}
+	}
+
+	for index := range execution.Steps {
+		execution.Steps[index].AgentVersion = agentVersions[execution.Steps[index].Agent]
+	}
 	summarizeExecution(&execution, externalCanceled, fatalIndex)
 	execution.Usage = summarizeUsage(execution.Steps)
 	record.EndedAt = time.Now().UTC()
@@ -355,7 +408,8 @@ func executionStepRecords(steps []StepResult, recordOutput bool) []runstore.Step
 			outputFile = step.OutputFile
 		}
 		records = append(records, runstore.StepRecord{
-			ID: step.ID, Agent: step.Agent, Status: step.Status, ExitCode: step.ExitCode,
+			ID: step.ID, Agent: step.Agent, AgentVersion: step.AgentVersion,
+			Command: step.Command, Status: step.Status, ExitCode: step.ExitCode,
 			SessionID: step.SessionID, OutputFile: outputFile, StartedAt: step.StartedAt,
 			EndedAt: step.EndedAt, Attempts: step.Attempts, Error: step.Error, Usage: step.Usage,
 		})
@@ -440,14 +494,13 @@ func summarizeExecution(execution *Execution, externalCanceled bool, fatalIndex 
 }
 
 func (r *Runner) runStep(ctx context.Context, workflowCwd, tempDir string, step Step, templateData templateContext, recordOutput bool, runID string) (result StepResult) {
-	result = StepResult{ID: step.ID, Agent: step.Agent, Status: "failed", ExitCode: 1, StartedAt: time.Now().UTC()}
+	result = StepResult{
+		ID: step.ID, Agent: step.Agent, Command: step.Command,
+		Status: "failed", ExitCode: 1, StartedAt: time.Now().UTC(),
+	}
 	defer func() { result.EndedAt = time.Now().UTC() }()
 
-	prompt, err := resolveTemplate(step.Prompt, templateData)
-	if err != nil {
-		result.Error = err.Error()
-		return result
-	}
+	var err error
 	args := make([]string, len(step.Args))
 	for i, value := range step.Args {
 		args[i], err = resolveTemplate(value, templateData)
@@ -461,17 +514,33 @@ func (r *Runner) runStep(ctx context.Context, workflowCwd, tempDir string, step 
 		result.Error = err.Error()
 		return result
 	}
-	definition, err := r.Registry.Get(step.Agent)
-	if err != nil {
-		result.Error = err.Error()
-		return result
+	var definition agent.Definition
+	var spec agent.CommandSpec
+	var environment []string
+	commandStep := step.Command != ""
+	if commandStep {
+		commandName, resolveErr := resolveTemplate(step.Command, templateData)
+		if resolveErr != nil {
+			result.Error = resolveErr.Error()
+			return result
+		}
+		result.Command = commandName
+		spec = agent.CommandSpec{Command: commandName, Args: args}
+		environment, err = xruntime.BuildEnvironment(os.Environ(), r.Config, config.AgentConfig{}, step.Network)
+	} else {
+		prompt, resolveErr := resolveTemplate(step.Prompt, templateData)
+		if resolveErr != nil {
+			result.Error = resolveErr.Error()
+			return result
+		}
+		definition, err = r.Registry.Get(step.Agent)
+		if err == nil {
+			spec, err = definition.Run(prompt, true, args)
+		}
+		if err == nil {
+			environment, err = xruntime.BuildEnvironment(os.Environ(), r.Config, definition.Config, step.Network)
+		}
 	}
-	spec, err := definition.Run(prompt, true, args)
-	if err != nil {
-		result.Error = err.Error()
-		return result
-	}
-	environment, err := xruntime.BuildEnvironment(os.Environ(), r.Config, definition.Config, step.Network)
 	if err != nil {
 		result.Error = err.Error()
 		return result
@@ -485,7 +554,11 @@ func (r *Runner) runStep(ctx context.Context, workflowCwd, tempDir string, step 
 	for attempt := 1; attempt <= step.Retries+1; attempt++ {
 		result.Attempts = attempt
 		if r.Progress != nil {
-			fmt.Fprintf(r.Progress, "[%d/%d] %s (%s)\n", attempt, step.Retries+1, step.ID, step.Agent)
+			label := step.Agent
+			if commandStep {
+				label = spec.Command
+			}
+			fmt.Fprintf(r.Progress, "[%d/%d] %s (%s)\n", attempt, step.Retries+1, step.ID, label)
 		}
 		stepContext := ctx
 		cancel := func() {}
@@ -500,14 +573,18 @@ func (r *Runner) runStep(ctx context.Context, workflowCwd, tempDir string, step 
 			result.Error = runErr.Error()
 			continue
 		}
-		parsed := agent.ParseStructured(definition.Config.Adapter, definition.Config.Output, processResult.Stdout)
-		result.Output = parsed.Output
-		result.SessionID = parsed.SessionID
-		if parsed.Usage != nil {
-			if result.Usage == nil {
-				result.Usage = &agent.Usage{}
+		if commandStep {
+			result.Output = strings.TrimSpace(string(processResult.Stdout))
+		} else {
+			parsed := agent.ParseStructured(definition.Config.Adapter, definition.Config.Output, processResult.Stdout)
+			result.Output = parsed.Output
+			result.SessionID = parsed.SessionID
+			if parsed.Usage != nil {
+				if result.Usage == nil {
+					result.Usage = &agent.Usage{}
+				}
+				result.Usage.Add(parsed.Usage)
 			}
-			result.Usage.Add(parsed.Usage)
 		}
 		result.ExitCode = processResult.ExitCode
 		outputPath := filepath.Join(tempDir, step.ID+".output")
@@ -540,7 +617,11 @@ func (r *Runner) runStep(ctx context.Context, workflowCwd, tempDir string, step 
 			return result
 		} else {
 			result.Status = "failed"
-			result.Error = fmt.Sprintf("agent exited with code %d", processResult.ExitCode)
+			subject := "agent"
+			if commandStep {
+				subject = "command"
+			}
+			result.Error = fmt.Sprintf("%s exited with code %d", subject, processResult.ExitCode)
 		}
 		if result.Status == "canceled" || result.Status == "timed_out" {
 			return result
@@ -585,7 +666,10 @@ func resolveDirectory(base, value string) (string, error) {
 }
 
 func skippedStep(step Step, reason string) StepResult {
-	return StepResult{ID: step.ID, Agent: step.Agent, Status: "skipped", ExitCode: 1, Error: reason}
+	return StepResult{
+		ID: step.ID, Agent: step.Agent, Command: step.Command,
+		Status: "skipped", ExitCode: 1, Error: reason,
+	}
 }
 
 func ParseVars(values []string) (map[string]string, error) {

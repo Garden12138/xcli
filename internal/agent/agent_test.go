@@ -2,6 +2,8 @@ package agent
 
 import (
 	"math"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -242,6 +244,33 @@ func TestParseGenericOutputDoesNotInferUsage(t *testing.T) {
 	}
 }
 
+func TestParseStructuredAdapterFixtures(t *testing.T) {
+	tests := []struct {
+		adapter   string
+		sessionID string
+		output    string
+		total     int64
+	}{
+		{adapter: "claude", sessionID: "claude-fixture", output: "claude done", total: 39},
+		{adapter: "codex", sessionID: "codex-fixture", output: "codex done", total: 38},
+		{adapter: "gemini", sessionID: "gemini-fixture", output: "gemini done", total: 24},
+		{adapter: "opencode", sessionID: "opencode-fixture", output: "opencode done", total: 21},
+	}
+	for _, test := range tests {
+		t.Run(test.adapter, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join("testdata", test.adapter+".jsonl"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			result := ParseStructured(test.adapter, "jsonl", data)
+			if result.SessionID != test.sessionID || result.Output != test.output ||
+				result.Usage == nil || result.Usage.TotalTokens != test.total {
+				t.Fatalf("unexpected fixture result: %#v", result)
+			}
+		})
+	}
+}
+
 func assertUsage(t *testing.T, got *Usage, want Usage) {
 	t.Helper()
 	if got == nil {
@@ -267,5 +296,18 @@ func TestVersionLineUsesFinalNonEmptyLine(t *testing.T) {
 	got := versionLine("WARNING: setup failed\n\ncodex-cli 0.142.5\n")
 	if got != "codex-cli 0.142.5" {
 		t.Fatalf("version line = %q", got)
+	}
+}
+
+func TestCapabilitiesDescribeBuiltinAndGenericAdapters(t *testing.T) {
+	builtin := Definition{Name: "codex", Config: config.Defaults().Agents["codex"]}.Capabilities()
+	if !builtin.Run || !builtin.StructuredOutput || !builtin.Resume || !builtin.ACP || !builtin.Usage {
+		t.Fatalf("unexpected builtin capabilities: %#v", builtin)
+	}
+	generic := Definition{Name: "custom", Config: config.AgentConfig{
+		Adapter: "generic", Output: "jsonl", ACP: &config.ACPConfig{Command: "custom-acp"},
+	}}.Capabilities()
+	if !generic.Run || !generic.StructuredOutput || generic.Resume || !generic.ACP || generic.Usage {
+		t.Fatalf("unexpected generic capabilities: %#v", generic)
 	}
 }

@@ -2,6 +2,7 @@ package usage
 
 import (
 	"errors"
+	"path/filepath"
 	"sort"
 	"time"
 
@@ -10,9 +11,11 @@ import (
 )
 
 type Options struct {
-	Days  int
-	Agent string
-	Now   time.Time
+	Days    int
+	Agent   string
+	Cwd     string
+	Project string
+	Now     time.Time
 }
 
 type Summary struct {
@@ -26,6 +29,8 @@ type Summary struct {
 type Report struct {
 	Since   *time.Time `json:"since,omitempty"`
 	Agent   string     `json:"agent,omitempty"`
+	Cwd     string     `json:"cwd,omitempty"`
+	Project string     `json:"project,omitempty"`
 	Totals  Summary    `json:"totals"`
 	ByAgent []Summary  `json:"by_agent"`
 }
@@ -34,7 +39,12 @@ func Build(records []runstore.Record, options Options) (Report, error) {
 	if options.Days < 0 {
 		return Report{}, errors.New("days must be zero or greater")
 	}
-	result := Report{Agent: options.Agent, ByAgent: []Summary{}}
+	if options.Cwd != "" && options.Project != "" {
+		return Report{}, errors.New("cwd and project filters cannot be combined")
+	}
+	result := Report{
+		Agent: options.Agent, Cwd: options.Cwd, Project: options.Project, ByAgent: []Summary{},
+	}
 	if options.Days > 0 {
 		now := options.Now
 		if now.IsZero() {
@@ -72,6 +82,12 @@ func Build(records []runstore.Record, options Options) (Report, error) {
 	}
 
 	for _, record := range records {
+		if options.Cwd != "" && filepath.Clean(record.Cwd) != filepath.Clean(options.Cwd) {
+			continue
+		}
+		if options.Project != "" && !runstore.WithinProject(record, options.Project) {
+			continue
+		}
 		switch record.Kind {
 		case "run":
 			if included(record.StartedAt) {

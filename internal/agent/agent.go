@@ -43,6 +43,14 @@ type Info struct {
 	Version   string `json:"version,omitempty"`
 }
 
+type Capabilities struct {
+	Run              bool `json:"run"`
+	StructuredOutput bool `json:"structured_output"`
+	Resume           bool `json:"resume"`
+	ACP              bool `json:"acp"`
+	Usage            bool `json:"usage"`
+}
+
 type RunResult struct {
 	Agent     string `json:"agent"`
 	Output    string `json:"output,omitempty"`
@@ -61,6 +69,22 @@ type InstallSpec struct {
 type Definition struct {
 	Name   string
 	Config config.AgentConfig
+}
+
+func (d Definition) Capabilities() Capabilities {
+	switch d.Config.Adapter {
+	case "claude", "codex", "gemini", "opencode":
+		return Capabilities{
+			Run: true, StructuredOutput: true, Resume: true, ACP: true, Usage: true,
+		}
+	case "generic":
+		return Capabilities{
+			Run: true, StructuredOutput: d.Config.Output == "json" || d.Config.Output == "jsonl",
+			ACP: d.Config.ACP != nil,
+		}
+	default:
+		return Capabilities{}
+	}
 }
 
 type Registry struct {

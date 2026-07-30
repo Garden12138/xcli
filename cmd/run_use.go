@@ -11,6 +11,7 @@ import (
 	"github.com/Garden12138/xcli/internal/routing"
 	"github.com/Garden12138/xcli/internal/runstore"
 	xruntime "github.com/Garden12138/xcli/internal/runtime"
+	"github.com/Garden12138/xcli/internal/worktree"
 	"github.com/spf13/cobra"
 )
 
@@ -57,7 +58,8 @@ func (a *app) newUseCommand() *cobra.Command {
 				return err
 			}
 			record := runstore.Record{
-				ID: runstore.NewID("use"), Kind: "use", Agent: name, Cwd: cwd,
+				ID: runstore.NewID("use"), Kind: "use", Agent: name,
+				AgentVersion: definition.Detect(command.Context()).Version, Cwd: cwd,
 				StartedAt: time.Now().UTC(), Status: "running",
 			}
 			ctx, cancel := signalContext(command.Context())
@@ -101,6 +103,7 @@ func (a *app) newRunCommand() *cobra.Command {
 	var cwdFlag string
 	var asJSON bool
 	var detach bool
+	var isolatedWorktree bool
 	command := &cobra.Command{
 		Use:   "run [agent] <prompt> [-- native-args...]",
 		Short: "Run one non-interactive agent task",
@@ -157,10 +160,35 @@ func (a *app) newRunCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			installation := definition.Detect(command.Context())
 			record := runstore.Record{
 				ID: runstore.NewID("run"), Kind: "run", Agent: name,
+				AgentVersion:    installation.Version,
 				SelectionSource: selection.Source, RouteRule: selection.Rule, Cwd: cwd,
 				StartedAt: time.Now().UTC(), Status: "running",
+			}
+			if isolatedWorktree {
+				if _, err := exec.LookPath(spec.Command); err != nil {
+					return fmt.Errorf("agent command %q is not available: %w", spec.Command, err)
+				}
+				manager, err := worktree.New()
+				if err != nil {
+					return err
+				}
+				metadata, err := manager.Create(record.ID, cwd)
+				if err != nil {
+					return err
+				}
+				cwd, err = manager.MapPath(metadata, cwd)
+				if err != nil {
+					return err
+				}
+				record.Cwd = cwd
+				record.WorkspaceMode = "worktree"
+				record.Repository = metadata.Repository
+				record.WorktreePath = metadata.Path
+				record.WorktreeBranch = metadata.Branch
+				record.BaseCommit = metadata.BaseCommit
 			}
 			if detach {
 				if _, err := exec.LookPath(spec.Command); err != nil {
@@ -178,6 +206,11 @@ func (a *app) newRunCommand() *cobra.Command {
 				}
 				_, err = fmt.Fprintf(command.OutOrStdout(), "Started job %s (pid %d)\n", view.ID, view.PID)
 				return err
+			}
+			if isolatedWorktree {
+				if err := store.Save(record); err != nil {
+					return err
+				}
 			}
 			ctx, cancel := signalContext(command.Context())
 			defer cancel()
@@ -234,6 +267,7 @@ func (a *app) newRunCommand() *cobra.Command {
 	command.Flags().StringVar(&cwdFlag, "cwd", "", "working directory")
 	command.Flags().BoolVar(&asJSON, "json", false, "return a normalized JSON result")
 	command.Flags().BoolVar(&detach, "detach", false, "run in the background")
+	command.Flags().BoolVar(&isolatedWorktree, "worktree", false, "run in an isolated managed Git worktree")
 	return command
 }
 

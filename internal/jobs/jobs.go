@@ -19,22 +19,29 @@ const (
 )
 
 type View struct {
-	ID           string                `json:"id"`
-	Kind         string                `json:"kind,omitempty"`
-	Agent        string                `json:"agent"`
-	Workflow     string                `json:"workflow,omitempty"`
-	WorkflowFile string                `json:"workflow_file,omitempty"`
-	MaxParallel  int                   `json:"max_parallel,omitempty"`
-	Status       string                `json:"status"`
-	PID          int                   `json:"pid"`
-	Cwd          string                `json:"cwd"`
-	StartedAt    time.Time             `json:"started_at"`
-	EndedAt      *time.Time            `json:"ended_at,omitempty"`
-	ExitCode     *int                  `json:"exit_code,omitempty"`
-	SessionID    string                `json:"session_id,omitempty"`
-	Usage        *agent.Usage          `json:"usage,omitempty"`
-	LogFile      string                `json:"log_file,omitempty"`
-	Steps        []runstore.StepRecord `json:"steps,omitempty"`
+	ID             string                `json:"id"`
+	Kind           string                `json:"kind,omitempty"`
+	Agent          string                `json:"agent"`
+	AgentVersion   string                `json:"agent_version,omitempty"`
+	AgentVersions  map[string]string     `json:"agent_versions,omitempty"`
+	Workflow       string                `json:"workflow,omitempty"`
+	WorkflowFile   string                `json:"workflow_file,omitempty"`
+	MaxParallel    int                   `json:"max_parallel,omitempty"`
+	Status         string                `json:"status"`
+	PID            int                   `json:"pid"`
+	Cwd            string                `json:"cwd"`
+	StartedAt      time.Time             `json:"started_at"`
+	EndedAt        *time.Time            `json:"ended_at,omitempty"`
+	ExitCode       *int                  `json:"exit_code,omitempty"`
+	SessionID      string                `json:"session_id,omitempty"`
+	Usage          *agent.Usage          `json:"usage,omitempty"`
+	LogFile        string                `json:"log_file,omitempty"`
+	WorkspaceMode  string                `json:"workspace_mode,omitempty"`
+	Repository     string                `json:"repository,omitempty"`
+	WorktreePath   string                `json:"worktree_path,omitempty"`
+	WorktreeBranch string                `json:"worktree_branch,omitempty"`
+	BaseCommit     string                `json:"base_commit,omitempty"`
+	Steps          []runstore.StepRecord `json:"steps,omitempty"`
 }
 
 type Files struct {
@@ -61,11 +68,15 @@ func IsTerminal(status string) bool {
 
 func ToView(record runstore.Record) View {
 	view := View{
-		ID: record.ID, Kind: record.Kind, Agent: record.Agent, Workflow: record.Workflow,
-		WorkflowFile: record.WorkflowFile, MaxParallel: record.MaxParallel,
+		ID: record.ID, Kind: record.Kind, Agent: record.Agent, AgentVersion: record.AgentVersion,
+		AgentVersions: record.AgentVersions,
+		Workflow:      record.Workflow,
+		WorkflowFile:  record.WorkflowFile, MaxParallel: record.MaxParallel,
 		Status: record.Status, PID: record.PID,
 		Cwd: record.Cwd, StartedAt: record.StartedAt, SessionID: record.SessionID,
 		Usage: record.Usage, LogFile: record.LogFile,
+		WorkspaceMode: record.WorkspaceMode, Repository: record.Repository, WorktreePath: record.WorktreePath,
+		WorktreeBranch: record.WorktreeBranch, BaseCommit: record.BaseCommit,
 	}
 	view.Steps = append([]runstore.StepRecord(nil), record.Steps...)
 	if IsTerminal(record.Status) {

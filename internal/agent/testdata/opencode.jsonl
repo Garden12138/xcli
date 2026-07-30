@@ -1,0 +1,3 @@
+{"type":"session","sessionID":"opencode-fixture"}
+{"type":"text","part":{"text":"opencode done"}}
+{"type":"step_finish","part":{"id":"part-fixture","cost":0.02,"tokens":{"input":11,"output":5,"reasoning":2,"total":21,"cache":{"read":3,"write":0}}}}

@@ -61,8 +61,21 @@ type Plan struct {
 	ProjectDir   string   `json:"project_dir,omitempty"`
 	Targets      []string `json:"targets"`
 	Applicable   bool     `json:"applicable"`
+	InSync       bool     `json:"in_sync"`
 	Applied      bool     `json:"applied"`
 	Changes      []Change `json:"changes"`
+}
+
+func (p Plan) IsInSync() bool {
+	if !p.Applicable {
+		return false
+	}
+	for _, change := range p.Changes {
+		if change.Action != ActionNoop {
+			return false
+		}
+	}
+	return true
 }
 
 func (p *Plan) Sort() {

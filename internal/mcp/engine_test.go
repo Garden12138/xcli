@@ -50,13 +50,16 @@ func TestPlanApplyNoopPruneLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertChange(t, plan, ActionAdd, StatusPlanned)
+	if plan.InSync || plan.IsInSync() {
+		t.Fatalf("add plan unexpectedly in sync: %#v", plan)
+	}
 	if plan.Changes[0].desired == nil || len(plan.Changes[0].desired.EnvVars) != 1 {
 		t.Fatalf("desired launcher did not forward env_vars: %#v", plan.Changes[0])
 	}
 	if err := ApplyPlan(context.Background(), &plan, managers, state); err != nil {
 		t.Fatal(err)
 	}
-	if !plan.Applied || plan.Changes[0].Status != StatusApplied {
+	if !plan.Applied || plan.InSync || plan.Changes[0].Status != StatusApplied {
 		t.Fatalf("plan was not applied: %#v", plan)
 	}
 
@@ -84,6 +87,51 @@ func TestPlanApplyNoopPruneLifecycle(t *testing.T) {
 	}
 	if info.Mode().Perm() != 0o600 {
 		t.Fatalf("state mode = %o, want 600", info.Mode().Perm())
+	}
+}
+
+func TestPlanInSyncDistinguishesNoopDriftAndConflict(t *testing.T) {
+	directory := t.TempDir()
+	source := filepath.Join(directory, "config.yaml")
+	cfg := config.Defaults()
+	cfg.MCP.Servers = map[string]config.MCPServer{
+		"docs": {Transport: "http", URL: "https://example.com/mcp"},
+	}
+	state := newState(filepath.Join(directory, "state.json"))
+
+	desired := Entry{Transport: "http", URL: "https://example.com/mcp"}
+	state.Set("codex", "docs", Ownership{SourceConfig: source, Fingerprint: desired.Fingerprint()})
+	manager := &fakeManager{entries: map[string]Entry{"docs": desired}}
+	plan, err := BuildPlan(context.Background(), cfg, map[string]Manager{"codex": manager}, state, BuildOptions{
+		SourceConfig: source, Launcher: filepath.Join(directory, "xcli"), Targets: []string{"codex"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !plan.InSync || !plan.IsInSync() || plan.Changes[0].Action != ActionNoop {
+		t.Fatalf("noop plan not in sync: %#v", plan)
+	}
+
+	manager.entries["docs"] = Entry{Transport: "http", URL: "https://drift.example/mcp"}
+	drift, err := BuildPlan(context.Background(), cfg, map[string]Manager{"codex": manager}, state, BuildOptions{
+		SourceConfig: source, Launcher: filepath.Join(directory, "xcli"), Targets: []string{"codex"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if drift.InSync || drift.Changes[0].Action != ActionConflict {
+		t.Fatalf("drift plan unexpectedly clean: %#v", drift)
+	}
+
+	state = newState(filepath.Join(directory, "unowned.json"))
+	conflict, err := BuildPlan(context.Background(), cfg, map[string]Manager{"codex": manager}, state, BuildOptions{
+		SourceConfig: source, Launcher: filepath.Join(directory, "xcli"), Targets: []string{"codex"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if conflict.InSync || conflict.Applicable || conflict.Changes[0].Action != ActionConflict {
+		t.Fatalf("conflict plan unexpectedly clean: %#v", conflict)
 	}
 }
 

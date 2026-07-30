@@ -1,0 +1,24 @@
+version: 1
+name: implement-and-verify
+cwd: ..
+vars:
+  requirement: Improve the requested behavior.
+steps:
+  - id: implement
+    agent: codex
+    prompt: |
+      Implement this requirement:
+      {{ vars.requirement }}
+
+  - id: test
+    command: go
+    args: [test, ./...]
+    depends_on: [implement]
+    timeout: 10m
+
+  - id: review
+    agent: claude
+    depends_on: [test]
+    prompt: |
+      Review the implementation. The deterministic test output was:
+      {{ steps.test.output }}

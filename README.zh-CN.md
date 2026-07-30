@@ -21,12 +21,26 @@
 
 ## 安装
 
+使用 Homebrew：
+
+```bash
+brew install Garden12138/tap/xcli
+```
+
+Homebrew cask 使用相同的未签名发布归档；xcli 不会绕过 Gatekeeper，也不会移除 quarantine 属性。
+
+使用 Go 1.26 或更高版本：
+
+```bash
+go install github.com/Garden12138/xcli@latest
+```
+
 从 [GitHub Releases](https://github.com/Garden12138/xcli/releases) 页面下载预构建归档。当前提供 macOS 和 Linux 的 amd64、arm64 版本。
 
 从 `darwin_amd64`、`darwin_arm64`、`linux_amd64` 或 `linux_arm64` 中选择对应平台，然后校验并安装：
 
 ```bash
-VERSION=0.4.0
+VERSION=0.5.0
 PLATFORM=darwin_arm64
 ARCHIVE="xcli_${VERSION}_${PLATFORM}.tar.gz"
 
@@ -62,6 +76,7 @@ xcli config init
 # 查看已配置和已安装的 Agent
 xcli agents
 xcli doctor
+xcli doctor --deep
 
 # 使用原生工具安装并认证
 xcli install codex
@@ -76,6 +91,7 @@ xcli acp codex
 
 # 预览并同步声明的 MCP server
 xcli mcp plan
+xcli mcp check
 xcli mcp sync
 xcli mcp plan --scope project --project .
 
@@ -86,6 +102,7 @@ xcli mcp import apply
 # 执行单次任务；Agent 专属参数放在 -- 之后
 xcli run codex "审查当前变更"
 xcli run "修复失败的测试" -- --sandbox workspace-write
+xcli run --worktree "在隔离环境中实现改动"
 xcli route "审查认证相关改动"
 
 # 以交互方式或追加提示词恢复已记录会话
@@ -100,11 +117,13 @@ xcli jobs wait <run-id>
 
 # 运行工作流（并行需显式启用）
 xcli workflow validate examples/implement-and-review.yaml
+xcli workflow plan examples/verified-workflow.yaml
 xcli workflow run examples/implement-and-review.yaml \
   --var requirement="实现缓存失效修复"
 
 # 汇总已记录的 Token 用量和原生费用估算
 xcli usage --days 7
+xcli usage --project .
 ```
 
 `--var` 会覆盖工作流中已经声明的变量；未声明的键会被拒绝。
@@ -188,9 +207,12 @@ mcp:
 ```bash
 xcli mcp plan
 xcli mcp plan --target codex --json
+xcli mcp check --json
 xcli mcp sync
 xcli mcp sync --yes
 ```
+
+`mcp check` 是面向 CI 的只读检查：已同步返回 0，存在变更、漂移或冲突返回 2，配置、target 或原生读取失败返回 1。它支持与 `plan` 相同的 user/project scope 和 target 选择。
 
 默认的 user scope 保持已有机器级行为：stdio launcher 和源配置均写入绝对路径。若 xcli 构建在临时目录，需通过 `--launcher` 指定稳定安装路径；移动任一路径后必须重新同步。用户级 OpenCode JSONC 修改会保留注释和无关设置、创建 `.xcli.bak` 备份，并使用原子写入。
 
@@ -335,6 +357,20 @@ steps:
 
 依赖和模板引用仍必须指向更早声明的步骤；即使完成顺序不同，执行摘要也始终保持声明顺序。完整的 fan-out/fan-in 工作流参见 [`examples/parallel-review.yaml`](examples/parallel-review.yaml)。
 
+Agent 步骤可以和确定性的本地命令混合：
+
+```yaml
+- id: test
+  command: go
+  args: [test, ./...]
+  depends_on: [implement]
+  timeout: 10m
+```
+
+`command` 与 `agent`、`prompt` 互斥。命令会直接按 argv 执行，不经过 shell；stdout 可通过 `{{ steps.test.output }}` 引用。命令步骤没有 session ID 或 usage。完整示例参见 [`examples/verified-workflow.yaml`](examples/verified-workflow.yaml)。
+
+`workflow plan <file>` 会解析变量、依赖、有效并行度、cwd、命令、Agent 和可执行文件可用性，但不会创建运行记录。`--json` 提供稳定的机器可读输出，`--worktree` 会同时预检隔离条件。
+
 使用 `workflow run <file> --detach` 可以让同一套调度器作为后台 Job 运行。执行期间 `jobs show` 会展示 pending/running 步骤，`jobs logs --follow` 会持续输出进度直到 workflow 进入终态。
 
 支持以下引用：
@@ -346,7 +382,17 @@ steps:
 
 内联输出上限为 128 KiB，更大的结果必须通过 `output_file` 传递。步骤默认超时 30 分钟、不重试，并在失败时立即停止。致命失败或超时会取消正在运行的同级步骤并跳过待运行步骤。只有独立分支仍需继续时，才应使用 `continue_on_error: true`；依赖步骤仍会跳过，工作流整体仍为失败。
 
-并行步骤沿用现有的共享 `cwd` 语义。xcli 不会自动创建隔离 worktree，因此可能写文件的步骤应使用不同的 `cwd`，或自行协调并发访问。并发 stderr 会实时输出，不同步骤的内容可能交错。
+并行步骤共享 workflow 的 `cwd`。为 `run` 或 `workflow run` 添加 `--worktree`，即可为整个任务创建一个干净、隔离的 Git worktree 和 `xcli/<run-id>` 分支。任务结束后默认保留 worktree，`.env` 等被忽略文件不会被复制：
+
+```bash
+xcli run --worktree "实现改动"
+xcli workflow run examples/verified-workflow.yaml --worktree
+xcli worktrees list
+xcli worktrees show <run-id>
+xcli worktrees remove <run-id> --yes
+```
+
+默认拒绝删除运行中任务或包含未提交改动的 worktree。`--force` 可以丢弃 worktree 改动，但分支始终保留，xcli 不会自动合并或删除分支。
 
 ## 运行记录、用量与隐私
 
@@ -356,6 +402,8 @@ xcli 将权限为 `0600` 的私有元数据保存在 `$XDG_DATA_HOME/xcli/runs` 
 
 ```bash
 xcli runs list
+xcli runs list --agent codex --kind run --status success --since 24h --jsonl
+xcli runs list --cwd "$PWD"
 xcli runs show <run-id>
 ```
 
@@ -366,6 +414,8 @@ xcli runs show <run-id>
 ```bash
 xcli usage
 xcli usage --days 30 --agent claude
+xcli usage --cwd "$PWD"
+xcli usage --project .
 xcli usage --json
 ```
 
@@ -378,7 +428,7 @@ Codex 和 Gemini 提供 Token 统计但不提供美元估算；Claude 和 OpenCo
 - 未知 YAML 字段、无效模板、缺失网络配置和前向工作流依赖都会导致校验失败。
 - xcli 不添加遥测，也不会自动信任仓库配置。
 
-CAP、自动/持续 MCP 对账、项目自动发现、厂商高级 MCP 字段、守护进程、后台 resume 与交互会话、任务 restart/attach、Windows ConPTY 和 Web UI 仍继续延后。
+自动/持续 MCP 对账、项目自动发现、厂商高级 MCP 字段、每步骤独立 worktree、自动合并、守护进程、后台 resume 与交互会话、任务 restart/attach、Windows ConPTY 和 Web UI 仍继续延后。
 
 ## 许可证
 

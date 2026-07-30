@@ -719,6 +719,13 @@ func TestProjectMCPPlanSyncWritesPortableCodexConfiguration(t *testing.T) {
 			t.Fatalf("repeated project plan is not idempotent: %#v", plan)
 		}
 	}
+	plan, err = execute("check", "--scope", "project", "--project", project, "--target", "codex", "--launcher", launcherName, "--json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !plan.InSync {
+		t.Fatalf("project MCP check reported drift after sync: %#v", plan)
+	}
 }
 
 func TestProjectMCPValidation(t *testing.T) {

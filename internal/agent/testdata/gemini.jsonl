@@ -1,0 +1,3 @@
+{"type":"init","session_id":"gemini-fixture"}
+{"type":"message","role":"assistant","content":"gemini done"}
+{"type":"result","status":"success","stats":{"input":12,"cached":6,"output_tokens":4,"total_tokens":24}}

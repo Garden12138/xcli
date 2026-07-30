@@ -1,13 +1,28 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
+	"os/exec"
 	"text/tabwriter"
 
 	"github.com/Garden12138/xcli/internal/agent"
 	"github.com/spf13/cobra"
 )
+
+type doctorAgentReport struct {
+	agent.Installation
+	Capabilities *agent.Capabilities `json:"capabilities,omitempty"`
+	ACPCommand   string              `json:"acp_command,omitempty"`
+	ACPAvailable *bool               `json:"acp_available,omitempty"`
+	ACPError     string              `json:"acp_error,omitempty"`
+}
+
+type doctorReport struct {
+	Config       string                       `json:"config"`
+	DefaultAgent string                       `json:"default_agent,omitempty"`
+	Deep         bool                         `json:"deep,omitempty"`
+	Agents       map[string]doctorAgentReport `json:"agents"`
+}
 
 func (a *app) newAgentsCommand() *cobra.Command {
 	var asJSON bool
@@ -47,6 +62,7 @@ func (a *app) newAgentsCommand() *cobra.Command {
 
 func (a *app) newDoctorCommand() *cobra.Command {
 	var asJSON bool
+	var deep bool
 	command := &cobra.Command{
 		Use:   "doctor [agent]",
 		Short: "Check configuration and agent installations",
@@ -63,18 +79,40 @@ func (a *app) newDoctorCommand() *cobra.Command {
 				}
 				names = args
 			}
-			type report struct {
-				Config       string                        `json:"config"`
-				DefaultAgent string                        `json:"default_agent,omitempty"`
-				Agents       map[string]agent.Installation `json:"agents"`
+			result := doctorReport{
+				Config: path, DefaultAgent: cfg.DefaultAgent, Deep: deep,
+				Agents: map[string]doctorAgentReport{},
 			}
-			result := report{Config: path, DefaultAgent: cfg.DefaultAgent, Agents: map[string]agent.Installation{}}
-			allInstalled := true
+			allHealthy := true
 			for _, name := range names {
 				definition, _ := registry.Get(name)
-				installation := definition.Detect(context.Background())
-				result.Agents[name] = installation
-				allInstalled = allInstalled && installation.Installed
+				installation := definition.Detect(command.Context())
+				item := doctorAgentReport{Installation: installation}
+				if deep {
+					capabilities := definition.Capabilities()
+					item.Capabilities = &capabilities
+					acpAvailable := false
+					if capabilities.ACP {
+						launch, launchErr := definition.ACP(nil)
+						if launchErr != nil {
+							item.ACPError = launchErr.Error()
+						} else {
+							item.ACPCommand = launch.Command
+							if _, lookErr := exec.LookPath(launch.Command); lookErr != nil {
+								item.ACPError = lookErr.Error()
+							} else {
+								acpAvailable = true
+							}
+						}
+					}
+					item.ACPAvailable = &acpAvailable
+				}
+				result.Agents[name] = item
+				healthy := installation.Installed
+				if deep && item.Capabilities.ACP {
+					healthy = healthy && item.ACPAvailable != nil && *item.ACPAvailable
+				}
+				allHealthy = allHealthy && healthy
 			}
 			if asJSON {
 				if err := encodeJSON(command.OutOrStdout(), result); err != nil {
@@ -84,26 +122,45 @@ func (a *app) newDoctorCommand() *cobra.Command {
 				fmt.Fprintf(command.OutOrStdout(), "Config: %s\n", path)
 				fmt.Fprintf(command.OutOrStdout(), "Default agent: %s\n", fallback(cfg.DefaultAgent, "not set"))
 				writer := tabwriter.NewWriter(command.OutOrStdout(), 0, 4, 2, ' ', 0)
-				fmt.Fprintln(writer, "AGENT\tSTATUS\tPATH\tVERSION")
+				if deep {
+					fmt.Fprintln(writer, "AGENT\tSTATUS\tVERSION\tRUN\tSTRUCTURED\tRESUME\tACP\tUSAGE")
+				} else {
+					fmt.Fprintln(writer, "AGENT\tSTATUS\tPATH\tVERSION")
+				}
 				for _, name := range names {
-					installation := result.Agents[name]
+					item := result.Agents[name]
+					installation := item.Installation
 					status := "missing"
 					if installation.Installed {
 						status = "ok"
 					}
-					fmt.Fprintf(writer, "%s\t%s\t%s\t%s\n", name, status, installation.Path, installation.Version)
+					acpAvailable := item.ACPAvailable != nil && *item.ACPAvailable
+					if deep && item.Capabilities.ACP && !acpAvailable {
+						status = "degraded"
+					}
+					if deep {
+						fmt.Fprintf(
+							writer, "%s\t%s\t%s\t%t\t%t\t%t\t%t\t%t\n",
+							name, status, installation.Version, item.Capabilities.Run,
+							item.Capabilities.StructuredOutput, item.Capabilities.Resume,
+							acpAvailable, item.Capabilities.Usage,
+						)
+					} else {
+						fmt.Fprintf(writer, "%s\t%s\t%s\t%s\n", name, status, installation.Path, installation.Version)
+					}
 				}
 				if err := writer.Flush(); err != nil {
 					return err
 				}
 			}
-			if len(args) == 1 && !allInstalled {
+			if len(args) == 1 && !allHealthy {
 				return &ExitError{Code: 1}
 			}
 			return nil
 		},
 	}
 	command.Flags().BoolVar(&asJSON, "json", false, "print JSON output")
+	command.Flags().BoolVar(&deep, "deep", false, "check configured capabilities and ACP command availability")
 	return command
 }
 

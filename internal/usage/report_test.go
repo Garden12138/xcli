@@ -1,6 +1,7 @@
 package usage
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -75,5 +76,33 @@ func TestBuildFiltersAgentAndIncludesAllTime(t *testing.T) {
 func TestBuildRejectsInvalidDays(t *testing.T) {
 	if _, err := Build(nil, Options{Days: -1}); err == nil {
 		t.Fatal("expected negative days error")
+	}
+}
+
+func TestBuildFiltersByCwdAndProject(t *testing.T) {
+	project := filepath.Join(t.TempDir(), "project")
+	other := filepath.Join(t.TempDir(), "other")
+	records := []runstore.Record{
+		{Kind: "run", Agent: "codex", Cwd: project, Usage: &agent.Usage{TotalTokens: 10}},
+		{Kind: "run", Agent: "claude", Cwd: filepath.Join(project, "sub"), Usage: &agent.Usage{TotalTokens: 20}},
+		{Kind: "run", Agent: "gemini", Cwd: filepath.Join(other, "worktree"), Repository: project, Usage: &agent.Usage{TotalTokens: 30}},
+		{Kind: "run", Agent: "opencode", Cwd: other, Usage: &agent.Usage{TotalTokens: 40}},
+	}
+	cwdReport, err := Build(records, Options{Cwd: project})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cwdReport.Totals.Tasks != 1 || cwdReport.Totals.Usage.TotalTokens != 10 {
+		t.Fatalf("unexpected cwd report: %#v", cwdReport)
+	}
+	projectReport, err := Build(records, Options{Project: project})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if projectReport.Totals.Tasks != 3 || projectReport.Totals.Usage.TotalTokens != 60 {
+		t.Fatalf("unexpected project report: %#v", projectReport)
+	}
+	if _, err := Build(records, Options{Cwd: project, Project: project}); err == nil {
+		t.Fatal("combined cwd and project filters unexpectedly succeeded")
 	}
 }

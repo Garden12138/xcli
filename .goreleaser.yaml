@@ -25,6 +25,18 @@ archives:
 checksum:
   name_template: checksums.txt
 
+homebrew_casks:
+  - name: xcli
+    binaries:
+      - xcli
+    homepage: https://github.com/Garden12138/xcli
+    description: Local-first control plane for AI coding agent CLIs
+    skip_upload: auto
+    repository:
+      owner: Garden12138
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+
 release:
   draft: false
   prerelease: auto

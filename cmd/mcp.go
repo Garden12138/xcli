@@ -19,8 +19,51 @@ import (
 )
 
 func (a *app) newMCPCommand() *cobra.Command {
-	command := &cobra.Command{Use: "mcp", Short: "Import, plan, synchronize, and serve MCP configurations"}
-	command.AddCommand(a.newMCPPlanCommand(), a.newMCPSyncCommand(), a.newMCPImportCommand(), a.newMCPServeCommand())
+	command := &cobra.Command{Use: "mcp", Short: "Import, check, plan, synchronize, and serve MCP configurations"}
+	command.AddCommand(
+		a.newMCPCheckCommand(), a.newMCPPlanCommand(), a.newMCPSyncCommand(),
+		a.newMCPImportCommand(), a.newMCPServeCommand(),
+	)
+	return command
+}
+
+func (a *app) newMCPCheckCommand() *cobra.Command {
+	var targets []string
+	var launcher string
+	var scope string
+	var project string
+	var asJSON bool
+	command := &cobra.Command{
+		Use:   "check",
+		Short: "Check whether MCP configurations are synchronized",
+		Args:  cobra.NoArgs,
+		RunE: func(command *cobra.Command, _ []string) error {
+			plan, _, _, err := a.buildMCPPlan(command, targets, launcher, scope, project, false)
+			if err != nil {
+				return err
+			}
+			if err := writeMCPPlan(command, plan, asJSON); err != nil {
+				return err
+			}
+			for _, change := range plan.Changes {
+				if change.Action == mcp.ActionUnavailable {
+					return &ExitError{Code: 1, Message: "MCP configuration could not be checked"}
+				}
+			}
+			if !plan.InSync {
+				return &ExitError{Code: 2, Message: "MCP configuration is not synchronized"}
+			}
+			if !asJSON {
+				fmt.Fprintln(command.OutOrStdout(), "MCP configuration is synchronized.")
+			}
+			return nil
+		},
+	}
+	command.Flags().StringArrayVar(&targets, "target", nil, "MCP target to include (repeatable)")
+	command.Flags().StringVar(&launcher, "launcher", "", "stdio launcher (user path or project PATH command)")
+	command.Flags().StringVar(&scope, "scope", mcp.ScopeUser, "configuration scope: user or project")
+	command.Flags().StringVar(&project, "project", "", "project directory (required for project scope)")
+	command.Flags().BoolVar(&asJSON, "json", false, "print JSON output")
 	return command
 }
 

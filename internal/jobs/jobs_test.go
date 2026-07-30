@@ -39,6 +39,7 @@ func TestManagerCreatesPrivateFilesAndReconcilesOrphan(t *testing.T) {
 
 	record := runstore.Record{
 		ID: "run-job", Kind: "run", Agent: "fake", Background: true,
+		AgentVersion: "1.0", AgentVersions: map[string]string{"fake": "1.0"},
 		PID: 123, Cwd: t.TempDir(), StartedAt: time.Now().UTC(), Status: "running",
 		LogFile: files.LogPath,
 	}
@@ -53,7 +54,8 @@ func TestManagerCreatesPrivateFilesAndReconcilesOrphan(t *testing.T) {
 		t.Fatalf("unexpected reconciled record: %#v", loaded)
 	}
 	view := ToView(loaded)
-	if view.EndedAt == nil || view.ExitCode == nil || *view.ExitCode != 1 {
+	if view.EndedAt == nil || view.ExitCode == nil || *view.ExitCode != 1 ||
+		view.AgentVersion != "1.0" || view.AgentVersions["fake"] != "1.0" {
 		t.Fatalf("unexpected view: %#v", view)
 	}
 }

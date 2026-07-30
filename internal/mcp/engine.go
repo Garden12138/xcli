@@ -85,6 +85,7 @@ func BuildPlan(ctx context.Context, cfg config.Config, managers map[string]Manag
 		}
 	}
 	plan.Sort()
+	plan.InSync = plan.IsInSync()
 	return plan, nil
 }
 
