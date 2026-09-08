@@ -1,0 +1,11 @@
+{
+  "kind": "real_post_run_inspection",
+  "source": "native Codex session created at the smoke timestamp; session path and identity omitted",
+  "model": "gpt-6-astra",
+  "error_code": "usage_limit_exceeded",
+  "native_cwd_in_temporary_fixture": true,
+  "model_calls_attempted": 1,
+  "resume_attempted": false,
+  "additional_model_calls": 0,
+  "interpretation": "false linkage fields in codex-smoke.json are untested because the first call failed; they are not evidence of a cwd or session mismatch"
+}

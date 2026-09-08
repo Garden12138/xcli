@@ -1,0 +1,49 @@
+{
+  "note": "Frozen target examples, not implemented production behavior. IDs, timestamps, paths and fingerprints are synthetic.",
+  "old_run": {
+    "id": "run-old", "kind": "run", "agent": "codex", "cwd": "/fixture/repo",
+    "started_at": "2026-09-08T00:00:00Z", "ended_at": "2026-09-08T00:00:01Z",
+    "status": "success", "exit_code": 0, "session_id": "fixture-session"
+  },
+  "old_workflow": {
+    "id": "workflow-old", "kind": "workflow", "cwd": "/fixture/repo",
+    "started_at": "2026-09-08T00:00:00Z", "ended_at": "2026-09-08T00:00:01Z",
+    "status": "success", "exit_code": 0,
+    "steps": [{"id": "task", "agent": "codex", "status": "success", "exit_code": 0, "session_id": "fixture-session"}]
+  },
+  "new_workflow": {
+    "id": "workflow-new", "kind": "workflow", "cwd": "/fixture/repo",
+    "started_at": "2026-09-08T00:00:00Z", "ended_at": "2026-09-08T00:00:01Z",
+    "status": "success", "exit_code": 0,
+    "steps": [{"id": "task", "agent": "codex", "cwd": "/fixture/repo/sub", "status": "success", "exit_code": 0, "session_id": "fixture-session", "parse_status": "complete"}]
+  },
+  "old_result": {"agent": "codex", "output": "fixture output", "session_id": "fixture-session", "exit_code": 0, "status": "success"},
+  "new_result": {"agent": "codex", "run_id": "run-new", "output": "fixture output", "session_id": "fixture-session", "exit_code": 0, "status": "success", "parse_status": "complete"},
+  "parse_failure": {
+    "cli_exit_code": 1,
+    "result": {"agent": "codex", "run_id": "run-truncated", "session_id": "fixture-session", "exit_code": 0, "status": "failed", "parse_status": "truncated", "error_kind": "truncated", "error": "codex event 2 exceeds parser limit"},
+    "record": {"id": "run-truncated", "kind": "run", "agent": "codex", "cwd": "/fixture/repo", "started_at": "2026-09-08T00:00:00Z", "ended_at": "2026-09-08T00:00:01Z", "status": "failed", "exit_code": 0, "parse_status": "truncated", "error_kind": "truncated", "error": "codex event 2 exceeds parser limit"}
+  },
+  "initial_job": {"id": "run-background", "kind": "run", "agent": "codex", "status": "running", "pid": 1234, "cwd": "/fixture/repo", "started_at": "2026-09-08T00:00:00Z", "log_file": "/fixture/data/job.log"},
+  "cwd_cases": [
+    {"name": "old run", "record": "old_run", "override": "", "resolved": "/fixture/repo", "source": "record.cwd", "warning": false},
+    {"name": "legacy workflow", "record": "old_workflow", "override": "", "resolved": "/fixture/repo", "source": "legacy workflow cwd", "warning": true},
+    {"name": "recorded step", "record": "new_workflow", "override": "", "resolved": "/fixture/repo/sub", "source": "step.cwd", "warning": false},
+    {"name": "explicit override", "record": "new_workflow", "override": "/fixture/override", "resolved": "/fixture/override", "source": "--cwd", "warning": false}
+  ],
+  "ownership_v1": {"version": 1, "entries": {"claude": {"docs": {"source_config": "/fixture/config.yaml", "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}}},
+  "ownership_v2": {"version": 2, "namespaces": {"user": {"scope": "user", "entries": {"claude": {"docs": {"source_config": "/fixture/config.yaml", "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}}}}},
+  "ownership_v3_unconfirmed": {"version": 3, "namespaces": {"user": {"scope": "user", "entries": {"claude": {"docs": {"source_config": "/fixture/config.yaml", "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}}}}},
+  "ownership_v3_confirmed": {"version": 3, "namespaces": {"user": {"scope": "user", "entries": {"claude": {"docs": {"source_config": "/fixture/config.yaml", "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "native_fingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}}}}}},
+  "ownership_cases": [
+    {"state": "ownership_v1", "native_present": true, "expected_action": "conflict", "auto_trust": false},
+    {"state": "ownership_v2", "native_present": true, "expected_action": "conflict", "auto_trust": false},
+    {"state": "ownership_v3_unconfirmed", "native_present": true, "expected_action": "conflict", "auto_trust": false},
+    {"state": "ownership_v3_confirmed", "native_matches": true, "semantic_matches": true, "expected_action": "noop", "auto_trust": false}
+  ],
+  "events": [
+    {"version": 1, "run_id": "run-new", "time": "2026-09-08T00:00:00Z", "type": "started"},
+    {"version": 1, "run_id": "run-new", "time": "2026-09-08T00:00:01Z", "type": "progress", "step_id": "task", "attempt": 1, "message": "fixture activity"},
+    {"version": 1, "run_id": "run-new", "time": "2026-09-08T00:00:02Z", "type": "completed", "result": {"agent": "codex", "run_id": "run-new", "output": "fixture output", "session_id": "fixture-session", "exit_code": 0, "status": "success", "parse_status": "complete"}}
+  ]
+}

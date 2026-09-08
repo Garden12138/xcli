@@ -1,0 +1,40 @@
+{
+  "generated_at": "2026-09-08T02:57:15Z",
+  "kind": "real",
+  "platform": "darwin/arm64",
+  "commit": "feae6070dfa63049cad51e9f37511650914618c3",
+  "binary_sha256": "a412784cd64c108dd8d447c02217407c77a007a3630d45828c95f6bb1ee0ba7c",
+  "codex_version": "codex-cli 0.153.4",
+  "account": "existing local login (identity omitted)",
+  "model": "existing CLI default; no model override",
+  "invocation_limit": 2,
+  "invocations": 1,
+  "status": "failed",
+  "detail": "first call failed acceptance; resume omitted; no retries",
+  "calls": [
+    {
+      "name": "run-json",
+      "command": [
+        "<xcli>",
+        "--config",
+        "<fixture>/repo/.xcli/config.yaml",
+        "run",
+        "codex",
+        "Remember the exact token PHASE0_MEMORY_7Q2 for the next turn. Do not use tools or modify files. Reply exactly PHASE0_READY.",
+        "--cwd",
+        "<fixture>/repo",
+        "--json"
+      ],
+      "exit_code": 1,
+      "timed_out": false,
+      "duration_ms": 6058,
+      "status": "failed",
+      "output": "<unexpected response omitted>",
+      "session_present": true,
+      "diagnostic": "native call failed; raw stderr omitted"
+    }
+  ],
+  "same_session": false,
+  "native_cwd_correct": false,
+  "records_linked": false
+}

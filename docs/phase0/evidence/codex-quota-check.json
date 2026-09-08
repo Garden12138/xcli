@@ -1,0 +1,22 @@
+{
+  "checked_at_unix": 1788848189,
+  "kind": "read_only_account_rate_limits",
+  "method": "account/rateLimits/read",
+  "model_invocations": 0,
+  "limits": {
+    "codex": {
+      "primary": {
+        "usedPercent": 68,
+        "windowDurationMins": 300,
+        "resetsAt": 1788859921
+      },
+      "secondary": {
+        "usedPercent": 11,
+        "windowDurationMins": 10080,
+        "resetsAt": 1789446721
+      },
+      "rateLimitReachedType": null
+    }
+  },
+  "note": "Point-in-time snapshot; only the codex bucket was returned. Does not prove all model-specific buckets are available."
+}

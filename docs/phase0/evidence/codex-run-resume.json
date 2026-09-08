@@ -1,0 +1,73 @@
+{
+  "generated_at": "2026-09-08T08:02:48Z",
+  "kind": "real",
+  "platform": "darwin/arm64",
+  "commit": "feae6070dfa63049cad51e9f37511650914618c3",
+  "binary_sha256": "a412784cd64c108dd8d447c02217407c77a007a3630d45828c95f6bb1ee0ba7c",
+  "codex_version": "codex-cli 0.153.4",
+  "account": "existing local login (identity omitted)",
+  "model": "existing CLI default; no model override",
+  "invocation_limit": 2,
+  "invocations": 2,
+  "status": "passed",
+  "detail": "run/JSON and same-session resume passed; cwd captured independently at native exec; no project files requested to change",
+  "calls": [
+    {
+      "name": "run-json",
+      "command": [
+        "<xcli>",
+        "--config",
+        "<fixture>/repo/.xcli/config.yaml",
+        "run",
+        "codex",
+        "Remember the exact token PHASE0_MEMORY_7Q2 for the next turn. Do not use tools or modify files. Reply exactly PHASE0_READY.",
+        "--cwd",
+        "<fixture>/repo",
+        "--json"
+      ],
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_ms": 9757,
+      "status": "success",
+      "output": "PHASE0_READY",
+      "session_present": true,
+      "usage": {
+        "cache_read_tokens": 12160,
+        "cache_write_tokens": 0,
+        "input_tokens": 3299,
+        "output_tokens": 10,
+        "reasoning_tokens": 11,
+        "total_tokens": 15480
+      }
+    },
+    {
+      "name": "resume-json",
+      "command": [
+        "<xcli>",
+        "--config",
+        "<fixture>/repo/.xcli/config.yaml",
+        "resume",
+        "<run-id>",
+        "Without tools, repeat exactly the token I asked you to remember in the previous turn. Do not modify files.",
+        "--json"
+      ],
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_ms": 10356,
+      "status": "success",
+      "output": "PHASE0_MEMORY_7Q2",
+      "session_present": true,
+      "usage": {
+        "cache_read_tokens": 15232,
+        "cache_write_tokens": 0,
+        "input_tokens": 276,
+        "output_tokens": 12,
+        "reasoning_tokens": 0,
+        "total_tokens": 15520
+      }
+    }
+  ],
+  "same_session": true,
+  "native_cwd_correct": true,
+  "records_linked": true
+}

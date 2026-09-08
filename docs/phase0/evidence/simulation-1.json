@@ -1,0 +1,551 @@
+{
+  "generated_at": "2026-09-08T06:07:00Z",
+  "platform": "darwin/arm64",
+  "go_version": "go1.26.4",
+  "kind": "simulated",
+  "suites": [
+    {
+      "line": "stable",
+      "commit": "feae6070dfa63049cad51e9f37511650914618c3",
+      "binary_sha256": "a412784cd64c108dd8d447c02217407c77a007a3630d45828c95f6bb1ee0ba7c",
+      "findings": [
+        {
+          "id": "F02",
+          "status": "reproduced",
+          "detail": "plan_action=noop; delete_exit=0; externally_edited_entry_preserved=false",
+          "commands": [
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "mcp",
+                "sync",
+                "--yes",
+                "--scope",
+                "project",
+                "--project",
+                "\u003cfixture\u003e/repo",
+                "--target",
+                "claude",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"source_config\": \"\u003cfixture\u003e/repo/.xcli/config.yaml\",\n  \"launcher\": \"xcli\",\n  \"scope\": \"project\",\n  \"project_dir\": \"\u003cfixture\u003e/repo\",\n  \"targets\": [\n    \"claude\"\n  ],\n  \"applicable\": true,\n  \"applied\": true,\n  \"changes\": [\n    {\n      \"target\": \"claude\",\n      \"server\": \"docs\",\n      \"action\": \"add\",\n      \"status\": \"applied\"\n    }\n  ]\n}\n"
+            },
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "mcp",
+                "plan",
+                "--scope",
+                "project",
+                "--project",
+                "\u003cfixture\u003e/repo",
+                "--target",
+                "claude",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"source_config\": \"\u003cfixture\u003e/repo/.xcli/config.yaml\",\n  \"launcher\": \"xcli\",\n  \"scope\": \"project\",\n  \"project_dir\": \"\u003cfixture\u003e/repo\",\n  \"targets\": [\n    \"claude\"\n  ],\n  \"applicable\": true,\n  \"applied\": false,\n  \"changes\": [\n    {\n      \"target\": \"claude\",\n      \"server\": \"docs\",\n      \"action\": \"noop\",\n      \"status\": \"skipped\"\n    }\n  ]\n}\n"
+            },
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "mcp",
+                "sync",
+                "--yes",
+                "--scope",
+                "project",
+                "--project",
+                "\u003cfixture\u003e/repo",
+                "--target",
+                "claude",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"source_config\": \"\u003cfixture\u003e/repo/.xcli/config.yaml\",\n  \"launcher\": \"xcli\",\n  \"scope\": \"project\",\n  \"project_dir\": \"\u003cfixture\u003e/repo\",\n  \"targets\": [\n    \"claude\"\n  ],\n  \"applicable\": true,\n  \"applied\": true,\n  \"changes\": [\n    {\n      \"target\": \"claude\",\n      \"server\": \"docs\",\n      \"action\": \"remove\",\n      \"status\": \"applied\"\n    }\n  ]\n}\n"
+            }
+          ]
+        },
+        {
+          "id": "F03",
+          "status": "reproduced",
+          "detail": "targets=[claude gemini]; env_present=false; second_import_unchanged=true",
+          "commands": [
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "mcp",
+                "import",
+                "apply",
+                "--scope",
+                "project",
+                "--project",
+                "\u003cfixture\u003e/repo",
+                "--target",
+                "gemini",
+                "--yes",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"source_config\": \"\u003cfixture\u003e/repo/.xcli/config.yaml\",\n  \"scope\": \"project\",\n  \"project_dir\": \"\u003cfixture\u003e/repo\",\n  \"targets\": [\n    \"gemini\"\n  ],\n  \"applicable\": true,\n  \"applied\": true,\n  \"changes\": [\n    {\n      \"server\": \"tools\",\n      \"targets\": [\n        \"gemini\"\n      ],\n      \"action\": \"update\",\n      \"status\": \"applied\",\n      \"detail\": \"extended target coverage\"\n    }\n  ]\n}\n"
+            },
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "mcp",
+                "import",
+                "apply",
+                "--scope",
+                "project",
+                "--project",
+                "\u003cfixture\u003e/repo",
+                "--target",
+                "gemini",
+                "--yes",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"source_config\": \"\u003cfixture\u003e/repo/.xcli/config.yaml\",\n  \"scope\": \"project\",\n  \"project_dir\": \"\u003cfixture\u003e/repo\",\n  \"targets\": [\n    \"gemini\"\n  ],\n  \"applicable\": true,\n  \"applied\": true,\n  \"changes\": [\n    {\n      \"server\": \"tools\",\n      \"targets\": [\n        \"gemini\"\n      ],\n      \"action\": \"noop\",\n      \"status\": \"skipped\"\n    }\n  ]\n}\n"
+            }
+          ]
+        },
+        {
+          "id": "F04",
+          "status": "reproduced",
+          "detail": "original_cwd=\u003cfixture\u003e/repo/sub; resumed_cwd=\u003cfixture\u003e/repo",
+          "commands": [
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "workflow",
+                "run",
+                "\u003cfixture\u003e/repo/workflow.yaml",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"id\": \"workflow-20260908T060701Z-41719473\",\n  \"name\": \"phase0\",\n  \"status\": \"success\",\n  \"exit_code\": 0,\n  \"max_parallel\": 1,\n  \"cwd\": \"\u003cfixture\u003e/repo\",\n  \"steps\": [\n    {\n      \"id\": \"task\",\n      \"agent\": \"codex\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/sub\",\n      \"session_id\": \"phase0-session\",\n      \"usage\": {\n        \"input_tokens\": 7,\n        \"cache_read_tokens\": 0,\n        \"cache_write_tokens\": 0,\n        \"output_tokens\": 3,\n        \"reasoning_tokens\": 0,\n        \"total_tokens\": 10\n      },\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.060339Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.063978Z\"\n    }\n  ],\n  \"usage\": {\n    \"input_tokens\": 7,\n    \"cache_read_tokens\": 0,\n    \"cache_write_tokens\": 0,\n    \"output_tokens\": 3,\n    \"reasoning_tokens\": 0,\n    \"total_tokens\": 10\n  }\n}\n"
+            },
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "resume",
+                "workflow-20260908T060701Z-41719473",
+                "continue",
+                "--step",
+                "task",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e",
+              "exit_code": 0,
+              "stdout": "{\n  \"agent\": \"codex\",\n  \"output\": \"\u003cfixture\u003e/repo\",\n  \"session_id\": \"phase0-session\",\n  \"exit_code\": 0,\n  \"status\": \"success\",\n  \"usage\": {\n    \"input_tokens\": 7,\n    \"cache_read_tokens\": 0,\n    \"cache_write_tokens\": 0,\n    \"output_tokens\": 3,\n    \"reasoning_tokens\": 0,\n    \"total_tokens\": 10\n  }\n}\n"
+            }
+          ]
+        },
+        {
+          "id": "F05",
+          "status": "reproduced",
+          "detail": "output_bytes=54; usage_present=false; status=success; parse_status=\u003cnil\u003e",
+          "commands": [
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "run",
+                "codex",
+                "large fixture",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"agent\": \"codex\",\n  \"output\": \"{\\\"thread_id\\\":\\\"phase0-session\\\",\\\"type\\\":\\\"thread.started\\\"}\",\n  \"session_id\": \"phase0-session\",\n  \"exit_code\": 0,\n  \"status\": \"success\"\n}\n"
+            }
+          ]
+        },
+        {
+          "id": "F06",
+          "status": "reproduced",
+          "detail": "implement-and-review.yaml caller=\u003cfixture\u003e/repo cwd=\u003cfixture\u003e/repo/examples; implement-and-review.yaml caller=\u003cfixture\u003e cwd=\u003cfixture\u003e/repo/examples; parallel-review.yaml caller=\u003cfixture\u003e/repo cwd=\u003cfixture\u003e/repo/examples; parallel-review.yaml caller=\u003cfixture\u003e cwd=\u003cfixture\u003e/repo/examples",
+          "commands": [
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "workflow",
+                "run",
+                "\u003cfixture\u003e/repo/examples/implement-and-review.yaml",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"id\": \"workflow-20260908T060701Z-e26b6ce8\",\n  \"name\": \"implement-and-review\",\n  \"status\": \"success\",\n  \"exit_code\": 0,\n  \"max_parallel\": 1,\n  \"cwd\": \"\u003cfixture\u003e/repo/examples\",\n  \"steps\": [\n    {\n      \"id\": \"implement\",\n      \"agent\": \"codex\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"usage\": {\n        \"input_tokens\": 7,\n        \"cache_read_tokens\": 0,\n        \"cache_write_tokens\": 0,\n        \"output_tokens\": 3,\n        \"reasoning_tokens\": 0,\n        \"total_tokens\": 10\n      },\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.108539Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.111681Z\"\n    },\n    {\n      \"id\": \"review\",\n      \"agent\": \"claude\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.111698Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.114595Z\"\n    },\n    {\n      \"id\": \"fix\",\n      \"agent\": \"codex\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"usage\": {\n        \"input_tokens\": 7,\n        \"cache_read_tokens\": 0,\n        \"cache_write_tokens\": 0,\n        \"output_tokens\": 3,\n        \"reasoning_tokens\": 0,\n        \"total_tokens\": 10\n      },\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.11461Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.117391Z\"\n    }\n  ],\n  \"usage\": {\n    \"input_tokens\": 14,\n    \"cache_read_tokens\": 0,\n    \"cache_write_tokens\": 0,\n    \"output_tokens\": 6,\n    \"reasoning_tokens\": 0,\n    \"total_tokens\": 20\n  }\n}\n"
+            },
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "workflow",
+                "run",
+                "\u003cfixture\u003e/repo/examples/implement-and-review.yaml",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e",
+              "exit_code": 0,
+              "stdout": "{\n  \"id\": \"workflow-20260908T060701Z-b3026dd7\",\n  \"name\": \"implement-and-review\",\n  \"status\": \"success\",\n  \"exit_code\": 0,\n  \"max_parallel\": 1,\n  \"cwd\": \"\u003cfixture\u003e/repo/examples\",\n  \"steps\": [\n    {\n      \"id\": \"implement\",\n      \"agent\": \"codex\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"usage\": {\n        \"input_tokens\": 7,\n        \"cache_read_tokens\": 0,\n        \"cache_write_tokens\": 0,\n        \"output_tokens\": 3,\n        \"reasoning_tokens\": 0,\n        \"total_tokens\": 10\n      },\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.128681Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.131517Z\"\n    },\n    {\n      \"id\": \"review\",\n      \"agent\": \"claude\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.131547Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.134186Z\"\n    },\n    {\n      \"id\": \"fix\",\n      \"agent\": \"codex\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"usage\": {\n        \"input_tokens\": 7,\n        \"cache_read_tokens\": 0,\n        \"cache_write_tokens\": 0,\n        \"output_tokens\": 3,\n        \"reasoning_tokens\": 0,\n        \"total_tokens\": 10\n      },\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.134202Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.13689Z\"\n    }\n  ],\n  \"usage\": {\n    \"input_tokens\": 14,\n    \"cache_read_tokens\": 0,\n    \"cache_write_tokens\": 0,\n    \"output_tokens\": 6,\n    \"reasoning_tokens\": 0,\n    \"total_tokens\": 20\n  }\n}\n"
+            },
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "workflow",
+                "run",
+                "\u003cfixture\u003e/repo/examples/parallel-review.yaml",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"id\": \"workflow-20260908T060701Z-bedb0932\",\n  \"name\": \"parallel-review\",\n  \"status\": \"success\",\n  \"exit_code\": 0,\n  \"max_parallel\": 2,\n  \"cwd\": \"\u003cfixture\u003e/repo/examples\",\n  \"steps\": [\n    {\n      \"id\": \"correctness\",\n      \"agent\": \"codex\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"usage\": {\n        \"input_tokens\": 7,\n        \"cache_read_tokens\": 0,\n        \"cache_write_tokens\": 0,\n        \"output_tokens\": 3,\n        \"reasoning_tokens\": 0,\n        \"total_tokens\": 10\n      },\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.146325Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.149466Z\"\n    },\n    {\n      \"id\": \"security\",\n      \"agent\": \"claude\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.146313Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.149123Z\"\n    },\n    {\n      \"id\": \"summarize\",\n      \"agent\": \"codex\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"usage\": {\n        \"input_tokens\": 7,\n        \"cache_read_tokens\": 0,\n        \"cache_write_tokens\": 0,\n        \"output_tokens\": 3,\n        \"reasoning_tokens\": 0,\n        \"total_tokens\": 10\n      },\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.149483Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.152594Z\"\n    }\n  ],\n  \"usage\": {\n    \"input_tokens\": 14,\n    \"cache_read_tokens\": 0,\n    \"cache_write_tokens\": 0,\n    \"output_tokens\": 6,\n    \"reasoning_tokens\": 0,\n    \"total_tokens\": 20\n  }\n}\n"
+            },
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "workflow",
+                "run",
+                "\u003cfixture\u003e/repo/examples/parallel-review.yaml",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e",
+              "exit_code": 0,
+              "stdout": "{\n  \"id\": \"workflow-20260908T060701Z-24575636\",\n  \"name\": \"parallel-review\",\n  \"status\": \"success\",\n  \"exit_code\": 0,\n  \"max_parallel\": 2,\n  \"cwd\": \"\u003cfixture\u003e/repo/examples\",\n  \"steps\": [\n    {\n      \"id\": \"correctness\",\n      \"agent\": \"codex\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"usage\": {\n        \"input_tokens\": 7,\n        \"cache_read_tokens\": 0,\n        \"cache_write_tokens\": 0,\n        \"output_tokens\": 3,\n        \"reasoning_tokens\": 0,\n        \"total_tokens\": 10\n      },\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.160329Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.163422Z\"\n    },\n    {\n      \"id\": \"security\",\n      \"agent\": \"claude\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.160317Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.163256Z\"\n    },\n    {\n      \"id\": \"summarize\",\n      \"agent\": \"codex\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"usage\": {\n        \"input_tokens\": 7,\n        \"cache_read_tokens\": 0,\n        \"cache_write_tokens\": 0,\n        \"output_tokens\": 3,\n        \"reasoning_tokens\": 0,\n        \"total_tokens\": 10\n      },\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.163434Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.166627Z\"\n    }\n  ],\n  \"usage\": {\n    \"input_tokens\": 14,\n    \"cache_read_tokens\": 0,\n    \"cache_write_tokens\": 0,\n    \"output_tokens\": 6,\n    \"reasoning_tokens\": 0,\n    \"total_tokens\": 20\n  }\n}\n"
+            }
+          ]
+        },
+        {
+          "id": "F07",
+          "status": "reproduced",
+          "detail": "json_exit=0; text_exit=0; installed=true; diagnostic=version check exited with code 9",
+          "commands": [
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "doctor",
+                "codex",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"config\": \"\u003cfixture\u003e/repo/.xcli/config.yaml\",\n  \"agents\": {\n    \"codex\": {\n      \"installed\": true,\n      \"path\": \"\u003cfixture\u003e/bin/fake-agent-version-fail\",\n      \"error\": \"version check exited with code 9\"\n    }\n  }\n}\n"
+            },
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "doctor",
+                "codex"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "Config: \u003cfixture\u003e/repo/.xcli/config.yaml\nDefault agent: not set\nAGENT  STATUS  PATH                                                                                                              VERSION\ncodex  ok      \u003cfixture\u003e/bin/fake-agent-version-fail  \n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "line": "development",
+      "commit": "6d59f7fa2b3e83a89e9450927b507320f44264f7",
+      "binary_sha256": "385874a66a3befba1af25db84c1279ea1df8d29a274e082f01c058ad79585db2",
+      "findings": [
+        {
+          "id": "F02",
+          "status": "reproduced",
+          "detail": "plan_action=noop; delete_exit=0; externally_edited_entry_preserved=false",
+          "commands": [
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "mcp",
+                "sync",
+                "--yes",
+                "--scope",
+                "project",
+                "--project",
+                "\u003cfixture\u003e/repo",
+                "--target",
+                "claude",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"source_config\": \"\u003cfixture\u003e/repo/.xcli/config.yaml\",\n  \"launcher\": \"xcli\",\n  \"scope\": \"project\",\n  \"project_dir\": \"\u003cfixture\u003e/repo\",\n  \"targets\": [\n    \"claude\"\n  ],\n  \"applicable\": true,\n  \"in_sync\": false,\n  \"applied\": true,\n  \"changes\": [\n    {\n      \"target\": \"claude\",\n      \"server\": \"docs\",\n      \"action\": \"add\",\n      \"status\": \"applied\"\n    }\n  ]\n}\n"
+            },
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "mcp",
+                "plan",
+                "--scope",
+                "project",
+                "--project",
+                "\u003cfixture\u003e/repo",
+                "--target",
+                "claude",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"source_config\": \"\u003cfixture\u003e/repo/.xcli/config.yaml\",\n  \"launcher\": \"xcli\",\n  \"scope\": \"project\",\n  \"project_dir\": \"\u003cfixture\u003e/repo\",\n  \"targets\": [\n    \"claude\"\n  ],\n  \"applicable\": true,\n  \"in_sync\": true,\n  \"applied\": false,\n  \"changes\": [\n    {\n      \"target\": \"claude\",\n      \"server\": \"docs\",\n      \"action\": \"noop\",\n      \"status\": \"skipped\"\n    }\n  ]\n}\n"
+            },
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "mcp",
+                "sync",
+                "--yes",
+                "--scope",
+                "project",
+                "--project",
+                "\u003cfixture\u003e/repo",
+                "--target",
+                "claude",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"source_config\": \"\u003cfixture\u003e/repo/.xcli/config.yaml\",\n  \"launcher\": \"xcli\",\n  \"scope\": \"project\",\n  \"project_dir\": \"\u003cfixture\u003e/repo\",\n  \"targets\": [\n    \"claude\"\n  ],\n  \"applicable\": true,\n  \"in_sync\": false,\n  \"applied\": true,\n  \"changes\": [\n    {\n      \"target\": \"claude\",\n      \"server\": \"docs\",\n      \"action\": \"remove\",\n      \"status\": \"applied\"\n    }\n  ]\n}\n"
+            }
+          ]
+        },
+        {
+          "id": "F03",
+          "status": "reproduced",
+          "detail": "targets=[claude gemini]; env_present=false; second_import_unchanged=true",
+          "commands": [
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "mcp",
+                "import",
+                "apply",
+                "--scope",
+                "project",
+                "--project",
+                "\u003cfixture\u003e/repo",
+                "--target",
+                "gemini",
+                "--yes",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"source_config\": \"\u003cfixture\u003e/repo/.xcli/config.yaml\",\n  \"scope\": \"project\",\n  \"project_dir\": \"\u003cfixture\u003e/repo\",\n  \"targets\": [\n    \"gemini\"\n  ],\n  \"applicable\": true,\n  \"applied\": true,\n  \"changes\": [\n    {\n      \"server\": \"tools\",\n      \"targets\": [\n        \"gemini\"\n      ],\n      \"action\": \"update\",\n      \"status\": \"applied\",\n      \"detail\": \"extended target coverage\"\n    }\n  ]\n}\n"
+            },
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "mcp",
+                "import",
+                "apply",
+                "--scope",
+                "project",
+                "--project",
+                "\u003cfixture\u003e/repo",
+                "--target",
+                "gemini",
+                "--yes",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"source_config\": \"\u003cfixture\u003e/repo/.xcli/config.yaml\",\n  \"scope\": \"project\",\n  \"project_dir\": \"\u003cfixture\u003e/repo\",\n  \"targets\": [\n    \"gemini\"\n  ],\n  \"applicable\": true,\n  \"applied\": true,\n  \"changes\": [\n    {\n      \"server\": \"tools\",\n      \"targets\": [\n        \"gemini\"\n      ],\n      \"action\": \"noop\",\n      \"status\": \"skipped\"\n    }\n  ]\n}\n"
+            }
+          ]
+        },
+        {
+          "id": "F04",
+          "status": "reproduced",
+          "detail": "original_cwd=\u003cfixture\u003e/repo/sub; resumed_cwd=\u003cfixture\u003e/repo",
+          "commands": [
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "workflow",
+                "run",
+                "\u003cfixture\u003e/repo/workflow.yaml",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"id\": \"workflow-20260908T060701Z-9e157f49\",\n  \"name\": \"phase0\",\n  \"status\": \"success\",\n  \"exit_code\": 0,\n  \"max_parallel\": 1,\n  \"cwd\": \"\u003cfixture\u003e/repo\",\n  \"steps\": [\n    {\n      \"id\": \"task\",\n      \"agent\": \"codex\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/sub\",\n      \"session_id\": \"phase0-session\",\n      \"usage\": {\n        \"input_tokens\": 7,\n        \"cache_read_tokens\": 0,\n        \"cache_write_tokens\": 0,\n        \"output_tokens\": 3,\n        \"reasoning_tokens\": 0,\n        \"total_tokens\": 10\n      },\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.267187Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.270635Z\"\n    }\n  ],\n  \"usage\": {\n    \"input_tokens\": 7,\n    \"cache_read_tokens\": 0,\n    \"cache_write_tokens\": 0,\n    \"output_tokens\": 3,\n    \"reasoning_tokens\": 0,\n    \"total_tokens\": 10\n  }\n}\n"
+            },
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "resume",
+                "workflow-20260908T060701Z-9e157f49",
+                "continue",
+                "--step",
+                "task",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e",
+              "exit_code": 0,
+              "stdout": "{\n  \"agent\": \"codex\",\n  \"output\": \"\u003cfixture\u003e/repo\",\n  \"session_id\": \"phase0-session\",\n  \"exit_code\": 0,\n  \"status\": \"success\",\n  \"usage\": {\n    \"input_tokens\": 7,\n    \"cache_read_tokens\": 0,\n    \"cache_write_tokens\": 0,\n    \"output_tokens\": 3,\n    \"reasoning_tokens\": 0,\n    \"total_tokens\": 10\n  }\n}\n"
+            }
+          ]
+        },
+        {
+          "id": "F05",
+          "status": "reproduced",
+          "detail": "output_bytes=54; usage_present=false; status=success; parse_status=\u003cnil\u003e",
+          "commands": [
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "run",
+                "codex",
+                "large fixture",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"agent\": \"codex\",\n  \"output\": \"{\\\"thread_id\\\":\\\"phase0-session\\\",\\\"type\\\":\\\"thread.started\\\"}\",\n  \"session_id\": \"phase0-session\",\n  \"exit_code\": 0,\n  \"status\": \"success\"\n}\n"
+            }
+          ]
+        },
+        {
+          "id": "F06",
+          "status": "reproduced",
+          "detail": "implement-and-review.yaml caller=\u003cfixture\u003e/repo cwd=\u003cfixture\u003e/repo/examples; implement-and-review.yaml caller=\u003cfixture\u003e cwd=\u003cfixture\u003e/repo/examples; parallel-review.yaml caller=\u003cfixture\u003e/repo cwd=\u003cfixture\u003e/repo/examples; parallel-review.yaml caller=\u003cfixture\u003e cwd=\u003cfixture\u003e/repo/examples",
+          "commands": [
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "workflow",
+                "run",
+                "\u003cfixture\u003e/repo/examples/implement-and-review.yaml",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"id\": \"workflow-20260908T060701Z-1b195762\",\n  \"name\": \"implement-and-review\",\n  \"status\": \"success\",\n  \"exit_code\": 0,\n  \"max_parallel\": 1,\n  \"cwd\": \"\u003cfixture\u003e/repo/examples\",\n  \"steps\": [\n    {\n      \"id\": \"implement\",\n      \"agent\": \"codex\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"usage\": {\n        \"input_tokens\": 7,\n        \"cache_read_tokens\": 0,\n        \"cache_write_tokens\": 0,\n        \"output_tokens\": 3,\n        \"reasoning_tokens\": 0,\n        \"total_tokens\": 10\n      },\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.321855Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.325751Z\"\n    },\n    {\n      \"id\": \"review\",\n      \"agent\": \"claude\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.325773Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.328801Z\"\n    },\n    {\n      \"id\": \"fix\",\n      \"agent\": \"codex\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"usage\": {\n        \"input_tokens\": 7,\n        \"cache_read_tokens\": 0,\n        \"cache_write_tokens\": 0,\n        \"output_tokens\": 3,\n        \"reasoning_tokens\": 0,\n        \"total_tokens\": 10\n      },\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.328823Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.331811Z\"\n    }\n  ],\n  \"usage\": {\n    \"input_tokens\": 14,\n    \"cache_read_tokens\": 0,\n    \"cache_write_tokens\": 0,\n    \"output_tokens\": 6,\n    \"reasoning_tokens\": 0,\n    \"total_tokens\": 20\n  }\n}\n"
+            },
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "workflow",
+                "run",
+                "\u003cfixture\u003e/repo/examples/implement-and-review.yaml",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e",
+              "exit_code": 0,
+              "stdout": "{\n  \"id\": \"workflow-20260908T060701Z-7ba09c2c\",\n  \"name\": \"implement-and-review\",\n  \"status\": \"success\",\n  \"exit_code\": 0,\n  \"max_parallel\": 1,\n  \"cwd\": \"\u003cfixture\u003e/repo/examples\",\n  \"steps\": [\n    {\n      \"id\": \"implement\",\n      \"agent\": \"codex\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"usage\": {\n        \"input_tokens\": 7,\n        \"cache_read_tokens\": 0,\n        \"cache_write_tokens\": 0,\n        \"output_tokens\": 3,\n        \"reasoning_tokens\": 0,\n        \"total_tokens\": 10\n      },\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.345638Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.349137Z\"\n    },\n    {\n      \"id\": \"review\",\n      \"agent\": \"claude\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.349171Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.35248Z\"\n    },\n    {\n      \"id\": \"fix\",\n      \"agent\": \"codex\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"usage\": {\n        \"input_tokens\": 7,\n        \"cache_read_tokens\": 0,\n        \"cache_write_tokens\": 0,\n        \"output_tokens\": 3,\n        \"reasoning_tokens\": 0,\n        \"total_tokens\": 10\n      },\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.352511Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.355645Z\"\n    }\n  ],\n  \"usage\": {\n    \"input_tokens\": 14,\n    \"cache_read_tokens\": 0,\n    \"cache_write_tokens\": 0,\n    \"output_tokens\": 6,\n    \"reasoning_tokens\": 0,\n    \"total_tokens\": 20\n  }\n}\n"
+            },
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "workflow",
+                "run",
+                "\u003cfixture\u003e/repo/examples/parallel-review.yaml",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"id\": \"workflow-20260908T060701Z-bf367a8c\",\n  \"name\": \"parallel-review\",\n  \"status\": \"success\",\n  \"exit_code\": 0,\n  \"max_parallel\": 2,\n  \"cwd\": \"\u003cfixture\u003e/repo/examples\",\n  \"steps\": [\n    {\n      \"id\": \"correctness\",\n      \"agent\": \"codex\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"usage\": {\n        \"input_tokens\": 7,\n        \"cache_read_tokens\": 0,\n        \"cache_write_tokens\": 0,\n        \"output_tokens\": 3,\n        \"reasoning_tokens\": 0,\n        \"total_tokens\": 10\n      },\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.364488Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.368336Z\"\n    },\n    {\n      \"id\": \"security\",\n      \"agent\": \"claude\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.364465Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.367834Z\"\n    },\n    {\n      \"id\": \"summarize\",\n      \"agent\": \"codex\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"usage\": {\n        \"input_tokens\": 7,\n        \"cache_read_tokens\": 0,\n        \"cache_write_tokens\": 0,\n        \"output_tokens\": 3,\n        \"reasoning_tokens\": 0,\n        \"total_tokens\": 10\n      },\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.368345Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.371797Z\"\n    }\n  ],\n  \"usage\": {\n    \"input_tokens\": 14,\n    \"cache_read_tokens\": 0,\n    \"cache_write_tokens\": 0,\n    \"output_tokens\": 6,\n    \"reasoning_tokens\": 0,\n    \"total_tokens\": 20\n  }\n}\n"
+            },
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "workflow",
+                "run",
+                "\u003cfixture\u003e/repo/examples/parallel-review.yaml",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e",
+              "exit_code": 0,
+              "stdout": "{\n  \"id\": \"workflow-20260908T060701Z-6997b4bc\",\n  \"name\": \"parallel-review\",\n  \"status\": \"success\",\n  \"exit_code\": 0,\n  \"max_parallel\": 2,\n  \"cwd\": \"\u003cfixture\u003e/repo/examples\",\n  \"steps\": [\n    {\n      \"id\": \"correctness\",\n      \"agent\": \"codex\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"usage\": {\n        \"input_tokens\": 7,\n        \"cache_read_tokens\": 0,\n        \"cache_write_tokens\": 0,\n        \"output_tokens\": 3,\n        \"reasoning_tokens\": 0,\n        \"total_tokens\": 10\n      },\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.38188Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.385738Z\"\n    },\n    {\n      \"id\": \"security\",\n      \"agent\": \"claude\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.381865Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.385171Z\"\n    },\n    {\n      \"id\": \"summarize\",\n      \"agent\": \"codex\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo/examples\",\n      \"session_id\": \"phase0-session\",\n      \"usage\": {\n        \"input_tokens\": 7,\n        \"cache_read_tokens\": 0,\n        \"cache_write_tokens\": 0,\n        \"output_tokens\": 3,\n        \"reasoning_tokens\": 0,\n        \"total_tokens\": 10\n      },\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.385763Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.38893Z\"\n    }\n  ],\n  \"usage\": {\n    \"input_tokens\": 14,\n    \"cache_read_tokens\": 0,\n    \"cache_write_tokens\": 0,\n    \"output_tokens\": 6,\n    \"reasoning_tokens\": 0,\n    \"total_tokens\": 20\n  }\n}\n"
+            }
+          ]
+        },
+        {
+          "id": "F07",
+          "status": "reproduced",
+          "detail": "json_exit=0; text_exit=0; installed=true; diagnostic=version check exited with code 9",
+          "commands": [
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "doctor",
+                "codex",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"config\": \"\u003cfixture\u003e/repo/.xcli/config.yaml\",\n  \"agents\": {\n    \"codex\": {\n      \"installed\": true,\n      \"path\": \"\u003cfixture\u003e/bin/fake-agent-version-fail\",\n      \"error\": \"version check exited with code 9\"\n    }\n  }\n}\n"
+            },
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "doctor",
+                "codex"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "Config: \u003cfixture\u003e/repo/.xcli/config.yaml\nDefault agent: not set\nAGENT  STATUS  PATH                                                                                                              VERSION\ncodex  ok      \u003cfixture\u003e/bin/fake-agent-version-fail  \n"
+            }
+          ]
+        },
+        {
+          "id": "F01",
+          "status": "reproduced",
+          "detail": "step_cwd=\u003cfixture\u003e/repo; original_repository_marker=true",
+          "commands": [
+            {
+              "args": [
+                "--config",
+                "\u003cfixture\u003e/repo/.xcli/config.yaml",
+                "workflow",
+                "run",
+                "\u003cfixture\u003e/repo/workflow.yaml",
+                "--worktree",
+                "--json"
+              ],
+              "cwd": "\u003cfixture\u003e/repo",
+              "exit_code": 0,
+              "stdout": "{\n  \"id\": \"workflow-20260908T060701Z-4da7e4b6\",\n  \"name\": \"phase0\",\n  \"status\": \"success\",\n  \"exit_code\": 0,\n  \"max_parallel\": 1,\n  \"cwd\": \"\u003cfixture\u003e/data/xcli/worktrees/workflow-20260908T060701Z-4da7e4b6\",\n  \"steps\": [\n    {\n      \"id\": \"task\",\n      \"agent\": \"codex\",\n      \"status\": \"success\",\n      \"output\": \"\u003cfixture\u003e/repo\",\n      \"session_id\": \"phase0-session\",\n      \"usage\": {\n        \"input_tokens\": 7,\n        \"cache_read_tokens\": 0,\n        \"cache_write_tokens\": 0,\n        \"output_tokens\": 3,\n        \"reasoning_tokens\": 0,\n        \"total_tokens\": 10\n      },\n      \"exit_code\": 0,\n      \"attempts\": 1,\n      \"started_at\": \"2026-09-08T06:07:01.511239Z\",\n      \"ended_at\": \"2026-09-08T06:07:01.514669Z\"\n    }\n  ],\n  \"usage\": {\n    \"input_tokens\": 7,\n    \"cache_read_tokens\": 0,\n    \"cache_write_tokens\": 0,\n    \"output_tokens\": 3,\n    \"reasoning_tokens\": 0,\n    \"total_tokens\": 10\n  }\n}\n"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
