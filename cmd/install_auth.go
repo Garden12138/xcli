@@ -60,8 +60,8 @@ func (a *app) newInstallCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if result.ExitCode != 0 {
-				return &ExitError{Code: result.ExitCode}
+			if code := processCLIExit(result); code != 0 {
+				return &ExitError{Code: code}
 			}
 			return nil
 		},
@@ -103,8 +103,8 @@ func (a *app) newAuthCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if result.ExitCode != 0 {
-				return &ExitError{Code: result.ExitCode}
+			if code := processCLIExit(result); code != 0 {
+				return &ExitError{Code: code}
 			}
 			return nil
 		},

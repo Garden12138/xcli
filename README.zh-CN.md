@@ -2,9 +2,11 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-[手工测试指南](docs/manual-testing.zh-CN.md) | [优化方案](docs/plans/optimization-proposal.zh-CN.md) | [详细阶段计划](docs/plans/phased-roadmap.zh-CN.md)
+[手工测试指南](docs/manual-testing.zh-CN.md) | [产品调整建议（2026-10-14）](docs/plans/product-realignment.zh-CN.md) | [原优化方案](docs/plans/optimization-proposal.zh-CN.md) | [原阶段计划](docs/plans/phased-roadmap.zh-CN.md)
 
 `xcli` 是一个统一入口，用于安装、运行、切换和编排主流 AI Coding Agent CLI。
+
+当前源码正在按任务入口路线收敛。R0 已加入 Cursor/Antigravity 适配、增量事件、解析失败判定和目录保护；旧管理能力进入兼容过渡。新行为、迁移边界和验证情况见 [R0 说明](docs/r0/README.zh-CN.md)。Task 命令尚未实现，v0.4.0 发布包不包含 R0 改动。
 
 它直接管理真实的 CLI 进程，而不是用模型 API 替代这些工具。原生认证、权限、插件、MCP 配置及 Agent 专属参数均可继续使用。
 
@@ -16,6 +18,8 @@
 | [Codex CLI](https://developers.openai.com/codex/cli) | `codex` | `codex exec` | JSONL | `codex-acp` 桥接器 | `@openai/codex` | `--cask codex` |
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/headless.md) | `gemini` | `gemini -p` | 流式 JSON | 原生 `--acp` | `@google/gemini-cli` | `gemini-cli` |
 | [OpenCode](https://opencode.ai/docs/cli/) | `opencode` | `opencode run` | JSON 事件 | 原生 `acp` | `opencode-ai` | `anomalyco/tap/opencode` |
+| Cursor（R0 源码） | `cursor-agent` | `cursor-agent --print` | stream-json | — | 原生安装 | — |
+| Antigravity（R0 源码） | `agy` | `agy --print` | 独立 stream-json 协议 | — | 原生安装 | — |
 
 无需重新构建 xcli，即可通过声明式配置添加别名和自定义 Agent。
 

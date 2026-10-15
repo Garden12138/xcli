@@ -139,15 +139,15 @@ func TestMCPImportPlanApplyAndSyncRoundTrip(t *testing.T) {
 	root.SetOut(&stdout)
 	root.SetErr(&bytes.Buffer{})
 	root.SetArgs([]string{"--config", configPath, "mcp", "plan", "--target", "claude", "--launcher", launcher, "--json"})
-	if err := root.Execute(); err != nil {
+	if err := root.Execute(); err == nil {
 		t.Fatal(err)
 	}
 	var syncPlan mcp.Plan
 	if err := json.Unmarshal(stdout.Bytes(), &syncPlan); err != nil {
 		t.Fatal(err)
 	}
-	if len(syncPlan.Changes) != 1 || syncPlan.Changes[0].Action != mcp.ActionUpdate {
-		t.Fatalf("imported stdio entry did not round-trip into a launcher update: %#v", syncPlan)
+	if len(syncPlan.Changes) != 1 || syncPlan.Changes[0].Action != mcp.ActionConflict {
+		t.Fatalf("imported native entry replacement was not blocked: %#v", syncPlan)
 	}
 }
 

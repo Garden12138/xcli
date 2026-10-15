@@ -55,14 +55,17 @@ type Change struct {
 }
 
 type Plan struct {
-	SourceConfig string   `json:"source_config"`
-	Launcher     string   `json:"launcher,omitempty"`
-	Scope        string   `json:"scope"`
-	ProjectDir   string   `json:"project_dir,omitempty"`
-	Targets      []string `json:"targets"`
-	Applicable   bool     `json:"applicable"`
-	Applied      bool     `json:"applied"`
-	Changes      []Change `json:"changes"`
+	verifySource      bool
+	sourceExists      bool
+	sourceFingerprint string
+	SourceConfig      string   `json:"source_config"`
+	Launcher          string   `json:"launcher,omitempty"`
+	Scope             string   `json:"scope"`
+	ProjectDir        string   `json:"project_dir,omitempty"`
+	Targets           []string `json:"targets"`
+	Applicable        bool     `json:"applicable"`
+	Applied           bool     `json:"applied"`
+	Changes           []Change `json:"changes"`
 }
 
 func (p *Plan) Sort() {

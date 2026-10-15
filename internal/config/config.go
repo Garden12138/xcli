@@ -85,6 +85,8 @@ func Defaults() Config {
 	return Config{
 		Version: CurrentVersion,
 		Agents: map[string]AgentConfig{
+			"cursor":      {Adapter: "cursor", Command: "cursor-agent"},
+			"antigravity": {Adapter: "antigravity", Command: "agy"},
 			"claude": {
 				Adapter:  "claude",
 				Command:  "claude",
@@ -286,7 +288,7 @@ func (c Config) Validate() error {
 			return fmt.Errorf("agent %q has no command", name)
 		}
 		switch agent.Adapter {
-		case "claude", "codex", "gemini", "opencode":
+		case "claude", "codex", "gemini", "opencode", "cursor", "antigravity":
 		case "generic":
 			if len(agent.RunArgs) == 0 {
 				return fmt.Errorf("generic agent %q must define run_args", name)

@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"os"
 	"sort"
 
 	"github.com/Garden12138/xcli/internal/config"
@@ -37,6 +38,17 @@ func BuildPlan(ctx context.Context, cfg config.Config, managers map[string]Manag
 		Targets:      append(append([]string(nil), options.Targets...), options.Unavailable...),
 		Applicable:   true,
 		Changes:      []Change{},
+	}
+	if options.SourceConfig != "" {
+		data, err := os.ReadFile(options.SourceConfig)
+		if err != nil && !os.IsNotExist(err) {
+			return Plan{}, err
+		}
+		plan.verifySource = true
+		plan.sourceExists = err == nil
+		if err == nil {
+			plan.sourceFingerprint = contentFingerprint(data)
+		}
 	}
 	sort.Strings(plan.Targets)
 	for _, target := range options.Unavailable {
@@ -140,22 +152,9 @@ func planChange(target, name, source, namespace string, current, desired map[str
 	}
 
 	conflict := func(detail string) Change {
-		if force {
-			if hasDesired {
-				if hasCurrent {
-					change.Action = ActionUpdate
-				} else {
-					change.Action = ActionAdd
-				}
-			} else {
-				change.Action = ActionRemove
-			}
-			change.Detail = "forced: " + detail
-			return change
-		}
 		change.Action = ActionConflict
 		change.Status = StatusSkipped
-		change.Detail = detail
+		change.Detail = detail + "; legacy ownership cannot protect complete native entries; migrate using the native CLI (--force cannot bypass)"
 		return change
 	}
 
@@ -179,10 +178,10 @@ func planChange(target, name, source, namespace string, current, desired map[str
 		if currentEntry.Fingerprint() == desiredEntry.Fingerprint() {
 			change.Action = ActionNoop
 			change.Status = StatusSkipped
+			change.Detail = "editable fields unchanged; complete native ownership is unverified"
 			return change
 		}
-		change.Action = ActionUpdate
-		return change
+		return conflict("native entry replacement is retired")
 	}
 
 	if !owned || owner.SourceConfig != source {
@@ -196,8 +195,7 @@ func planChange(target, name, source, namespace string, current, desired map[str
 	if currentEntry.Fingerprint() != owner.Fingerprint {
 		return conflict("managed native entry changed outside xcli")
 	}
-	change.Action = ActionRemove
-	return change
+	return conflict("native entry removal is retired")
 }
 
 func entryPointer(value Entry) *Entry {
@@ -210,6 +208,32 @@ func entryPointer(value Entry) *Entry {
 func ApplyPlan(ctx context.Context, plan *Plan, managers map[string]Manager, state *State) error {
 	if !plan.Applicable {
 		return fmt.Errorf("MCP sync plan contains conflicts or unavailable targets")
+	}
+	unlock, err := state.lock()
+	if err != nil {
+		return err
+	}
+	defer unlock()
+	if plan.verifySource {
+		data, err := os.ReadFile(plan.SourceConfig)
+		if err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		if (err == nil) != plan.sourceExists || (err == nil && contentFingerprint(data) != plan.sourceFingerprint) {
+			return fmt.Errorf("source configuration changed after planning; rerun the plan")
+		}
+	}
+	// Validate every change before writing any native configuration. Recheck
+	// again inside each manager immediately before its actual write.
+	for _, change := range plan.Changes {
+		if change.Action == ActionUpdate || change.Action == ActionRemove {
+			return fmt.Errorf("unsafe native MCP replacement/removal is retired")
+		}
+		if change.Action == ActionAdd {
+			if err := checkAdd(ctx, managers[change.Target], change.Server); err != nil {
+				return err
+			}
+		}
 	}
 	if err := state.Save(); err != nil {
 		return err
@@ -244,5 +268,25 @@ func ApplyPlan(ctx context.Context, plan *Plan, managers map[string]Manager, sta
 		change.Status = StatusApplied
 	}
 	plan.Applied = true
+	return nil
+}
+
+func checkAdd(ctx context.Context, manager Manager, name string) error {
+	if manager == nil {
+		return fmt.Errorf("MCP manager is unavailable")
+	}
+	if guard, ok := manager.(interface {
+		CheckAdd(context.Context, string) error
+	}); ok {
+		return guard.CheckAdd(ctx, name)
+	}
+	// In-memory/test managers must still prove the name is absent at apply time.
+	entries, err := manager.Load(ctx)
+	if err != nil {
+		return err
+	}
+	if _, exists := entries[name]; exists {
+		return fmt.Errorf("native MCP entry %q already exists; rerun the plan", name)
+	}
 	return nil
 }

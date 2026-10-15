@@ -41,7 +41,15 @@ func TestContractExamplesPreserveLegacyReaders(t *testing.T) {
 	if err := json.Unmarshal(samples["new_result"], &next); err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(old, next) {
+	if next.RunID == "" || next.ParseStatus != "complete" {
+		t.Fatal("new result fields were lost")
+	}
+	projection := next
+	projection.RunID = ""
+	projection.ParseStatus = ""
+	projection.ErrorKind = ""
+	projection.Error = ""
+	if !reflect.DeepEqual(old, projection) {
 		t.Fatal("additive result fields changed the legacy projection")
 	}
 	var broken struct {

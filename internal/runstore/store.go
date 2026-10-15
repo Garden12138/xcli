@@ -16,42 +16,57 @@ import (
 )
 
 type Record struct {
-	ID              string       `json:"id"`
-	Kind            string       `json:"kind"`
-	Agent           string       `json:"agent,omitempty"`
-	SelectionSource string       `json:"selection_source,omitempty"`
-	RouteRule       string       `json:"route_rule,omitempty"`
-	Workflow        string       `json:"workflow,omitempty"`
-	WorkflowFile    string       `json:"workflow_file,omitempty"`
-	MaxParallel     int          `json:"max_parallel,omitempty"`
-	Cwd             string       `json:"cwd"`
-	StartedAt       time.Time    `json:"started_at"`
-	EndedAt         time.Time    `json:"ended_at"`
-	Status          string       `json:"status"`
-	ExitCode        int          `json:"exit_code"`
-	SessionID       string       `json:"session_id,omitempty"`
-	ResumedFrom     string       `json:"resumed_from,omitempty"`
-	ResumedStep     string       `json:"resumed_step,omitempty"`
-	Background      bool         `json:"background,omitempty"`
-	PID             int          `json:"pid,omitempty"`
-	LogFile         string       `json:"log_file,omitempty"`
-	Usage           *agent.Usage `json:"usage,omitempty"`
-	OutputFile      string       `json:"output_file,omitempty"`
-	Steps           []StepRecord `json:"steps,omitempty"`
+	ParseStatus     string            `json:"parse_status,omitempty"`
+	ErrorKind       string            `json:"error_kind,omitempty"`
+	Error           string            `json:"error,omitempty"`
+	ID              string            `json:"id"`
+	Kind            string            `json:"kind"`
+	Agent           string            `json:"agent,omitempty"`
+	AgentVersion    string            `json:"agent_version,omitempty"`
+	AgentVersions   map[string]string `json:"agent_versions,omitempty"`
+	SelectionSource string            `json:"selection_source,omitempty"`
+	RouteRule       string            `json:"route_rule,omitempty"`
+	Workflow        string            `json:"workflow,omitempty"`
+	WorkflowFile    string            `json:"workflow_file,omitempty"`
+	MaxParallel     int               `json:"max_parallel,omitempty"`
+	Cwd             string            `json:"cwd"`
+	StartedAt       time.Time         `json:"started_at"`
+	EndedAt         time.Time         `json:"ended_at"`
+	Status          string            `json:"status"`
+	ExitCode        int               `json:"exit_code"`
+	SessionID       string            `json:"session_id,omitempty"`
+	ResumedFrom     string            `json:"resumed_from,omitempty"`
+	ResumedStep     string            `json:"resumed_step,omitempty"`
+	Background      bool              `json:"background,omitempty"`
+	PID             int               `json:"pid,omitempty"`
+	LogFile         string            `json:"log_file,omitempty"`
+	Usage           *agent.Usage      `json:"usage,omitempty"`
+	OutputFile      string            `json:"output_file,omitempty"`
+	WorkspaceMode   string            `json:"workspace_mode,omitempty"`
+	Repository      string            `json:"repository,omitempty"`
+	WorktreePath    string            `json:"worktree_path,omitempty"`
+	WorktreeBranch  string            `json:"worktree_branch,omitempty"`
+	BaseCommit      string            `json:"base_commit,omitempty"`
+	Steps           []StepRecord      `json:"steps,omitempty"`
 }
 
 type StepRecord struct {
-	ID         string       `json:"id"`
-	Agent      string       `json:"agent"`
-	Status     string       `json:"status"`
-	ExitCode   int          `json:"exit_code"`
-	SessionID  string       `json:"session_id,omitempty"`
-	Usage      *agent.Usage `json:"usage,omitempty"`
-	OutputFile string       `json:"output_file,omitempty"`
-	StartedAt  time.Time    `json:"started_at,omitempty"`
-	EndedAt    time.Time    `json:"ended_at,omitempty"`
-	Attempts   int          `json:"attempts,omitempty"`
-	Error      string       `json:"error,omitempty"`
+	Cwd          string       `json:"cwd,omitempty"`
+	ParseStatus  string       `json:"parse_status,omitempty"`
+	ErrorKind    string       `json:"error_kind,omitempty"`
+	ID           string       `json:"id"`
+	Agent        string       `json:"agent,omitempty"`
+	AgentVersion string       `json:"agent_version,omitempty"`
+	Command      string       `json:"command,omitempty"`
+	Status       string       `json:"status"`
+	ExitCode     int          `json:"exit_code"`
+	SessionID    string       `json:"session_id,omitempty"`
+	Usage        *agent.Usage `json:"usage,omitempty"`
+	OutputFile   string       `json:"output_file,omitempty"`
+	StartedAt    time.Time    `json:"started_at,omitempty"`
+	EndedAt      time.Time    `json:"ended_at,omitempty"`
+	Attempts     int          `json:"attempts,omitempty"`
+	Error        string       `json:"error,omitempty"`
 }
 
 type Store struct {
@@ -134,7 +149,48 @@ func (s *Store) Load(id string) (Record, error) {
 	if err := json.Unmarshal(data, &record); err != nil {
 		return Record{}, fmt.Errorf("decode run record: %w", err)
 	}
+	if record.ParseStatus == "" {
+		record.ParseStatus = "unknown"
+	}
+	for i := range record.Steps {
+		if record.Steps[i].ParseStatus == "" {
+			record.Steps[i].ParseStatus = "unknown"
+		}
+	}
 	return record, nil
+}
+
+// OpenOutput streams explicitly requested raw output into private run storage.
+// Files can contain partial output when execution fails; the record carries
+// the completion status. O_EXCL prevents replacing an existing artifact.
+func (s *Store) OpenOutput(runID, name string) (*os.File, error) {
+	if runID == "" || runID == "." || runID == ".." || strings.ContainsAny(runID, `/\`) || name == "" || filepath.Base(name) != name || name == "." || name == ".." {
+		return nil, errors.New("invalid output path")
+	}
+	dir := filepath.Join(s.root, runID)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return nil, err
+	}
+	return os.OpenFile(filepath.Join(dir, name), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+}
+
+// CLIExitCode is also used by jobs wait, which must not treat a failed parse
+// with a native exit of zero as success. Workflow top-level codes are composed.
+func (r Record) CLIExitCode() int {
+	if r.Kind == "workflow" && r.ExitCode > 0 {
+		return r.ExitCode
+	}
+	if r.Status == "orphaned" || r.Status == "killed" {
+		if r.ExitCode > 0 {
+			return r.ExitCode
+		}
+		return 1
+	}
+	_, code := agent.Normalize(agent.RunResult{ParseStatus: r.ParseStatus, ErrorKind: r.ErrorKind, Status: r.Status}, r.ExitCode, r.Status == "canceled", r.Status == "timed_out", nil)
+	if r.Status == "failed" && code == 0 {
+		return 1
+	}
+	return code
 }
 
 func (s *Store) Delete(id string) error {

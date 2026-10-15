@@ -63,8 +63,15 @@ func (m *projectJSONManager) Load(context.Context) (map[string]Entry, error) {
 	}
 }
 
-func (m *projectJSONManager) Apply(_ context.Context, change Change) error {
+func (m *projectJSONManager) Apply(ctx context.Context, change Change) error {
+	if change.Action == ActionAdd {
+		if err := m.CheckAdd(ctx, change.Server); err != nil {
+			return err
+		}
+	}
 	data, err := os.ReadFile(m.path)
+	existed := err == nil
+	original := append([]byte(nil), data...)
 	mode := os.FileMode(0o644)
 	if errors.Is(err, os.ErrNotExist) {
 		data = []byte("{}\n")
@@ -88,7 +95,7 @@ func (m *projectJSONManager) Apply(_ context.Context, change Change) error {
 	if len(packed) == 0 || packed[len(packed)-1] != '\n' {
 		packed = append(packed, '\n')
 	}
-	return writeProjectAtomic(m.path, packed, mode)
+	return writeProjectAtomic(m.path, packed, mode, unchangedFile(m.path, original, existed))
 }
 
 func updateProjectJSONDocument(document *hujson.Value, key, target string, change Change) error {
@@ -113,6 +120,9 @@ func updateProjectJSONDocument(document *hujson.Value, key, target string, chang
 		return fmt.Errorf("%s %s configuration must be an object", target, key)
 	}
 	index := objectMemberIndex(servers, change.Server)
+	if change.Action == ActionAdd && index >= 0 {
+		return fmt.Errorf("native MCP entry already exists")
+	}
 	if change.Action == ActionRemove {
 		if index < 0 {
 			return fmt.Errorf("%s MCP server %q does not exist", target, change.Server)
@@ -215,8 +225,15 @@ func parseCodexProjectEntries(data []byte) (map[string]Entry, error) {
 	return result, nil
 }
 
-func (m *projectCodexManager) Apply(_ context.Context, change Change) error {
+func (m *projectCodexManager) Apply(ctx context.Context, change Change) error {
+	if change.Action == ActionAdd {
+		if err := m.CheckAdd(ctx, change.Server); err != nil {
+			return err
+		}
+	}
 	data, err := os.ReadFile(m.path)
+	existed := err == nil
+	original := append([]byte(nil), data...)
 	mode := os.FileMode(0o644)
 	if errors.Is(err, os.ErrNotExist) {
 		data = nil
@@ -236,7 +253,7 @@ func (m *projectCodexManager) Apply(_ context.Context, change Change) error {
 	if err != nil {
 		return err
 	}
-	return writeProjectAtomic(m.path, updated, mode)
+	return writeProjectAtomic(m.path, updated, mode, unchangedFile(m.path, original, existed))
 }
 
 func updateCodexProjectDocument(data []byte, change Change) ([]byte, error) {
@@ -265,6 +282,9 @@ func updateCodexProjectDocument(data []byte, change Change) ([]byte, error) {
 			}
 			break
 		}
+	}
+	if change.Action == ActionAdd && start >= 0 {
+		return nil, fmt.Errorf("native MCP entry already exists")
 	}
 	if change.Action == ActionRemove {
 		if start < 0 {
@@ -357,7 +377,7 @@ func trimExtraBlankLine(lines []string, around int) []string {
 	return lines
 }
 
-func writeProjectAtomic(path string, data []byte, mode os.FileMode) error {
+func writeProjectAtomic(path string, data []byte, mode os.FileMode, checks ...func() error) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
@@ -381,6 +401,11 @@ func writeProjectAtomic(path string, data []byte, mode os.FileMode) error {
 	}
 	if err := temporary.Close(); err != nil {
 		return err
+	}
+	for _, check := range checks {
+		if err := check(); err != nil {
+			return err
+		}
 	}
 	return os.Rename(temporaryPath, path)
 }

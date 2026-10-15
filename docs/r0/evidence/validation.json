@@ -1,0 +1,34 @@
+{
+  "base_commit": "0a880f9175e09631dfd4938e981738932a400e4c",
+  "production_go_source_sha256": "45b063f29b4aaa86f78430ae4499959be7fd492e3827c5076a21f07a52eaff6a",
+  "generated_at": "2026-10-15T02:04:15.919052+00:00",
+  "go_version": "go version go1.26.4 darwin/arm64",
+  "checks": {
+    "go_test_race_all": "passed",
+    "last_interactive_and_latency_race_regressions": "passed",
+    "go_vet_all": "passed",
+    "go_mod_tidy_diff": "passed_no_changes",
+    "gofmt": "passed",
+    "git_diff_check": "passed",
+    "evidence_json": "passed",
+    "r0_document_links": "passed"
+  },
+  "memory_benchmark": {
+    "kind": "sampled_heap_alloc",
+    "sample_interval_bytes": 16777216,
+    "cases": [
+      {
+        "total_bytes": 104857600,
+        "elapsed_seconds": 0.412972416,
+        "peak_extra_bytes": 3664792
+      },
+      {
+        "total_bytes": 1073741824,
+        "elapsed_seconds": 4.242528083,
+        "peak_extra_bytes": 3909368
+      }
+    ]
+  },
+  "native_smoke": "6 native invocations; internal provider request count unknown; see native-smoke.json",
+  "release": "not published"
+}

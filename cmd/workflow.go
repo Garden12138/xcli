@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/Garden12138/xcli/internal/agent"
+	"github.com/Garden12138/xcli/internal/worktree"
 	"io"
-	"os/exec"
 	"time"
 
 	"github.com/Garden12138/xcli/internal/runstore"
@@ -50,11 +52,16 @@ func (a *app) newWorkflowRunCommand() *cobra.Command {
 	var asJSON bool
 	var maxParallel int
 	var detach bool
+	var events bool
+	var isolated bool
 	command := &cobra.Command{
 		Use:   "run <file>",
 		Short: "Run a workflow",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(command *cobra.Command, args []string) error {
+			if events && (asJSON || detach) {
+				return fmt.Errorf("--events cannot be combined with --json or --detach")
+			}
 			cfg, configPath, registry, err := a.load()
 			if err != nil {
 				return err
@@ -71,19 +78,21 @@ func (a *app) newWorkflowRunCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			progress := command.OutOrStdout()
-			if asJSON {
+			progress := command.ErrOrStderr()
+			var sink func(agent.Event) error
+			if events {
 				progress = io.Discard
+				sink = eventSink(command.OutOrStdout(), true)
+			} else {
+				sink = eventSink(command.ErrOrStderr(), false)
 			}
-			runner := workflow.Runner{
-				Config: cfg, Registry: registry, Store: store,
-				Progress: progress, Stderr: command.ErrOrStderr(),
-			}
+			runner := workflow.Runner{Config: cfg, Registry: registry, Store: store, Progress: progress, Stderr: command.ErrOrStderr(), Events: sink}
+
 			ctx, cancel := signalContext(command.Context())
 			defer cancel()
 			options := workflow.RunOptions{
-				VariableOverrides: overrides,
-				RecordOutput:      recordOutput || cfg.Recording.Output,
+				VariableOverrides: overrides, Worktree: isolated,
+				RecordOutput: recordOutput || cfg.Recording.Output,
 			}
 			if command.Flags().Changed("max-parallel") {
 				options.MaxParallel = &maxParallel
@@ -93,27 +102,43 @@ func (a *app) newWorkflowRunCommand() *cobra.Command {
 				return err
 			}
 			if detach {
-				checked := map[string]bool{}
-				for _, step := range definition.Steps {
-					if checked[step.Agent] {
-						continue
-					}
-					checked[step.Agent] = true
-					agentDefinition, err := registry.Get(step.Agent)
+				if plan := runner.BuildPlan(prepared); !plan.Applicable {
+					return fmt.Errorf("workflow preflight failed: %+v", plan.Steps)
+				}
+				if prepared.Workspace != nil {
+					manager, err := worktree.New()
 					if err != nil {
 						return err
 					}
-					if _, err := exec.LookPath(agentDefinition.Config.Command); err != nil {
-						return fmt.Errorf("agent command %q is not available: %w", agentDefinition.Config.Command, err)
+					metadata, err := manager.Create(prepared.ID, prepared.SourceCwd)
+					if err != nil {
+						return err
+					}
+					if metadata.BaseCommit != prepared.Workspace.BaseCommit {
+						return fmt.Errorf("repository baseline changed after preparation")
+					}
+					for _, cwd := range prepared.StepCwds {
+						if err := worktree.CheckDirectory(metadata.Path, cwd); err != nil {
+							return err
+						}
 					}
 				}
+
 				record := runstore.Record{
-					ID: runstore.NewID("workflow"), Kind: "workflow", Workflow: definition.Name,
+					ID: prepared.ID, Kind: "workflow", Workflow: definition.Name,
 					WorkflowFile: path, MaxParallel: prepared.MaxParallel, Cwd: prepared.WorkingDirectory,
 					StartedAt: time.Now().UTC(), Status: "running",
 				}
 				for _, step := range definition.Steps {
-					record.Steps = append(record.Steps, runstore.StepRecord{ID: step.ID, Agent: step.Agent, Status: "pending"})
+					record.Steps = append(record.Steps, runstore.StepRecord{ID: step.ID, Agent: step.Agent, Command: step.Command, Cwd: prepared.StepCwds[step.ID], Status: "pending"})
+				}
+				if prepared.Workspace != nil {
+					m := prepared.Workspace
+					record.WorkspaceMode = "worktree"
+					record.Repository = m.Repository
+					record.WorktreePath = m.Path
+					record.WorktreeBranch = m.Branch
+					record.BaseCommit = m.BaseCommit
 				}
 				view, err := startDetachedWorkflow(store, configPath, record, prepared)
 				if err != nil {
@@ -125,11 +150,24 @@ func (a *app) newWorkflowRunCommand() *cobra.Command {
 				_, err = fmt.Fprintf(command.OutOrStdout(), "Started workflow job %s (pid %d)\n", view.ID, view.PID)
 				return err
 			}
+			if events {
+				if err := json.NewEncoder(command.OutOrStdout()).Encode(agent.Event{Version: 1, RunID: prepared.ID, Time: time.Now().UTC(), Type: "started"}); err != nil {
+					return err
+				}
+			}
 			execution, err := runner.RunPrepared(ctx, prepared, nil)
 			if err != nil {
 				return err
 			}
-			if asJSON {
+			if events {
+				kind := "completed"
+				if execution.ExitCode != 0 {
+					kind = "failed"
+				}
+				if err := json.NewEncoder(command.OutOrStdout()).Encode(agent.Event{Version: 1, RunID: execution.ID, Time: time.Now().UTC(), Type: kind, Result: execution}); err != nil {
+					return err
+				}
+			} else if asJSON {
 				if err := encodeJSON(command.OutOrStdout(), execution); err != nil {
 					return err
 				}
@@ -147,6 +185,8 @@ func (a *app) newWorkflowRunCommand() *cobra.Command {
 	command.Flags().BoolVar(&asJSON, "json", false, "print JSON execution summary")
 	command.Flags().IntVar(&maxParallel, "max-parallel", 0, "override maximum parallel workflow steps")
 	command.Flags().BoolVar(&detach, "detach", false, "run the workflow in the background")
+	command.Flags().BoolVar(&events, "events", false, "stream versioned JSONL events")
+	command.Flags().BoolVar(&isolated, "worktree", false, "run in an isolated managed Git worktree")
 	return command
 }
 

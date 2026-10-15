@@ -106,8 +106,8 @@ func (a *app) newJobsWaitCommand() *cobra.Command {
 					if err := writeWaitedJob(command, view, asJSON); err != nil {
 						return err
 					}
-					if record.ExitCode != 0 {
-						return &ExitError{Code: record.ExitCode}
+					if code := record.CLIExitCode(); code != 0 {
+						return &ExitError{Code: code}
 					}
 					return nil
 				}

@@ -15,24 +15,32 @@ import (
 	"github.com/Garden12138/xcli/internal/config"
 	"github.com/Garden12138/xcli/internal/runstore"
 	xruntime "github.com/Garden12138/xcli/internal/runtime"
+	"github.com/Garden12138/xcli/internal/worktree"
 )
 
 type StepResult struct {
-	ID         string       `json:"id"`
-	Agent      string       `json:"agent"`
-	Status     string       `json:"status"`
-	Output     string       `json:"output,omitempty"`
-	OutputFile string       `json:"output_file,omitempty"`
-	SessionID  string       `json:"session_id,omitempty"`
-	Usage      *agent.Usage `json:"usage,omitempty"`
-	ExitCode   int          `json:"exit_code"`
-	Attempts   int          `json:"attempts"`
-	Error      string       `json:"error,omitempty"`
-	StartedAt  time.Time    `json:"started_at,omitempty"`
-	EndedAt    time.Time    `json:"ended_at,omitempty"`
+	Cwd          string       `json:"cwd,omitempty"`
+	ParseStatus  string       `json:"parse_status,omitempty"`
+	ErrorKind    string       `json:"error_kind,omitempty"`
+	CLIExitCode  int          `json:"-"`
+	ID           string       `json:"id"`
+	Agent        string       `json:"agent,omitempty"`
+	AgentVersion string       `json:"-"`
+	Command      string       `json:"command,omitempty"`
+	Status       string       `json:"status"`
+	Output       string       `json:"output,omitempty"`
+	OutputFile   string       `json:"output_file,omitempty"`
+	SessionID    string       `json:"session_id,omitempty"`
+	Usage        *agent.Usage `json:"usage,omitempty"`
+	ExitCode     int          `json:"exit_code"`
+	Attempts     int          `json:"attempts"`
+	Error        string       `json:"error,omitempty"`
+	StartedAt    time.Time    `json:"started_at,omitempty"`
+	EndedAt      time.Time    `json:"ended_at,omitempty"`
 }
 
 type Execution struct {
+	RunID       string       `json:"run_id,omitempty"`
 	ID          string       `json:"id"`
 	Name        string       `json:"name"`
 	Status      string       `json:"status"`
@@ -44,26 +52,33 @@ type Execution struct {
 }
 
 type RunOptions struct {
+	Worktree          bool
 	VariableOverrides map[string]string
 	RecordOutput      bool
 	MaxParallel       *int
 }
 
 type PreparedRun struct {
-	SourcePath       string            `json:"source_path"`
-	Definition       Workflow          `json:"definition"`
-	WorkingDirectory string            `json:"working_directory"`
-	Variables        map[string]string `json:"variables,omitempty"`
-	RecordOutput     bool              `json:"record_output,omitempty"`
-	MaxParallel      int               `json:"max_parallel"`
+	ID               string             `json:"id,omitempty"`
+	StepCwds         map[string]string  `json:"step_cwds"`
+	Workspace        *worktree.Metadata `json:"workspace,omitempty"`
+	SourceCwd        string             `json:"source_cwd,omitempty"`
+	SourcePath       string             `json:"source_path"`
+	Definition       Workflow           `json:"definition"`
+	WorkingDirectory string             `json:"working_directory"`
+	Variables        map[string]string  `json:"variables,omitempty"`
+	RecordOutput     bool               `json:"record_output,omitempty"`
+	MaxParallel      int                `json:"max_parallel"`
 }
 
 type Runner struct {
-	Config   config.Config
-	Registry *agent.Registry
-	Store    *runstore.Store
-	Progress io.Writer
-	Stderr   io.Writer
+	Events        func(agent.Event) error
+	workspaceRoot string
+	Config        config.Config
+	Registry      *agent.Registry
+	Store         *runstore.Store
+	Progress      io.Writer
+	Stderr        io.Writer
 }
 
 type stepState uint8
@@ -131,29 +146,92 @@ func (r *Runner) Prepare(sourcePath string, workflow Workflow, options RunOption
 		}
 		maxParallel = *options.MaxParallel
 	}
-	return PreparedRun{
-		SourcePath: sourcePath, Definition: workflow, WorkingDirectory: workingDirectory,
-		Variables: variables, RecordOutput: options.RecordOutput, MaxParallel: maxParallel,
-	}, nil
+	prepared := PreparedRun{
+		ID: runstore.NewID("workflow"), SourcePath: sourcePath, Definition: workflow, WorkingDirectory: workingDirectory,
+		SourceCwd: workingDirectory, Variables: variables, RecordOutput: options.RecordOutput, MaxParallel: maxParallel, StepCwds: map[string]string{},
+	}
+	for _, step := range workflow.Steps {
+		directory, err := resolveDirectory(workingDirectory, step.Cwd)
+		if err != nil {
+			return PreparedRun{}, fmt.Errorf("step %q: %w", step.ID, err)
+		}
+		prepared.StepCwds[step.ID] = directory
+	}
+	if options.Worktree {
+		if prepared.MaxParallel > 1 {
+			return PreparedRun{}, errors.New("isolated workflows allow only one writable role; set max_parallel to 1")
+		}
+		manager, err := worktree.New()
+		if err != nil {
+			return PreparedRun{}, err
+		}
+		metadata, err := manager.Preview(prepared.ID, workingDirectory)
+		if err != nil {
+			return PreparedRun{}, err
+		}
+		prepared.Workspace = &metadata
+		prepared.WorkingDirectory, err = worktree.PlannedPath(metadata, workingDirectory)
+		if err != nil {
+			return PreparedRun{}, err
+		}
+		for id, directory := range prepared.StepCwds {
+			mapped, err := worktree.PlannedPath(metadata, directory)
+			if err != nil {
+				return PreparedRun{}, fmt.Errorf("step %q: %w", id, err)
+			}
+			prepared.StepCwds[id] = mapped
+		}
+	}
+	return prepared, nil
 }
 
 func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial *runstore.Record) (Execution, error) {
 	workflow := prepared.Definition
-	runID := runstore.NewID("workflow")
+	versionDetectionStarted := time.Now()
+	agentVersions := make(map[string]string)
+	versionChecks := make(map[string]bool)
+	type detectedVersion struct {
+		agent   string
+		version string
+	}
+	versionResults := make(chan detectedVersion, len(workflow.Steps))
+	for _, step := range workflow.Steps {
+		if step.Agent == "" {
+			continue
+		}
+		if versionChecks[step.Agent] {
+			continue
+		}
+		versionChecks[step.Agent] = true
+		definition, err := r.Registry.Get(step.Agent)
+		if err != nil {
+			continue
+		}
+		go func(name string, definition agent.Definition) {
+			versionResults <- detectedVersion{agent: name, version: definition.Detect(ctx).Version}
+		}(step.Agent, definition)
+	}
+	runID := prepared.ID
+	if runID == "" {
+		runID = runstore.NewID("workflow")
+	}
 	startedAt := time.Now().UTC()
 	record := runstore.Record{}
-	liveProgress := initial != nil
+	liveProgress := true
 	if initial != nil {
 		record = *initial
 		runID = record.ID
 		startedAt = record.StartedAt
 	}
 	execution := Execution{
-		ID: runID, Name: workflow.Name, Status: "success", MaxParallel: prepared.MaxParallel,
+		ID: runID, RunID: runID, Name: workflow.Name, Status: "success", MaxParallel: prepared.MaxParallel,
 		Cwd: prepared.WorkingDirectory, Steps: make([]StepResult, len(workflow.Steps)),
 	}
 	for index, step := range workflow.Steps {
-		execution.Steps[index] = StepResult{ID: step.ID, Agent: step.Agent, Status: "pending"}
+		execution.Steps[index] = StepResult{
+			ID: step.ID, Agent: step.Agent, AgentVersion: agentVersions[step.Agent],
+			Command: step.Command, Cwd: prepared.StepCwds[step.ID], Status: "pending",
+		}
 	}
 	record.ID = runID
 	record.Kind = "workflow"
@@ -163,6 +241,36 @@ func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial 
 	record.Cwd = prepared.WorkingDirectory
 	record.StartedAt = startedAt
 	record.Status = "running"
+	record.AgentVersions = agentVersions
+	if prepared.Workspace != nil {
+		metadata := *prepared.Workspace
+		manager, err := worktree.New()
+		if err != nil {
+			return execution, err
+		}
+		if initial == nil || !initial.Background {
+			created, err := manager.Create(metadata.RunID, prepared.SourceCwd)
+			if err != nil {
+				return execution, err
+			}
+			if created.BaseCommit != metadata.BaseCommit {
+				return execution, errors.New("repository baseline changed after preparation")
+			}
+		}
+		if err := worktree.CheckDirectory(metadata.Path, prepared.WorkingDirectory); err != nil {
+			return execution, err
+		}
+		for _, directory := range prepared.StepCwds {
+			if err := worktree.CheckDirectory(metadata.Path, directory); err != nil {
+				return execution, err
+			}
+		}
+		record.WorkspaceMode = "worktree"
+		record.Repository = metadata.Repository
+		record.WorktreePath = metadata.Path
+		record.WorktreeBranch = metadata.Branch
+		record.BaseCommit = metadata.BaseCommit
+	}
 	record.Steps = executionStepRecords(execution.Steps, prepared.RecordOutput)
 	if liveProgress {
 		if err := r.Store.Save(record); err != nil {
@@ -177,7 +285,13 @@ func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial 
 	defer os.RemoveAll(tempDir)
 
 	stepRunner := *r
+	if prepared.Workspace != nil {
+		stepRunner.workspaceRoot = prepared.Workspace.Path
+	}
 	writerMutex := &sync.Mutex{}
+	if r.Events != nil {
+		stepRunner.Events = func(event agent.Event) error { writerMutex.Lock(); defer writerMutex.Unlock(); return r.Events(event) }
+	}
 	if r.Progress != nil {
 		stepRunner.Progress = &lockedWriter{mu: writerMutex, writer: r.Progress}
 	}
@@ -239,6 +353,7 @@ func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial 
 				ready, failedDependency := dependencyReadiness(dependencies[index], statuses)
 				if failedDependency != "" {
 					result := skippedStep(step, fmt.Sprintf("dependency %q did not succeed", failedDependency))
+					result.AgentVersion = agentVersions[step.Agent]
 					execution.Steps[index] = result
 					stateChanged = true
 					states[index] = stepFinished
@@ -258,7 +373,7 @@ func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial 
 				stepContext := copyTemplateContext(templateData)
 				go func(index int, step Step, data templateContext) {
 					result := stepRunner.runStep(
-						workflowContext, prepared.WorkingDirectory, tempDir, step, data,
+						workflowContext, prepared.StepCwds[step.ID], tempDir, step, data,
 						prepared.RecordOutput, runID,
 					)
 					completed <- stepCompletion{index: index, result: result}
@@ -272,6 +387,7 @@ func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial 
 					continue
 				}
 				result := skippedStep(step, stopReason)
+				result.AgentVersion = agentVersions[step.Agent]
 				execution.Steps[index] = result
 				stateChanged = true
 				states[index] = stepFinished
@@ -294,6 +410,7 @@ func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial 
 		case completion := <-completed:
 			index := completion.index
 			result := completion.result
+			result.AgentVersion = agentVersions[workflow.Steps[index].Agent]
 			running--
 			finished++
 			states[index] = stepFinished
@@ -326,10 +443,39 @@ func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial 
 		}
 	}
 
+	versionBudget := 500*time.Millisecond - time.Since(versionDetectionStarted)
+	if versionBudget < 0 {
+		versionBudget = 0
+	}
+	versionTimer := time.NewTimer(versionBudget)
+	defer versionTimer.Stop()
+	for remaining := len(versionChecks); remaining > 0; remaining-- {
+		select {
+		case detected := <-versionResults:
+			if detected.version != "" {
+				agentVersions[detected.agent] = detected.version
+			}
+		case <-versionTimer.C:
+			remaining = 0
+		}
+	}
+
+	for index := range execution.Steps {
+		execution.Steps[index].AgentVersion = agentVersions[execution.Steps[index].Agent]
+	}
 	summarizeExecution(&execution, externalCanceled, fatalIndex)
 	execution.Usage = summarizeUsage(execution.Steps)
 	record.EndedAt = time.Now().UTC()
 	record.Status = execution.Status
+	record.ParseStatus = "not_applicable"
+	for _, step := range execution.Steps {
+		if step.ParseStatus == "parse_error" || step.ParseStatus == "truncated" {
+			record.ParseStatus = step.ParseStatus
+			record.ErrorKind = step.ErrorKind
+			record.Error = step.Error
+			break
+		}
+	}
 	record.ExitCode = execution.ExitCode
 	record.Usage = execution.Usage
 	record.Steps = executionStepRecords(execution.Steps, prepared.RecordOutput)
@@ -355,7 +501,8 @@ func executionStepRecords(steps []StepResult, recordOutput bool) []runstore.Step
 			outputFile = step.OutputFile
 		}
 		records = append(records, runstore.StepRecord{
-			ID: step.ID, Agent: step.Agent, Status: step.Status, ExitCode: step.ExitCode,
+			ID: step.ID, Agent: step.Agent, AgentVersion: step.AgentVersion,
+			Command: step.Command, Cwd: step.Cwd, ParseStatus: step.ParseStatus, ErrorKind: step.ErrorKind, Status: step.Status, ExitCode: step.ExitCode,
 			SessionID: step.SessionID, OutputFile: outputFile, StartedAt: step.StartedAt,
 			EndedAt: step.EndedAt, Attempts: step.Attempts, Error: step.Error, Usage: step.Usage,
 		})
@@ -418,7 +565,7 @@ func summarizeExecution(execution *Execution, externalCanceled bool, fatalIndex 
 	if fatalIndex >= 0 {
 		result := execution.Steps[fatalIndex]
 		execution.Status = result.Status
-		execution.ExitCode = result.ExitCode
+		execution.ExitCode = result.CLIExitCode
 		if execution.ExitCode == 0 {
 			execution.ExitCode = 1
 		}
@@ -429,7 +576,7 @@ func summarizeExecution(execution *Execution, externalCanceled bool, fatalIndex 
 			continue
 		}
 		execution.Status = result.Status
-		execution.ExitCode = result.ExitCode
+		execution.ExitCode = result.CLIExitCode
 		if execution.ExitCode == 0 {
 			execution.ExitCode = 1
 		}
@@ -440,14 +587,13 @@ func summarizeExecution(execution *Execution, externalCanceled bool, fatalIndex 
 }
 
 func (r *Runner) runStep(ctx context.Context, workflowCwd, tempDir string, step Step, templateData templateContext, recordOutput bool, runID string) (result StepResult) {
-	result = StepResult{ID: step.ID, Agent: step.Agent, Status: "failed", ExitCode: 1, StartedAt: time.Now().UTC()}
+	result = StepResult{
+		ID: step.ID, Agent: step.Agent, Command: step.Command,
+		Status: "failed", ExitCode: -1, ErrorKind: "start_failed", CLIExitCode: 1, StartedAt: time.Now().UTC(),
+	}
 	defer func() { result.EndedAt = time.Now().UTC() }()
 
-	prompt, err := resolveTemplate(step.Prompt, templateData)
-	if err != nil {
-		result.Error = err.Error()
-		return result
-	}
+	var err error
 	args := make([]string, len(step.Args))
 	for i, value := range step.Args {
 		args[i], err = resolveTemplate(value, templateData)
@@ -456,22 +602,39 @@ func (r *Runner) runStep(ctx context.Context, workflowCwd, tempDir string, step 
 			return result
 		}
 	}
-	directory, err := resolveDirectory(workflowCwd, step.Cwd)
+	directory, err := resolveDirectory(workflowCwd, "")
 	if err != nil {
 		result.Error = err.Error()
 		return result
 	}
-	definition, err := r.Registry.Get(step.Agent)
-	if err != nil {
-		result.Error = err.Error()
-		return result
+	result.Cwd = directory
+	var definition agent.Definition
+	var spec agent.CommandSpec
+	var environment []string
+	commandStep := step.Command != ""
+	if commandStep {
+		commandName, resolveErr := resolveTemplate(step.Command, templateData)
+		if resolveErr != nil {
+			result.Error = resolveErr.Error()
+			return result
+		}
+		result.Command = commandName
+		spec = agent.CommandSpec{Command: commandName, Args: args}
+		environment, err = xruntime.BuildEnvironment(os.Environ(), r.Config, config.AgentConfig{}, step.Network)
+	} else {
+		prompt, resolveErr := resolveTemplate(step.Prompt, templateData)
+		if resolveErr != nil {
+			result.Error = resolveErr.Error()
+			return result
+		}
+		definition, err = r.Registry.Get(step.Agent)
+		if err == nil {
+			spec, err = definition.Run(prompt, true, args)
+		}
+		if err == nil {
+			environment, err = xruntime.BuildEnvironment(os.Environ(), r.Config, definition.Config, step.Network)
+		}
 	}
-	spec, err := definition.Run(prompt, true, args)
-	if err != nil {
-		result.Error = err.Error()
-		return result
-	}
-	environment, err := xruntime.BuildEnvironment(os.Environ(), r.Config, definition.Config, step.Network)
 	if err != nil {
 		result.Error = err.Error()
 		return result
@@ -485,62 +648,96 @@ func (r *Runner) runStep(ctx context.Context, workflowCwd, tempDir string, step 
 	for attempt := 1; attempt <= step.Retries+1; attempt++ {
 		result.Attempts = attempt
 		if r.Progress != nil {
-			fmt.Fprintf(r.Progress, "[%d/%d] %s (%s)\n", attempt, step.Retries+1, step.ID, step.Agent)
+			label := step.Agent
+			if commandStep {
+				label = spec.Command
+			}
+			fmt.Fprintf(r.Progress, "[%d/%d] %s (%s)\n", attempt, step.Retries+1, step.ID, label)
 		}
 		stepContext := ctx
 		cancel := func() {}
 		if timeout > 0 {
 			stepContext, cancel = context.WithTimeout(ctx, timeout)
 		}
-		processResult, runErr := xruntime.RunProcess(stepContext, spec, xruntime.ProcessOptions{
-			Dir: directory, Env: environment, Stderr: r.Stderr, CaptureStdout: true, SeparateProcess: true,
-		})
-		cancel()
-		if runErr != nil {
-			result.Error = runErr.Error()
-			continue
+		if r.workspaceRoot != "" {
+			if err := worktree.CheckDirectory(r.workspaceRoot, directory); err != nil {
+				cancel()
+				result.Error = err.Error()
+				return result
+			}
 		}
-		parsed := agent.ParseStructured(definition.Config.Adapter, definition.Config.Output, processResult.Stdout)
+		if _, err := resolveDirectory(directory, ""); err != nil {
+			cancel()
+			result.Error = err.Error()
+			return result
+		}
+		var raw *os.File
+		var rawWriter io.Writer
+		if recordOutput {
+			raw, err = r.Store.OpenOutput(runID, fmt.Sprintf("%s.%d.raw.log", step.ID, attempt))
+			if err != nil {
+				cancel()
+				result.Error = err.Error()
+				return result
+			}
+			rawWriter = raw
+		}
+		attemptDefinition := definition
+		if commandStep {
+			attemptDefinition = agent.Definition{Name: step.Command, Config: config.AgentConfig{Adapter: "generic", Output: "text"}}
+		}
+		outcome, runErr := xruntime.Execute(stepContext, attemptDefinition, spec, xruntime.ProcessOptions{
+			Dir: directory, Env: environment, Stderr: r.Stderr, RawOutput: rawWriter, SeparateProcess: true,
+		}, runID, step.ID, attempt, r.Events)
+		cancel()
+		if raw != nil {
+			if err := raw.Close(); err != nil {
+				result.Error = err.Error()
+				return result
+			}
+		}
+		processResult := outcome.Process
+		parsed := outcome.Result
 		result.Output = parsed.Output
 		result.SessionID = parsed.SessionID
+		result.ParseStatus = parsed.ParseStatus
+		result.ErrorKind = parsed.ErrorKind
+		result.Status = parsed.Status
+		result.Error = parsed.Error
+		result.CLIExitCode = outcome.CLIExitCode
 		if parsed.Usage != nil {
 			if result.Usage == nil {
 				result.Usage = &agent.Usage{}
 			}
 			result.Usage.Add(parsed.Usage)
 		}
+		if runErr != nil {
+			result.ExitCode = parsed.ExitCode
+			result.Error = runErr.Error()
+			continue
+		}
+
 		result.ExitCode = processResult.ExitCode
 		outputPath := filepath.Join(tempDir, step.ID+".output")
 		if err := os.WriteFile(outputPath, []byte(result.Output), 0o600); err != nil {
+			result.Status = "failed"
+			result.CLIExitCode = 1
 			result.Error = fmt.Sprintf("write temporary step output: %v", err)
 			continue
 		}
 		result.OutputFile = outputPath
 		if recordOutput {
-			persistent, err := r.Store.SaveOutput(runID, step.ID+".output", []byte(result.Output))
+			persistent, err := r.Store.SaveOutput(runID, fmt.Sprintf("%s.%d.output", step.ID, attempt), []byte(result.Output))
 			if err != nil {
-				result.Error = err.Error()
-				continue
-			}
-			if _, err := r.Store.SaveOutput(runID, step.ID+".raw.log", processResult.Stdout); err != nil {
+				result.Status = "failed"
+				result.CLIExitCode = 1
 				result.Error = err.Error()
 				continue
 			}
 			result.OutputFile = persistent
 		}
-		if processResult.TimedOut {
-			result.Status = "timed_out"
-			result.Error = fmt.Sprintf("step exceeded timeout %s", timeoutText)
-		} else if processResult.Canceled {
-			result.Status = "canceled"
-			result.Error = "workflow canceled"
-		} else if processResult.ExitCode == 0 {
-			result.Status = "success"
-			result.Error = ""
+		if result.Status == "success" {
 			return result
-		} else {
-			result.Status = "failed"
-			result.Error = fmt.Sprintf("agent exited with code %d", processResult.ExitCode)
 		}
 		if result.Status == "canceled" || result.Status == "timed_out" {
 			return result
@@ -585,7 +782,10 @@ func resolveDirectory(base, value string) (string, error) {
 }
 
 func skippedStep(step Step, reason string) StepResult {
-	return StepResult{ID: step.ID, Agent: step.Agent, Status: "skipped", ExitCode: 1, Error: reason}
+	return StepResult{
+		ID: step.ID, Agent: step.Agent, Command: step.Command,
+		Status: "skipped", ExitCode: 1, Error: reason,
+	}
 }
 
 func ParseVars(values []string) (map[string]string, error) {

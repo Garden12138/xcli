@@ -5,8 +5,9 @@ import (
 	"context"
 	"errors"
 	"io"
-	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/Garden12138/xcli/internal/agent"
@@ -20,23 +21,50 @@ type ProcessOptions struct {
 	Stderr          io.Writer
 	CaptureStdout   bool
 	SeparateProcess bool
+	RawOutput       io.Writer
 }
 
 type ProcessResult struct {
-	ExitCode int
-	Stdout   []byte
-	Canceled bool
-	TimedOut bool
+	ExitCode         int
+	Stdout           []byte
+	Canceled         bool
+	TimedOut         bool
+	CaptureTruncated bool
+	StderrTail       []byte
+	IOError          bool
 }
 
 func RunProcess(ctx context.Context, spec agent.CommandSpec, options ProcessOptions) (ProcessResult, error) {
+	if ctx.Err() != nil {
+		return ProcessResult{ExitCode: -1, Canceled: !errors.Is(ctx.Err(), context.DeadlineExceeded), TimedOut: errors.Is(ctx.Err(), context.DeadlineExceeded)}, nil
+	}
 	command := exec.Command(spec.Command, spec.Args...)
 	command.Dir = options.Dir
 	command.Env = options.Env
+	if command.Env != nil && options.Dir != "" {
+		// A configured environment must not carry the caller's stale PWD into
+		// a different project or isolated checkout.
+		directory, err := filepath.Abs(options.Dir)
+		if err != nil {
+			return ProcessResult{ExitCode: -1}, err
+		}
+		directory, err = filepath.EvalSymlinks(directory)
+		if err != nil {
+			return ProcessResult{ExitCode: -1}, err
+		}
+		command.Env = append([]string(nil), options.Env...)
+		filtered := command.Env[:0]
+		for _, value := range command.Env {
+			if !strings.HasPrefix(value, "PWD=") {
+				filtered = append(filtered, value)
+			}
+		}
+		command.Env = append(filtered, "PWD="+directory)
+	}
 	command.Stdin = options.Stdin
 	configureProcess(command, options.SeparateProcess)
 
-	var captured bytes.Buffer
+	var captured boundedBuffer
 	if options.CaptureStdout {
 		if options.Stdout != nil {
 			command.Stdout = io.MultiWriter(options.Stdout, &captured)
@@ -46,10 +74,18 @@ func RunProcess(ctx context.Context, spec agent.CommandSpec, options ProcessOpti
 	} else {
 		command.Stdout = options.Stdout
 	}
-	command.Stderr = options.Stderr
+	if options.RawOutput != nil {
+		if command.Stdout == nil {
+			command.Stdout = options.RawOutput
+		} else {
+			command.Stdout = io.MultiWriter(command.Stdout, options.RawOutput)
+		}
+	}
+	tail := &tailWriter{writer: options.Stderr}
+	command.Stderr = tail
 
 	if err := command.Start(); err != nil {
-		return ProcessResult{}, err
+		return ProcessResult{ExitCode: -1}, err
 	}
 
 	waited := make(chan error, 1)
@@ -59,24 +95,58 @@ func RunProcess(ctx context.Context, spec agent.CommandSpec, options ProcessOpti
 
 	select {
 	case err := <-waited:
-		return ProcessResult{ExitCode: exitCode(err), Stdout: captured.Bytes()}, nil
+		code, ioFailed := waitOutcome(command, err)
+		return ProcessResult{ExitCode: code, IOError: ioFailed, Stdout: captured.Bytes(), CaptureTruncated: captured.truncated, StderrTail: tail.tail}, nil
 	case <-ctx.Done():
 		terminateProcess(command, options.SeparateProcess)
 		timer := time.NewTimer(2 * time.Second)
 		defer timer.Stop()
+		var waitErr error
 		select {
-		case <-waited:
+		case waitErr = <-waited:
 		case <-timer.C:
 			killProcess(command, options.SeparateProcess)
-			<-waited
+			waitErr = <-waited
 		}
-		result := ProcessResult{ExitCode: 130, Stdout: captured.Bytes(), Canceled: true}
+		code, ioFailed := waitOutcome(command, waitErr)
+		result := ProcessResult{ExitCode: code, IOError: ioFailed, Stdout: captured.Bytes(), Canceled: true, CaptureTruncated: captured.truncated, StderrTail: tail.tail}
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			result.ExitCode = 124
+			result.Canceled = false
 			result.TimedOut = true
 		}
 		return result, nil
 	}
+}
+
+func waitOutcome(command *exec.Cmd, err error) (int, bool) {
+	var exitErr *exec.ExitError
+	ioFailed := err != nil && !errors.As(err, &exitErr)
+	if command.ProcessState != nil {
+		return command.ProcessState.ExitCode(), ioFailed
+	}
+	return exitCode(err), ioFailed
+}
+
+type tailWriter struct {
+	writer io.Writer
+	tail   []byte
+}
+
+func (w *tailWriter) Write(data []byte) (int, error) {
+	const limit = 64 << 10
+	if len(data) >= limit {
+		w.tail = append(w.tail[:0], data[len(data)-limit:]...)
+	} else {
+		if excess := len(w.tail) + len(data) - limit; excess > 0 {
+			copy(w.tail, w.tail[excess:])
+			w.tail = w.tail[:len(w.tail)-excess]
+		}
+		w.tail = append(w.tail, data...)
+	}
+	if w.writer != nil {
+		return w.writer.Write(data)
+	}
+	return len(data), nil
 }
 
 func exitCode(err error) int {
@@ -88,9 +158,23 @@ func exitCode(err error) int {
 		if code := exitErr.ExitCode(); code >= 0 {
 			return code
 		}
-		if status, ok := exitErr.Sys().(interface{ Signal() os.Signal }); ok && status.Signal() != nil {
-			return 128
-		}
+		return -1
 	}
 	return 1
+}
+
+type boundedBuffer struct {
+	bytes.Buffer
+	truncated bool
+}
+
+func (b *boundedBuffer) Write(data []byte) (int, error) {
+	n := len(data)
+	remaining := agent.MaxOutputBytes - b.Len()
+	if len(data) > remaining {
+		data = data[:remaining]
+		b.truncated = true
+	}
+	_, err := b.Buffer.Write(data)
+	return n, err
 }

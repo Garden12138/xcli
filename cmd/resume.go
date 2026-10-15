@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -20,6 +21,7 @@ type resumeTarget struct {
 	Cwd         string
 	ResumedFrom string
 	ResumedStep string
+	CwdFallback bool
 }
 
 func (a *app) newResumeCommand() *cobra.Command {
@@ -27,6 +29,7 @@ func (a *app) newResumeCommand() *cobra.Command {
 	var stepID string
 	var cwdFlag string
 	var asJSON bool
+	var events bool
 	command := &cobra.Command{
 		Use:   "resume <run-id|session-id> [prompt...] [-- native-args...]",
 		Short: "Resume a recorded or native agent session",
@@ -38,6 +41,9 @@ func (a *app) newResumeCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(command *cobra.Command, args []string) error {
+			if events && asJSON {
+				return errors.New("--events cannot be combined with --json")
+			}
 			cfg, _, registry, err := a.load()
 			if err != nil {
 				return err
@@ -45,7 +51,7 @@ func (a *app) newResumeCommand() *cobra.Command {
 			before, nativeArgs := splitNativeArgs(command, args)
 			prompt := strings.Join(before[1:], " ")
 			interactive := prompt == ""
-			if interactive && asJSON {
+			if interactive && (asJSON || events) {
 				return errors.New("--json requires a prompt")
 			}
 
@@ -66,6 +72,9 @@ func (a *app) newResumeCommand() *cobra.Command {
 				return err
 			}
 
+			if target.CwdFallback && cwdFlag == "" {
+				fmt.Fprintln(command.ErrOrStderr(), "Warning: legacy workflow step has no cwd; using workflow record.cwd. Pass --cwd to override.")
+			}
 			cwdValue := cwdFlag
 			if cwdValue == "" {
 				cwdValue = target.Cwd
@@ -98,67 +107,95 @@ func (a *app) newResumeCommand() *cobra.Command {
 
 			ctx, cancel := signalContext(command.Context())
 			defer cancel()
-			capture := !interactive || cfg.Recording.Output
-			stdout := command.OutOrStdout()
-			if !interactive {
-				stdout = nil
+			if err := store.Save(record); err != nil {
+				return err
 			}
-			processResult, runErr := xruntime.RunProcess(ctx, spec, xruntime.ProcessOptions{
-				Dir: cwd, Env: environment, Stdin: interactiveReader(interactive),
-				Stdout: stdout, Stderr: command.ErrOrStderr(), CaptureStdout: capture,
-				SeparateProcess: !interactive && asJSON,
-			})
-			record.EndedAt = time.Now().UTC()
-			if runErr != nil {
-				record.Status = "failed"
-				record.ExitCode = 1
-				_ = store.Save(record)
-				return runErr
-			}
-			record.ExitCode = processResult.ExitCode
-			record.Status = processStatus(processResult)
-
-			if !interactive {
-				normalized := agent.ParseStructured(definition.Config.Adapter, definition.Config.Output, processResult.Stdout)
-				normalized.Agent = target.Agent
-				if normalized.SessionID == "" {
-					normalized.SessionID = target.SessionID
-				}
-				normalized.ExitCode = processResult.ExitCode
-				normalized.Status = record.Status
-				record.SessionID = normalized.SessionID
-				record.Usage = normalized.Usage
-				if asJSON {
-					if err := encodeJSON(command.OutOrStdout(), normalized); err != nil {
-						return err
-					}
-				} else if normalized.Output != "" {
-					if _, err := fmt.Fprintln(command.OutOrStdout(), normalized.Output); err != nil {
-						return err
-					}
-				}
-			}
-
-			if cfg.Recording.Output {
-				path, err := store.SaveOutput(record.ID, "output.log", processResult.Stdout)
+			if interactive {
+				raw, err := openRawOutput(store, record.ID, cfg.Recording.Output)
 				if err != nil {
 					return err
 				}
-				record.OutputFile = path
+				var rawWriter io.Writer
+				if raw != nil {
+					rawWriter = raw
+				}
+				process, runErr := xruntime.RunProcess(ctx, spec, xruntime.ProcessOptions{Dir: cwd, Env: environment, Stdin: os.Stdin, Stdout: command.OutOrStdout(), Stderr: command.ErrOrStderr(), RawOutput: rawWriter})
+				normalized, code := agent.Normalize(agent.RunResult{SessionID: target.SessionID, ParseStatus: "not_applicable"}, process.ExitCode, process.Canceled, process.TimedOut, runErr)
+				if process.IOError && code == 0 {
+					normalized.Status = "failed"
+					normalized.ErrorKind = "process_failed"
+					normalized.Error = "native process I/O failed"
+					code = 1
+				}
+				record.EndedAt = time.Now().UTC()
+				applyResult(&record, normalized)
+				if raw != nil {
+					if err := raw.Close(); err != nil {
+						return err
+					}
+					record.OutputFile = raw.Name()
+				}
+				if err := store.Save(record); err != nil {
+					return err
+				}
+				if runErr != nil {
+					return runErr
+				}
+				if code != 0 {
+					return &ExitError{Code: code}
+				}
+				return nil
+			}
+			raw, err := openRawOutput(store, record.ID, cfg.Recording.Output)
+			if err != nil {
+				return err
+			}
+			stderr := &synchronizedWriter{writer: command.ErrOrStderr()}
+			var activity io.Writer = stderr
+			if events {
+				activity = command.OutOrStdout()
+			}
+			outcome, runErr := executeNonInteractive(ctx, definition, spec, cwd, environment, stderr, record.ID, raw, eventSink(activity, events), target.SessionID)
+			if outcome.Result.SessionID == "" {
+				outcome.Result.SessionID = target.SessionID
+			}
+			record.EndedAt = time.Now().UTC()
+			applyResult(&record, outcome.Result)
+			if raw != nil {
+				if err := raw.Close(); err != nil {
+					return err
+				}
+				record.OutputFile = raw.Name()
 			}
 			if err := store.Save(record); err != nil {
 				return err
 			}
-			if processResult.ExitCode != 0 {
-				return &ExitError{Code: processResult.ExitCode}
+			if !events {
+				if asJSON {
+					if err := encodeJSON(command.OutOrStdout(), outcome.Result); err != nil {
+						return err
+					}
+				} else if outcome.Result.Output != "" {
+					if _, err := fmt.Fprintln(command.OutOrStdout(), outcome.Result.Output); err != nil {
+						return err
+					}
+				}
+			}
+			if runErr != nil {
+				return runErr
+			}
+			if outcome.CLIExitCode != 0 {
+				return &ExitError{Code: outcome.CLIExitCode}
 			}
 			return nil
+
 		},
 	}
 	command.Flags().StringVar(&selectedAgent, "agent", "", "agent for a native session id")
 	command.Flags().StringVar(&stepID, "step", "", "workflow step to resume")
 	command.Flags().StringVar(&cwdFlag, "cwd", "", "working directory override")
 	command.Flags().BoolVar(&asJSON, "json", false, "return a normalized JSON result")
+	command.Flags().BoolVar(&events, "events", false, "stream versioned JSONL events")
 	return command
 }
 
@@ -205,6 +242,11 @@ func resumeTargetFromRecord(record runstore.Record, selectedAgent, stepID string
 		target.Agent = found.Agent
 		target.SessionID = found.SessionID
 		target.ResumedStep = found.ID
+		if found.Cwd != "" {
+			target.Cwd = found.Cwd
+		} else {
+			target.CwdFallback = true
+		}
 	} else {
 		if stepID != "" {
 			return resumeTarget{}, fmt.Errorf("--step can only be used with a workflow run record")

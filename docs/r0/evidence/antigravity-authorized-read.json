@@ -1,0 +1,24 @@
+{
+  "cli_exit": 0,
+  "duration_seconds": 34.095,
+  "run_id": "run-20261015T063222Z-c71cb787",
+  "status": "success",
+  "parse_status": "complete",
+  "native_exit": 0,
+  "error_kind": null,
+  "answer_present": true,
+  "permission_denied_notice": false,
+  "project_git_status_unchanged": true,
+  "readme_unchanged": true,
+  "native_cli_invocations": 1,
+  "agent": "antigravity",
+  "permissions_added": [
+    "command(cat)",
+    "command(ls)",
+    "command(pwd)",
+    "command(head)"
+  ],
+  "permissions_scope": "global Antigravity CLI settings; existing settings preserved",
+  "prompt_scope": "read README.md via cat; no edits or network tools requested",
+  "verification_limits": "README hash and git status unchanged; not a full filesystem audit"
+}

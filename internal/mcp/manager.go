@@ -45,6 +45,12 @@ func NewManagers(cfg config.Config) (map[string]Manager, error) {
 		}
 		path := ""
 		switch target {
+		case "codex":
+			homePath := environmentMap(environment)["CODEX_HOME"]
+			if homePath == "" {
+				homePath = filepath.Join(home, ".codex")
+			}
+			path = filepath.Join(homePath, "config.toml")
 		case "claude":
 			path = filepath.Join(home, ".claude.json")
 		case "gemini":
@@ -93,6 +99,9 @@ func (m *commandManager) Load(ctx context.Context) (map[string]Entry, error) {
 func (m *commandManager) Apply(ctx context.Context, change Change) error {
 	switch change.Action {
 	case ActionAdd:
+		if err := m.CheckAdd(ctx, change.Server); err != nil {
+			return err
+		}
 		return m.add(ctx, change.Server, *change.desired)
 	case ActionRemove:
 		return m.remove(ctx, change.Server)
@@ -328,7 +337,12 @@ func parseOpenCodeEntry(raw json.RawMessage) (Entry, bool) {
 	return Entry{}, false
 }
 
-func (m *openCodeManager) Apply(_ context.Context, change Change) error {
+func (m *openCodeManager) Apply(ctx context.Context, change Change) error {
+	if change.Action == ActionAdd {
+		if err := m.CheckAdd(ctx, change.Server); err != nil {
+			return err
+		}
+	}
 	data, err := os.ReadFile(m.path)
 	exists := err == nil
 	if errors.Is(err, os.ErrNotExist) {
@@ -353,7 +367,7 @@ func (m *openCodeManager) Apply(_ context.Context, change Change) error {
 			return fmt.Errorf("back up OpenCode config: %w", err)
 		}
 	}
-	return writeAtomic(m.path, value.Pack(), 0o600)
+	return writeAtomic(m.path, value.Pack(), 0o600, unchangedFile(m.path, data, exists))
 }
 
 func updateOpenCodeDocument(document *hujson.Value, change Change) error {
@@ -378,6 +392,9 @@ func updateOpenCodeDocument(document *hujson.Value, change Change) error {
 		return errors.New("OpenCode mcp configuration must be an object")
 	}
 	index := objectMemberIndex(mcpObject, change.Server)
+	if change.Action == ActionAdd && index >= 0 {
+		return errors.New("native MCP entry already exists")
+	}
 	if change.Action == ActionRemove {
 		if index < 0 {
 			return fmt.Errorf("OpenCode MCP server %q does not exist", change.Server)

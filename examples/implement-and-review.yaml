@@ -1,6 +1,6 @@
 version: 1
 name: implement-and-review
-cwd: .
+cwd: ..
 
 vars:
   requirement: Implement the requested change and run the relevant tests.

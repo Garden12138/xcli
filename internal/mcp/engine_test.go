@@ -71,12 +71,12 @@ func TestPlanApplyNoopPruneLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertChange(t, plan, ActionRemove, StatusPlanned)
-	if err := ApplyPlan(context.Background(), &plan, managers, state); err != nil {
-		t.Fatal(err)
+	assertChange(t, plan, ActionConflict, StatusSkipped)
+	if err := ApplyPlan(context.Background(), &plan, managers, state); err == nil {
+		t.Fatal("unsafe removal succeeded")
 	}
-	if _, ok := state.Get("codex", "tools"); ok || len(manager.entries) != 0 {
-		t.Fatalf("managed entry was not pruned: %#v %#v", state, manager.entries)
+	if _, ok := state.Get("codex", "tools"); !ok || len(manager.entries) != 1 {
+		t.Fatal("retirement destroyed an existing entry")
 	}
 	info, err := os.Stat(state.path)
 	if err != nil {
@@ -110,9 +110,9 @@ func TestPlanConflictsAndForce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertChange(t, plan, ActionUpdate, StatusPlanned)
-	if !plan.Applicable || !strings.Contains(plan.Changes[0].Detail, "forced") {
-		t.Fatalf("force did not resolve conflict: %#v", plan)
+	assertChange(t, plan, ActionConflict, StatusSkipped)
+	if plan.Applicable || !strings.Contains(plan.Changes[0].Detail, "cannot bypass") {
+		t.Fatal("force bypassed retirement protection")
 	}
 
 	state.Set("codex", "docs", Ownership{SourceConfig: source, Fingerprint: desired.Fingerprint()})

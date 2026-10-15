@@ -6,6 +6,8 @@
 
 `xcli` is a unified entry point for installing, running, switching between, and orchestrating mainstream AI coding agent CLI tools.
 
+The source tree is moving toward a task-oriented entry point. R0 adds Cursor/Antigravity adapters, incremental events, honest parse failures, and working-directory protection. Legacy management commands are in transition. See the [R0 behavior and migration notes (Chinese)](docs/r0/README.zh-CN.md). The Task command is not implemented yet; published v0.4.0 packages do not contain these changes.
+
 It manages the real CLI processes rather than replacing them with model API calls. Native authentication, permissions, plugins, MCP configuration, and agent-specific flags remain available.
 
 ## Supported agents
@@ -16,6 +18,8 @@ It manages the real CLI processes rather than replacing them with model API call
 | [Codex CLI](https://developers.openai.com/codex/cli) | `codex` | `codex exec` | JSONL | `codex-acp` bridge | `@openai/codex` | `--cask codex` |
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/headless.md) | `gemini` | `gemini -p` | stream JSON | native `--acp` | `@google/gemini-cli` | `gemini-cli` |
 | [OpenCode](https://opencode.ai/docs/cli/) | `opencode` | `opencode run` | JSON events | native `acp` | `opencode-ai` | `anomalyco/tap/opencode` |
+| Cursor (R0 source) | `cursor-agent` | `cursor-agent --print` | stream-json | — | native installation | — |
+| Antigravity (R0 source) | `agy` | `agy --print` | separate stream-json protocol | — | native installation | — |
 
 Declarative aliases and custom agents can be added without rebuilding xcli.
 

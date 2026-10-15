@@ -3,11 +3,13 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 
+	"github.com/Garden12138/xcli/internal/agent"
 	"github.com/Garden12138/xcli/internal/routing"
 	"github.com/Garden12138/xcli/internal/runstore"
 	xruntime "github.com/Garden12138/xcli/internal/runtime"
@@ -62,32 +64,44 @@ func (a *app) newUseCommand() *cobra.Command {
 			}
 			ctx, cancel := signalContext(command.Context())
 			defer cancel()
-			capture := cfg.Recording.Output
-			result, runErr := xruntime.RunProcess(ctx, spec, xruntime.ProcessOptions{
-				Dir: cwd, Env: environment, Stdin: os.Stdin, Stdout: command.OutOrStdout(),
-				Stderr: command.ErrOrStderr(), CaptureStdout: capture,
-			})
-			record.EndedAt = time.Now().UTC()
-			if runErr != nil {
-				record.Status = "failed"
-				record.ExitCode = 1
-				_ = store.Save(record)
-				return runErr
+			raw, err := openRawOutput(store, record.ID, cfg.Recording.Output)
+			if err != nil {
+				return err
 			}
-			record.ExitCode = result.ExitCode
-			record.Status = processStatus(result)
-			if capture {
-				path, err := store.SaveOutput(record.ID, "output.log", result.Stdout)
-				if err != nil {
+			var rawWriter io.Writer
+			if raw != nil {
+				rawWriter = raw
+			}
+			if err := store.Save(record); err != nil {
+				if raw != nil {
+					raw.Close()
+				}
+				return err
+			}
+			result, runErr := xruntime.RunProcess(ctx, spec, xruntime.ProcessOptions{Dir: cwd, Env: environment, Stdin: os.Stdin, Stdout: command.OutOrStdout(), Stderr: command.ErrOrStderr(), RawOutput: rawWriter})
+			normalized, code := agent.Normalize(agent.RunResult{ParseStatus: "not_applicable"}, result.ExitCode, result.Canceled, result.TimedOut, runErr)
+			if result.IOError && code == 0 {
+				normalized.Status = "failed"
+				normalized.ErrorKind = "process_failed"
+				normalized.Error = "native process I/O failed"
+				code = 1
+			}
+			record.EndedAt = time.Now().UTC()
+			applyResult(&record, normalized)
+			if raw != nil {
+				if err := raw.Close(); err != nil {
 					return err
 				}
-				record.OutputFile = path
+				record.OutputFile = raw.Name()
 			}
 			if err := store.Save(record); err != nil {
 				return err
 			}
-			if result.ExitCode != 0 {
-				return &ExitError{Code: result.ExitCode}
+			if runErr != nil {
+				return runErr
+			}
+			if code != 0 {
+				return &ExitError{Code: code}
 			}
 			return nil
 		},
@@ -101,6 +115,7 @@ func (a *app) newRunCommand() *cobra.Command {
 	var cwdFlag string
 	var asJSON bool
 	var detach bool
+	var events bool
 	command := &cobra.Command{
 		Use:   "run [agent] <prompt> [-- native-args...]",
 		Short: "Run one non-interactive agent task",
@@ -112,6 +127,9 @@ func (a *app) newRunCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(command *cobra.Command, args []string) error {
+			if events && (asJSON || detach) {
+				return errors.New("--events cannot be combined with --json or --detach")
+			}
 			cfg, configPath, registry, err := a.load()
 			if err != nil {
 				return err
@@ -181,71 +199,59 @@ func (a *app) newRunCommand() *cobra.Command {
 			}
 			ctx, cancel := signalContext(command.Context())
 			defer cancel()
-			capture := structured || cfg.Recording.Output
-			var stdout = command.OutOrStdout()
-			if structured {
-				stdout = nil
+			raw, err := openRawOutput(store, record.ID, cfg.Recording.Output)
+			if err != nil {
+				return err
 			}
-			outcome, runErr := executeNonInteractive(
-				ctx, definition, name, spec, cwd, environment, structured,
-				stdout, command.ErrOrStderr(), capture, asJSON,
-			)
-			record.EndedAt = time.Now().UTC()
-			if runErr != nil {
-				record.Status = "failed"
-				record.ExitCode = 1
-				_ = store.Save(record)
-				return runErr
-			}
-			processResult := outcome.Process
-			record.ExitCode = processResult.ExitCode
-			record.Status = processStatus(processResult)
-			if structured {
-				normalized := outcome.Result
-				record.SessionID = normalized.SessionID
-				record.Usage = normalized.Usage
-				if asJSON {
-					if err := encodeJSON(command.OutOrStdout(), normalized); err != nil {
-						return err
-					}
-				} else if normalized.Output != "" {
-					if _, err := fmt.Fprintln(command.OutOrStdout(), normalized.Output); err != nil {
-						return err
-					}
+			if err := store.Save(record); err != nil {
+				if raw != nil {
+					raw.Close()
 				}
+				return err
 			}
-			if cfg.Recording.Output {
-				path, err := store.SaveOutput(record.ID, "output.log", processResult.Stdout)
-				if err != nil {
+			stderr := &synchronizedWriter{writer: command.ErrOrStderr()}
+			var activity io.Writer = stderr
+			if events {
+				activity = command.OutOrStdout()
+			}
+			outcome, runErr := executeNonInteractive(ctx, definition, spec, cwd, environment, stderr,
+				record.ID, raw, eventSink(activity, events))
+			record.EndedAt = time.Now().UTC()
+			applyResult(&record, outcome.Result)
+			if raw != nil {
+				if err := raw.Close(); err != nil {
 					return err
 				}
-				record.OutputFile = path
+				record.OutputFile = raw.Name()
 			}
 			if err := store.Save(record); err != nil {
 				return err
 			}
-			if processResult.ExitCode != 0 {
-				return &ExitError{Code: processResult.ExitCode}
+			if !events {
+				if asJSON {
+					if err := encodeJSON(command.OutOrStdout(), outcome.Result); err != nil {
+						return err
+					}
+				} else if outcome.Result.Output != "" {
+					if _, err := fmt.Fprintln(command.OutOrStdout(), outcome.Result.Output); err != nil {
+						return err
+					}
+				}
+			}
+			if runErr != nil {
+				return runErr
+			}
+			if outcome.CLIExitCode != 0 {
+				return &ExitError{Code: outcome.CLIExitCode}
 			}
 			return nil
+
 		},
 	}
 	command.Flags().StringVar(&selectedAgent, "agent", "", "agent to run (overrides positional and default selection)")
 	command.Flags().StringVar(&cwdFlag, "cwd", "", "working directory")
 	command.Flags().BoolVar(&asJSON, "json", false, "return a normalized JSON result")
 	command.Flags().BoolVar(&detach, "detach", false, "run in the background")
+	command.Flags().BoolVar(&events, "events", false, "stream versioned JSONL events")
 	return command
-}
-
-func processStatus(result xruntime.ProcessResult) string {
-	if result.TimedOut {
-		return "timed_out"
-	}
-	if result.Canceled {
-		return "canceled"
-	}
-	if result.ExitCode == 0 {
-		return "success"
-	}
-	return "failed"
 }

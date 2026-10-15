@@ -104,7 +104,7 @@ func resolveTemplate(value string, context templateContext) (string, error) {
 func stepTemplateReferences(step Step) []string {
 	seen := make(map[string]bool)
 	var references []string
-	values := append([]string{step.Prompt}, step.Args...)
+	values := append([]string{step.Prompt, step.Command}, step.Args...)
 	for _, value := range values {
 		for _, match := range templatePattern.FindAllStringSubmatch(value, -1) {
 			parts := strings.Split(match[1], ".")

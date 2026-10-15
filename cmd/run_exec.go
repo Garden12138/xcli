@@ -32,11 +32,6 @@ var detachedCommand = func(name string, args ...string) *exec.Cmd {
 	return exec.Command(name, args...)
 }
 
-type nonInteractiveOutcome struct {
-	Process xruntime.ProcessResult
-	Result  agent.RunResult
-}
-
 type synchronizedWriter struct {
 	mu     sync.Mutex
 	writer io.Writer
@@ -49,34 +44,16 @@ func (w *synchronizedWriter) Write(data []byte) (int, error) {
 }
 
 func executeNonInteractive(
-	ctx context.Context,
-	definition agent.Definition,
-	name string,
-	spec agent.CommandSpec,
-	cwd string,
-	environment []string,
-	structured bool,
-	stdout io.Writer,
-	stderr io.Writer,
-	capture bool,
-	separateProcess bool,
-) (nonInteractiveOutcome, error) {
-	processResult, err := xruntime.RunProcess(ctx, spec, xruntime.ProcessOptions{
-		Dir: cwd, Env: environment, Stdout: stdout, Stderr: stderr,
-		CaptureStdout: capture, SeparateProcess: separateProcess,
-	})
-	if err != nil {
-		return nonInteractiveOutcome{}, err
+	ctx context.Context, definition agent.Definition, spec agent.CommandSpec, cwd string, environment []string,
+	stderr io.Writer, runID string, raw *os.File, sink func(agent.Event) error, fallbackSession ...string,
+) (xruntime.Outcome, error) {
+	var rawWriter io.Writer
+	if raw != nil {
+		rawWriter = raw
 	}
-	outcome := nonInteractiveOutcome{Process: processResult}
-	if structured {
-		result := agent.ParseStructured(definition.Config.Adapter, definition.Config.Output, processResult.Stdout)
-		result.Agent = name
-		result.ExitCode = processResult.ExitCode
-		result.Status = processStatus(processResult)
-		outcome.Result = result
-	}
-	return outcome, nil
+	return xruntime.Execute(ctx, definition, spec, xruntime.ProcessOptions{
+		Dir: cwd, Env: environment, Stderr: stderr, SeparateProcess: true, RawOutput: rawWriter,
+	}, runID, "", 1, sink, fallbackSession...)
 }
 
 type detachedRunOptions struct {
@@ -288,7 +265,7 @@ func (a *app) runJobWorker(command *cobra.Command, id string) error {
 			return fail(errors.New("background workflow payload is missing"))
 		}
 		runner := workflow.Runner{
-			Config: cfg, Registry: registry, Store: store, Progress: logWriter, Stderr: logWriter,
+			Config: cfg, Registry: registry, Store: store, Progress: logWriter, Stderr: logWriter, Events: eventSink(logWriter, false),
 		}
 		execution, runErr := runner.RunPrepared(ctx, *payload.Workflow, &record)
 		if runErr != nil {
@@ -329,45 +306,32 @@ func (a *app) runDetachedRunWorker(
 		return fail(err)
 	}
 
-	var stdout io.Writer = logWriter
-	if payload.Structured {
-		stdout = nil
-	}
-	outcome, err := executeNonInteractive(
-		ctx, definition, payload.Agent, spec, payload.Cwd, environment, payload.Structured,
-		stdout, logWriter, payload.Structured || payload.RecordOutput, false,
-	)
-	record.EndedAt = time.Now().UTC()
+	raw, err := openRawOutput(store, record.ID, payload.RecordOutput)
 	if err != nil {
 		return fail(err)
 	}
-	if ctx.Err() != nil && !outcome.Process.Canceled {
-		outcome.Process.Canceled = true
-		outcome.Process.ExitCode = 130
-	}
-	record.ExitCode = outcome.Process.ExitCode
-	record.Status = processStatus(outcome.Process)
-	if payload.Structured {
-		record.SessionID = outcome.Result.SessionID
-		record.Usage = outcome.Result.Usage
-		if outcome.Result.Output != "" {
-			if _, err := fmt.Fprintln(logWriter, outcome.Result.Output); err != nil {
-				return fail(err)
-			}
-		}
-	}
-	if payload.RecordOutput {
-		path, err := store.SaveOutput(record.ID, "output.log", outcome.Process.Stdout)
-		if err != nil {
+	outcome, runErr := executeNonInteractive(ctx, definition, spec, payload.Cwd, environment, logWriter, record.ID, raw, eventSink(logWriter, false))
+	if raw != nil {
+		if err := raw.Close(); err != nil {
 			return fail(err)
 		}
-		record.OutputFile = path
+		record.OutputFile = raw.Name()
 	}
+	record.EndedAt = time.Now().UTC()
+	applyResult(record, outcome.Result)
 	if err := store.Save(*record); err != nil {
 		return err
 	}
-	if outcome.Process.ExitCode != 0 {
-		return &ExitError{Code: outcome.Process.ExitCode}
+	if runErr != nil {
+		return runErr
+	}
+	if outcome.Result.Output != "" {
+		if _, err := fmt.Fprintln(logWriter, outcome.Result.Output); err != nil {
+			return err
+		}
+	}
+	if outcome.CLIExitCode != 0 {
+		return &ExitError{Code: outcome.CLIExitCode}
 	}
 	return nil
 }

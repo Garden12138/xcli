@@ -1,0 +1,23 @@
+{
+  "kind": "real_cursor_diagnostic",
+  "generated_at": "2026-10-15T02:24:04.431283+00:00",
+  "version": "2026.10.14-0f9edde",
+  "native_invocations": 1,
+  "timeout_seconds": 120,
+  "isolated_XDG_DATA_HOME": true,
+  "authenticated_in_execution_environment": true,
+  "arguments_without_prompt": [
+    "--output-format",
+    "stream-json",
+    "--print",
+    "<fixed-read-only-fixture-prompt>"
+  ],
+  "exit_code": 1,
+  "duration_seconds": 0.395,
+  "stdout_bytes": 0,
+  "stderr_bytes": 387,
+  "diagnostic_category": "workspace_trust",
+  "stderr_sanitized": "\n⚠ Workspace Trust Required\n\n  Cursor Agent can execute code and access files in this directory.\n  Do you trust the contents of this directory?\n\n    /private<temporary-project>\n\n  To proceed, you can either:\n    • Run 'agent' interactively to decide\n    • Pass --trust, --yolo, or -f if you trust this directory\n",
+  "followup_with_trust_performed": false,
+  "finding": "Same headless arguments reproduce Workspace Trust Required for a newly created temporary project. This followup does not retroactively recover the original discarded stderr."
+}

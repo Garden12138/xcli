@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"text/tabwriter"
 
@@ -27,7 +26,7 @@ func (a *app) newAgentsCommand() *cobra.Command {
 				infos = append(infos, agent.Info{
 					Name: name, Adapter: definition.Config.Adapter, Command: definition.Config.Command,
 					Network: definition.Config.Network, Installed: installation.Installed,
-					Path: installation.Path, Version: installation.Version,
+					Path: installation.Path, Version: installation.Version, Error: installation.Error, Capabilities: installation.Capabilities,
 				})
 			}
 			if asJSON {
@@ -72,9 +71,9 @@ func (a *app) newDoctorCommand() *cobra.Command {
 			allInstalled := true
 			for _, name := range names {
 				definition, _ := registry.Get(name)
-				installation := definition.Detect(context.Background())
+				installation := definition.Probe(command.Context())
 				result.Agents[name] = installation
-				allInstalled = allInstalled && installation.Installed
+				allInstalled = allInstalled && installation.Installed && installation.Error == ""
 			}
 			if asJSON {
 				if err := encodeJSON(command.OutOrStdout(), result); err != nil {
@@ -88,8 +87,10 @@ func (a *app) newDoctorCommand() *cobra.Command {
 				for _, name := range names {
 					installation := result.Agents[name]
 					status := "missing"
-					if installation.Installed {
+					if installation.Installed && installation.Error == "" {
 						status = "ok"
+					} else if installation.Installed {
+						status = "error: " + installation.Error
 					}
 					fmt.Fprintf(writer, "%s\t%s\t%s\t%s\n", name, status, installation.Path, installation.Version)
 				}
@@ -97,7 +98,7 @@ func (a *app) newDoctorCommand() *cobra.Command {
 					return err
 				}
 			}
-			if len(args) == 1 && !allInstalled {
+			if !allInstalled {
 				return &ExitError{Code: 1}
 			}
 			return nil

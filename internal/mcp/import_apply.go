@@ -16,6 +16,11 @@ func ApplyImportPlan(plan *ImportPlan, state *State) error {
 	if !plan.Applicable {
 		return errors.New("MCP import plan contains conflicts")
 	}
+	unlock, err := state.lock()
+	if err != nil {
+		return err
+	}
+	defer unlock()
 	updates := map[string]config.MCPServer{}
 	for _, change := range plan.Changes {
 		if (change.Action == ImportActionAdd || change.Action == ImportActionUpdate) && change.desired != nil {
@@ -52,6 +57,7 @@ func ApplyImportPlan(plan *ImportPlan, state *State) error {
 		mode = info.Mode().Perm()
 	}
 	wroteConfig := false
+	var written []byte
 	if len(updates) > 0 {
 		patched, err := patchMCPServers(original, updates)
 		if err != nil {
@@ -60,10 +66,11 @@ func ApplyImportPlan(plan *ImportPlan, state *State) error {
 		if _, err := config.Decode(patched, plan.SourceConfig); err != nil {
 			return err
 		}
-		if err := writeAtomic(plan.SourceConfig, patched, mode); err != nil {
+		if err := writeAtomic(plan.SourceConfig, patched, mode, unchangedFile(plan.SourceConfig, original, existed)); err != nil {
 			return fmt.Errorf("write xcli source configuration: %w", err)
 		}
 		wroteConfig = true
+		written = patched
 	}
 
 	namespace := NamespaceKey(plan.Scope, plan.ProjectDir)
@@ -89,9 +96,12 @@ func ApplyImportPlan(plan *ImportPlan, state *State) error {
 		if wroteConfig {
 			var restoreErr error
 			if existed {
-				restoreErr = writeAtomic(plan.SourceConfig, original, mode)
+				restoreErr = writeAtomic(plan.SourceConfig, original, mode, unchangedFile(plan.SourceConfig, written, true))
 			} else {
-				restoreErr = os.Remove(plan.SourceConfig)
+				restoreErr = unchangedFile(plan.SourceConfig, written, true)()
+				if restoreErr == nil {
+					restoreErr = os.Remove(plan.SourceConfig)
+				}
 			}
 			if restoreErr != nil {
 				return fmt.Errorf("save MCP ownership: %v; restore source configuration: %w", err, restoreErr)

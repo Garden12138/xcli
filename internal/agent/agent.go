@@ -1,10 +1,7 @@
 package agent
 
 import (
-	"bufio"
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -27,29 +24,37 @@ type ACPLaunch struct {
 }
 
 type Installation struct {
-	Installed bool   `json:"installed"`
-	Path      string `json:"path,omitempty"`
-	Version   string `json:"version,omitempty"`
-	Error     string `json:"error,omitempty"`
+	Installed      bool                  `json:"installed"`
+	Path           string                `json:"path,omitempty"`
+	Version        string                `json:"version,omitempty"`
+	Error          string                `json:"error,omitempty"`
+	Capabilities   map[string]Capability `json:"capabilities,omitempty"`
+	Authentication string                `json:"authentication,omitempty"`
 }
 
 type Info struct {
-	Name      string `json:"name"`
-	Adapter   string `json:"adapter"`
-	Command   string `json:"command"`
-	Network   string `json:"network,omitempty"`
-	Installed bool   `json:"installed"`
-	Path      string `json:"path,omitempty"`
-	Version   string `json:"version,omitempty"`
+	Name         string                `json:"name"`
+	Adapter      string                `json:"adapter"`
+	Command      string                `json:"command"`
+	Network      string                `json:"network,omitempty"`
+	Installed    bool                  `json:"installed"`
+	Path         string                `json:"path,omitempty"`
+	Version      string                `json:"version,omitempty"`
+	Error        string                `json:"error,omitempty"`
+	Capabilities map[string]Capability `json:"capabilities,omitempty"`
 }
 
 type RunResult struct {
-	Agent     string `json:"agent"`
-	Output    string `json:"output,omitempty"`
-	SessionID string `json:"session_id,omitempty"`
-	ExitCode  int    `json:"exit_code"`
-	Status    string `json:"status"`
-	Usage     *Usage `json:"usage,omitempty"`
+	RunID       string `json:"run_id,omitempty"`
+	ParseStatus string `json:"parse_status,omitempty"`
+	ErrorKind   string `json:"error_kind,omitempty"`
+	Error       string `json:"error,omitempty"`
+	Agent       string `json:"agent"`
+	Output      string `json:"output,omitempty"`
+	SessionID   string `json:"session_id,omitempty"`
+	ExitCode    int    `json:"exit_code"`
+	Status      string `json:"status"`
+	Usage       *Usage `json:"usage,omitempty"`
 }
 
 type InstallSpec struct {
@@ -139,6 +144,15 @@ func (d Definition) ACP(extra []string) (ACPLaunch, error) {
 func (d Definition) Run(prompt string, structured bool, extra []string) (CommandSpec, error) {
 	base := append([]string{}, d.Config.Args...)
 	switch d.Config.Adapter {
+	case "cursor", "antigravity":
+		base = append(base, extra...)
+		if structured {
+			base = append(base, "--output-format", "stream-json")
+		}
+		if d.Config.Adapter == "antigravity" {
+			base = append(base, "--print-timeout", "120s")
+		}
+		base = append(base, "--print", prompt)
 	case "claude":
 		base = append(base, extra...)
 		base = append(base, "-p", prompt)
@@ -186,6 +200,22 @@ func (d Definition) Resume(sessionID, prompt string, structured bool, extra []st
 	base := append([]string{}, d.Config.Args...)
 	interactive := prompt == ""
 	switch d.Config.Adapter {
+	case "cursor", "antigravity":
+		flag := "--resume"
+		if d.Config.Adapter == "antigravity" {
+			flag = "--conversation"
+		}
+		base = append(base, extra...)
+		base = append(base, flag, sessionID)
+		if !interactive {
+			if structured {
+				base = append(base, "--output-format", "stream-json")
+			}
+			if d.Config.Adapter == "antigravity" {
+				base = append(base, "--print-timeout", "120s")
+			}
+			base = append(base, "--print", prompt)
+		}
 	case "claude":
 		base = append(base, extra...)
 		base = append(base, "--resume", sessionID)
@@ -268,16 +298,32 @@ func (d Definition) Detect(ctx context.Context) Installation {
 	if err != nil {
 		return Installation{Installed: false}
 	}
-	result := Installation{Installed: true, Path: path}
+	result := Installation{Installed: true, Path: path, Capabilities: d.Capabilities(), Authentication: "unknown"}
 
 	versionCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	output, err := exec.CommandContext(versionCtx, path, "--version").CombinedOutput()
+	command := exec.CommandContext(versionCtx, path, "--version")
+	command.WaitDelay = 250 * time.Millisecond
+	var output probeOutput
+	command.Stdout = &output
+	command.Stderr = &output
+	err = command.Run()
 	if err != nil {
-		result.Error = conciseError(err)
+		if versionCtx.Err() != nil {
+			result.Error = "version check timed out"
+		} else {
+			result.Error = conciseError(err)
+		}
 		return result
 	}
-	result.Version = versionLine(string(output))
+	if output.truncated {
+		result.Error = "version output exceeds 64 KiB"
+		return result
+	}
+	result.Version = versionLine(string(output.data))
+	if result.Version == "" {
+		result.Error = "version check returned no version"
+	}
 	return result
 }
 
@@ -372,53 +418,9 @@ func chooseAutomaticMethod(methods map[string]InstallSpec) string {
 }
 
 func ParseStructured(adapter, outputFormat string, data []byte) RunResult {
-	result := RunResult{Status: "success"}
-	if adapter == "generic" && (outputFormat == "" || outputFormat == "text") {
-		result.Output = strings.TrimSpace(string(data))
-		return result
-	}
-	if adapter == "generic" && outputFormat == "json" {
-		var event map[string]interface{}
-		if err := json.Unmarshal(data, &event); err == nil {
-			captureSession(event, &result)
-			var pieces []string
-			captureOutput(event, &pieces)
-			if len(pieces) > 0 {
-				result.Output = strings.TrimSpace(strings.Join(pieces, ""))
-				return result
-			}
-		}
-		result.Output = strings.TrimSpace(string(data))
-		return result
-	}
-
-	var pieces []string
-	var lastLine string
-	usage := newUsageAccumulator()
-	scanner := bufio.NewScanner(bytes.NewReader(data))
-	buffer := make([]byte, 64*1024)
-	scanner.Buffer(buffer, 4*1024*1024)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
-			continue
-		}
-		lastLine = line
-		var event map[string]interface{}
-		if err := json.Unmarshal([]byte(line), &event); err != nil {
-			continue
-		}
-		usage.capture(adapter, event)
-		captureSession(event, &result)
-		captureOutput(event, &pieces)
-	}
-	result.Usage = usage.result()
-	if len(pieces) > 0 {
-		result.Output = strings.TrimSpace(strings.Join(pieces, ""))
-	} else if lastLine != "" {
-		result.Output = lastLine
-	}
-	return result
+	decoder := NewStreamDecoder(adapter, outputFormat, nil)
+	_, _ = decoder.Write(data)
+	return decoder.Finish()
 }
 
 func captureSession(event map[string]interface{}, result *RunResult) {

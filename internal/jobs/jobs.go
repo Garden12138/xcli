@@ -19,6 +19,9 @@ const (
 )
 
 type View struct {
+	ParseStatus  string                `json:"parse_status,omitempty"`
+	ErrorKind    string                `json:"error_kind,omitempty"`
+	Error        string                `json:"error,omitempty"`
 	ID           string                `json:"id"`
 	Kind         string                `json:"kind,omitempty"`
 	Agent        string                `json:"agent"`
@@ -69,6 +72,9 @@ func ToView(record runstore.Record) View {
 	}
 	view.Steps = append([]runstore.StepRecord(nil), record.Steps...)
 	if IsTerminal(record.Status) {
+		view.ParseStatus = record.ParseStatus
+		view.ErrorKind = record.ErrorKind
+		view.Error = record.Error
 		endedAt := record.EndedAt
 		exitCode := record.ExitCode
 		view.EndedAt = &endedAt

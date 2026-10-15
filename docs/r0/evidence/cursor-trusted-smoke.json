@@ -1,0 +1,43 @@
+{
+  "native_invocations": 1,
+  "trust_scope": "agent-created temporary Git fixture",
+  "arguments_without_prompt": [
+    "--trust",
+    "--output-format",
+    "stream-json",
+    "--print"
+  ],
+  "timeout_seconds": 120,
+  "exit_code": 0,
+  "duration_seconds": 25.959,
+  "stdout_bytes": 2406,
+  "stderr_bytes": 0,
+  "fixture_unchanged": true,
+  "event_types": [
+    "system",
+    "user",
+    "tool_call",
+    "tool_call",
+    "assistant",
+    "result"
+  ],
+  "invalid_json_lines": 0,
+  "session_present": true,
+  "terminal_subtype": "success",
+  "terminal_is_error": false,
+  "expected_marker_present": true,
+  "status": "passed",
+  "generated_at": "2026-10-15T02:35:26.485384+00:00",
+  "version": "2026.10.14-0f9edde",
+  "kind": "real_cursor_headless_with_explicit_trust",
+  "raw_logs_retained_privately": true,
+  "offline_xcli_replay": {
+    "kind": "offline_captured_stream_replay",
+    "model_invocations": 0,
+    "cli_exit_code": 0,
+    "status": "success",
+    "parse_status": "complete",
+    "session_present": true,
+    "expected_marker_present": true
+  }
+}

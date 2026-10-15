@@ -106,6 +106,7 @@ func TestCommandManagersUseNativeMCPCommands(t *testing.T) {
 			logPath := filepath.Join(directory, test.target+".log")
 			manager := &commandManager{
 				target:      test.target,
+				configPath:  filepath.Join(directory, test.target+".native"),
 				config:      config.AgentConfig{Command: script},
 				environment: append(os.Environ(), "MCP_COMMAND_LOG="+logPath),
 			}

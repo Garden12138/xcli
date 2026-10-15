@@ -29,6 +29,8 @@ type State struct {
 	Namespaces map[string]*OwnershipNamespace `json:"namespaces,omitempty"`
 	path       string
 	migrated   bool
+	locked     bool
+	generation string
 }
 
 func LoadState() (*State, error) {
@@ -79,6 +81,7 @@ func LoadState() (*State, error) {
 	}
 	state.Version = stateVersion
 	state.path = path
+	state.generation = contentFingerprint(data)
 	return state, nil
 }
 
@@ -169,6 +172,22 @@ func (s *State) Set(target, server string, owner Ownership) {
 func (s *State) Delete(target, server string) { s.DeleteIn(ScopeUser, target, server) }
 
 func (s *State) Save() error {
+	unlock, err := s.lock()
+	if err != nil {
+		return err
+	}
+	defer unlock()
+	current, err := os.ReadFile(s.path)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	generation := ""
+	if err == nil {
+		generation = contentFingerprint(current)
+	}
+	if generation != s.generation {
+		return fmt.Errorf("MCP ownership changed; reload and rerun the plan")
+	}
 	s.Version = stateVersion
 	if err := os.MkdirAll(filepath.Dir(s.path), 0o700); err != nil {
 		return fmt.Errorf("create MCP state directory: %w", err)
@@ -182,6 +201,7 @@ func (s *State) Save() error {
 		return fmt.Errorf("write MCP sync state: %w", err)
 	}
 	s.migrated = false
+	s.generation = contentFingerprint(data)
 	return nil
 }
 
@@ -189,7 +209,7 @@ func (s *State) Path() string { return s.path }
 
 func (s *State) NeedsSave() bool { return s.migrated }
 
-func writeAtomic(path string, data []byte, mode os.FileMode) error {
+func writeAtomic(path string, data []byte, mode os.FileMode, checks ...func() error) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
@@ -213,6 +233,11 @@ func writeAtomic(path string, data []byte, mode os.FileMode) error {
 	}
 	if err := tmp.Close(); err != nil {
 		return err
+	}
+	for _, check := range checks {
+		if err := check(); err != nil {
+			return err
+		}
 	}
 	return os.Rename(tmpName, path)
 }

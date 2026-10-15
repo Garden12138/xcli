@@ -233,8 +233,9 @@ func cloneMCPServer(value config.MCPServer) config.MCPServer {
 	value.EnvVars = append([]string(nil), value.EnvVars...)
 	value.Targets = append([]string(nil), value.Targets...)
 	if value.Env != nil {
-		value.Env = map[string]string{}
-		for key, entry := range value.Env {
+		original := value.Env
+		value.Env = make(map[string]string, len(original))
+		for key, entry := range original {
 			value.Env[key] = entry
 		}
 	}

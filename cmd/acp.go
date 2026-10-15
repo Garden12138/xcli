@@ -66,8 +66,8 @@ func (a *app) newACPCommand() *cobra.Command {
 			if runErr != nil {
 				return runErr
 			}
-			if result.ExitCode != 0 {
-				return &ExitError{Code: result.ExitCode}
+			if code := processCLIExit(result); code != 0 {
+				return &ExitError{Code: code}
 			}
 			return nil
 		},

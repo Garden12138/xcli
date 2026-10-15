@@ -1,5 +1,7 @@
 # A02：兼容契约决策（冻结于 2026-09-08）
 
+2026-10-15：本页保留阶段 0 的历史决策。R0 沿用结果、事件和 cwd 契约；ownership v3 建设已被产品调整方案取消，改为保留 v2、阻止不安全的原生更新/删除，详见 [R0 说明](../r0/README.zh-CN.md)。
+
 本文件约束后续实施，不改变当前生产行为。`tests/phase0/testdata/contracts.json` 中 old 是现有格式，new 是目标格式；检查只验证样例与旧读取能力，不假称新行为已经实现。
 
 ## 结果、身份与退出码
@@ -11,6 +13,10 @@
 `parse_status`：complete（按该适配器规则完整结束）、parse_error（非法协议、显式失败事件或缺完成信号）、truncated（解析资源限制使完整性丢失）、not_applicable（generic 文本、原生交互透传）、unknown（旧记录或尚未获得结论）。未知合法事件可以忽略；非法 JSON 不能以最后一行文本当作完整成功。F05 修复可保留缓冲，但提高 Scanner 上限不能代替错误检查。
 
 `error_kind` 固定为 start_failed、canceled、timeout、process_failed、parse_error、truncated；成功时省略。error 是可读的脱敏诊断，协议错误只记录适配器、事件/行号、字节位置及原因，不附原始事件正文。已采集 session/usage 尽量保留，parse_status 标示整体完整性，缺费用仍为缺失。
+
+Antigravity 显式 stderr 诊断“headless 权限自动拒绝、无输出”可与原生退出 0 及完整结果事件同时出现。此时没有回答则 status=failed、error_kind=process_failed、xcli 返回 1；exit_code 仍为 0、parse_status 仍为 complete。完整解析不等于任务成功，jobs wait 必须保留该失败状态。
+
+原生 result 若包含非空 denied_actions 数组，也按权限失败处理，即使 status=SUCCESS 且 response 非空；保留回答、会话和用量，不回写历史记录。协议损坏、截断、启动失败、取消、超时和原生非零退出保持既定优先级。空数组或缺少该字段不会据此判失败。
 
 | 判定顺序 | status | error_kind | 保存的原生 exit_code | xcli 退出 |
 | --- | --- | --- | --- | --- |

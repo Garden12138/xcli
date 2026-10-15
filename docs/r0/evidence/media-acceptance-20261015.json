@@ -1,0 +1,1386 @@
+{
+  "kind": "real_cli_acceptance",
+  "date": "2026-10-15",
+  "headless_process_invocations": 19,
+  "automatic_retries": 0,
+  "targeted_additional_probes": "Antigravity direct-image prompt once; three explicit primary-agent selections, all rejected before a usable session",
+  "binary_sha256": "286839695277566f4d25755287bd9514df94c59530ad86692da1a8cc0cfd33fe",
+  "codex_home": "/Users/cengjiada/.codex-plus-gardenqaq@gmail.com",
+  "models_and_quota": "Existing native account defaults; no API keys supplied, no account switching or paid-credit opt-in; internal model request count not observed",
+  "media_subagent_authorization": "explicitly authorized by user; real image-generator generation and edit succeeded",
+  "temporary_ffmpeg_rules_removed": true,
+  "files": [
+    {
+      "path": "docs/r0/artifacts/media-20261015/codex-generated.png",
+      "bytes": 1669453,
+      "sha256": "05a6cb7115f7621c500f358f009a1334080b0430bf53e01c940927f3fef55277"
+    },
+    {
+      "path": "docs/r0/artifacts/media-20261015/codex-edited.png",
+      "bytes": 1887101,
+      "sha256": "245d0fc314748e7cbce8f5860dd341c5ece6717888bc61469ef434190567342c"
+    },
+    {
+      "path": "docs/r0/artifacts/media-20261015/cursor-generated.jpg",
+      "bytes": 220259,
+      "sha256": "e773a7780029b8d0fb745a2486cec44a3f61c04a894877129d7222ea433adf12"
+    },
+    {
+      "path": "docs/r0/artifacts/media-20261015/cursor-edited.png",
+      "bytes": 794513,
+      "sha256": "4a631ec901ba5dd66f5aa9b6f34f25f551aa166097c63d92873aa69d7cb74db7"
+    },
+    {
+      "path": "docs/r0/artifacts/media-20261015/antigravity-video-edited.mp4",
+      "bytes": 101345,
+      "sha256": "4be6eb39ee6caaaf8b8a39cceb17352ca2e6e9427c46fe046953b4308099bdf5"
+    },
+    {
+      "path": "docs/r0/artifacts/media-20261015/antigravity-music-edited.wav",
+      "bytes": 441078,
+      "sha256": "039cdc60e9d786dd1d19218d9d6a9e2a53b4dc87a80aba2872646cc423be6bd3"
+    },
+    {
+      "path": "docs/r0/artifacts/media-20261015/video-edit-frames.png",
+      "bytes": 45187,
+      "sha256": "2af8fbe91406c248c623bfe6c75ab17c0875992398b5d458b5bc1e50caad84fc"
+    },
+    {
+      "path": "docs/r0/artifacts/media-20261015/antigravity-generated.jpg",
+      "bytes": 568160,
+      "sha256": "b9f96fc78bb73e8f3627d3d250386e688ebceebc72368b95570a5fb920e578ed"
+    },
+    {
+      "path": "docs/r0/artifacts/media-20261015/antigravity-edited.jpg",
+      "bytes": 542102,
+      "sha256": "ebeab0e60043f9379ef47128e23fd0f24079841138fb891782b1c96eefefbd0b"
+    }
+  ],
+  "artifact_checks": {
+    "video": {
+      "full_decode_ok": true,
+      "frame_luminance": {
+        "0": 0,
+        "0.25": 62.121,
+        "1.5": 123.88,
+        "2.75": 62.366,
+        "2.95": 10.486
+      },
+      "preview": "docs/r0/artifacts/media-20261015/video-edit-frames.png"
+    },
+    "audio": {
+      "duration_seconds": 5.0,
+      "channels": 1,
+      "sample_rate": 44100,
+      "first_four_seconds_preserved": true,
+      "rms": {
+        "0_to_1": 0.096977,
+        "3_to_4": 0.096918,
+        "4_to_4.25": 0.117989,
+        "4.75_to_5": 0.008384
+      }
+    },
+    "images": {
+      "codex": {
+        "same_dimensions": true,
+        "upper_55_percent_normalized_mean_absolute_difference": 0.010597,
+        "visual_review": "pot changed to blue; plant and background substantially preserved; no new text observed"
+      },
+      "cursor": {
+        "same_dimensions": true,
+        "upper_55_percent_normalized_mean_absolute_difference": 0.020323,
+        "visual_review": "pot changed to blue; plant and background substantially preserved; no new text observed"
+      },
+      "antigravity": {
+        "same_dimensions": true,
+        "upper_55_percent_normalized_mean_absolute_difference": 0.008093,
+        "visual_review": "pot changed to blue; plant and background substantially preserved; no text observed"
+      }
+    }
+  },
+  "calls": [
+    {
+      "case": "antigravity-image-edit",
+      "agent": "antigravity",
+      "task": "image-edit",
+      "started_at": "2026-10-15T07:21:43Z",
+      "duration_seconds": 22.686,
+      "cli_exit": 0,
+      "watchdog_timeout": false,
+      "run_id": "run-20261015T072143Z-542f8c0b",
+      "status": "success",
+      "exit_code": 0,
+      "parse_status": "complete",
+      "error_kind": null,
+      "error": null,
+      "available_tools": [
+        "ask_custom_permission",
+        "ask_permission",
+        "ask_question",
+        "browser_click_element",
+        "browser_drag_pixel_to_pixel",
+        "browser_get_dom",
+        "browser_get_network_request",
+        "browser_input",
+        "browser_list_network_requests",
+        "browser_mouse_down",
+        "browser_mouse_up",
+        "browser_move_mouse",
+        "browser_press_key",
+        "browser_refresh_page",
+        "browser_resize_window",
+        "browser_scroll",
+        "browser_scroll_dom",
+        "browser_select_option",
+        "browser_subagent",
+        "call_mcp_tool",
+        "capture_browser_console_logs",
+        "capture_browser_screenshot",
+        "click_browser_pixel",
+        "command_status",
+        "define_subagent",
+        "delete_knowledge",
+        "execute_browser_javascript",
+        "find_by_name",
+        "finish",
+        "generate_image",
+        "grep_search",
+        "invoke_subagent",
+        "list_browser_pages",
+        "list_dir",
+        "list_permissions",
+        "list_plugin_accounts",
+        "list_resources",
+        "manage_inbox",
+        "manage_subagents",
+        "manage_task",
+        "multi_replace_file_content",
+        "notebook_edit",
+        "notebook_execution",
+        "open_browser_url",
+        "read_browser_page",
+        "read_resource",
+        "read_url_content",
+        "replace_file_content",
+        "run_command",
+        "run_workflow",
+        "schedule",
+        "search_marketplace",
+        "search_web",
+        "sed_file",
+        "send_command_input",
+        "send_message",
+        "view_file",
+        "wait",
+        "wait_5_seconds",
+        "write_to_file"
+      ],
+      "observed_tools": [],
+      "event_types": [
+        "init",
+        "result",
+        "step_update"
+      ],
+      "input_origin": "procedural_fixture",
+      "input_unchanged": true,
+      "stderr_permission_notice": false,
+      "unique_artifact_hashes": [],
+      "artifact_metadata": []
+    },
+    {
+      "case": "antigravity-image-generate",
+      "agent": "antigravity",
+      "task": "image-generate",
+      "started_at": "2026-10-15T07:10:03Z",
+      "duration_seconds": 30.565,
+      "cli_exit": 1,
+      "watchdog_timeout": false,
+      "run_id": "run-20261015T071003Z-8879406b",
+      "status": "failed",
+      "exit_code": 0,
+      "parse_status": "complete",
+      "error_kind": "process_failed",
+      "error": "antigravity: headless tool permission was auto-denied; configure a targeted native permissions.allow rule before retrying",
+      "available_tools": [
+        "ask_custom_permission",
+        "ask_permission",
+        "ask_question",
+        "browser_click_element",
+        "browser_drag_pixel_to_pixel",
+        "browser_get_dom",
+        "browser_get_network_request",
+        "browser_input",
+        "browser_list_network_requests",
+        "browser_mouse_down",
+        "browser_mouse_up",
+        "browser_move_mouse",
+        "browser_press_key",
+        "browser_refresh_page",
+        "browser_resize_window",
+        "browser_scroll",
+        "browser_scroll_dom",
+        "browser_select_option",
+        "browser_subagent",
+        "call_mcp_tool",
+        "capture_browser_console_logs",
+        "capture_browser_screenshot",
+        "click_browser_pixel",
+        "command_status",
+        "define_subagent",
+        "delete_knowledge",
+        "execute_browser_javascript",
+        "find_by_name",
+        "finish",
+        "generate_image",
+        "grep_search",
+        "invoke_subagent",
+        "list_browser_pages",
+        "list_dir",
+        "list_permissions",
+        "list_plugin_accounts",
+        "list_resources",
+        "manage_inbox",
+        "manage_subagents",
+        "manage_task",
+        "multi_replace_file_content",
+        "notebook_edit",
+        "notebook_execution",
+        "open_browser_url",
+        "read_browser_page",
+        "read_resource",
+        "read_url_content",
+        "replace_file_content",
+        "run_command",
+        "run_workflow",
+        "schedule",
+        "search_marketplace",
+        "search_web",
+        "sed_file",
+        "send_command_input",
+        "send_message",
+        "view_file",
+        "wait",
+        "wait_5_seconds",
+        "write_to_file"
+      ],
+      "observed_tools": [
+        "run_command",
+        "view_file"
+      ],
+      "event_types": [
+        "init",
+        "result",
+        "step_update"
+      ],
+      "stderr_permission_notice": true,
+      "unique_artifact_hashes": [],
+      "artifact_metadata": []
+    },
+    {
+      "case": "antigravity-image-generate-direct",
+      "agent": "antigravity",
+      "task": "image-generate-direct",
+      "started_at": "2026-10-15T07:12:52Z",
+      "duration_seconds": 27.936,
+      "cli_exit": 0,
+      "watchdog_timeout": false,
+      "run_id": "run-20261015T071252Z-5fe32b9b",
+      "status": "success",
+      "exit_code": 0,
+      "parse_status": "complete",
+      "error_kind": null,
+      "error": null,
+      "available_tools": [
+        "ask_custom_permission",
+        "ask_permission",
+        "ask_question",
+        "browser_click_element",
+        "browser_drag_pixel_to_pixel",
+        "browser_get_dom",
+        "browser_get_network_request",
+        "browser_input",
+        "browser_list_network_requests",
+        "browser_mouse_down",
+        "browser_mouse_up",
+        "browser_move_mouse",
+        "browser_press_key",
+        "browser_refresh_page",
+        "browser_resize_window",
+        "browser_scroll",
+        "browser_scroll_dom",
+        "browser_select_option",
+        "browser_subagent",
+        "call_mcp_tool",
+        "capture_browser_console_logs",
+        "capture_browser_screenshot",
+        "click_browser_pixel",
+        "command_status",
+        "define_subagent",
+        "delete_knowledge",
+        "execute_browser_javascript",
+        "find_by_name",
+        "finish",
+        "generate_image",
+        "grep_search",
+        "invoke_subagent",
+        "list_browser_pages",
+        "list_dir",
+        "list_permissions",
+        "list_plugin_accounts",
+        "list_resources",
+        "manage_inbox",
+        "manage_subagents",
+        "manage_task",
+        "multi_replace_file_content",
+        "notebook_edit",
+        "notebook_execution",
+        "open_browser_url",
+        "read_browser_page",
+        "read_resource",
+        "read_url_content",
+        "replace_file_content",
+        "run_command",
+        "run_workflow",
+        "schedule",
+        "search_marketplace",
+        "search_web",
+        "sed_file",
+        "send_command_input",
+        "send_message",
+        "view_file",
+        "wait",
+        "wait_5_seconds",
+        "write_to_file"
+      ],
+      "observed_tools": [],
+      "event_types": [
+        "init",
+        "result",
+        "step_update"
+      ],
+      "stderr_permission_notice": false,
+      "unique_artifact_hashes": [],
+      "artifact_metadata": []
+    },
+    {
+      "case": "antigravity-image-generate-primary",
+      "agent": "antigravity",
+      "task": "image-generate-primary",
+      "started_at": "2026-10-15T07:23:19Z",
+      "duration_seconds": 1.032,
+      "cli_exit": 1,
+      "watchdog_timeout": false,
+      "run_id": "run-20261015T072319Z-d48d7900",
+      "status": "failed",
+      "exit_code": 1,
+      "parse_status": "parse_error",
+      "error_kind": "process_failed",
+      "error": "native process exited with code 1",
+      "available_tools": [],
+      "observed_tools": [],
+      "event_types": [
+        "result"
+      ],
+      "stderr_permission_notice": false,
+      "unique_artifact_hashes": [],
+      "artifact_metadata": [],
+      "diagnostic": "unknown agent; no custom agents are available"
+    },
+    {
+      "case": "antigravity-music-edit",
+      "agent": "antigravity",
+      "task": "music-edit",
+      "started_at": "2026-10-15T07:21:21Z",
+      "duration_seconds": 22.287,
+      "cli_exit": 0,
+      "watchdog_timeout": false,
+      "run_id": "run-20261015T072121Z-f65c31ba",
+      "status": "success",
+      "exit_code": 0,
+      "parse_status": "complete",
+      "error_kind": null,
+      "error": null,
+      "available_tools": [
+        "ask_custom_permission",
+        "ask_permission",
+        "ask_question",
+        "browser_click_element",
+        "browser_drag_pixel_to_pixel",
+        "browser_get_dom",
+        "browser_get_network_request",
+        "browser_input",
+        "browser_list_network_requests",
+        "browser_mouse_down",
+        "browser_mouse_up",
+        "browser_move_mouse",
+        "browser_press_key",
+        "browser_refresh_page",
+        "browser_resize_window",
+        "browser_scroll",
+        "browser_scroll_dom",
+        "browser_select_option",
+        "browser_subagent",
+        "call_mcp_tool",
+        "capture_browser_console_logs",
+        "capture_browser_screenshot",
+        "click_browser_pixel",
+        "command_status",
+        "define_subagent",
+        "delete_knowledge",
+        "execute_browser_javascript",
+        "find_by_name",
+        "finish",
+        "generate_image",
+        "grep_search",
+        "invoke_subagent",
+        "list_browser_pages",
+        "list_dir",
+        "list_permissions",
+        "list_plugin_accounts",
+        "list_resources",
+        "manage_inbox",
+        "manage_subagents",
+        "manage_task",
+        "multi_replace_file_content",
+        "notebook_edit",
+        "notebook_execution",
+        "open_browser_url",
+        "read_browser_page",
+        "read_resource",
+        "read_url_content",
+        "replace_file_content",
+        "run_command",
+        "run_workflow",
+        "schedule",
+        "search_marketplace",
+        "search_web",
+        "sed_file",
+        "send_command_input",
+        "send_message",
+        "view_file",
+        "wait",
+        "wait_5_seconds",
+        "write_to_file"
+      ],
+      "observed_tools": [
+        "run_command"
+      ],
+      "event_types": [
+        "init",
+        "result",
+        "step_update"
+      ],
+      "input_origin": "procedural_fixture",
+      "input_unchanged": true,
+      "stderr_permission_notice": false,
+      "unique_artifact_hashes": [
+        "039cdc60e9d786dd1d19218d9d6a9e2a53b4dc87a80aba2872646cc423be6bd3"
+      ],
+      "artifact_metadata": [
+        {
+          "bytes": 441078,
+          "sha256": "039cdc60e9d786dd1d19218d9d6a9e2a53b4dc87a80aba2872646cc423be6bd3",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "pcm_s16le",
+                "codec_type": "audio",
+                "sample_rate": "44100",
+                "channels": 1
+              }
+            ],
+            "format": {
+              "format_name": "wav",
+              "duration": "5.000000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case": "antigravity-music-generate",
+      "agent": "antigravity",
+      "task": "music-generate",
+      "started_at": "2026-10-15T07:17:49Z",
+      "duration_seconds": 14.652,
+      "cli_exit": 1,
+      "watchdog_timeout": false,
+      "run_id": "run-20261015T071749Z-6aa2c552",
+      "status": "failed",
+      "exit_code": 0,
+      "parse_status": "complete",
+      "error_kind": "process_failed",
+      "error": "antigravity: headless tool permission was auto-denied; configure a targeted native permissions.allow rule before retrying",
+      "available_tools": [
+        "ask_custom_permission",
+        "ask_permission",
+        "ask_question",
+        "browser_click_element",
+        "browser_drag_pixel_to_pixel",
+        "browser_get_dom",
+        "browser_get_network_request",
+        "browser_input",
+        "browser_list_network_requests",
+        "browser_mouse_down",
+        "browser_mouse_up",
+        "browser_move_mouse",
+        "browser_press_key",
+        "browser_refresh_page",
+        "browser_resize_window",
+        "browser_scroll",
+        "browser_scroll_dom",
+        "browser_select_option",
+        "browser_subagent",
+        "call_mcp_tool",
+        "capture_browser_console_logs",
+        "capture_browser_screenshot",
+        "click_browser_pixel",
+        "command_status",
+        "define_subagent",
+        "delete_knowledge",
+        "execute_browser_javascript",
+        "find_by_name",
+        "finish",
+        "generate_image",
+        "grep_search",
+        "invoke_subagent",
+        "list_browser_pages",
+        "list_dir",
+        "list_permissions",
+        "list_plugin_accounts",
+        "list_resources",
+        "manage_inbox",
+        "manage_subagents",
+        "manage_task",
+        "multi_replace_file_content",
+        "notebook_edit",
+        "notebook_execution",
+        "open_browser_url",
+        "read_browser_page",
+        "read_resource",
+        "read_url_content",
+        "replace_file_content",
+        "run_command",
+        "run_workflow",
+        "schedule",
+        "search_marketplace",
+        "search_web",
+        "sed_file",
+        "send_command_input",
+        "send_message",
+        "view_file",
+        "wait",
+        "wait_5_seconds",
+        "write_to_file"
+      ],
+      "observed_tools": [
+        "run_command"
+      ],
+      "event_types": [
+        "init",
+        "result",
+        "step_update"
+      ],
+      "stderr_permission_notice": true,
+      "unique_artifact_hashes": [],
+      "artifact_metadata": []
+    },
+    {
+      "case": "antigravity-music-generate-primary",
+      "agent": "antigravity",
+      "task": "music-generate-primary",
+      "started_at": "2026-10-15T07:23:21Z",
+      "duration_seconds": 0.868,
+      "cli_exit": 1,
+      "watchdog_timeout": false,
+      "run_id": "run-20261015T072321Z-6dd2f0ff",
+      "status": "failed",
+      "exit_code": 1,
+      "parse_status": "parse_error",
+      "error_kind": "process_failed",
+      "error": "native process exited with code 1",
+      "available_tools": [],
+      "observed_tools": [],
+      "event_types": [
+        "result"
+      ],
+      "stderr_permission_notice": false,
+      "unique_artifact_hashes": [],
+      "artifact_metadata": [],
+      "diagnostic": "unknown agent; no custom agents are available"
+    },
+    {
+      "case": "antigravity-video-edit",
+      "agent": "antigravity",
+      "task": "video-edit",
+      "started_at": "2026-10-15T07:20:53Z",
+      "duration_seconds": 27.864,
+      "cli_exit": 0,
+      "watchdog_timeout": false,
+      "run_id": "run-20261015T072053Z-4322a6c1",
+      "status": "success",
+      "exit_code": 0,
+      "parse_status": "complete",
+      "error_kind": null,
+      "error": null,
+      "available_tools": [
+        "ask_custom_permission",
+        "ask_permission",
+        "ask_question",
+        "browser_click_element",
+        "browser_drag_pixel_to_pixel",
+        "browser_get_dom",
+        "browser_get_network_request",
+        "browser_input",
+        "browser_list_network_requests",
+        "browser_mouse_down",
+        "browser_mouse_up",
+        "browser_move_mouse",
+        "browser_press_key",
+        "browser_refresh_page",
+        "browser_resize_window",
+        "browser_scroll",
+        "browser_scroll_dom",
+        "browser_select_option",
+        "browser_subagent",
+        "call_mcp_tool",
+        "capture_browser_console_logs",
+        "capture_browser_screenshot",
+        "click_browser_pixel",
+        "command_status",
+        "define_subagent",
+        "delete_knowledge",
+        "execute_browser_javascript",
+        "find_by_name",
+        "finish",
+        "generate_image",
+        "grep_search",
+        "invoke_subagent",
+        "list_browser_pages",
+        "list_dir",
+        "list_permissions",
+        "list_plugin_accounts",
+        "list_resources",
+        "manage_inbox",
+        "manage_subagents",
+        "manage_task",
+        "multi_replace_file_content",
+        "notebook_edit",
+        "notebook_execution",
+        "open_browser_url",
+        "read_browser_page",
+        "read_resource",
+        "read_url_content",
+        "replace_file_content",
+        "run_command",
+        "run_workflow",
+        "schedule",
+        "search_marketplace",
+        "search_web",
+        "sed_file",
+        "send_command_input",
+        "send_message",
+        "view_file",
+        "wait",
+        "wait_5_seconds",
+        "write_to_file"
+      ],
+      "observed_tools": [
+        "run_command",
+        "view_file"
+      ],
+      "event_types": [
+        "init",
+        "result",
+        "step_update"
+      ],
+      "input_origin": "procedural_fixture",
+      "input_unchanged": true,
+      "stderr_permission_notice": false,
+      "unique_artifact_hashes": [
+        "4be6eb39ee6caaaf8b8a39cceb17352ca2e6e9427c46fe046953b4308099bdf5"
+      ],
+      "artifact_metadata": [
+        {
+          "bytes": 101345,
+          "sha256": "4be6eb39ee6caaaf8b8a39cceb17352ca2e6e9427c46fe046953b4308099bdf5",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "codec_type": "video",
+                "width": 320,
+                "height": 240
+              }
+            ],
+            "format": {
+              "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+              "duration": "3.000000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case": "antigravity-video-generate",
+      "agent": "antigravity",
+      "task": "video-generate",
+      "started_at": "2026-10-15T07:17:23Z",
+      "duration_seconds": 25.975,
+      "cli_exit": 1,
+      "watchdog_timeout": false,
+      "run_id": "run-20261015T071723Z-05763e66",
+      "status": "failed",
+      "exit_code": 0,
+      "parse_status": "complete",
+      "error_kind": "process_failed",
+      "error": "antigravity: headless tool permission was auto-denied; configure a targeted native permissions.allow rule before retrying",
+      "available_tools": [
+        "ask_custom_permission",
+        "ask_permission",
+        "ask_question",
+        "browser_click_element",
+        "browser_drag_pixel_to_pixel",
+        "browser_get_dom",
+        "browser_get_network_request",
+        "browser_input",
+        "browser_list_network_requests",
+        "browser_mouse_down",
+        "browser_mouse_up",
+        "browser_move_mouse",
+        "browser_press_key",
+        "browser_refresh_page",
+        "browser_resize_window",
+        "browser_scroll",
+        "browser_scroll_dom",
+        "browser_select_option",
+        "browser_subagent",
+        "call_mcp_tool",
+        "capture_browser_console_logs",
+        "capture_browser_screenshot",
+        "click_browser_pixel",
+        "command_status",
+        "define_subagent",
+        "delete_knowledge",
+        "execute_browser_javascript",
+        "find_by_name",
+        "finish",
+        "generate_image",
+        "grep_search",
+        "invoke_subagent",
+        "list_browser_pages",
+        "list_dir",
+        "list_permissions",
+        "list_plugin_accounts",
+        "list_resources",
+        "manage_inbox",
+        "manage_subagents",
+        "manage_task",
+        "multi_replace_file_content",
+        "notebook_edit",
+        "notebook_execution",
+        "open_browser_url",
+        "read_browser_page",
+        "read_resource",
+        "read_url_content",
+        "replace_file_content",
+        "run_command",
+        "run_workflow",
+        "schedule",
+        "search_marketplace",
+        "search_web",
+        "sed_file",
+        "send_command_input",
+        "send_message",
+        "view_file",
+        "wait",
+        "wait_5_seconds",
+        "write_to_file"
+      ],
+      "observed_tools": [
+        "run_command",
+        "view_file"
+      ],
+      "event_types": [
+        "init",
+        "result",
+        "step_update"
+      ],
+      "stderr_permission_notice": true,
+      "unique_artifact_hashes": [],
+      "artifact_metadata": []
+    },
+    {
+      "case": "antigravity-video-generate-primary",
+      "agent": "antigravity",
+      "task": "video-generate-primary",
+      "started_at": "2026-10-15T07:23:20Z",
+      "duration_seconds": 0.92,
+      "cli_exit": 1,
+      "watchdog_timeout": false,
+      "run_id": "run-20261015T072320Z-08cba18e",
+      "status": "failed",
+      "exit_code": 1,
+      "parse_status": "parse_error",
+      "error_kind": "process_failed",
+      "error": "native process exited with code 1",
+      "available_tools": [],
+      "observed_tools": [],
+      "event_types": [
+        "result"
+      ],
+      "stderr_permission_notice": false,
+      "unique_artifact_hashes": [],
+      "artifact_metadata": [],
+      "diagnostic": "unknown agent; no custom agents are available"
+    },
+    {
+      "case": "codex-image-edit",
+      "agent": "codex",
+      "task": "image-edit",
+      "started_at": "2026-10-15T07:12:52Z",
+      "duration_seconds": 64.738,
+      "cli_exit": 0,
+      "watchdog_timeout": false,
+      "run_id": "run-20261015T071252Z-fbd2db17",
+      "status": "success",
+      "exit_code": 0,
+      "parse_status": "complete",
+      "error_kind": null,
+      "error": null,
+      "available_tools": [],
+      "observed_tools": [
+        "command_execution"
+      ],
+      "event_types": [
+        "item.completed",
+        "item.started",
+        "thread.started",
+        "turn.completed",
+        "turn.started"
+      ],
+      "input_origin": "prior_generation",
+      "input_unchanged": true,
+      "stderr_permission_notice": false,
+      "unique_artifact_hashes": [
+        "245d0fc314748e7cbce8f5860dd341c5ece6717888bc61469ef434190567342c"
+      ],
+      "artifact_metadata": [
+        {
+          "bytes": 1887101,
+          "sha256": "245d0fc314748e7cbce8f5860dd341c5ece6717888bc61469ef434190567342c",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "png",
+                "codec_type": "video",
+                "width": 1254,
+                "height": 1254
+              }
+            ],
+            "format": {
+              "format_name": "png_pipe"
+            }
+          }
+        },
+        {
+          "bytes": 1887101,
+          "sha256": "245d0fc314748e7cbce8f5860dd341c5ece6717888bc61469ef434190567342c",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "png",
+                "codec_type": "video",
+                "width": 1254,
+                "height": 1254
+              }
+            ],
+            "format": {
+              "format_name": "png_pipe"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case": "codex-image-generate",
+      "agent": "codex",
+      "task": "image-generate",
+      "started_at": "2026-10-15T07:10:03Z",
+      "duration_seconds": 60.309,
+      "cli_exit": 0,
+      "watchdog_timeout": false,
+      "run_id": "run-20261015T071003Z-58014cfb",
+      "status": "success",
+      "exit_code": 0,
+      "parse_status": "complete",
+      "error_kind": null,
+      "error": null,
+      "available_tools": [],
+      "observed_tools": [
+        "command_execution"
+      ],
+      "event_types": [
+        "item.completed",
+        "item.started",
+        "thread.started",
+        "turn.completed",
+        "turn.started"
+      ],
+      "stderr_permission_notice": false,
+      "unique_artifact_hashes": [
+        "05a6cb7115f7621c500f358f009a1334080b0430bf53e01c940927f3fef55277"
+      ],
+      "artifact_metadata": [
+        {
+          "bytes": 1669453,
+          "sha256": "05a6cb7115f7621c500f358f009a1334080b0430bf53e01c940927f3fef55277",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "png",
+                "codec_type": "video",
+                "width": 1254,
+                "height": 1254
+              }
+            ],
+            "format": {
+              "format_name": "png_pipe"
+            }
+          }
+        },
+        {
+          "bytes": 1669453,
+          "sha256": "05a6cb7115f7621c500f358f009a1334080b0430bf53e01c940927f3fef55277",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "png",
+                "codec_type": "video",
+                "width": 1254,
+                "height": 1254
+              }
+            ],
+            "format": {
+              "format_name": "png_pipe"
+            }
+          }
+        },
+        {
+          "bytes": 1669453,
+          "sha256": "05a6cb7115f7621c500f358f009a1334080b0430bf53e01c940927f3fef55277",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "png",
+                "codec_type": "video",
+                "width": 1254,
+                "height": 1254
+              }
+            ],
+            "format": {
+              "format_name": "png_pipe"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case": "cursor-image-edit",
+      "agent": "cursor",
+      "task": "image-edit",
+      "started_at": "2026-10-15T07:12:52Z",
+      "duration_seconds": 51.059,
+      "cli_exit": 0,
+      "watchdog_timeout": false,
+      "run_id": "run-20261015T071252Z-38fee0a4",
+      "status": "success",
+      "exit_code": 0,
+      "parse_status": "complete",
+      "error_kind": null,
+      "error": null,
+      "available_tools": [],
+      "observed_tools": [
+        "GenerateImage",
+        "completedAtMs",
+        "file",
+        "generateImageToolCall",
+        "getMcpToolsToolCall",
+        "hookAdditionalContexts",
+        "readToolCall",
+        "shellToolCall",
+        "startedAtMs",
+        "toolCallId"
+      ],
+      "event_types": [
+        "assistant",
+        "result",
+        "system",
+        "thinking",
+        "tool_call",
+        "user"
+      ],
+      "input_origin": "prior_generation",
+      "input_unchanged": true,
+      "stderr_permission_notice": false,
+      "unique_artifact_hashes": [
+        "4a631ec901ba5dd66f5aa9b6f34f25f551aa166097c63d92873aa69d7cb74db7",
+        "a982c78d36c61b02b297748f8dec5452fc13d11cd3a5b51f2f122a525d24d579"
+      ],
+      "artifact_metadata": [
+        {
+          "bytes": 794513,
+          "sha256": "4a631ec901ba5dd66f5aa9b6f34f25f551aa166097c63d92873aa69d7cb74db7",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "png",
+                "codec_type": "video",
+                "width": 1024,
+                "height": 1024
+              }
+            ],
+            "format": {
+              "format_name": "png_pipe"
+            }
+          }
+        },
+        {
+          "bytes": 216120,
+          "sha256": "a982c78d36c61b02b297748f8dec5452fc13d11cd3a5b51f2f122a525d24d579",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "mjpeg",
+                "codec_type": "video",
+                "width": 1024,
+                "height": 1024
+              }
+            ],
+            "format": {
+              "format_name": "image2",
+              "duration": "0.040000"
+            }
+          }
+        }
+      ],
+      "observed_models": [
+        "Auto"
+      ],
+      "observed_image_tool_call_ids_count": 1
+    },
+    {
+      "case": "cursor-image-generate",
+      "agent": "cursor",
+      "task": "image-generate",
+      "started_at": "2026-10-15T07:10:03Z",
+      "duration_seconds": 60.733,
+      "cli_exit": 0,
+      "watchdog_timeout": false,
+      "run_id": "run-20261015T071003Z-a6cbf341",
+      "status": "success",
+      "exit_code": 0,
+      "parse_status": "complete",
+      "error_kind": null,
+      "error": null,
+      "available_tools": [],
+      "observed_tools": [
+        "GenerateImage",
+        "completedAtMs",
+        "file",
+        "generateImageToolCall",
+        "getMcpToolsToolCall",
+        "hookAdditionalContexts",
+        "shellToolCall",
+        "startedAtMs",
+        "toolCallId"
+      ],
+      "event_types": [
+        "assistant",
+        "result",
+        "system",
+        "thinking",
+        "tool_call",
+        "user"
+      ],
+      "stderr_permission_notice": false,
+      "unique_artifact_hashes": [
+        "e773a7780029b8d0fb745a2486cec44a3f61c04a894877129d7222ea433adf12"
+      ],
+      "artifact_metadata": [
+        {
+          "bytes": 220259,
+          "sha256": "e773a7780029b8d0fb745a2486cec44a3f61c04a894877129d7222ea433adf12",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "mjpeg",
+                "codec_type": "video",
+                "width": 1024,
+                "height": 1024
+              }
+            ],
+            "format": {
+              "format_name": "image2",
+              "duration": "0.040000"
+            }
+          }
+        }
+      ],
+      "observed_models": [
+        "Auto"
+      ],
+      "observed_image_tool_call_ids_count": 1
+    }
+  ],
+  "codex_native_tool_provenance": {
+    "codex-image-generate": {
+      "native_rollout_call_evidence": [
+        {
+          "name": "exec",
+          "calls_builtin_imagegen": true
+        }
+      ]
+    },
+    "codex-image-edit": {
+      "native_rollout_call_evidence": [
+        {
+          "name": "exec",
+          "calls_builtin_imagegen": true
+        }
+      ]
+    }
+  },
+  "acceptance_policy_update": {
+    "source": "explicit user clarification",
+    "cursor_image_generation": "accept native format; PNG not required",
+    "cursor_image_generation_verdict": "passed: native JPEG decoded and visually reviewed",
+    "historical_png_conversion": "rejected; raw records preserved"
+  },
+  "first_round_headless_process_invocations": 14,
+  "followup_calls": [
+    {
+      "case": "antigravity-image-authorized-generate",
+      "agent": "antigravity",
+      "task": "image-authorized-generate",
+      "started_at": "2026-10-15T07:44:11Z",
+      "duration_seconds": 111.151,
+      "cli_exit": 0,
+      "run_id": "run-20261015T074411Z-beef1a98",
+      "status": "success",
+      "exit_code": 0,
+      "parse_status": "complete",
+      "error_kind": null,
+      "error": null,
+      "stderr_permission_notice": false,
+      "artifacts": [
+        {
+          "bytes": 568160,
+          "sha256": "b9f96fc78bb73e8f3627d3d250386e688ebceebc72368b95570a5fb920e578ed",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "mjpeg",
+                "codec_type": "video",
+                "width": 1024,
+                "height": 1024
+              }
+            ],
+            "format": {
+              "format_name": "image2",
+              "duration": "0.040000"
+            }
+          }
+        }
+      ],
+      "model": "Gemini 3.8 Flash (High)",
+      "native_denied_action_types": []
+    },
+    {
+      "case": "antigravity-image-authorized-edit",
+      "agent": "antigravity",
+      "task": "image-authorized-edit",
+      "started_at": "2026-10-15T08:08:26Z",
+      "duration_seconds": 92.357,
+      "cli_exit": 0,
+      "run_id": "run-20261015T080826Z-af4a078b",
+      "status": "success",
+      "exit_code": 0,
+      "parse_status": "complete",
+      "error_kind": null,
+      "error": null,
+      "input_origin": "prior_generation",
+      "input_unchanged": true,
+      "stderr_permission_notice": false,
+      "artifacts": [
+        {
+          "bytes": 542102,
+          "sha256": "ebeab0e60043f9379ef47128e23fd0f24079841138fb891782b1c96eefefbd0b",
+          "probe": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "mjpeg",
+                "codec_type": "video",
+                "width": 1024,
+                "height": 1024
+              }
+            ],
+            "format": {
+              "format_name": "image2",
+              "duration": "0.040000"
+            }
+          }
+        }
+      ],
+      "model": "Gemini 3.8 Flash (High)",
+      "native_denied_action_types": [
+        "command"
+      ]
+    },
+    {
+      "case": "antigravity-video-authorized-generate",
+      "agent": "antigravity",
+      "task": "video-authorized-generate",
+      "started_at": "2026-10-15T07:46:02Z",
+      "duration_seconds": 27.947,
+      "cli_exit": 0,
+      "run_id": "run-20261015T074602Z-93fbcdba",
+      "status": "success",
+      "exit_code": 0,
+      "parse_status": "complete",
+      "error_kind": null,
+      "error": null,
+      "stderr_permission_notice": false,
+      "artifacts": [],
+      "model": "Gemini 3.8 Flash (High)",
+      "native_denied_action_types": []
+    },
+    {
+      "case": "antigravity-music-authorized-generate",
+      "agent": "antigravity",
+      "task": "music-authorized-generate",
+      "started_at": "2026-10-15T07:46:30Z",
+      "duration_seconds": 24.254,
+      "cli_exit": 0,
+      "run_id": "run-20261015T074630Z-93a61029",
+      "status": "success",
+      "exit_code": 0,
+      "parse_status": "complete",
+      "error_kind": null,
+      "error": null,
+      "stderr_permission_notice": false,
+      "artifacts": [],
+      "model": "Gemini 3.8 Flash (High)",
+      "native_denied_action_types": []
+    }
+  ],
+  "native_subagent_evidence": [
+    {
+      "case": "antigravity-image-authorized-generate",
+      "state": "DONE",
+      "type_name": "image-generator",
+      "observed_child_tools": [
+        "generate_image",
+        "send_message"
+      ]
+    },
+    {
+      "case": "antigravity-image-authorized-edit",
+      "state": "DONE",
+      "type_name": "image-generator",
+      "observed_child_tools": [
+        "generate_image",
+        "send_message",
+        "view_file"
+      ]
+    },
+    {
+      "case": "antigravity-video-authorized-generate",
+      "state": "ERROR",
+      "type_name": "video-generator"
+    }
+  ],
+  "delivery_resume": {
+    "cli_exit": 0,
+    "duration_seconds": 22.739,
+    "run_id": "run-20261015T081825Z-9f60b192",
+    "status": "success",
+    "exit_code": 0,
+    "parse_status": "complete",
+    "error_kind": null,
+    "error": null,
+    "target_exists": true,
+    "target_matches_generated": true,
+    "native_source_unchanged": true,
+    "answer_contains_target": true,
+    "observed_tools": [
+      "run_command"
+    ],
+    "regenerated_media": false
+  },
+  "denied_actions_replay": {
+    "kind": "offline replay of real captured stream",
+    "native_model_calls": 0,
+    "cli_exit": 1,
+    "status": "failed",
+    "exit_code": 0,
+    "parse_status": "complete",
+    "error_kind": "process_failed",
+    "error": "antigravity: native result reported denied tool permissions; allow the required operation before retrying",
+    "answer_preserved": true
+  },
+  "final_binary_sha256": "ae5475632906a19676f276a10b808e62cf853989031a38050d9142a4a5a13f21",
+  "temporary_copy_rule_removed": true,
+  "remaining_blockers": {
+    "video": "native invoke_subagent returned video-generator not found or not allowed; no video generated",
+    "music": "current session exposes no music-generation tool or subagent; no music generated",
+    "required_input": "none for current phase; user deferred video and music research"
+  },
+  "provider_preflight": {
+    "native_command": "agy mcp list",
+    "native_exit": 0,
+    "native_output": "No MCP servers configured.",
+    "generation_provider_environment_entry_present": false,
+    "credentials_read_or_printed": false,
+    "note": "Historical read-only check; no inference about credentials elsewhere. User subsequently deferred research; no credentials requested for current phase."
+  },
+  "validation": {
+    "go_test_race_all": "passed",
+    "go_vet_all": "passed",
+    "real_denied_actions_replay": "passed",
+    "delivery_resume_without_regeneration": "passed",
+    "temporary_copy_permission_removed": true
+  },
+  "research_disposition": {
+    "date": "2026-10-15",
+    "video_and_music": "deferred_by_user",
+    "user_report": "User researched Google Pro subscription and reports no direct video/music generation capability in Antigravity CLI.",
+    "evidence_boundary": "Observed current video subagent unavailable and no music-generation interface; subscription-wide claim supplied by user.",
+    "scope": "Pause video/music generation, semantic editing and external provider integration; preserve historical basic-edit evidence.",
+    "next_phase": "R1 Task entry, explicit single-CLI execution and automatic collaboration"
+  }
+}

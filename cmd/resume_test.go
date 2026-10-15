@@ -178,7 +178,8 @@ func TestResumeWorkflowStepRecordsParentAndCwdOverride(t *testing.T) {
 	script := filepath.Join(directory, "fake-gemini")
 	scriptData := "#!/bin/sh\n" +
 		"printf '%s\\n' '{\"type\":\"init\",\"session_id\":\"workflow-new-session\"}'\n" +
-		"printf '%s\\n' '{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"workflow continued\"}'\n"
+		"printf '%s\\n' '{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"workflow continued\"}'\n" +
+		"printf '%s\\n' '{\"type\":\"result\",\"status\":\"success\"}'\n"
 	if err := os.WriteFile(script, []byte(scriptData), 0o700); err != nil {
 		t.Fatal(err)
 	}
@@ -252,7 +253,7 @@ func TestResolveResumeTargetFromWorkflowAndNativeID(t *testing.T) {
 	}
 	want := resumeTarget{
 		Agent: "claude", SessionID: "claude-session", Cwd: directory,
-		ResumedFrom: workflowRecord.ID, ResumedStep: "review",
+		ResumedFrom: workflowRecord.ID, ResumedStep: "review", CwdFallback: true,
 	}
 	if !reflect.DeepEqual(target, want) {
 		t.Fatalf("target = %#v, want %#v", target, want)
