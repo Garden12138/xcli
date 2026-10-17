@@ -1,0 +1,64 @@
+{
+  "kind": "native_acceptance_summary",
+  "calls": 52,
+  "authorized_limit": 60,
+  "final_binary_sha256": "29ffa9a5f381cc8d54aaeddc8be6b60811c7aae0c95566e341e0d67e7e82fcc2",
+  "whole_r1_acceptance": "passed",
+  "budget_extension_to_40": "approved_by_user_2026-10-16",
+  "batches": [
+    {
+      "evidence": "native-20261016.json",
+      "calls": 14,
+      "acceptance": "failed"
+    },
+    {
+      "evidence": "native-work-fixed-20261016.json",
+      "calls": 2,
+      "acceptance": "failed"
+    },
+    {
+      "evidence": "native-final-partial-20261016.json",
+      "calls": 6,
+      "acceptance": "failed"
+    },
+    {
+      "evidence": "cursor-final-message-smoke.json",
+      "calls": 1,
+      "acceptance": "failed"
+    },
+    {
+      "evidence": "cursor-final-message-smoke-final.json",
+      "calls": 1,
+      "acceptance": "passed"
+    },
+    {
+      "evidence": "native-final-20261016.json",
+      "calls": 7,
+      "acceptance": "failed"
+    },
+    {
+      "evidence": "native-work-low-20261016.json",
+      "calls": 5,
+      "acceptance": "failed"
+    },
+    {
+      "evidence": "native-reconnect-work-single-20261016.json",
+      "calls": 3,
+      "acceptance": "passed"
+    },
+    {
+      "evidence": "native-reconnect-remaining-20261016.json",
+      "calls": 13,
+      "acceptance": "passed"
+    }
+  ],
+  "final_cursor_role_protocol_smoke": "passed",
+  "final_four_task_paths": {
+    "work-single": "passed",
+    "work-auto": "passed",
+    "project-single": "passed",
+    "project-auto": "passed"
+  },
+  "budget_extension_to_60": "approved_by_user_2026-10-16",
+  "final_four_task_evidence": "final-four-paths.json"
+}

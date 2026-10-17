@@ -1,0 +1,160 @@
+{
+  "kind": "real",
+  "date": "2026-10-16T04:27:48Z",
+  "binary_sha256": "645cc8d31de242ecbaefa52844157e5b23e569ba5cab109c4310bb526bea2c7f",
+  "platform": "macOS-26.5.1-arm64-arm-64bit",
+  "max_calls": 8,
+  "calls": 6,
+  "tasks": [
+    {
+      "case": "work-single",
+      "status": "completed",
+      "id": "task-20261016T042749Z-a074d602",
+      "exit_code": 0,
+      "calls": 3,
+      "repairs": 0,
+      "mode": "single",
+      "kind": "work",
+      "elapsed_seconds": 163.865,
+      "cli_exit_code": 0,
+      "reason": "Current artifacts, validation and review satisfy the declared acceptance; user acceptance is separate.",
+      "roles": [
+        {
+          "role": "coordinator",
+          "agent": "codex",
+          "run_id": "run-20261016T042749Z-2228dd55",
+          "snapshot": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        {
+          "role": "worker",
+          "agent": "codex",
+          "run_id": "run-20261016T042822Z-d84cf858",
+          "snapshot": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        {
+          "role": "reviewer",
+          "agent": "codex",
+          "run_id": "run-20261016T042924Z-1cc86ed2",
+          "snapshot": "dfa6815dfd176a4f67f7a29e3e8e4f962c188989bfe5bfbe4342af1caf34e04b"
+        }
+      ],
+      "checks": [
+        {
+          "kind": "artifact",
+          "argv": null,
+          "status": "passed",
+          "exit_code": 0,
+          "snapshot": "dfa6815dfd176a4f67f7a29e3e8e4f962c188989bfe5bfbe4342af1caf34e04b"
+        }
+      ],
+      "reviews": [
+        {
+          "kind": "self_check",
+          "passed": true,
+          "snapshot": "dfa6815dfd176a4f67f7a29e3e8e4f962c188989bfe5bfbe4342af1caf34e04b",
+          "findings": []
+        }
+      ],
+      "artifacts": [
+        {
+          "name": "report.md",
+          "sha256": "2bc7f3ba565f863452327a68a41b2d677a3aa8c78767045fc39d4d10707b858b"
+        }
+      ],
+      "mode_constraint_passed": true,
+      "acceptance": "passed"
+    },
+    {
+      "case": "project-auto",
+      "status": "failed",
+      "id": "task-20261016T043033Z-957f2239",
+      "exit_code": 1,
+      "calls": 3,
+      "repairs": 0,
+      "mode": "auto",
+      "kind": "project",
+      "elapsed_seconds": 147.431,
+      "cli_exit_code": 1,
+      "reason": "invalid task protocol: invalid character '\u00e6' looking for beginning of value",
+      "roles": [
+        {
+          "role": "coordinator",
+          "agent": "codex",
+          "run_id": "run-20261016T043033Z-d1b90ae8",
+          "snapshot": "70765a7641b4896c871cb98a7a3836707958949e584047dbf2fb45efce4b045c"
+        },
+        {
+          "role": "worker",
+          "agent": "codex",
+          "run_id": "run-20261016T043126Z-ea5c4f10",
+          "snapshot": "70765a7641b4896c871cb98a7a3836707958949e584047dbf2fb45efce4b045c"
+        },
+        {
+          "role": "verifier",
+          "agent": null,
+          "run_id": "run-20261016T043211Z-f408f48e",
+          "snapshot": "16aaae88065198cfcf639ea9c09b1dd4a2263698bb17bd147493ba733eec9192"
+        },
+        {
+          "role": "reviewer",
+          "agent": "cursor",
+          "run_id": "run-20261016T043214Z-c81cf8fe",
+          "snapshot": "16aaae88065198cfcf639ea9c09b1dd4a2263698bb17bd147493ba733eec9192"
+        }
+      ],
+      "checks": [
+        {
+          "kind": "artifact",
+          "argv": null,
+          "status": "passed",
+          "exit_code": 0,
+          "snapshot": "16aaae88065198cfcf639ea9c09b1dd4a2263698bb17bd147493ba733eec9192"
+        },
+        {
+          "kind": "command",
+          "argv": [
+            "go",
+            "test",
+            "-count=1",
+            "./..."
+          ],
+          "status": "failed",
+          "exit_code": 1,
+          "snapshot": "16aaae88065198cfcf639ea9c09b1dd4a2263698bb17bd147493ba733eec9192"
+        }
+      ],
+      "reviews": [],
+      "artifacts": [
+        {
+          "name": ".gitignore",
+          "sha256": "cdaa242a2b243b49a159f8d5639cfd726fbe17d63a6401c96eecccd6beb2f14c"
+        },
+        {
+          "name": "calc.go",
+          "sha256": "ecf5815eeb13cb073205d4ae1bdd822e4f965bbf216dba8f0c838e446b35c728"
+        },
+        {
+          "name": "calc_test.go",
+          "sha256": "3d4af6d14c628f6bfebd7dc67dbff810cc35110c6144f001de70ae02198549ad"
+        },
+        {
+          "name": "go.mod",
+          "sha256": "ea139e55943f172322541c8778a9241c1efd569de423ec96e152a12f980494c1"
+        }
+      ],
+      "mode_constraint_passed": true,
+      "original_unchanged": true,
+      "failure_then_repair": false,
+      "acceptance": "failed"
+    }
+  ],
+  "native_versions": {
+    "codex": "codex-cli 0.162.1",
+    "cursor": "2026.10.14-0f9edde"
+  },
+  "cases": [
+    "work-single",
+    "project-auto"
+  ],
+  "acceptance": "failed"
+}

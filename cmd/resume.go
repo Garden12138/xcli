@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/Garden12138/xcli/internal/agent"
-	"github.com/Garden12138/xcli/internal/routing"
 	"github.com/Garden12138/xcli/internal/runstore"
 	xruntime "github.com/Garden12138/xcli/internal/runtime"
 	"github.com/spf13/cobra"
@@ -93,7 +92,7 @@ func (a *app) newResumeCommand() *cobra.Command {
 
 			kind := "run"
 			prefix := "run"
-			selectionSource := routing.SourceResume
+			selectionSource := "resume"
 			if interactive {
 				kind = "use"
 				prefix = "use"

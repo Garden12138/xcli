@@ -1,0 +1,27 @@
+{
+  "kind": "native_stream_diagnostic",
+  "date": "2026-10-16T09:20:36Z",
+  "additional_native_calls": 0,
+  "source_batch": "native-work-low-20261016.json",
+  "run_id": "run-20261016T090455Z-4028a9b9",
+  "native_version": "codex-cli 0.162.1",
+  "private_stream_sha256": "5b592d861449e55cfb322b57bd7314ba08dea05f11fb85b5b0fcdb06b85b34da",
+  "selected_events": [
+    {
+      "type": "error",
+      "message": "Reconnecting... 2/5 (request timed out)"
+    },
+    {
+      "type": "error",
+      "message": "Reconnecting... 3/5 (request timed out)"
+    },
+    {
+      "type": "turn.completed"
+    }
+  ],
+  "native_exit_code": 0,
+  "old_result": "failed: retry notices classified as permanent failure",
+  "fix": "Recognize only well-formed pre-completion Reconnecting notices. Preserve notice counts. Require completion and zero native exit. Unknown errors and explicit failures remain fatal.",
+  "official_source": "https://github.com/openai/codex/blob/rust-v0.162.1/codex-rs/exec/src/event_processor_with_jsonl_output.rs",
+  "official_source_sha256": "bc296541b385f9b4ca2c28cc638e25a8d6b1332b2cd67f5a03eaa97a3d612b19"
+}

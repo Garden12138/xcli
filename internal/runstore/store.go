@@ -16,6 +16,9 @@ import (
 )
 
 type Record struct {
+	RetryNotices    int               `json:"retry_notices,omitempty"`
+	TaskID          string            `json:"task_id,omitempty"`
+	Role            string            `json:"role,omitempty"`
 	ParseStatus     string            `json:"parse_status,omitempty"`
 	ErrorKind       string            `json:"error_kind,omitempty"`
 	Error           string            `json:"error,omitempty"`
@@ -51,6 +54,7 @@ type Record struct {
 }
 
 type StepRecord struct {
+	RetryNotices int          `json:"retry_notices,omitempty"`
 	Cwd          string       `json:"cwd,omitempty"`
 	ParseStatus  string       `json:"parse_status,omitempty"`
 	ErrorKind    string       `json:"error_kind,omitempty"`

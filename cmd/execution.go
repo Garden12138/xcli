@@ -20,6 +20,7 @@ func openRawOutput(store *runstore.Store, id string, record bool) (*os.File, err
 }
 
 func applyResult(record *runstore.Record, result agent.RunResult) {
+	record.RetryNotices = result.RetryNotices
 	record.ExitCode = result.ExitCode
 	record.Status = result.Status
 	record.ParseStatus = result.ParseStatus

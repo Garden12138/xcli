@@ -17,7 +17,6 @@ import (
 	"github.com/Garden12138/xcli/internal/config"
 	"github.com/Garden12138/xcli/internal/jobs"
 	"github.com/Garden12138/xcli/internal/runstore"
-	usagepkg "github.com/Garden12138/xcli/internal/usage"
 )
 
 func TestBackgroundWorkerHelper(t *testing.T) {
@@ -152,113 +151,6 @@ func TestDetachedRunLifecycleLogsAndUsage(t *testing.T) {
 		t.Fatalf("unexpected jobs list: %#v", listed)
 	}
 
-	report, err := usagepkg.Build([]runstore.Record{record}, usagepkg.Options{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if report.Totals.Tasks != 1 || report.Totals.TrackedTasks != 0 {
-		t.Fatalf("unexpected usage report: %#v", report)
-	}
-}
-
-func TestDetachedWorkflowLifecycleStateAndPrivacy(t *testing.T) {
-	installDetachedTestHelper(t)
-	capturedArgs := captureDetachedArguments(t)
-	directory := t.TempDir()
-	script := filepath.Join(directory, "workflow-agent")
-	scriptData := "#!/bin/sh\n" +
-		"printf 'step started\\n' >&2\n" +
-		"sleep 0.25\n" +
-		"printf 'step output\\n'\n"
-	if err := os.WriteFile(script, []byte(scriptData), 0o700); err != nil {
-		t.Fatal(err)
-	}
-	configPath := filepath.Join(directory, "config.yaml")
-	cfg := config.Defaults()
-	cfg.Agents["worker"] = config.AgentConfig{
-		Adapter: "generic", Command: script, RunArgs: []string{"{{ prompt }}"}, Output: "text",
-	}
-	if err := config.Save(configPath, cfg); err != nil {
-		t.Fatal(err)
-	}
-	workflowPath := filepath.Join(directory, "workflow.yaml")
-	workflowData := "version: 1\n" +
-		"name: detached-test\n" +
-		"max_parallel: 2\n" +
-		"vars:\n  secret: default-value\n" +
-		"steps:\n" +
-		"  - id: first\n    agent: worker\n    prompt: 'first {{ vars.secret }}'\n" +
-		"  - id: second\n    agent: worker\n    prompt: 'second {{ vars.secret }}'\n"
-	if err := os.WriteFile(workflowPath, []byte(workflowData), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	setCommandEnvironment(t, "XDG_DATA_HOME", filepath.Join(directory, "data"))
-
-	const secret = "workflow-super-secret"
-	root := newRootCommand()
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	root.SetOut(&stdout)
-	root.SetErr(&stderr)
-	root.SetArgs([]string{
-		"--config", configPath, "workflow", "run", workflowPath,
-		"--detach", "--json", "--var", "secret=" + secret,
-	})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("detach workflow: %v (stderr: %s)", err, stderr.String())
-	}
-	var launched jobs.View
-	if err := json.Unmarshal(stdout.Bytes(), &launched); err != nil {
-		t.Fatalf("decode workflow launch %q: %v", stdout.String(), err)
-	}
-	if launched.Kind != "workflow" || launched.Workflow != "detached-test" || launched.MaxParallel != 2 || len(launched.Steps) != 2 {
-		t.Fatalf("unexpected workflow launch: %#v", launched)
-	}
-	if strings.Contains(strings.Join(*capturedArgs, " "), secret) || strings.Contains(strings.Join(*capturedArgs, " "), "first {{ vars.secret }}") {
-		t.Fatalf("workflow input leaked into worker argv: %#v", *capturedArgs)
-	}
-
-	store, err := newStore()
-	if err != nil {
-		t.Fatal(err)
-	}
-	waitForStepStatus(t, store, launched.ID, "running")
-	recordData, err := os.ReadFile(filepath.Join(store.Root(), launched.ID+".json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if strings.Contains(string(recordData), secret) || strings.Contains(string(recordData), "first {{ vars.secret }}") {
-		t.Fatalf("workflow input leaked into run record: %s", recordData)
-	}
-
-	root = newRootCommand()
-	stdout.Reset()
-	stderr.Reset()
-	root.SetOut(&stdout)
-	root.SetErr(&stderr)
-	root.SetArgs([]string{"jobs", "wait", launched.ID, "--json"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("wait workflow: %v (stderr: %s)", err, stderr.String())
-	}
-	var finished jobs.View
-	if err := json.Unmarshal(stdout.Bytes(), &finished); err != nil {
-		t.Fatal(err)
-	}
-	if finished.Status != "success" || finished.ExitCode == nil || *finished.ExitCode != 0 || len(finished.Steps) != 2 {
-		t.Fatalf("unexpected finished workflow: %#v", finished)
-	}
-	for _, step := range finished.Steps {
-		if step.Status != "success" || step.OutputFile != "" {
-			t.Fatalf("unexpected finished step: %#v", step)
-		}
-	}
-	logData, err := os.ReadFile(finished.LogFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(logData), "Workflow detached-test: success") || strings.Contains(string(logData), secret) {
-		t.Fatalf("unexpected workflow log: %q", logData)
-	}
 }
 
 func TestJobsWaitTimeoutAndFailedExitCode(t *testing.T) {
@@ -321,63 +213,6 @@ func TestJobsWaitTimeoutAndFailedExitCode(t *testing.T) {
 	err = root.Execute()
 	if !errors.As(err, &exitErr) || exitErr.Code != 7 || !strings.Contains(stdout.String(), "failed") {
 		t.Fatalf("failed wait = %q, %v", stdout.String(), err)
-	}
-}
-
-func TestDetachedWorkflowStopsRunningStepsAndSkipsPending(t *testing.T) {
-	installDetachedTestHelper(t)
-	directory := t.TempDir()
-	script := filepath.Join(directory, "slow-workflow-agent")
-	scriptData := "#!/bin/sh\n" +
-		"trap 'exit 130' TERM INT\n" +
-		"printf 'workflow step ready\\n' >&2\n" +
-		"while :; do sleep 1; done\n"
-	if err := os.WriteFile(script, []byte(scriptData), 0o700); err != nil {
-		t.Fatal(err)
-	}
-	configPath := filepath.Join(directory, "config.yaml")
-	cfg := config.Defaults()
-	cfg.Agents["slow"] = config.AgentConfig{Adapter: "generic", Command: script, RunArgs: []string{"{{ prompt }}"}}
-	if err := config.Save(configPath, cfg); err != nil {
-		t.Fatal(err)
-	}
-	workflowPath := filepath.Join(directory, "slow.yaml")
-	workflowData := "version: 1\nname: slow\nsteps:\n" +
-		"  - id: running\n    agent: slow\n    prompt: first\n" +
-		"  - id: pending\n    agent: slow\n    prompt: second\n"
-	if err := os.WriteFile(workflowPath, []byte(workflowData), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	setCommandEnvironment(t, "XDG_DATA_HOME", filepath.Join(directory, "data"))
-
-	root := newRootCommand()
-	var stdout bytes.Buffer
-	root.SetOut(&stdout)
-	root.SetErr(&bytes.Buffer{})
-	root.SetArgs([]string{"--config", configPath, "workflow", "run", workflowPath, "--detach", "--json"})
-	if err := root.Execute(); err != nil {
-		t.Fatal(err)
-	}
-	var launched jobs.View
-	if err := json.Unmarshal(stdout.Bytes(), &launched); err != nil {
-		t.Fatal(err)
-	}
-	waitForLog(t, launched.LogFile, "workflow step ready")
-
-	root = newRootCommand()
-	stdout.Reset()
-	root.SetOut(&stdout)
-	root.SetErr(&bytes.Buffer{})
-	root.SetArgs([]string{"jobs", "stop", launched.ID, "--timeout", "3s", "--json"})
-	if err := root.Execute(); err != nil {
-		t.Fatal(err)
-	}
-	var stopped jobs.View
-	if err := json.Unmarshal(stdout.Bytes(), &stopped); err != nil {
-		t.Fatal(err)
-	}
-	if stopped.Status != "canceled" || len(stopped.Steps) != 2 || stopped.Steps[0].Status != "canceled" || stopped.Steps[1].Status != "skipped" {
-		t.Fatalf("unexpected stopped workflow: %#v", stopped)
 	}
 }
 

@@ -1,0 +1,95 @@
+{
+  "kind": "final_four_path_acceptance",
+  "date": "2026-10-16T09:47:28Z",
+  "binary_sha256": "29ffa9a5f381cc8d54aaeddc8be6b60811c7aae0c95566e341e0d67e7e82fcc2",
+  "source_sha256": "fe7d5bca7c127d73bc2d826f6d7d6b6ecd6e653efdfc6916615d4b701dc25e8d",
+  "acceptance": "passed",
+  "cumulative_calls": 52,
+  "authorized_limit": 60,
+  "final_path_calls": 16,
+  "additional_native_calls_for_audit": 0,
+  "native_versions": {
+    "codex": "codex-cli 0.163.0",
+    "cursor": "2026.10.14-0f9edde"
+  },
+  "invocation_overrides": {
+    "codex_reasoning_effort": "low",
+    "private_native_output": true
+  },
+  "audited": [
+    "CLI result equals persisted Task",
+    "Run status and native exit evidence",
+    "monotonic persisted events and final result",
+    "private Task permissions",
+    "current filesystem content and mode hashes reconstruct snapshot",
+    "current review and consumed handoff",
+    "single CLI lock and independent cross CLI review",
+    "exact declared verification argv",
+    "retained initial failure, one repair, final pass",
+    "original repository and protected files unchanged"
+  ],
+  "tasks": [
+    {
+      "case": "work-single",
+      "task_id": "task-20261016T092004Z-9f759067",
+      "source_evidence": "native-reconnect-work-single-20261016.json",
+      "acceptance": "passed",
+      "calls": 3,
+      "repairs": 0,
+      "participants": [
+        "codex"
+      ],
+      "retry_notices": 0,
+      "review_kind": "self_check",
+      "snapshot": "3a75c23f7981925f8a55b1be94a96ee6998bb4e50f93e2b34d2df9b2bb49ef3c",
+      "independent_audit": "passed"
+    },
+    {
+      "case": "work-auto",
+      "task_id": "task-20261016T093911Z-b7e40fac",
+      "source_evidence": "native-reconnect-remaining-20261016.json",
+      "acceptance": "passed",
+      "calls": 3,
+      "repairs": 0,
+      "participants": [
+        "codex",
+        "cursor"
+      ],
+      "retry_notices": 2,
+      "review_kind": "cross_cli",
+      "snapshot": "a31abad0e7908cb26ff763a4b75c29e1ddc65f918dbded2217617ed0ab96fbed",
+      "independent_audit": "passed"
+    },
+    {
+      "case": "project-single",
+      "task_id": "task-20261016T094110Z-95b5a0c2",
+      "source_evidence": "native-reconnect-remaining-20261016.json",
+      "acceptance": "passed",
+      "calls": 5,
+      "repairs": 1,
+      "participants": [
+        "codex"
+      ],
+      "retry_notices": 0,
+      "review_kind": "self_check",
+      "snapshot": "16aaae88065198cfcf639ea9c09b1dd4a2263698bb17bd147493ba733eec9192",
+      "independent_audit": "passed"
+    },
+    {
+      "case": "project-auto",
+      "task_id": "task-20261016T094308Z-6af9a8ba",
+      "source_evidence": "native-reconnect-remaining-20261016.json",
+      "acceptance": "passed",
+      "calls": 5,
+      "repairs": 1,
+      "participants": [
+        "codex",
+        "cursor"
+      ],
+      "retry_notices": 0,
+      "review_kind": "cross_cli",
+      "snapshot": "97eddc8edaa5d10ebb06b366a266f9604d37f1980da3f54602979c9c72a4f61a",
+      "independent_audit": "passed"
+    }
+  ]
+}

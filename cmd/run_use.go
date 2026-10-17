@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/Garden12138/xcli/internal/agent"
-	"github.com/Garden12138/xcli/internal/routing"
 	"github.com/Garden12138/xcli/internal/runstore"
 	xruntime "github.com/Garden12138/xcli/internal/runtime"
 	"github.com/spf13/cobra"
@@ -39,7 +38,7 @@ func (a *app) newUseCommand() *cobra.Command {
 				name = before[0]
 			}
 			if name == "" {
-				return errors.New("no agent selected; pass an agent or configure xcli default")
+				return errors.New("no agent selected; pass an agent or configure default_agent")
 			}
 			definition, err := registry.Get(name)
 			if err != nil {
@@ -135,12 +134,12 @@ func (a *app) newRunCommand() *cobra.Command {
 				return err
 			}
 			before, nativeArgs := splitNativeArgs(command, args)
-			selection := routing.Decision{}
+			selection := agentSelection{}
 			promptParts := before
 			if selectedAgent != "" {
-				selection = routing.Decision{Agent: selectedAgent, Source: routing.SourceFlag}
+				selection = agentSelection{Agent: selectedAgent, Source: "flag"}
 			} else if len(before) > 0 && registry.Has(before[0]) {
-				selection = routing.Decision{Agent: before[0], Source: routing.SourcePositional}
+				selection = agentSelection{Agent: before[0], Source: "positional"}
 				promptParts = before[1:]
 			}
 			if len(promptParts) == 0 {
@@ -148,7 +147,10 @@ func (a *app) newRunCommand() *cobra.Command {
 			}
 			prompt := strings.Join(promptParts, " ")
 			if selection.Agent == "" {
-				selection, err = routing.Select(cfg, prompt)
+				selection = agentSelection{Agent: cfg.DefaultAgent, Source: "default"}
+				if selection.Agent == "" {
+					err = errors.New("no agent selected; pass --agent or configure default_agent")
+				}
 				if err != nil {
 					return err
 				}

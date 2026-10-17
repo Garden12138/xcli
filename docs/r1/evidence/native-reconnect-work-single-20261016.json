@@ -1,0 +1,89 @@
+{
+  "kind": "real",
+  "date": "2026-10-16T09:20:03Z",
+  "binary_sha256": "29ffa9a5f381cc8d54aaeddc8be6b60811c7aae0c95566e341e0d67e7e82fcc2",
+  "platform": "macOS-26.5.1-arm64-arm-64bit",
+  "max_calls": 3,
+  "calls": 3,
+  "tasks": [
+    {
+      "case": "work-single",
+      "status": "completed",
+      "id": "task-20261016T092004Z-9f759067",
+      "exit_code": 0,
+      "calls": 3,
+      "repairs": 0,
+      "mode": "single",
+      "kind": "work",
+      "elapsed_seconds": 123.297,
+      "cli_exit_code": 0,
+      "reason": "Current artifacts, validation and review satisfy the declared acceptance; user acceptance is separate.",
+      "roles": [
+        {
+          "role": "coordinator",
+          "agent": "codex",
+          "run_id": "run-20261016T092004Z-1e06761f",
+          "snapshot": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "retry_notices": 0
+        },
+        {
+          "role": "worker",
+          "agent": "codex",
+          "run_id": "run-20261016T092032Z-343ebb0f",
+          "snapshot": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "retry_notices": 0
+        },
+        {
+          "role": "reviewer",
+          "agent": "codex",
+          "run_id": "run-20261016T092122Z-5221ff33",
+          "snapshot": "3a75c23f7981925f8a55b1be94a96ee6998bb4e50f93e2b34d2df9b2bb49ef3c",
+          "retry_notices": 0
+        }
+      ],
+      "checks": [
+        {
+          "kind": "artifact",
+          "argv": null,
+          "status": "passed",
+          "exit_code": 0,
+          "snapshot": "3a75c23f7981925f8a55b1be94a96ee6998bb4e50f93e2b34d2df9b2bb49ef3c"
+        }
+      ],
+      "reviews": [
+        {
+          "kind": "self_check",
+          "passed": true,
+          "snapshot": "3a75c23f7981925f8a55b1be94a96ee6998bb4e50f93e2b34d2df9b2bb49ef3c",
+          "findings": []
+        }
+      ],
+      "artifacts": [
+        {
+          "name": "report.md",
+          "sha256": "1d3a8577ba5e83ea8ec54428cc21ccc0234057d02f73e1ba6d77b259947ff05e"
+        }
+      ],
+      "mode_constraint_passed": true,
+      "current_review_passed": true,
+      "saved_result_consistent": true,
+      "handoff_consumed": true,
+      "deliverable_content_passed": true,
+      "source_reference_present": true,
+      "input_unchanged": true,
+      "acceptance": "passed"
+    }
+  ],
+  "native_versions": {
+    "codex": "codex-cli 0.162.1",
+    "cursor": "2026.10.14-0f9edde"
+  },
+  "cases": [
+    "work-single"
+  ],
+  "invocation_overrides": {
+    "codex_reasoning_effort": "low",
+    "private_native_output": true
+  },
+  "acceptance": "passed"
+}

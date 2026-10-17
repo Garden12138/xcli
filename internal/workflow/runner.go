@@ -19,6 +19,8 @@ import (
 )
 
 type StepResult struct {
+	RetryNotices int          `json:"retry_notices,omitempty"`
+	Diagnostics  string       `json:"-"`
 	Cwd          string       `json:"cwd,omitempty"`
 	ParseStatus  string       `json:"parse_status,omitempty"`
 	ErrorKind    string       `json:"error_kind,omitempty"`
@@ -72,6 +74,7 @@ type PreparedRun struct {
 }
 
 type Runner struct {
+	literal       bool
 	Events        func(agent.Event) error
 	workspaceRoot string
 	Config        config.Config
@@ -467,6 +470,9 @@ func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial 
 	execution.Usage = summarizeUsage(execution.Steps)
 	record.EndedAt = time.Now().UTC()
 	record.Status = execution.Status
+	for _, step := range execution.Steps {
+		record.RetryNotices += step.RetryNotices
+	}
 	record.ParseStatus = "not_applicable"
 	for _, step := range execution.Steps {
 		if step.ParseStatus == "parse_error" || step.ParseStatus == "truncated" {
@@ -501,7 +507,8 @@ func executionStepRecords(steps []StepResult, recordOutput bool) []runstore.Step
 			outputFile = step.OutputFile
 		}
 		records = append(records, runstore.StepRecord{
-			ID: step.ID, Agent: step.Agent, AgentVersion: step.AgentVersion,
+			RetryNotices: step.RetryNotices,
+			ID:           step.ID, Agent: step.Agent, AgentVersion: step.AgentVersion,
 			Command: step.Command, Cwd: step.Cwd, ParseStatus: step.ParseStatus, ErrorKind: step.ErrorKind, Status: step.Status, ExitCode: step.ExitCode,
 			SessionID: step.SessionID, OutputFile: outputFile, StartedAt: step.StartedAt,
 			EndedAt: step.EndedAt, Attempts: step.Attempts, Error: step.Error, Usage: step.Usage,
@@ -596,7 +603,7 @@ func (r *Runner) runStep(ctx context.Context, workflowCwd, tempDir string, step 
 	var err error
 	args := make([]string, len(step.Args))
 	for i, value := range step.Args {
-		args[i], err = resolveTemplate(value, templateData)
+		args[i], err = r.render(value, templateData)
 		if err != nil {
 			result.Error = err.Error()
 			return result
@@ -613,7 +620,7 @@ func (r *Runner) runStep(ctx context.Context, workflowCwd, tempDir string, step 
 	var environment []string
 	commandStep := step.Command != ""
 	if commandStep {
-		commandName, resolveErr := resolveTemplate(step.Command, templateData)
+		commandName, resolveErr := r.render(step.Command, templateData)
 		if resolveErr != nil {
 			result.Error = resolveErr.Error()
 			return result
@@ -622,7 +629,7 @@ func (r *Runner) runStep(ctx context.Context, workflowCwd, tempDir string, step 
 		spec = agent.CommandSpec{Command: commandName, Args: args}
 		environment, err = xruntime.BuildEnvironment(os.Environ(), r.Config, config.AgentConfig{}, step.Network)
 	} else {
-		prompt, resolveErr := resolveTemplate(step.Prompt, templateData)
+		prompt, resolveErr := r.render(step.Prompt, templateData)
 		if resolveErr != nil {
 			result.Error = resolveErr.Error()
 			return result
@@ -697,10 +704,12 @@ func (r *Runner) runStep(ctx context.Context, workflowCwd, tempDir string, step 
 			}
 		}
 		processResult := outcome.Process
+		result.Diagnostics = string(processResult.StderrTail)
 		parsed := outcome.Result
 		result.Output = parsed.Output
 		result.SessionID = parsed.SessionID
 		result.ParseStatus = parsed.ParseStatus
+		result.RetryNotices += parsed.RetryNotices
 		result.ErrorKind = parsed.ErrorKind
 		result.Status = parsed.Status
 		result.Error = parsed.Error

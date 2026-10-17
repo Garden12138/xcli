@@ -1,0 +1,71 @@
+{
+  "kind": "real",
+  "date": "2026-10-16T03:29:21Z",
+  "binary_sha256": "948690434d7507144441612094e3182b427ece15310aeb70e7e091d4f0d18c14",
+  "platform": "macOS-26.5.1-arm64-arm-64bit",
+  "max_calls": 10,
+  "calls": 2,
+  "tasks": [
+    {
+      "case": "work-single",
+      "status": "waiting_user",
+      "id": "task-20261016T032922Z-94961e98",
+      "exit_code": 1,
+      "calls": 1,
+      "repairs": 0,
+      "mode": "single",
+      "kind": "work",
+      "elapsed_seconds": 38.592,
+      "cli_exit_code": 1,
+      "reason": "only verify may specify argv/cwd",
+      "roles": [
+        {
+          "role": "coordinator",
+          "agent": "codex",
+          "run_id": "run-20261016T032922Z-1e31bf3f",
+          "snapshot": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      ],
+      "checks": [],
+      "reviews": [],
+      "artifacts": [],
+      "mode_constraint_passed": true,
+      "acceptance": "failed"
+    },
+    {
+      "case": "work-auto",
+      "status": "waiting_user",
+      "id": "task-20261016T033000Z-4a5609aa",
+      "exit_code": 1,
+      "calls": 1,
+      "repairs": 0,
+      "mode": "auto",
+      "kind": "work",
+      "elapsed_seconds": 59.101,
+      "cli_exit_code": 1,
+      "reason": "only verify may specify argv/cwd",
+      "roles": [
+        {
+          "role": "coordinator",
+          "agent": "codex",
+          "run_id": "run-20261016T033001Z-6c5c3b95",
+          "snapshot": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      ],
+      "checks": [],
+      "reviews": [],
+      "artifacts": [],
+      "mode_constraint_passed": false,
+      "acceptance": "failed"
+    }
+  ],
+  "native_versions": {
+    "codex": "codex-cli 0.162.1",
+    "cursor": "2026.10.14-0f9edde"
+  },
+  "cases": [
+    "work-single",
+    "work-auto"
+  ],
+  "acceptance": "failed"
+}

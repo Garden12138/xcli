@@ -4,12 +4,36 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
 
 const MaxEventBytes = 8 << 20
 const MaxOutputBytes = 8 << 20
+
+// Codex exec 0.162.1 projects retryable app-server errors into the same
+// top-level error event as fatal errors, omitting willRetry. Recognize only
+// its observed reconnect notice; completion and native exit remain required.
+var codexReconnect = regexp.MustCompile(`^Reconnecting\.\.\. ([1-9][0-9]*)/([1-9][0-9]*)( \([^\r\n]*\))?$`)
+
+func codexRetryNotice(event map[string]any) bool {
+	if retry, ok := event["will_retry"].(bool); ok && !retry {
+		return false
+	}
+	if retry, ok := event["willRetry"].(bool); ok && !retry {
+		return false
+	}
+	message, _ := event["message"].(string)
+	match := codexReconnect.FindStringSubmatch(message)
+	if match == nil {
+		return false
+	}
+	n, err := strconv.Atoi(match[1])
+	limit, limitErr := strconv.Atoi(match[2])
+	return err == nil && limitErr == nil && n <= limit
+}
 
 // Event is the versioned public stream. Raw tool payloads are never included.
 type Event struct {
@@ -50,6 +74,7 @@ type StreamDecoder struct {
 	line            int
 	output          string
 	terminal        bool
+	cursorAssistant bool
 	result          RunResult
 	usage           *usageAccumulator
 	progress        func(string)
@@ -151,6 +176,10 @@ func (d *StreamDecoder) consume(data []byte) {
 	captureSession(event, &d.result)
 	kind, _ := event["type"].(string)
 	failed := kind == "error" || kind == "turn.failed"
+	if d.adapter == "codex" && !d.terminal && kind == "error" && codexRetryNotice(event) {
+		failed = false
+		d.result.RetryNotices++
+	}
 	if flag, _ := event["is_error"].(bool); flag {
 		failed = true
 	}
@@ -164,7 +193,22 @@ func (d *StreamDecoder) consume(data []byte) {
 		d.terminal = d.terminal || kind == "turn.completed"
 		replace = kind == "item.completed"
 	case "claude", "cursor":
+		// Cursor emits complete assistant messages (partial deltas require a
+		// separate opt-in flag). Earlier activity narration is not part of the
+		// final answer. Its terminal result may carry metadata without text.
+		if d.adapter == "cursor" && kind == "assistant" {
+			replace = true
+			if len(pieces) > 0 {
+				d.cursorAssistant = true
+			}
+		}
 		if kind == "result" {
+			// Some Cursor versions put all assistant narration in result.result.
+			// When it ends with the selected complete assistant answer, retain
+			// that answer instead of reintroducing earlier activity text.
+			if d.adapter == "cursor" && d.cursorAssistant && d.output != "" && strings.HasSuffix(strings.Join(pieces, ""), d.output) {
+				pieces = nil
+			}
 			d.terminal = true
 			replace = true
 			if subtype, _ := event["subtype"].(string); subtype != "" && subtype != "success" {
@@ -243,6 +287,9 @@ func (d *StreamDecoder) consume(data []byte) {
 	}
 	if d.progress != nil && kind != "" {
 		message := "agent activity"
+		if kind == "error" && !failed {
+			message = "native reconnect in progress"
+		}
 		switch kind {
 		case "thread.started", "system", "init":
 			message = "session started"

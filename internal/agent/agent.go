@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
-	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -16,11 +15,6 @@ import (
 type CommandSpec struct {
 	Command string   `json:"command"`
 	Args    []string `json:"args"`
-}
-
-type ACPLaunch struct {
-	CommandSpec
-	InstallHint string
 }
 
 type Installation struct {
@@ -45,22 +39,17 @@ type Info struct {
 }
 
 type RunResult struct {
-	RunID       string `json:"run_id,omitempty"`
-	ParseStatus string `json:"parse_status,omitempty"`
-	ErrorKind   string `json:"error_kind,omitempty"`
-	Error       string `json:"error,omitempty"`
-	Agent       string `json:"agent"`
-	Output      string `json:"output,omitempty"`
-	SessionID   string `json:"session_id,omitempty"`
-	ExitCode    int    `json:"exit_code"`
-	Status      string `json:"status"`
-	Usage       *Usage `json:"usage,omitempty"`
-}
-
-type InstallSpec struct {
-	Method  string   `json:"method"`
-	Command string   `json:"command"`
-	Args    []string `json:"args"`
+	RetryNotices int    `json:"retry_notices,omitempty"`
+	RunID        string `json:"run_id,omitempty"`
+	ParseStatus  string `json:"parse_status,omitempty"`
+	ErrorKind    string `json:"error_kind,omitempty"`
+	Error        string `json:"error,omitempty"`
+	Agent        string `json:"agent"`
+	Output       string `json:"output,omitempty"`
+	SessionID    string `json:"session_id,omitempty"`
+	ExitCode     int    `json:"exit_code"`
+	Status       string `json:"status"`
+	Usage        *Usage `json:"usage,omitempty"`
 }
 
 type Definition struct {
@@ -109,36 +98,6 @@ func (d Definition) Interactive(extra []string) CommandSpec {
 	}
 	args = append(args, extra...)
 	return CommandSpec{Command: d.Config.Command, Args: args}
-}
-
-func (d Definition) ACP(extra []string) (ACPLaunch, error) {
-	if d.Config.ACP != nil {
-		args := append([]string{}, d.Config.ACP.Args...)
-		args = append(args, extra...)
-		return ACPLaunch{CommandSpec: CommandSpec{Command: d.Config.ACP.Command, Args: args}}, nil
-	}
-
-	var launch ACPLaunch
-	switch d.Config.Adapter {
-	case "claude":
-		launch.Command = "claude-agent-acp"
-		launch.InstallHint = "npm install -g @agentclientprotocol/claude-agent-acp"
-	case "codex":
-		launch.Command = "codex-acp"
-		launch.InstallHint = "npm install -g @agentclientprotocol/codex-acp"
-	case "gemini":
-		launch.Command = d.Config.Command
-		launch.Args = append(append([]string{}, d.Config.Args...), "--acp")
-	case "opencode":
-		launch.Command = d.Config.Command
-		launch.Args = append(append([]string{}, d.Config.Args...), "acp")
-	case "generic":
-		return ACPLaunch{}, fmt.Errorf("agent %q does not support ACP; configure agents.%s.acp", d.Name, d.Name)
-	default:
-		return ACPLaunch{}, fmt.Errorf("unsupported adapter %q", d.Config.Adapter)
-	}
-	launch.Args = append(launch.Args, extra...)
-	return launch, nil
 }
 
 func (d Definition) Run(prompt string, structured bool, extra []string) (CommandSpec, error) {
@@ -267,18 +226,6 @@ func (d Definition) Resume(sessionID, prompt string, structured bool, extra []st
 	return CommandSpec{Command: d.Config.Command, Args: base}, nil
 }
 
-func (d Definition) Auth() (CommandSpec, error) {
-	if len(d.Config.AuthArgs) == 0 {
-		if d.Config.Adapter == "gemini" {
-			return CommandSpec{Command: d.Config.Command, Args: append([]string{}, d.Config.Args...)}, nil
-		}
-		return CommandSpec{}, fmt.Errorf("agent %q does not define an authentication command", d.Name)
-	}
-	args := append([]string{}, d.Config.Args...)
-	args = append(args, d.Config.AuthArgs...)
-	return CommandSpec{Command: d.Config.Command, Args: args}, nil
-}
-
 func renderPromptArgs(args []string, prompt string) ([]string, bool) {
 	rendered := make([]string, len(args))
 	used := false
@@ -348,73 +295,6 @@ func versionLine(value string) string {
 		value = value[:200]
 	}
 	return value
-}
-
-func (d Definition) Install(method string) (InstallSpec, error) {
-	methods := installMethods(d.Config.Adapter)
-	if len(methods) == 0 {
-		return InstallSpec{}, fmt.Errorf("agent %q has no built-in installer", d.Name)
-	}
-	if method == "" || method == "auto" {
-		method = chooseAutomaticMethod(methods)
-		if method == "" {
-			return InstallSpec{}, errors.New("no supported package manager found; install npm or Homebrew, or select a method explicitly")
-		}
-	}
-	spec, ok := methods[method]
-	if !ok {
-		available := make([]string, 0, len(methods))
-		for key := range methods {
-			available = append(available, key)
-		}
-		sort.Strings(available)
-		return InstallSpec{}, fmt.Errorf("install method %q is not available for %s (available: %s)", method, d.Name, strings.Join(available, ", "))
-	}
-	if _, err := exec.LookPath(spec.Command); err != nil {
-		return InstallSpec{}, fmt.Errorf("install method %q requires %s in PATH", method, spec.Command)
-	}
-	return spec, nil
-}
-
-func installMethods(adapter string) map[string]InstallSpec {
-	switch adapter {
-	case "claude":
-		return map[string]InstallSpec{
-			"npm": {Method: "npm", Command: "npm", Args: []string{"install", "-g", "@anthropic-ai/claude-code"}},
-		}
-	case "codex":
-		return map[string]InstallSpec{
-			"npm":  {Method: "npm", Command: "npm", Args: []string{"install", "-g", "@openai/codex"}},
-			"brew": {Method: "brew", Command: "brew", Args: []string{"install", "--cask", "codex"}},
-		}
-	case "gemini":
-		return map[string]InstallSpec{
-			"npm":  {Method: "npm", Command: "npm", Args: []string{"install", "-g", "@google/gemini-cli"}},
-			"brew": {Method: "brew", Command: "brew", Args: []string{"install", "gemini-cli"}},
-		}
-	case "opencode":
-		return map[string]InstallSpec{
-			"npm":  {Method: "npm", Command: "npm", Args: []string{"install", "-g", "opencode-ai"}},
-			"brew": {Method: "brew", Command: "brew", Args: []string{"install", "anomalyco/tap/opencode"}},
-		}
-	default:
-		return nil
-	}
-}
-
-func chooseAutomaticMethod(methods map[string]InstallSpec) string {
-	order := []string{"npm", "brew"}
-	if runtime.GOOS == "darwin" {
-		order = []string{"brew", "npm"}
-	}
-	for _, method := range order {
-		if spec, ok := methods[method]; ok {
-			if _, err := exec.LookPath(spec.Command); err == nil {
-				return method
-			}
-		}
-	}
-	return ""
 }
 
 func ParseStructured(adapter, outputFormat string, data []byte) RunResult {

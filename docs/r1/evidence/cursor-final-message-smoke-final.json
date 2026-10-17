@@ -1,0 +1,20 @@
+{
+  "kind": "real_adapter_review_smoke",
+  "date": "2026-10-16T07:42:54Z",
+  "binary_sha256": "a465902f3a2e44ed9046c61bba1770841bc70b0860be2741e2ed2f038e18a819",
+  "calls": 1,
+  "agent": "cursor",
+  "timed_out": false,
+  "exit_code": 0,
+  "elapsed_seconds": 39.196,
+  "status": "success",
+  "parse_status": "complete",
+  "review_passed": false,
+  "findings": [
+    "TestValue failed: injected initial verification failure; preserve tests and use the bounded repair/reverification path (native process exited with code 1)"
+  ],
+  "coverage": [
+    "source and validation log checked"
+  ],
+  "acceptance": "passed"
+}

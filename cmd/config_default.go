@@ -9,36 +9,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func (a *app) newDefaultCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "default [agent]",
-		Short: "Show or set the default agent",
-		Args:  cobra.MaximumNArgs(1),
-		RunE: func(command *cobra.Command, args []string) error {
-			cfg, path, registry, err := a.load()
-			if err != nil {
-				return err
-			}
-			if len(args) == 0 {
-				if cfg.DefaultAgent == "" {
-					return errors.New("no default agent is configured")
-				}
-				fmt.Fprintln(command.OutOrStdout(), cfg.DefaultAgent)
-				return nil
-			}
-			if !registry.Has(args[0]) {
-				return fmt.Errorf("unknown agent %q", args[0])
-			}
-			cfg.DefaultAgent = args[0]
-			if err := config.Save(path, cfg); err != nil {
-				return err
-			}
-			fmt.Fprintf(command.OutOrStdout(), "Default agent set to %s\n", args[0])
-			return nil
-		},
-	}
-}
-
 func (a *app) newConfigCommand() *cobra.Command {
 	configCommand := &cobra.Command{Use: "config", Short: "Manage xcli configuration"}
 	configCommand.AddCommand(a.newConfigPathCommand(), a.newConfigValidateCommand(), a.newConfigInitCommand())

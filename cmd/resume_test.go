@@ -16,9 +16,7 @@ import (
 
 	"github.com/Garden12138/xcli/internal/agent"
 	"github.com/Garden12138/xcli/internal/config"
-	"github.com/Garden12138/xcli/internal/routing"
 	"github.com/Garden12138/xcli/internal/runstore"
-	usagepkg "github.com/Garden12138/xcli/internal/usage"
 )
 
 func TestResumeNonInteractiveFromRunRecord(t *testing.T) {
@@ -103,16 +101,9 @@ func TestResumeNonInteractiveFromRunRecord(t *testing.T) {
 		t.Fatalf("records = %#v, %v", records, err)
 	}
 	resumed := records[0]
-	if resumed.Kind != "run" || resumed.Agent != "fake-codex" || resumed.SelectionSource != routing.SourceResume ||
+	if resumed.Kind != "run" || resumed.Agent != "fake-codex" || resumed.SelectionSource != "resume" ||
 		resumed.ResumedFrom != source.ID || resumed.ResumedStep != "" || resumed.SessionID != "new-session" || resumed.Usage == nil {
 		t.Fatalf("unexpected resume record: %#v", resumed)
-	}
-	report, err := usagepkg.Build(records, usagepkg.Options{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if report.Totals.Tasks != 2 || report.Totals.TrackedTasks != 1 {
-		t.Fatalf("resume was not aggregated as a task: %#v", report.Totals)
 	}
 }
 

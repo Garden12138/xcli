@@ -1,5 +1,7 @@
 # R0：可靠底座与真实 CLI 接入
 
+R1 源码已完成管理入口收口；本文描述 R0 兼容过渡行为，当前命令及迁移见 [R1 说明](../r1/README.zh-CN.md)。`mcp serve` 继续保留。
+
 本页描述当前源码改动，最低要求为包含本次 R0 改动的源码构建；已发布的 v0.4.0 不包含这些行为。产品路线以[产品调整方案](../plans/product-realignment.zh-CN.md)为准，验收结果见[本批记录](results.zh-CN.md)。
 
 真实项目中的操作、账号选择和权限失败追查见[用户体验记录](user-experience.zh-CN.md)。Antigravity 明确报告 headless 工具权限自动拒绝且没有回答时，即使原生退出 0，也保存为 failed、process_failed，xcli 返回 1；完整协议仍可保留 parse_status=complete。

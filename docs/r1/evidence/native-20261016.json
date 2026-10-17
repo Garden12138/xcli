@@ -1,0 +1,341 @@
+{
+  "kind": "real",
+  "date": "2026-10-16T01:51:47Z",
+  "binary_sha256": "c7edcb946529832119ddfee601111794488fe086316a411d91c580e69fd3e9e2",
+  "platform": "macOS-26.5.1-arm64-arm-64bit",
+  "max_calls": 24,
+  "calls": 14,
+  "tasks": [
+    {
+      "case": "work-single",
+      "status": "failed",
+      "id": "task-20261016T015148Z-2a228f25",
+      "exit_code": 1,
+      "calls": 3,
+      "repairs": 0,
+      "mode": "single",
+      "kind": "work",
+      "elapsed_seconds": 217.01,
+      "cli_exit_code": 1,
+      "reason": "reviewer codex failed: codex event 3: native protocol reported failure (status failed, native exit 0)",
+      "roles": [
+        {
+          "role": "coordinator",
+          "agent": "codex",
+          "run_id": "run-20261016T015148Z-1bc91e2c",
+          "snapshot": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        {
+          "role": "worker",
+          "agent": "codex",
+          "run_id": "run-20261016T015250Z-82b84931",
+          "snapshot": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        {
+          "role": "reviewer",
+          "agent": "codex",
+          "run_id": "run-20261016T015349Z-ca44395d",
+          "snapshot": "50dc4fbe82cce24d926ed60aa9e42e3ec582ca5dbea44fc212dd02795d915e23"
+        }
+      ],
+      "checks": [
+        {
+          "kind": "artifact",
+          "argv": null,
+          "status": "failed",
+          "exit_code": 0,
+          "snapshot": "50dc4fbe82cce24d926ed60aa9e42e3ec582ca5dbea44fc212dd02795d915e23"
+        }
+      ],
+      "reviews": [],
+      "artifacts": [
+        {
+          "name": "report.md",
+          "sha256": "33a613d9c170b6638b760b0b69dc42e9870bd01ad7911b06c2698cf22ea5e1d9"
+        }
+      ],
+      "mode_constraint_passed": true,
+      "acceptance": "failed"
+    },
+    {
+      "case": "work-auto",
+      "status": "failed",
+      "id": "task-20261016T015524Z-2f46dee8",
+      "exit_code": 1,
+      "calls": 3,
+      "repairs": 0,
+      "mode": "auto",
+      "kind": "work",
+      "elapsed_seconds": 185.526,
+      "cli_exit_code": 1,
+      "reason": "invalid task protocol: invalid character '\u00e6' looking for beginning of value",
+      "roles": [
+        {
+          "role": "coordinator",
+          "agent": "codex",
+          "run_id": "run-20261016T015525Z-9ada17de",
+          "snapshot": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        {
+          "role": "worker",
+          "agent": "codex",
+          "run_id": "run-20261016T015628Z-3d2da87f",
+          "snapshot": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        {
+          "role": "reviewer",
+          "agent": "cursor",
+          "run_id": "run-20261016T015733Z-6b6dab25",
+          "snapshot": "0de51b456d442bb6e7805c80d1fc3acb706a8e58455c64a181dc52d8e757c4a8"
+        }
+      ],
+      "checks": [
+        {
+          "kind": "artifact",
+          "argv": null,
+          "status": "failed",
+          "exit_code": 0,
+          "snapshot": "0de51b456d442bb6e7805c80d1fc3acb706a8e58455c64a181dc52d8e757c4a8"
+        }
+      ],
+      "reviews": [],
+      "artifacts": [
+        {
+          "name": "report.md",
+          "sha256": "eb92bc9d6fd7e802b3f3b3ec629c66408507cba400b06583ee8663793daea18b"
+        }
+      ],
+      "mode_constraint_passed": true,
+      "acceptance": "failed"
+    },
+    {
+      "case": "project-single",
+      "status": "failed",
+      "id": "task-20261016T015830Z-749b0778",
+      "exit_code": 1,
+      "calls": 5,
+      "repairs": 1,
+      "mode": "single",
+      "kind": "project",
+      "elapsed_seconds": 342.663,
+      "cli_exit_code": 1,
+      "reason": "acceptance or review failed after the single repair; inspect checks, reviews and retained workspace",
+      "roles": [
+        {
+          "role": "coordinator",
+          "agent": "codex",
+          "run_id": "run-20261016T015830Z-fb5f4219",
+          "snapshot": "70765a7641b4896c871cb98a7a3836707958949e584047dbf2fb45efce4b045c"
+        },
+        {
+          "role": "worker",
+          "agent": "codex",
+          "run_id": "run-20261016T015940Z-8d133e8f",
+          "snapshot": "70765a7641b4896c871cb98a7a3836707958949e584047dbf2fb45efce4b045c"
+        },
+        {
+          "role": "verifier",
+          "agent": null,
+          "run_id": "run-20261016T020056Z-dfa18272",
+          "snapshot": "16aaae88065198cfcf639ea9c09b1dd4a2263698bb17bd147493ba733eec9192"
+        },
+        {
+          "role": "reviewer",
+          "agent": "codex",
+          "run_id": "run-20261016T020059Z-76e99c02",
+          "snapshot": "16aaae88065198cfcf639ea9c09b1dd4a2263698bb17bd147493ba733eec9192"
+        },
+        {
+          "role": "repair",
+          "agent": "codex",
+          "run_id": "run-20261016T020205Z-f7d8a048",
+          "snapshot": "16aaae88065198cfcf639ea9c09b1dd4a2263698bb17bd147493ba733eec9192"
+        },
+        {
+          "role": "verifier",
+          "agent": null,
+          "run_id": "run-20261016T020328Z-a3693ccb",
+          "snapshot": "1a48283b3478818fd3ff5798112254d8acdcb84086d7fbfb831953183a047577"
+        },
+        {
+          "role": "reviewer",
+          "agent": "codex",
+          "run_id": "run-20261016T020329Z-77d5834a",
+          "snapshot": "1a48283b3478818fd3ff5798112254d8acdcb84086d7fbfb831953183a047577"
+        }
+      ],
+      "checks": [
+        {
+          "kind": "artifact",
+          "argv": null,
+          "status": "failed",
+          "exit_code": 0,
+          "snapshot": "16aaae88065198cfcf639ea9c09b1dd4a2263698bb17bd147493ba733eec9192"
+        },
+        {
+          "kind": "command",
+          "argv": [
+            "go",
+            "test",
+            "-count=1",
+            "./..."
+          ],
+          "status": "failed",
+          "exit_code": 1,
+          "snapshot": "16aaae88065198cfcf639ea9c09b1dd4a2263698bb17bd147493ba733eec9192"
+        },
+        {
+          "kind": "artifact",
+          "argv": null,
+          "status": "passed",
+          "exit_code": 0,
+          "snapshot": "1a48283b3478818fd3ff5798112254d8acdcb84086d7fbfb831953183a047577"
+        },
+        {
+          "kind": "command",
+          "argv": [
+            "go",
+            "test",
+            "-count=1",
+            "./..."
+          ],
+          "status": "passed",
+          "exit_code": 0,
+          "snapshot": "1a48283b3478818fd3ff5798112254d8acdcb84086d7fbfb831953183a047577"
+        }
+      ],
+      "reviews": [
+        {
+          "kind": "self_check",
+          "passed": false,
+          "snapshot": "16aaae88065198cfcf639ea9c09b1dd4a2263698bb17bd147493ba733eec9192",
+          "findings": [
+            "The fixed copy lacks .r1-first-verification, so preservation of the injected failure marker is not demonstrated.",
+            "No runtime verification logs or subsequent passing verification are present. Supplied check metadata records only a failed command with exit code 1.",
+            "No baseline or version-control metadata is available to confirm that calc.go is the only modified existing file and calc_test.go remains unchanged.",
+            "The supplied artifact check failed because calc.go lacked the required source reference; no resolving evidence is provided."
+          ]
+        },
+        {
+          "kind": "self_check",
+          "passed": false,
+          "snapshot": "1a48283b3478818fd3ff5798112254d8acdcb84086d7fbfb831953183a047577",
+          "findings": [
+            "The fixed copy lacks .r1-first-verification and both runtime verification logs. Supplied check metadata reports failure then success, but the original injected failure and passing output cannot be inspected or confirmed preserved.",
+            "No baseline or Git metadata is included, so calc.go being the only modified existing file and calc_test.go remaining unchanged cannot be independently verified."
+          ]
+        }
+      ],
+      "artifacts": [
+        {
+          "name": ".gitignore",
+          "sha256": "cdaa242a2b243b49a159f8d5639cfd726fbe17d63a6401c96eecccd6beb2f14c"
+        },
+        {
+          "name": "calc.go",
+          "sha256": "440b32a9c2c02024675578debb5933936734d206ee5db490c58dd88849420741"
+        },
+        {
+          "name": "calc_test.go",
+          "sha256": "3d4af6d14c628f6bfebd7dc67dbff810cc35110c6144f001de70ae02198549ad"
+        },
+        {
+          "name": "go.mod",
+          "sha256": "ea139e55943f172322541c8778a9241c1efd569de423ec96e152a12f980494c1"
+        }
+      ],
+      "mode_constraint_passed": true,
+      "original_unchanged": true,
+      "failure_then_repair": true,
+      "acceptance": "failed"
+    },
+    {
+      "case": "project-auto",
+      "status": "failed",
+      "id": "task-20261016T020413Z-7b326dac",
+      "exit_code": 1,
+      "calls": 3,
+      "repairs": 0,
+      "mode": "auto",
+      "kind": "project",
+      "elapsed_seconds": 275.778,
+      "cli_exit_code": 1,
+      "reason": "reviewer cursor failed: execution timed out (status timed_out, native exit 143)",
+      "roles": [
+        {
+          "role": "coordinator",
+          "agent": "codex",
+          "run_id": "run-20261016T020415Z-e2c25235",
+          "snapshot": "70765a7641b4896c871cb98a7a3836707958949e584047dbf2fb45efce4b045c"
+        },
+        {
+          "role": "worker",
+          "agent": "codex",
+          "run_id": "run-20261016T020524Z-40f1e198",
+          "snapshot": "70765a7641b4896c871cb98a7a3836707958949e584047dbf2fb45efce4b045c"
+        },
+        {
+          "role": "verifier",
+          "agent": null,
+          "run_id": "run-20261016T020647Z-59b1e24f",
+          "snapshot": "16aaae88065198cfcf639ea9c09b1dd4a2263698bb17bd147493ba733eec9192"
+        },
+        {
+          "role": "reviewer",
+          "agent": "cursor",
+          "run_id": "run-20261016T020648Z-6bb25749",
+          "snapshot": "16aaae88065198cfcf639ea9c09b1dd4a2263698bb17bd147493ba733eec9192"
+        }
+      ],
+      "checks": [
+        {
+          "kind": "artifact",
+          "argv": null,
+          "status": "failed",
+          "exit_code": 0,
+          "snapshot": "16aaae88065198cfcf639ea9c09b1dd4a2263698bb17bd147493ba733eec9192"
+        },
+        {
+          "kind": "command",
+          "argv": [
+            "go",
+            "test",
+            "-count=1",
+            "./..."
+          ],
+          "status": "failed",
+          "exit_code": 1,
+          "snapshot": "16aaae88065198cfcf639ea9c09b1dd4a2263698bb17bd147493ba733eec9192"
+        }
+      ],
+      "reviews": [],
+      "artifacts": [
+        {
+          "name": ".gitignore",
+          "sha256": "cdaa242a2b243b49a159f8d5639cfd726fbe17d63a6401c96eecccd6beb2f14c"
+        },
+        {
+          "name": "calc.go",
+          "sha256": "ecf5815eeb13cb073205d4ae1bdd822e4f965bbf216dba8f0c838e446b35c728"
+        },
+        {
+          "name": "calc_test.go",
+          "sha256": "3d4af6d14c628f6bfebd7dc67dbff810cc35110c6144f001de70ae02198549ad"
+        },
+        {
+          "name": "go.mod",
+          "sha256": "ea139e55943f172322541c8778a9241c1efd569de423ec96e152a12f980494c1"
+        }
+      ],
+      "mode_constraint_passed": true,
+      "original_unchanged": true,
+      "failure_then_repair": false,
+      "acceptance": "failed"
+    }
+  ],
+  "native_versions": {
+    "codex": "codex-cli 0.162.1",
+    "cursor": "2026.10.14-0f9edde"
+  },
+  "acceptance": "failed"
+}

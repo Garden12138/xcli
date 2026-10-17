@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Version = "0.4.0-dev"
+var Version = "0.5.0-r1-dev"
 
 type ExitError struct {
 	Code    int
@@ -42,39 +42,23 @@ func newRootCommand() *cobra.Command {
 	a := &app{}
 	root := &cobra.Command{
 		Use:           "xcli",
-		Short:         "Run and orchestrate AI coding agent CLIs",
+		Short:         "Complete tasks with native Agent CLIs and verifiable results",
 		Version:       Version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
-	root.PersistentPreRun = func(command *cobra.Command, _ []string) {
-		top := command
-		for top.Parent() != nil && top.Parent() != root {
-			top = top.Parent()
-		}
-		retired := map[string]bool{"install": true, "auth": true, "default": true, "acp": true, "route": true, "workflow": true, "usage": true, "mcp": true}
-		if retired[top.Name()] && top.Name() != "acp" && !(top.Name() == "mcp" && command.Name() == "serve") {
-			fmt.Fprintln(command.ErrOrStderr(), "Warning: this management entry is in retirement transition; see docs/r0/README.zh-CN.md. Existing data is retained.")
-		}
-	}
 	root.PersistentFlags().StringVar(&a.configPath, "config", "", "explicit configuration file")
 	root.AddCommand(
+		a.newTaskCommand(),
 		a.newAgentsCommand(),
 		a.newDoctorCommand(),
-		a.newInstallCommand(),
-		a.newAuthCommand(),
-		a.newDefaultCommand(),
 		a.newUseCommand(),
-		a.newACPCommand(),
 		a.newMCPCommand(),
-		a.newRouteCommand(),
 		a.newRunCommand(),
 		a.newJobWorkerCommand(),
 		a.newJobsCommand(),
 		a.newResumeCommand(),
-		a.newWorkflowCommand(),
 		a.newRunsCommand(),
-		a.newUsageCommand(),
 		a.newConfigCommand(),
 	)
 	return root

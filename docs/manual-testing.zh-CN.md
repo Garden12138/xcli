@@ -1,4 +1,6 @@
-# xcli 手工测试与体验指南
+# xcli v0.4/R0 历史手工测试与体验指南
+
+R1 当前测试与命令见 [R1 说明](r1/README.zh-CN.md)及[验收记录](r1/results.zh-CN.md)。本文的安装、ACP、正则路由、MCP 同步与独立 workflow 等入口已在 R1 退役，仅适用于对应历史版本。
 
 # R0 源码补充
 

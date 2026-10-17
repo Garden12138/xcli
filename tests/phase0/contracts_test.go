@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/Garden12138/xcli/internal/agent"
-	"github.com/Garden12138/xcli/internal/mcp"
 	"github.com/Garden12138/xcli/internal/runstore"
 )
 
@@ -96,45 +95,6 @@ func TestContractExamplesPreserveLegacyReaders(t *testing.T) {
 			}
 		}
 		walk(value)
-	}
-}
-
-func TestLegacyOwnershipSamplesRemainReadable(t *testing.T) {
-	data, err := os.ReadFile("testdata/contracts.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	var samples map[string]json.RawMessage
-	if err := json.Unmarshal(data, &samples); err != nil {
-		t.Fatal(err)
-	}
-	for _, name := range []string{"ownership_v1", "ownership_v2"} {
-		t.Run(name, func(t *testing.T) {
-			root := t.TempDir()
-			t.Setenv("XDG_DATA_HOME", root)
-			if err := os.MkdirAll(filepath.Join(root, "xcli"), 0700); err != nil {
-				t.Fatal(err)
-			}
-			if err := os.WriteFile(filepath.Join(root, "xcli", "mcp-sync.json"), samples[name], 0600); err != nil {
-				t.Fatal(err)
-			}
-			state, err := mcp.LoadState()
-			if err != nil {
-				t.Fatal(err)
-			}
-			owner, ok := state.Get("claude", "docs")
-			if !ok || owner.SourceConfig != "/fixture/config.yaml" || owner.Fingerprint == "" {
-				t.Fatalf("legacy ownership not preserved: %#v", owner)
-			}
-			// Loading must not silently rewrite the user's old on-disk state.
-			after, err := os.ReadFile(filepath.Join(root, "xcli", "mcp-sync.json"))
-			if err != nil {
-				t.Fatal(err)
-			}
-			if string(after) != string(samples[name]) {
-				t.Fatal("read migrated ownership on disk without an apply")
-			}
-		})
 	}
 }
 

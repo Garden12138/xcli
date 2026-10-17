@@ -1,0 +1,11 @@
+{
+  "kind": "real_adapter_review_smoke",
+  "date": "2026-10-16T07:21:05Z",
+  "binary_sha256": "9607c69cf53599e26425ea80e07e0c3b0ea13f3787f3c3bd99047dd92c83f18d",
+  "calls": 1,
+  "agent": "cursor",
+  "timed_out": false,
+  "exit_code": 0,
+  "elapsed_seconds": 23.988,
+  "acceptance": "failed"
+}

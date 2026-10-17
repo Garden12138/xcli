@@ -1,11 +1,82 @@
 package agent
 
 import (
+	"encoding/json"
 	"fmt"
 	"runtime"
 	"strings"
 	"testing"
 )
+
+func TestCodexReconnectNoticesRequireSuccessfulCompletion(t *testing.T) {
+	retry := `{"type":"error","message":"Reconnecting... 2/5 (request timed out)"}` + "\n"
+	answer := `{"type":"item.completed","item":{"type":"agent_message","text":"answer"}}` + "\n"
+	complete := `{"type":"turn.completed"}` + "\n"
+	for _, tc := range []struct {
+		name, stream string
+		success      bool
+	}{
+		{"recovered", retry + retry + answer + complete, true},
+		{"missing completion", retry + answer, false},
+		{"failed turn", retry + answer + `{"type":"turn.failed"}`, false},
+		{"unknown error before completion", retry + `{"type":"error","message":"fatal"}` + "\n" + answer + complete, false},
+		{"notice after completion", answer + complete + retry, false},
+		{"explicit terminal error", `{"type":"error","message":"Reconnecting... 2/5 (request timed out)","willRetry":false}` + "\n" + complete, false},
+		{"explicit error flag", `{"type":"error","message":"Reconnecting... 2/5 (request timed out)","is_error":true}` + "\n" + complete, false},
+		{"invalid retry range", `{"type":"error","message":"Reconnecting... 6/5 (request timed out)"}` + "\n" + complete, false},
+		{"malformed stream", retry + "BAD\n" + answer + complete, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			decoder := NewStreamDecoder("codex", "jsonl", nil)
+			for _, b := range []byte(tc.stream) {
+				_, _ = decoder.Write([]byte{b})
+			}
+			result := decoder.Finish()
+			if (result.Status == "success") != tc.success {
+				t.Fatalf("%+v", result)
+			}
+			if tc.success {
+				if result.Output != "answer" || result.RetryNotices != 2 || result.ParseStatus != "complete" {
+					t.Fatalf("lost recovery evidence: %+v", result)
+				}
+				for _, exit := range []int{1, -1} {
+					if normalized, code := Normalize(result, exit, false, false, nil); code == 0 || normalized.Status == "success" {
+						t.Fatalf("native failure was hidden: %+v", normalized)
+					}
+				}
+			}
+		})
+	}
+	if got := ParseStructured("cursor", "jsonl", []byte(retry+`{"type":"result","subtype":"success"}`)); got.Status == "success" {
+		t.Fatal("Codex retry policy leaked into another adapter")
+	}
+}
+
+func TestCursorCompleteAssistantMessagesSelectFinalResponse(t *testing.T) {
+	answer := `{"passed":false,"findings":["first test failed"],"coverage":["source and copied logs"],"sources":["calc.go"]}`
+	var stream strings.Builder
+	encoder := json.NewEncoder(&stream)
+	for _, text := range []string{"按评审要求，只读检查产物与证据。", answer} {
+		if err := encoder.Encode(map[string]any{"type": "assistant", "message": map[string]any{"role": "assistant", "content": []any{map[string]any{"type": "text", "text": text}}}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := encoder.Encode(map[string]any{"type": "result", "subtype": "success", "session_id": "s", "result": "按评审要求，只读检查产物与证据。" + answer}); err != nil {
+		t.Fatal(err)
+	}
+	result := ParseStructured("cursor", "jsonl", []byte(stream.String()))
+	if result.Status != "success" || result.ParseStatus != "complete" || result.Output != answer || result.SessionID != "s" {
+		t.Fatalf("%+v", result)
+	}
+	// An explicit terminal answer that is not a narration aggregate remains
+	// authoritative, including streams with no assistant messages.
+	stream.Reset()
+	_ = encoder.Encode(map[string]any{"type": "assistant", "message": map[string]any{"role": "assistant", "content": "activity"}})
+	_ = encoder.Encode(map[string]any{"type": "result", "subtype": "success", "result": answer})
+	if got := ParseStructured("cursor", "jsonl", []byte(stream.String())); got.Output != answer || got.Status != "success" {
+		t.Fatalf("terminal fallback lost: %+v", got)
+	}
+}
 
 func TestAdapterCompletionAndFailure(t *testing.T) {
 	cases := []struct{ adapter, valid, session, output string }{

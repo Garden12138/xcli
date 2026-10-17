@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -19,7 +18,6 @@ import (
 	"github.com/Garden12138/xcli/internal/config"
 	"github.com/Garden12138/xcli/internal/jobs"
 	"github.com/Garden12138/xcli/internal/runstore"
-	"github.com/Garden12138/xcli/internal/workflow"
 )
 
 func r0Config(t *testing.T, body string) (string, *runstore.Store) {
@@ -45,7 +43,7 @@ func r0Config(t *testing.T, body string) (string, *runstore.Store) {
 }
 
 func TestBrokenStreamFailsEveryExecutionEntry(t *testing.T) {
-	for _, mode := range []string{"text", "json", "events", "resume", "workflow", "background"} {
+	for _, mode := range []string{"text", "json", "events", "resume", "background"} {
 		t.Run(mode, func(t *testing.T) {
 			configPath, store := r0Config(t, "printf '%s\\n' '{\"type\":\"thread.started\",\"thread_id\":\"s\"}' 'invalid secret-token' '{\"type\":\"turn.completed\"}'\n")
 			root := newRootCommand()
@@ -60,12 +58,6 @@ func TestBrokenStreamFailsEveryExecutionEntry(t *testing.T) {
 				args = append(args, "--events")
 			case "resume":
 				args = []string{"--config", configPath, "resume", "s", "goal", "--agent", "test", "--json"}
-			case "workflow":
-				file := filepath.Join(filepath.Dir(configPath), "workflow.yaml")
-				if err := os.WriteFile(file, []byte("version: 1\nname: broken\nsteps:\n  - id: step\n    agent: test\n    prompt: goal\n"), 0o600); err != nil {
-					t.Fatal(err)
-				}
-				args = []string{"--config", configPath, "workflow", "run", file, "--json"}
 			case "background":
 				installDetachedTestHelper(t)
 				args = append(args, "--detach", "--json")
@@ -188,83 +180,6 @@ func TestEventsAreVisibleBeforeProcessFinishes(t *testing.T) {
 	}
 }
 
-func TestWorkflowWorktreeProtectsOriginalAndRecordsCwd(t *testing.T) {
-	for _, detached := range []bool{false, true} {
-		t.Run(map[bool]string{false: "foreground", true: "background"}[detached], func(t *testing.T) {
-			if detached {
-				installDetachedTestHelper(t)
-			}
-			dir := t.TempDir()
-			repo := filepath.Join(dir, "repo")
-			if err := os.MkdirAll(filepath.Join(repo, "sub"), 0o700); err != nil {
-				t.Fatal(err)
-			}
-			script := filepath.Join(dir, "agent")
-			if err := os.WriteFile(script, []byte("#!/bin/sh\nif [ \"$1\" = --version ]; then echo 1.0; exit 0; fi\nprintf '%s' \"$PWD\" > actual.cwd\nprintf '%s' \"$PWD\"\n"), 0o700); err != nil {
-				t.Fatal(err)
-			}
-			if err := os.WriteFile(filepath.Join(repo, "sub", "tracked"), []byte("baseline"), 0o600); err != nil {
-				t.Fatal(err)
-			}
-			for _, args := range [][]string{{"init"}, {"add", "."}, {"-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-m", "baseline"}} {
-				if output, err := exec.Command("git", append([]string{"-C", repo}, args...)...).CombinedOutput(); err != nil {
-					t.Fatalf("%s %v", output, err)
-				}
-			}
-			configPath := filepath.Join(dir, "config.yaml")
-			cfg := config.Defaults()
-			cfg.Agents["fake"] = config.AgentConfig{Adapter: "generic", Command: script, RunArgs: []string{"{{ prompt }}"}, Output: "text"}
-			if err := config.Save(configPath, cfg); err != nil {
-				t.Fatal(err)
-			}
-			file := filepath.Join(dir, "workflow.yaml")
-			definition := workflow.Workflow{Version: 1, Name: "isolation", Cwd: repo, Steps: []workflow.Step{{ID: "edit", Agent: "fake", Prompt: "edit", Cwd: filepath.Join(repo, "sub")}}}
-			data, _ := json.Marshal(definition) // JSON is valid YAML, including absolute cwd.
-			if err := os.WriteFile(file, data, 0o600); err != nil {
-				t.Fatal(err)
-			}
-			setCommandEnvironment(t, "XDG_DATA_HOME", filepath.Join(dir, "data"))
-			root := newRootCommand()
-			var out bytes.Buffer
-			root.SetOut(&out)
-			root.SetErr(&bytes.Buffer{})
-			args := []string{"--config", configPath, "workflow", "run", file, "--worktree", "--json"}
-			if detached {
-				args = append(args, "--detach")
-			}
-			root.SetArgs(args)
-			if err := root.Execute(); err != nil {
-				t.Fatal(err)
-			}
-			store, _ := newStore()
-			var record runstore.Record
-			if detached {
-				var view jobs.View
-				if err := json.Unmarshal(out.Bytes(), &view); err != nil {
-					t.Fatal(err)
-				}
-				record = waitForJob(t, store, view.ID, "success")
-			} else {
-				records, err := store.List()
-				if err != nil || len(records) != 1 {
-					t.Fatalf("%v %+v", err, records)
-				}
-				record = records[0]
-			}
-			if record.Status != "success" || record.WorktreePath == "" || len(record.Steps) != 1 || record.Steps[0].Cwd != filepath.Join(record.WorktreePath, "sub") {
-				t.Fatalf("%+v", record)
-			}
-			if _, err := os.Stat(filepath.Join(repo, "sub", "actual.cwd")); !os.IsNotExist(err) {
-				t.Fatal("wrote to original checkout")
-			}
-			marker, err := os.ReadFile(filepath.Join(record.WorktreePath, "sub", "actual.cwd"))
-			if err != nil || string(marker) != record.Steps[0].Cwd {
-				t.Fatalf("%s %v", marker, err)
-			}
-		})
-	}
-}
-
 func TestDoctorVersionFailureIsUnhealthy(t *testing.T) {
 	path, _ := r0Config(t, "exit 9\n")
 	for _, jsonOutput := range []bool{false, true} {
@@ -288,7 +203,7 @@ func TestDoctorVersionFailureIsUnhealthy(t *testing.T) {
 }
 
 func TestAntigravityDeniedPermissionFailsExecutionEntries(t *testing.T) {
-	for _, mode := range []string{"text", "json", "events", "resume", "workflow", "background"} {
+	for _, mode := range []string{"text", "json", "events", "resume", "background"} {
 		t.Run(mode, func(t *testing.T) {
 			path, store := r0Config(t, `printf '%s\n' 'jetski: no output produced — a tool required the "command" permission that headless mode cannot prompt for, so it was auto-denied.' >&2
 printf '%s\n' '{"event":"result","result":{"status":"SUCCESS","response":"","conversation_id":"denied-session"}}'
@@ -313,12 +228,6 @@ printf '%s\n' '{"event":"result","result":{"status":"SUCCESS","response":"","con
 				args = append(args, "--"+mode)
 			case "resume":
 				args = []string{"--config", path, "resume", "denied-session", "goal", "--agent", "test", "--json"}
-			case "workflow":
-				file := filepath.Join(filepath.Dir(path), "workflow.yaml")
-				if err := os.WriteFile(file, []byte("version: 1\nname: denied\nsteps:\n  - id: step\n    agent: test\n    prompt: goal\n"), 0o600); err != nil {
-					t.Fatal(err)
-				}
-				args = []string{"--config", path, "workflow", "run", file, "--json"}
 			case "background":
 				installDetachedTestHelper(t)
 				args = append(args, "--detach", "--json")
