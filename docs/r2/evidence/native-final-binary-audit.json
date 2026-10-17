@@ -1,0 +1,52 @@
+{
+  "kind": "final_binary_audit",
+  "binary_sha256": "4381db4a66e6df378f9da646457d1747236ff16b30aaca7dfe6a15e4113d5504",
+  "four_path_candidate_sha256": "1e14328da4c018d3c7679a45ed60eff650668260babb8364ca34506ecc251272",
+  "post_candidate_fixes": [
+    "detached continuation returns current launch status instead of a previous failure",
+    "control storage errors surface as failures",
+    "trusted inactive checkpoints remain resumable",
+    "inherited supervision descriptors close on exec",
+    "unobserved interrupted usage is marked incomplete"
+  ],
+  "tasks": [
+    {
+      "id": "task-20261017T070311Z-ce49a369",
+      "status": "completed",
+      "repeat_detached_continue_exit": 0,
+      "calls_unchanged": true,
+      "mode_preserved": true
+    },
+    {
+      "id": "task-20261017T070407Z-d95744a3",
+      "status": "completed",
+      "repeat_detached_continue_exit": 0,
+      "calls_unchanged": true,
+      "mode_preserved": true
+    },
+    {
+      "id": "task-20261017T070523Z-e9fc9702",
+      "status": "completed",
+      "repeat_detached_continue_exit": 0,
+      "calls_unchanged": true,
+      "mode_preserved": true
+    },
+    {
+      "id": "task-20261017T070701Z-f76f3d45",
+      "status": "completed",
+      "repeat_detached_continue_exit": 0,
+      "calls_unchanged": true,
+      "mode_preserved": true
+    }
+  ],
+  "native_resume": {
+    "exit_code": 0,
+    "status": "success",
+    "parse_status": "complete",
+    "has_session": true,
+    "output_contains_marker": true
+  },
+  "materials_unchanged": true,
+  "acceptance": "passed",
+  "cumulative_calls": 24
+}

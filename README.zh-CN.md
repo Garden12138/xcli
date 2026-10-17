@@ -4,7 +4,7 @@
 
 把 Work 或 Project 目标交给原生 Agent CLI，在有界执行、可追溯交接和真实验证后交付结果。
 
-当前源码为 **R1 / `0.5.0-r1-dev` 开发版**，尚未发布安装包。已发布的 v0.4.0 不包含 Task。完整行为、退役迁移和真实验证范围见 [R1 使用说明](docs/r1/README.zh-CN.md)与[验收记录](docs/r1/results.zh-CN.md)。
+当前源码为 **R2 / `0.5.0-r2-dev` 开发版**，尚未发布安装包。已发布的 v0.4.0 不包含 Task。后台、继续和恢复见 [R2 使用说明](docs/r2/README.zh-CN.md)与[验收记录](docs/r2/results.zh-CN.md)；退役迁移见 [R1 说明](docs/r1/README.zh-CN.md)。
 
 ## 快速开始
 
@@ -30,12 +30,17 @@ go build -o xcli .
 ./xcli task "修复问题并由另一个 CLI 审查" --project . \
   --verify '["go","test","-count=1","./..."]' --json
 
+# 后台执行、跨终端观察和同 Task 继续
+./xcli task "继续完成项目并验证" --project . --detach
 ./xcli task status <task-id> --json
+./xcli task status <task-id> --events --follow
+./xcli task stop <task-id>
+./xcli task continue <task-id> --detach
 ```
 
 `--agent` 是整个任务的执行约束：协调、执行、修复和自查都使用指定 CLI，失败不会静默换工具。自动模式按配置默认偏好及稳定候选顺序过滤可用能力，由协调 CLI 提出分工。明确要求跨 CLI 复核时必须使用不同 Adapter，同 Adapter 的两个别名不算跨 CLI。
 
-默认总时限 10 分钟、最多 6 次 Agent CLI 调用、每次最多 120 秒，允许一次修复后重验。用 `--timeout`、`--max-calls` 修改总预算。原生内部模型轮次和子 Agent 用量可能不可观测，进程调用次数不能当成模型请求数。
+默认累计执行时间 10 分钟（不计暂停/等待）、最多 6 次 Agent CLI 调用、每次最多 120 秒，允许一次修复后重验。用 `--timeout`、`--max-calls` 修改总预算。原生内部模型轮次和子 Agent 用量可能不可观测，进程调用次数不能当成模型请求数。
 
 ## 结果与验收
 
@@ -45,9 +50,9 @@ Project 保留隔离 worktree、基线 diff、未跟踪文件及验证证据。�
 
 项目测试执行用户信任的代码。argv 检查、Git worktree 和原生权限参数均不等于通用操作系统沙箱。任务不会自动安装工具、修改长期权限或外部发布。失败后保留工作区与材料；检查完整 diff 和未跟踪文件，再通过正常 Git 流程人工接收。
 
-进度写 stderr，最终摘要写 stdout。`--json` 输出一个 Task 对象；`--events` 输出带单调序号和最终结果的 JSONL，两者互斥。`task status` 只读保存状态。
+进度写 stderr，最终摘要写 stdout。`--json` 输出一个 Task 对象；`--events` 输出带单调序号和最终结果的 JSONL，两者互斥。`task status` 检查 owner 与检查点，发现失活时保守更新状态。
 
-Task 后台、stop/continue、检查点和失活恢复属于 **R2，R1 尚未实现**。Ctrl-C 取消当前 Task；`waiting_user` 保存缺失条件，目前需要补充条件后新建 Task，并显式引用旧材料。
+Task 支持后台、stop/continue、检查点和失活恢复。Ctrl-C 取消当前执行并保留材料；`waiting_user` 可通过原 Task 的 continue 补充条件。continue 保留模式、候选池和累计预算；未知副作用进入 `needs_reconcile`，经检查后用 `--reconcile` 确认恢复。原生 session 不可用时可从材料新建 session。
 
 ## 配置与 Adapter
 
@@ -101,7 +106,7 @@ go vet ./...
 go mod tidy -diff
 
 # 显式真实验收：四个临时任务，最多 24 次 Agent CLI 调用
-python3 tests/r1/native.py --binary ./xcli --out /tmp/r1-native.json --execute
+python3 tests/r2/native.py --binary ./xcli --out /tmp/r2-native.json --execute
 ```
 
 真实脚本沿用 Codex/Cursor 默认登录环境，创建临时项目/数据目录，只对生成的测试目录设置 Cursor trust。失败私有证据保留，公开结果脱敏。历史 [R0](docs/r0/results.zh-CN.md)与阶段 0 记录保留原范围；本批见 [R1 记录](docs/r1/results.zh-CN.md)。

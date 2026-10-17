@@ -1,0 +1,354 @@
+{
+  "kind": "r2_native_acceptance",
+  "date": "2026-10-17T07:03:07Z",
+  "platform": "macOS-26.5.1-arm64-arm-64bit",
+  "binary_sha256": "1e14328da4c018d3c7679a45ed60eff650668260babb8364ca34506ecc251272",
+  "call_limit": 24,
+  "scenarios": [
+    {
+      "name": "work-single-stop",
+      "kind": "work",
+      "mode": "single",
+      "interruption": "stop",
+      "task_id": "task-20261017T070311Z-ce49a369",
+      "interrupted_role": "worker",
+      "calls_before_interruption": 2,
+      "stop_status": "paused",
+      "status": "completed",
+      "reason": "Current artifacts, validation and review satisfy the declared acceptance; user acceptance is separate.",
+      "calls": 4,
+      "repairs": 0,
+      "plan_versions": 1,
+      "attempt_roles": [
+        "coordinator",
+        "worker",
+        "worker",
+        "reviewer"
+      ],
+      "mode_preserved": true,
+      "same_task": true,
+      "budget_seconds": 1800.0,
+      "elapsed_seconds": 55.711712874,
+      "native_resume_attempted": true,
+      "native_resume_succeeded": true,
+      "run_statuses": [
+        {
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "has_session": true
+        },
+        {
+          "role": "worker",
+          "agent": "codex",
+          "status": "canceled",
+          "parse_status": "parse_error",
+          "has_session": true
+        },
+        {
+          "role": "worker",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "has_session": true
+        },
+        {
+          "role": "reviewer",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "has_session": true
+        }
+      ],
+      "review_kinds": [
+        "self_check"
+      ],
+      "historical_failures_retained": true,
+      "current_review_bound": true,
+      "deliverable_correct": true,
+      "repeat_continue_no_calls": true,
+      "material_session_fallback": false,
+      "events_monotonic": true,
+      "acceptance": "passed"
+    },
+    {
+      "name": "work-auto-background",
+      "kind": "work",
+      "mode": "auto",
+      "interruption": null,
+      "task_id": "task-20261017T070407Z-d95744a3",
+      "status": "completed",
+      "reason": "Current artifacts, validation and review satisfy the declared acceptance; user acceptance is separate.",
+      "calls": 3,
+      "repairs": 0,
+      "plan_versions": 1,
+      "attempt_roles": [
+        "coordinator",
+        "worker",
+        "reviewer"
+      ],
+      "mode_preserved": true,
+      "same_task": true,
+      "budget_seconds": 1800.0,
+      "elapsed_seconds": 76.225838625,
+      "native_resume_attempted": false,
+      "native_resume_succeeded": false,
+      "run_statuses": [
+        {
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "has_session": true
+        },
+        {
+          "role": "worker",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "has_session": true
+        },
+        {
+          "role": "reviewer",
+          "agent": "cursor",
+          "status": "success",
+          "parse_status": "complete",
+          "has_session": true
+        }
+      ],
+      "review_kinds": [
+        "cross_cli"
+      ],
+      "historical_failures_retained": true,
+      "current_review_bound": true,
+      "deliverable_correct": true,
+      "repeat_continue_no_calls": true,
+      "material_session_fallback": false,
+      "events_monotonic": true,
+      "acceptance": "passed"
+    },
+    {
+      "name": "project-single-background",
+      "kind": "project",
+      "mode": "single",
+      "interruption": null,
+      "task_id": "task-20261017T070523Z-e9fc9702",
+      "status": "completed",
+      "reason": "Current artifacts, validation and review satisfy the declared acceptance; user acceptance is separate.",
+      "calls": 5,
+      "repairs": 1,
+      "plan_versions": 1,
+      "attempt_roles": [
+        "coordinator",
+        "worker",
+        "verifier",
+        "reviewer",
+        "repair",
+        "verifier",
+        "reviewer"
+      ],
+      "mode_preserved": true,
+      "same_task": true,
+      "budget_seconds": 1800.0,
+      "elapsed_seconds": 97.242642125,
+      "native_resume_attempted": false,
+      "native_resume_succeeded": false,
+      "run_statuses": [
+        {
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "has_session": true
+        },
+        {
+          "role": "worker",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "has_session": true
+        },
+        {
+          "role": "verifier",
+          "agent": null,
+          "status": "failed",
+          "parse_status": "not_applicable",
+          "has_session": false
+        },
+        {
+          "role": "reviewer",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "has_session": true
+        },
+        {
+          "role": "repair",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "has_session": true
+        },
+        {
+          "role": "verifier",
+          "agent": null,
+          "status": "success",
+          "parse_status": "not_applicable",
+          "has_session": false
+        },
+        {
+          "role": "reviewer",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "has_session": true
+        }
+      ],
+      "review_kinds": [
+        "self_check",
+        "self_check"
+      ],
+      "historical_failures_retained": true,
+      "current_review_bound": true,
+      "original_unchanged": true,
+      "protected_files_unchanged": true,
+      "repeat_continue_no_calls": true,
+      "material_session_fallback": false,
+      "events_monotonic": true,
+      "acceptance": "passed"
+    },
+    {
+      "name": "project-auto-owner-loss",
+      "kind": "project",
+      "mode": "auto",
+      "interruption": "kill",
+      "task_id": "task-20261017T070701Z-f76f3d45",
+      "interrupted_role": "worker",
+      "calls_before_interruption": 3,
+      "lost_status": "needs_reconcile",
+      "unsafe_continue_blocked": true,
+      "status": "completed",
+      "reason": "Current artifacts, validation and review satisfy the declared acceptance; user acceptance is separate.",
+      "calls": 7,
+      "repairs": 1,
+      "plan_versions": 1,
+      "attempt_roles": [
+        "coordinator",
+        "coordinator",
+        "worker",
+        "worker",
+        "verifier",
+        "reviewer",
+        "repair",
+        "verifier",
+        "reviewer"
+      ],
+      "mode_preserved": true,
+      "same_task": true,
+      "budget_seconds": 1800.0,
+      "elapsed_seconds": 198.935024458,
+      "native_resume_attempted": false,
+      "native_resume_succeeded": false,
+      "run_statuses": [
+        {
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "has_session": true
+        },
+        {
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "has_session": true
+        },
+        {
+          "role": "worker",
+          "agent": "codex",
+          "status": "orphaned",
+          "parse_status": "unknown",
+          "has_session": false
+        },
+        {
+          "role": "worker",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "has_session": true
+        },
+        {
+          "role": "verifier",
+          "agent": null,
+          "status": "failed",
+          "parse_status": "not_applicable",
+          "has_session": false
+        },
+        {
+          "role": "reviewer",
+          "agent": "cursor",
+          "status": "success",
+          "parse_status": "complete",
+          "has_session": true
+        },
+        {
+          "role": "repair",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "has_session": true
+        },
+        {
+          "role": "verifier",
+          "agent": null,
+          "status": "success",
+          "parse_status": "not_applicable",
+          "has_session": false
+        },
+        {
+          "role": "reviewer",
+          "agent": "cursor",
+          "status": "success",
+          "parse_status": "complete",
+          "has_session": true
+        }
+      ],
+      "review_kinds": [
+        "cross_cli",
+        "cross_cli"
+      ],
+      "historical_failures_retained": true,
+      "current_review_bound": true,
+      "original_unchanged": true,
+      "protected_files_unchanged": true,
+      "repeat_continue_no_calls": true,
+      "material_session_fallback": false,
+      "events_monotonic": true,
+      "acceptance": "passed"
+    }
+  ],
+  "native_versions": {
+    "codex": "codex-cli 0.163.0",
+    "cursor": "2026.10.14-0f9edde"
+  },
+  "invocation_overrides": {
+    "codex_reasoning_effort": "low",
+    "private_raw_output": true,
+    "cursor_trust": "generated temporary cwd only"
+  },
+  "calls": 23,
+  "calls_by_adapter": {
+    "codex": 20,
+    "cursor": 3
+  },
+  "acceptance": "passed",
+  "history": [
+    {
+      "acceptance": "failed",
+      "error": "(1, 'complete requires work and review')",
+      "calls": 17
+    }
+  ]
+}

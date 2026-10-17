@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Version = "0.5.0-r1-dev"
+var Version = "0.5.0-r2-dev"
 
 type ExitError struct {
 	Code    int
@@ -50,6 +50,7 @@ func newRootCommand() *cobra.Command {
 	root.PersistentFlags().StringVar(&a.configPath, "config", "", "explicit configuration file")
 	root.AddCommand(
 		a.newTaskCommand(),
+		a.newTaskWorkerCommand(), a.newTaskAttemptCommand(),
 		a.newAgentsCommand(),
 		a.newDoctorCommand(),
 		a.newUseCommand(),

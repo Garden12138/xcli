@@ -1,4 +1,4 @@
-// Package task owns bounded, foreground tasks. Native sessions remain Run
+// Package task owns bounded, resumable tasks. Native sessions remain Run
 // details; a task is the identity shared across planning, handoffs and checks.
 package task
 
@@ -21,37 +21,73 @@ type Options struct {
 }
 
 type Task struct {
-	Version     int                `json:"version"`
-	ID          string             `json:"id"`
-	Goal        string             `json:"goal"`
-	Kind        string             `json:"kind"`
-	Mode        string             `json:"mode"`
-	Agent       string             `json:"agent,omitempty"`
-	Coordinator string             `json:"coordinator,omitempty"`
-	Candidates  []string           `json:"candidates"`
-	Inputs      []Artifact         `json:"inputs,omitempty"`
-	Output      string             `json:"output"`
-	Cwd         string             `json:"cwd"`
-	Workspace   *worktree.Metadata `json:"workspace,omitempty"`
-	Status      string             `json:"status"`
-	Reason      string             `json:"reason,omitempty"`
-	ExitCode    int                `json:"exit_code"`
-	StartedAt   time.Time          `json:"started_at"`
-	EndedAt     time.Time          `json:"ended_at,omitempty"`
-	Deadline    time.Time          `json:"deadline"`
-	MaxCalls    int                `json:"max_calls"`
-	Calls       int                `json:"calls"`
-	Repairs     int                `json:"repairs"`
-	Plans       []Plan             `json:"plans,omitempty"`
-	Attempts    []Attempt          `json:"attempts,omitempty"`
-	Handoffs    []Handoff          `json:"handoffs,omitempty"`
-	Artifacts   []Artifact         `json:"artifacts,omitempty"`
-	Checks      []Check            `json:"checks,omitempty"`
-	Reviews     []Review           `json:"reviews,omitempty"`
-	Snapshot    string             `json:"snapshot,omitempty"`
-	DiffFile    string             `json:"diff_file,omitempty"`
-	Usage       *agent.Usage       `json:"usage,omitempty"`
-	Sequence    uint64             `json:"sequence"`
+	StopBaseline    uint64             `json:"stop_baseline"`
+	OwnerToken      string             `json:"owner_token,omitempty"`
+	UsageIncomplete bool               `json:"usage_incomplete,omitempty"`
+	Options         Options            `json:"options"`
+	Checkpoint      *Checkpoint        `json:"checkpoint,omitempty"`
+	Pending         []Update           `json:"pending_updates,omitempty"`
+	OriginalGoal    string             `json:"original_goal,omitempty"`
+	Updates         []Update           `json:"updates,omitempty"`
+	Bindings        map[string]string  `json:"bindings,omitempty"`
+	Elapsed         time.Duration      `json:"elapsed_ns"`
+	ActiveAt        time.Time          `json:"active_at,omitempty"`
+	PID             int                `json:"pid,omitempty"`
+	Background      bool               `json:"background,omitempty"`
+	OwnerActive     bool               `json:"owner_active"`
+	Version         int                `json:"version"`
+	ID              string             `json:"id"`
+	Goal            string             `json:"goal"`
+	Kind            string             `json:"kind"`
+	Mode            string             `json:"mode"`
+	Agent           string             `json:"agent,omitempty"`
+	Coordinator     string             `json:"coordinator,omitempty"`
+	Candidates      []string           `json:"candidates"`
+	Inputs          []Artifact         `json:"inputs,omitempty"`
+	Output          string             `json:"output"`
+	Cwd             string             `json:"cwd"`
+	Workspace       *worktree.Metadata `json:"workspace,omitempty"`
+	Status          string             `json:"status"`
+	Reason          string             `json:"reason,omitempty"`
+	ExitCode        int                `json:"exit_code"`
+	StartedAt       time.Time          `json:"started_at"`
+	EndedAt         time.Time          `json:"ended_at,omitempty"`
+	Deadline        time.Time          `json:"deadline"`
+	MaxCalls        int                `json:"max_calls"`
+	Calls           int                `json:"calls"`
+	Repairs         int                `json:"repairs"`
+	Plans           []Plan             `json:"plans,omitempty"`
+	Attempts        []Attempt          `json:"attempts,omitempty"`
+	Handoffs        []Handoff          `json:"handoffs,omitempty"`
+	Artifacts       []Artifact         `json:"artifacts,omitempty"`
+	Checks          []Check            `json:"checks,omitempty"`
+	Reviews         []Review           `json:"reviews,omitempty"`
+	Snapshot        string             `json:"snapshot,omitempty"`
+	DiffFile        string             `json:"diff_file,omitempty"`
+	Usage           *agent.Usage       `json:"usage,omitempty"`
+	Sequence        uint64             `json:"sequence"`
+}
+
+// Checkpoint names the next operation. InFlight is committed before dispatch;
+// it is never silently replayed after loss of the owner.
+type Checkpoint struct {
+	Stage       string `json:"stage"`
+	Round       int    `json:"round"`
+	VerifyIndex int    `json:"verify_index"`
+	Passed      bool   `json:"passed"`
+	InFlight    string `json:"in_flight,omitempty"`
+	Applied     uint64 `json:"applied_update"`
+}
+
+type Update struct {
+	Sequence     uint64        `json:"sequence"`
+	Time         time.Time     `json:"time"`
+	Message      string        `json:"message,omitempty"`
+	Verify       [][]string    `json:"verify,omitempty"`
+	Timeout      time.Duration `json:"timeout_ns,omitempty"`
+	MaxCalls     int           `json:"max_calls,omitempty"`
+	Reconcile    bool          `json:"reconcile,omitempty"`
+	FreshSession bool          `json:"fresh_session,omitempty"`
 }
 
 type Plan struct {
@@ -86,6 +122,7 @@ type Artifact struct {
 }
 
 type Attempt struct {
+	CopySnapshot string   `json:"copy_snapshot,omitempty"`
 	RetryNotices int      `json:"retry_notices,omitempty"`
 	RunID        string   `json:"run_id"`
 	Role         string   `json:"role"`

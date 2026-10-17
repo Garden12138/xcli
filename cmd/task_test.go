@@ -14,6 +14,7 @@ import (
 
 func taskCLIConfig(t *testing.T) string {
 	t.Helper()
+	installDetachedTestHelper(t)
 	dir := t.TempDir()
 	setCommandEnvironment(t, "XDG_DATA_HOME", filepath.Join(dir, "data"))
 	plan := task.Plan{Version: 1, Reason: "single CLI fixture", Acceptance: []task.Requirement{{Path: "result.txt", Contains: []string{"correct"}}}, Actions: []task.Action{{Type: "delegate", Role: "worker", Agent: "test", Objective: "produce result.txt"}, {Type: "delegate", Role: "reviewer", Agent: "test", Objective: "review result.txt"}, {Type: "complete"}}}
@@ -23,7 +24,7 @@ func taskCLIConfig(t *testing.T) string {
 		return "printf '%s\\n' '" + strings.ReplaceAll(string(item), "'", "'\\''") + "' '{\"type\":\"turn.completed\"}'\n"
 	}
 	passed := true
-	body := "#!/bin/sh\nif [ \"$1\" = --version ]; then echo fixture-1; exit; fi\nif [ \"$1\" = --help ]; then echo exec; exit; fi\ncase \"$*\" in\n*'Task coordinator'*)\n" + response(plan) + ";;\n*'Task reviewer'*)\n" + response(task.Review{Passed: &passed, Findings: []string{}, Coverage: []string{"result checked"}, Sources: []string{"result.txt"}}) + ";;\n*)\nprintf correct > result.txt\n" + response(task.Handoff{Summary: "file produced", Facts: []string{"output exists"}, Sources: []string{"result.txt"}}) + ";;\nesac\n"
+	body := "#!/bin/sh\nif [ \"$1\" = --version ]; then echo fixture-1; exit; fi\nif [ \"$1\" = --help ]; then echo exec; exit; fi\nprintf '%s\\n' '{\"type\":\"thread.started\",\"thread_id\":\"fixture-session\"}'\ncase \"$*\" in\n*'Task coordinator'*)\n" + response(plan) + ";;\n*'Task reviewer'*)\n" + response(task.Review{Passed: &passed, Findings: []string{}, Coverage: []string{"result checked"}, Sources: []string{"result.txt"}}) + ";;\n*)\nprintf partial > result.txt\nif [ -n \"$XCLI_R2_GATE\" ]; then printf '%s\\n' \"$$\" > \"$XCLI_R2_GATE.pid\"; printf '%s\\n' \"$*\" >> \"$XCLI_R2_GATE.argv\"; while [ ! -f \"$XCLI_R2_GATE\" ]; do sleep 0.05; done; fi\nprintf correct > result.txt\n" + response(task.Handoff{Summary: "file produced", Facts: []string{"output exists"}, Sources: []string{"result.txt"}}) + ";;\nesac\n"
 	script := filepath.Join(dir, "agent")
 	if err := os.WriteFile(script, []byte(body), 0o700); err != nil {
 		t.Fatal(err)
@@ -97,7 +98,7 @@ func TestTaskCLIJSONEventsAndStatus(t *testing.T) {
 }
 
 func TestTaskCLIInvalidOptionsAndRetirement(t *testing.T) {
-	for _, args := range [][]string{{"task", "goal", "--json", "--events"}, {"task", "goal", "--verify", "echo bad"}, {"task", "goal", "--max-calls", "0"}, {"task", "goal", "--timeout", "0s"}, {"task", "goal", "--detach"}, {"task", "continue", "task-test"}, {"install"}, {"auth"}, {"default"}, {"acp"}, {"route"}, {"workflow"}, {"usage"}, {"mcp", "import"}, {"mcp", "sync"}, {"mcp", "plan"}} {
+	for _, args := range [][]string{{"task", "goal", "--json", "--events"}, {"task", "goal", "--verify", "echo bad"}, {"task", "goal", "--max-calls", "0"}, {"task", "goal", "--timeout", "0s"}, {"task", "goal", "--detach", "--events"}, {"task", "continue", "task-test"}, {"install"}, {"auth"}, {"default"}, {"acp"}, {"route"}, {"workflow"}, {"usage"}, {"mcp", "import"}, {"mcp", "sync"}, {"mcp", "plan"}} {
 		root := newRootCommand()
 		root.SetOut(&bytes.Buffer{})
 		root.SetErr(&bytes.Buffer{})

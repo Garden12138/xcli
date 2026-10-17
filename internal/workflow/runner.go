@@ -636,7 +636,11 @@ func (r *Runner) runStep(ctx context.Context, workflowCwd, tempDir string, step 
 		}
 		definition, err = r.Registry.Get(step.Agent)
 		if err == nil {
-			spec, err = definition.Run(prompt, true, args)
+			if step.ResumeSession != "" {
+				spec, err = definition.Resume(step.ResumeSession, prompt, true, args)
+			} else {
+				spec, err = definition.Run(prompt, true, args)
+			}
 		}
 		if err == nil {
 			environment, err = xruntime.BuildEnvironment(os.Environ(), r.Config, definition.Config, step.Network)
@@ -695,7 +699,7 @@ func (r *Runner) runStep(ctx context.Context, workflowCwd, tempDir string, step 
 		}
 		outcome, runErr := xruntime.Execute(stepContext, attemptDefinition, spec, xruntime.ProcessOptions{
 			Dir: directory, Env: environment, Stderr: r.Stderr, RawOutput: rawWriter, SeparateProcess: true,
-		}, runID, step.ID, attempt, r.Events)
+		}, runID, step.ID, attempt, r.Events, step.ResumeSession)
 		cancel()
 		if raw != nil {
 			if err := raw.Close(); err != nil {

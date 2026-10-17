@@ -1,0 +1,161 @@
+{
+  "kind": "r2_native_invocation_ledger",
+  "limit": 24,
+  "total": 24,
+  "by_adapter": {
+    "codex": 21,
+    "cursor": 3
+  },
+  "batches": [
+    {
+      "name": "initial stop/resume candidate",
+      "calls": 3,
+      "acceptance": "failed",
+      "evidence": "native-initial-failed.json"
+    },
+    {
+      "name": "native missing-rollout diagnosis",
+      "calls": 1,
+      "acceptance": "diagnostic: session explicitly unavailable",
+      "evidence": "native-resume-diagnostic.json"
+    },
+    {
+      "name": "four Task paths including interrupted Project continuation",
+      "calls": 19,
+      "acceptance": "passed",
+      "evidence": "native-four-paths.json"
+    },
+    {
+      "name": "later binary audit and actual native session resume",
+      "calls": 1,
+      "acceptance": "passed",
+      "evidence": "native-final-binary-audit.json"
+    }
+  ],
+  "invocations": [
+    {
+      "number": 1,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T06:55:39.443300+00:00"
+    },
+    {
+      "number": 2,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T06:55:51.805213+00:00"
+    },
+    {
+      "number": 3,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T06:55:52.965901+00:00"
+    },
+    {
+      "number": 4,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T06:59:32.787860+00:00"
+    },
+    {
+      "number": 5,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T07:03:11.683685+00:00"
+    },
+    {
+      "number": 6,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T07:03:27.179403+00:00"
+    },
+    {
+      "number": 7,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T07:03:34.693953+00:00"
+    },
+    {
+      "number": 8,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T07:03:52.736274+00:00"
+    },
+    {
+      "number": 9,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T07:04:11.492722+00:00"
+    },
+    {
+      "number": 10,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T07:04:24.423016+00:00"
+    },
+    {
+      "number": 11,
+      "adapter": "cursor",
+      "time_utc": "2026-10-17T07:04:39.875795+00:00"
+    },
+    {
+      "number": 12,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T07:05:24.248969+00:00"
+    },
+    {
+      "number": 13,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T07:05:39.581837+00:00"
+    },
+    {
+      "number": 14,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T07:06:03.688769+00:00"
+    },
+    {
+      "number": 15,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T07:06:19.579217+00:00"
+    },
+    {
+      "number": 16,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T07:06:44.417511+00:00"
+    },
+    {
+      "number": 17,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T07:07:02.413702+00:00"
+    },
+    {
+      "number": 18,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T07:41:22.129162+00:00"
+    },
+    {
+      "number": 19,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T07:41:56.941254+00:00"
+    },
+    {
+      "number": 20,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T07:42:21.383070+00:00"
+    },
+    {
+      "number": 21,
+      "adapter": "cursor",
+      "time_utc": "2026-10-17T07:42:45.012152+00:00"
+    },
+    {
+      "number": 22,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T07:43:20.945097+00:00"
+    },
+    {
+      "number": 23,
+      "adapter": "cursor",
+      "time_utc": "2026-10-17T07:44:13.602361+00:00"
+    },
+    {
+      "number": 24,
+      "adapter": "codex",
+      "time_utc": "2026-10-17T07:51:36.491778+00:00"
+    }
+  ],
+  "notes": [
+    "Every dispatched CLI process is counted, including locally rejected session resumes. This is not a count of vendor-internal model requests.",
+    "Read-only version/help/status and replay checks do not consume model execution invocations."
+  ]
+}

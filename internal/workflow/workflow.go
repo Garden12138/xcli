@@ -33,6 +33,7 @@ type Workflow struct {
 }
 
 type Step struct {
+	ResumeSession   string   `yaml:"-" json:"resume_session,omitempty"`
 	ID              string   `yaml:"id" json:"id"`
 	Agent           string   `yaml:"agent,omitempty" json:"agent,omitempty"`
 	Prompt          string   `yaml:"prompt,omitempty" json:"prompt,omitempty"`

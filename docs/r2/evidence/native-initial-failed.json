@@ -1,0 +1,76 @@
+{
+  "kind": "r2_native_acceptance",
+  "date": "2026-10-17T06:55:35Z",
+  "platform": "macOS-26.5.1-arm64-arm-64bit",
+  "binary_sha256": "48ba0aaafff4d81dfc4e80bfcd95d4ece63fbac1cc7026ea8bb370c953f83aaa",
+  "call_limit": 24,
+  "scenarios": [
+    {
+      "name": "work-single-stop",
+      "kind": "work",
+      "mode": "single",
+      "interruption": "stop",
+      "task_id": "task-20261017T065539Z-facc79d4",
+      "interrupted_role": "worker",
+      "calls_before_interruption": 2,
+      "stop_status": "paused",
+      "status": "failed",
+      "reason": "worker codex failed: native process exited with code 1 (status failed, native exit 1)",
+      "calls": 3,
+      "repairs": 0,
+      "plan_versions": 1,
+      "attempt_roles": [
+        "coordinator",
+        "worker",
+        "worker"
+      ],
+      "mode_preserved": true,
+      "same_task": true,
+      "budget_seconds": 1800.0,
+      "elapsed_seconds": 14.369768207,
+      "native_resume_observed": true,
+      "run_statuses": [
+        {
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "has_session": true
+        },
+        {
+          "role": "worker",
+          "agent": "codex",
+          "status": "canceled",
+          "parse_status": "parse_error",
+          "has_session": true
+        },
+        {
+          "role": "worker",
+          "agent": "codex",
+          "status": "failed",
+          "parse_status": "parse_error",
+          "has_session": true
+        }
+      ],
+      "review_kinds": [],
+      "historical_failures_retained": true,
+      "current_review_bound": false
+    }
+  ],
+  "native_versions": {
+    "codex": "codex-cli 0.163.0",
+    "cursor": "2026.10.14-0f9edde"
+  },
+  "invocation_overrides": {
+    "codex_reasoning_effort": "low",
+    "private_raw_output": true,
+    "cursor_trust": "generated temporary cwd only"
+  },
+  "calls": 3,
+  "calls_by_adapter": {
+    "codex": 3,
+    "cursor": 0
+  },
+  "acceptance": "failed",
+  "error": "[Errno 2] No such file or directory: '/private<private-test-root>/data/xcli/tasks/task-20261017T065539Z-facc79d4/work/report.md'"
+}

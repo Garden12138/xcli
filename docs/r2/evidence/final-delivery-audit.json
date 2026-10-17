@@ -1,0 +1,41 @@
+{
+  "kind": "final_delivery_readonly_audit",
+  "binary_sha256": "8358a63fa94182aa13d23334acdbb8d51084901dc516e24ee54cb324ec311af0",
+  "tasks": [
+    {
+      "id": "task-20261017T070311Z-ce49a369",
+      "status": "completed",
+      "calls_unchanged": true,
+      "materials_unchanged": true,
+      "events_monotonic": true,
+      "owner_active": false
+    },
+    {
+      "id": "task-20261017T070407Z-d95744a3",
+      "status": "completed",
+      "calls_unchanged": true,
+      "materials_unchanged": true,
+      "events_monotonic": true,
+      "owner_active": false
+    },
+    {
+      "id": "task-20261017T070523Z-e9fc9702",
+      "status": "completed",
+      "calls_unchanged": true,
+      "materials_unchanged": true,
+      "events_monotonic": true,
+      "owner_active": false
+    },
+    {
+      "id": "task-20261017T070701Z-f76f3d45",
+      "status": "completed",
+      "calls_unchanged": true,
+      "materials_unchanged": true,
+      "events_monotonic": true,
+      "owner_active": false
+    }
+  ],
+  "acceptance": "passed",
+  "additional_native_calls": 0,
+  "cumulative_native_calls": 24
+}

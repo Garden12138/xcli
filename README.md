@@ -4,7 +4,7 @@
 
 Give a Work or Project goal to native Agent CLIs, with bounded execution, explicit handoffs and verifiable results.
 
-The current source is **R1 / `0.5.0-r1-dev`**, an unreleased development version. Published v0.4.0 packages do not contain Task. Read the [R1 behavior and migration guide](docs/r1/README.zh-CN.md) and [acceptance evidence](docs/r1/results.zh-CN.md) for actual validation limits.
+The current source is **R2 / `0.5.0-r2-dev`**, an unreleased development version. Published v0.4.0 packages do not contain Task. See the [R2 lifecycle guide](docs/r2/README.zh-CN.md), [acceptance evidence](docs/r2/results.zh-CN.md), and [R1 migration guide](docs/r1/README.zh-CN.md).
 
 ## Start a task
 
@@ -31,12 +31,17 @@ go build -o xcli .
 ./xcli task "Fix the bug and have another CLI review it" --project . \
   --verify '["go","test","-count=1","./..."]' --json
 
+# Run independently of this terminal, then stop or continue the same Task
+./xcli task "Finish the project change and verify it" --project . --detach
 ./xcli task status <task-id> --json
+./xcli task status <task-id> --events --follow
+./xcli task stop <task-id>
+./xcli task continue <task-id> --detach
 ```
 
 `--agent` locks all xcli Agent invocations to the configured CLI, including planning, repair and self-check. It never silently falls back to another CLI. Without it, available structured adapters are selected using the configured default preference and deterministic candidate ordering; the coordinator assigns roles. Different aliases of the same adapter do not count as cross-CLI review.
 
-Default bounds are 10 minutes total, 6 Agent CLI invocations, 120 seconds per invocation, and one repair followed by revalidation. Change total limits with `--timeout` and `--max-calls`. Native internal model calls and subagents may not be observable; invocation counts are not model request counts.
+Default bounds are 10 minutes of cumulative execution time (excluding pauses and waiting), 6 Agent CLI invocations, 120 seconds per invocation, and one repair followed by revalidation. Change total limits with `--timeout` and `--max-calls`. Native internal model calls and subagents may not be observable; invocation counts are not model request counts.
 
 ## Results and verification
 
@@ -46,9 +51,9 @@ Project tasks preserve a managed worktree, baseline diff, untracked files and va
 
 Tests execute trusted project code. Argument checks, Git worktrees and native permission flags are not a general OS sandbox. xcli does not automatically install tools, change persistent permissions or publish results. Failures retain material for inspection. Review the worktree and complete diff, then commit or copy changes using your normal Git process.
 
-Progress goes to stderr and a human result summary to stdout. `--json` emits one Task object; `--events` emits sequenced JSONL events with the final result. The flags are mutually exclusive. `task status` reads saved state.
+Progress goes to stderr and a human result summary to stdout. `--json` emits one Task object; `--events` emits sequenced JSONL events with the final result. The flags are mutually exclusive. `task status` checks ownership and checkpoints, conservatively reconciling inactive owners.
 
-Task background execution, stop/continue, checkpoints and stale-owner recovery are **R2**, not implemented in R1. Ctrl-C cancels the current Task. `waiting_user` preserves missing requirements; supply them in a new Task with explicitly selected old materials for now.
+Task supports background execution, stop/continue, checkpoints and inactive-owner recovery. Ctrl-C cancels the current execution while retaining materials. Supply missing `waiting_user` requirements through the same Task’s continue command. Continuation preserves the mode, candidate pool and cumulative budget. Uncertain operations require inspection and explicit `--reconcile`; unavailable native sessions can recover from Task materials.
 
 ## Configuration and adapters
 
@@ -102,7 +107,7 @@ go vet ./...
 go mod tidy -diff
 
 # Explicit live acceptance: four temporary tasks, at most 24 Agent invocations
-python3 tests/r1/native.py --binary ./xcli --out /tmp/r1-native.json --execute
+python3 tests/r2/native.py --binary ./xcli --out /tmp/r2-native.json --execute
 ```
 
 The live harness uses default Codex/Cursor login environments, temporary project/data directories, and Cursor trust only for generated test directories. It preserves private failure evidence and emits sanitized public results. Historical R0 and phase-0 records retain their original validation scope; [R1 results](docs/r1/results.zh-CN.md) describe this development milestone.

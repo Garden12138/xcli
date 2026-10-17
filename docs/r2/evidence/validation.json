@@ -1,0 +1,257 @@
+{
+  "kind": "r2_engineering_validation",
+  "base_commit": "7f817aa",
+  "checks": [
+    {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "./..."
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 146.401,
+      "output": "?   \tgithub.com/Garden12138/xcli\t[no test files]\nok  \tgithub.com/Garden12138/xcli/cmd\t40.224s\nok  \tgithub.com/Garden12138/xcli/internal/agent\t(cached)\nok  \tgithub.com/Garden12138/xcli/internal/config\t(cached)\nok  \tgithub.com/Garden12138/xcli/internal/jobs\t(cached)\nok  \tgithub.com/Garden12138/xcli/internal/mcp\t(cached)\nok  \tgithub.com/Garden12138/xcli/internal/runstore\t(cached)\nok  \tgithub.com/Garden12138/xcli/internal/runtime\t(cached)\nok  \tgithub.com/Garden12138/xcli/internal/task\t145.031s\nok  \tgithub.com/Garden12138/xcli/internal/workflow\t(cached)\nok  \tgithub.com/Garden12138/xcli/internal/worktree\t(cached)\nok  \tgithub.com/Garden12138/xcli/tests/phase0\t(cached)\n"
+    },
+    {
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.245,
+      "output": ""
+    },
+    {
+      "command": [
+        "go",
+        "mod",
+        "tidy",
+        "-diff"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.032,
+      "output": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.011,
+      "output": ""
+    },
+    {
+      "command": [
+        "gofmt",
+        "-l",
+        "<all Go files>"
+      ],
+      "exit_code": 0,
+      "output": "",
+      "passed": true
+    }
+  ],
+  "production_source_sha256": "d45270241f28a3b7004bd031f08eb17582e6ccae3bbb121fe1e557bdb5de9b28",
+  "production_manifest": [
+    {
+      "path": "cmd/agents_doctor.go",
+      "sha256": "b9387227ac193b62a14df77d8ce2443980b22b358e9331cb24b73e40827a0452"
+    },
+    {
+      "path": "cmd/config_default.go",
+      "sha256": "05f69cf8eeb46049f6231ab80d4ecc4c1d18ff5c9c457944532c35ec845dc481"
+    },
+    {
+      "path": "cmd/execution.go",
+      "sha256": "9dda2093d45c4eeb80b7f6315832b24dffb29b24a057d24309432cfe4f7b888e"
+    },
+    {
+      "path": "cmd/jobs.go",
+      "sha256": "89c047a9ca21ff781e92058cdced2db22254c35661c30ef69e8022608c4deaa5"
+    },
+    {
+      "path": "cmd/mcp.go",
+      "sha256": "a7a404fb2f72e139b7dc6360d8542b3cee09b6380b9a921edc4a4d6bba8cff57"
+    },
+    {
+      "path": "cmd/resume.go",
+      "sha256": "f5786644cd3af69c22ab7779b2c69335bedaabc0c25ad576207549109a41f92c"
+    },
+    {
+      "path": "cmd/root.go",
+      "sha256": "b1013fe4bbd90d67150874d8836390267f151848baf931d9ac377e196550cebf"
+    },
+    {
+      "path": "cmd/run_exec.go",
+      "sha256": "534927dbd4cee6f6498881ae0a5e27d6ec7aa6606e5c59d4cca82f98e1b856fc"
+    },
+    {
+      "path": "cmd/run_use.go",
+      "sha256": "78965c7e24b4efd6d0292f493ebc2599e8626144fbd77ea5e970ca81fe27b46c"
+    },
+    {
+      "path": "cmd/runs.go",
+      "sha256": "26157b86110a6fef4bb8213f4a1aa95b3cc7a696f35a0d68f52b9f7a49ee7cae"
+    },
+    {
+      "path": "cmd/selection.go",
+      "sha256": "e0e3d33c49d701eb9064c6650da18dc1eedfe42533027a09f6dc2a3c7fe5e7b9"
+    },
+    {
+      "path": "cmd/task.go",
+      "sha256": "5ad404941bdd9210c431a965c8778ad3bcd196547dbd824da5e29f2f82a698c4"
+    },
+    {
+      "path": "cmd/task_process.go",
+      "sha256": "daf7673a95402d8cf11982aea7666f8ccfde56370cc5e08968ba9933380e6161"
+    },
+    {
+      "path": "cmd/workflow_compat.go",
+      "sha256": "f6feddfcc4592186660817b30475c0b37076652838e18be1c795ac7454881c4d"
+    },
+    {
+      "path": "go.mod",
+      "sha256": "c4c0c7b22243a229ffc4612d8c1d2234bcb36939b565b7e989bf53d6203a7daf"
+    },
+    {
+      "path": "go.sum",
+      "sha256": "66da05a0877258097449fdd0b67d631fea4ccc4e3756fed022a4c33dcfdcf735"
+    },
+    {
+      "path": "internal/agent/agent.go",
+      "sha256": "e53364642e494eebfe6cf9bc34bd81718868f4f528e1922af140473a1ae9a4d6"
+    },
+    {
+      "path": "internal/agent/diagnostics.go",
+      "sha256": "ed6b9c430be6e539ebba9dc1977cdd26d5c274cbb2ce61cea9ee33395510b378"
+    },
+    {
+      "path": "internal/agent/probe.go",
+      "sha256": "7e2ef57dbae66f5a46c30020559996ba70eb62dc1b14333d608d6cc617845335"
+    },
+    {
+      "path": "internal/agent/stream.go",
+      "sha256": "cbda7091f596bd6bf18df265c1fc0d6be06271a19aef73563d42923989b278db"
+    },
+    {
+      "path": "internal/agent/usage.go",
+      "sha256": "58b9b232140da44ce401f8f1ca0ac10eea3bbd8ef9435122fa5a944629601697"
+    },
+    {
+      "path": "internal/config/config.go",
+      "sha256": "80005280c35de0b0fce0d8b395608f9288a9bdcee9c38b499539b05fd8e0ed4f"
+    },
+    {
+      "path": "internal/jobs/jobs.go",
+      "sha256": "0cd87e0c0cabd3a302797692da563ba17d69cce24be62daef425a1142631aae0"
+    },
+    {
+      "path": "internal/jobs/process_unix.go",
+      "sha256": "97865598afa6cd21b1d7ee3db76f775965c6d89979db8cdb683815c00c456999"
+    },
+    {
+      "path": "internal/mcp/serve.go",
+      "sha256": "86b37d43cb6ad42cc3934ebad836b27ec6123f4ac1e910d27610723ad4296be1"
+    },
+    {
+      "path": "internal/runstore/store.go",
+      "sha256": "e7410efadf1e99eb57005cf0a9d85606dbeccb3fd59bbfcda14996c5c2c4e1df"
+    },
+    {
+      "path": "internal/runtime/environment.go",
+      "sha256": "c3c55155c49eaff0c241737a6e22314b27baca3b99e7265754a49c3d27ccdb43"
+    },
+    {
+      "path": "internal/runtime/execution.go",
+      "sha256": "7ac2dd69703ad137fc18ace71bdf2f3fca2e56340d4727790e2cb8851b31823b"
+    },
+    {
+      "path": "internal/runtime/process.go",
+      "sha256": "5dea9e205e1069af5de6de6ca4c056c318e76e316e0940b85db2c3c36f1a219d"
+    },
+    {
+      "path": "internal/runtime/process_unix.go",
+      "sha256": "b5eb4311eb4a68520bd343800b58f1ea25824db016251a4324feb248330153c4"
+    },
+    {
+      "path": "internal/task/integrity.go",
+      "sha256": "f3cf2cd9341736ac59d2e4df546311a6edbe1e167ecacf362aa54b2ebd18f68f"
+    },
+    {
+      "path": "internal/task/lifecycle.go",
+      "sha256": "2a6bb214f33741561e3e1c51ec34a87a8f57b8eb3085f07d4b9006a4f9dfb59e"
+    },
+    {
+      "path": "internal/task/lock_unix.go",
+      "sha256": "770544cfc3b97cfd15ad11f48beb234e40f2f1763ee3cea8f165a640ea741ed6"
+    },
+    {
+      "path": "internal/task/material.go",
+      "sha256": "96200ca9e863d22e11a855faf08381da8b7a762acfdff7aac4138a20f2df03d3"
+    },
+    {
+      "path": "internal/task/policy.go",
+      "sha256": "873386ae8bd840d4636c4b29c04d47389d814a174b018a92ab8d7ac8755de83c"
+    },
+    {
+      "path": "internal/task/protocol.go",
+      "sha256": "595ee8d7845b7565ff7ca4d9c74198de7b715e392cab368ea8e1e265882758e9"
+    },
+    {
+      "path": "internal/task/review_material.go",
+      "sha256": "63229ea86cc186e801ed74f87e09841fa393af4f7f1c4db46ba60e80a737d194"
+    },
+    {
+      "path": "internal/task/runner.go",
+      "sha256": "109cf2f41a20d6855918faa50024bb55073e9201e757c2b1cc6062847a886415"
+    },
+    {
+      "path": "internal/task/schema.go",
+      "sha256": "7c78f98cb61ae6a01a65bd78ef106af0640504c1795ff37b1609da8caee07382"
+    },
+    {
+      "path": "internal/task/store.go",
+      "sha256": "0c3878b15d9a98f84b67d8dc0823164b773bfbf129eb96ee764d23a38a3c5650"
+    },
+    {
+      "path": "internal/task/types.go",
+      "sha256": "d6cd2d307fa4350d121d3a0413b43dbeffbe94f21d0779a28367e10ec2b01a18"
+    },
+    {
+      "path": "internal/workflow/attempt.go",
+      "sha256": "162433c05df0921c6c20aaddb1277aba03f8fbbf50f3b7828f666c8dcf88c083"
+    },
+    {
+      "path": "internal/workflow/plan.go",
+      "sha256": "148c5a95abf4cbd4e490ea6d66e9656ac9de42327091455b72173d4e1277c4b3"
+    },
+    {
+      "path": "internal/workflow/runner.go",
+      "sha256": "74028cde8c143d5c987060dc17c71429c9d5879ce33025e20a6175064432ff01"
+    },
+    {
+      "path": "internal/workflow/template.go",
+      "sha256": "1fe161ffad0f02bfd2a4092dcc9d06bf8e36e0aa8acef2eab26f9ddbfd45638c"
+    },
+    {
+      "path": "internal/workflow/workflow.go",
+      "sha256": "f11c06fc7d5ba8681777c06f11c4a79bb5d47f4ccf5ca8b779a38b3cad1fb629"
+    },
+    {
+      "path": "internal/worktree/manager.go",
+      "sha256": "536c55cd3a21c4011baecc5f301c146a2d05c2d267798d3568050a2282308721"
+    },
+    {
+      "path": "main.go",
+      "sha256": "e95bde0fd8b776159ee6ec9e7d45d7aa0f2150e6d1c0bb865c84db6e0e1c9d04"
+    }
+  ],
+  "go_version": "go version go1.26.4 darwin/arm64",
+  "goreleaser_snapshot": "not run locally: goreleaser is not installed; fixed CI gate unchanged",
+  "binary_sha256": "8358a63fa94182aa13d23334acdbb8d51084901dc516e24ee54cb324ec311af0",
+  "acceptance": "passed"
+}

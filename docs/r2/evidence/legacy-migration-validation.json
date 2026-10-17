@@ -1,0 +1,21 @@
+{
+  "kind": "targeted_legacy_migration_validation",
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "./internal/task",
+    "-run",
+    "TestR1TaskRequiresExplicitMaterialRecovery",
+    "-count=1",
+    "-timeout=90s"
+  ],
+  "exit_code": 0,
+  "result": "passed",
+  "behavior": [
+    "version 1 remains readable",
+    "continue without checkpoint acknowledgement is rejected",
+    "explicit reconciliation and fresh session migrate the same Task to version 2",
+    "historical calls and handoffs remain cumulative"
+  ]
+}

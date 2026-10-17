@@ -1,0 +1,61 @@
+{
+  "kind": "cross_build_and_archive",
+  "publishes": false,
+  "targets": [
+    {
+      "os": "darwin",
+      "arch": "amd64",
+      "status": "passed",
+      "archive_sha256": "9bb81d7713ed7bf9f8f89e9a864c7e24a20008abc459e5bae9759489922c7823",
+      "binary_sha256": "b07af0bda5ca33adcdc165b0e08cba409c91bfdf1e29839844595defc5fb0947",
+      "members": [
+        "xcli",
+        "LICENSE",
+        "README.md",
+        "README.zh-CN.md"
+      ]
+    },
+    {
+      "os": "darwin",
+      "arch": "arm64",
+      "status": "passed",
+      "archive_sha256": "b396c4d4beec94b0a841e0cd8113cfb068fdd8dfd01803e223d6e38738e4bc77",
+      "binary_sha256": "b068e57625b94e4fdc385cc7cac2ddd17395cdc3b218ef291bb6aaca4c2ac90c",
+      "members": [
+        "xcli",
+        "LICENSE",
+        "README.md",
+        "README.zh-CN.md"
+      ],
+      "native_version": "xcli version 0.5.0-r2-dev"
+    },
+    {
+      "os": "linux",
+      "arch": "amd64",
+      "status": "passed",
+      "archive_sha256": "5f4db784dc307909485de701b0772901e77fd5dc0610194ade3407647070b247",
+      "binary_sha256": "e85b36484a8fdf9cc74830081fef6cf77dd82bc7191c002f7e5a0194c797aead",
+      "members": [
+        "xcli",
+        "LICENSE",
+        "README.md",
+        "README.zh-CN.md"
+      ]
+    },
+    {
+      "os": "linux",
+      "arch": "arm64",
+      "status": "passed",
+      "archive_sha256": "831878fe1ef20eb794a5f647025069c8b75c47bf7bab1873098320848960fe84",
+      "binary_sha256": "38ade4d6d47d0527f3e30d315bbdd76beaa3827756040e97e1851d7872a50ff4",
+      "members": [
+        "xcli",
+        "LICENSE",
+        "README.md",
+        "README.zh-CN.md"
+      ]
+    }
+  ],
+  "status": "passed",
+  "goreleaser": "not run locally; CI uses the pinned snapshot workflow"
+}

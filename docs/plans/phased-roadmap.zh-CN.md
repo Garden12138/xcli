@@ -1,5 +1,7 @@
 **xcli 后续详细阶段计划 · 2026-09-08**
 
+2026-10-17 R2 更新：后台、stop/continue、持久检查点、失活识别及 session/材料恢复已实现；Work/Project × 指定/自动真实路径通过。历史规划保留，下文状态以 [R2 实施与验收记录](../r2/results.zh-CN.md)为准；未打 tag 或发布。
+
 2026-10-16 R1 实施更新：Task、两种执行方式、交接与旧管理入口收口已完成；Work/Project × 指定/自动四条真实路径已在 macOS arm64 的 Codex/Cursor 上验收通过，累计调用 52/60 次；以 [R1 说明](../r1/README.zh-CN.md)和[本批验收记录](../r1/results.zh-CN.md)为准。下文较早状态仅保留历史背景，R2 尚未实现。
 
 

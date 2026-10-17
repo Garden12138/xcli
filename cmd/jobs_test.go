@@ -33,6 +33,7 @@ func TestBackgroundWorkerHelper(t *testing.T) {
 	if separator < 0 || separator+1 >= len(os.Args) {
 		os.Exit(99)
 	}
+	installDetachedTestHelper(t)
 	root := newRootCommand()
 	root.SetOut(os.Stdout)
 	root.SetErr(os.Stderr)
