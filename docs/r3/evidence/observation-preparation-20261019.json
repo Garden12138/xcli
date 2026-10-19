@@ -1,0 +1,36 @@
+{
+  "status": "prepared_not_observed",
+  "participants": 0,
+  "blank_records": 3,
+  "native_model_invocations": 0,
+  "zip_sha256": "5677688304abc80a5e11bf0ef018b7accf12998956fdaa47fff5510fec8892a1",
+  "targets": [
+    {
+      "os": "darwin",
+      "arch": "amd64",
+      "archive_sha256": "8af8f040e6e3a262e754740087d0368c0b8c1366f6361f4ee2b404fb8d115706",
+      "binary_sha256": "2e9fc0ad8caf4941fbeb110b080bda378601a37ce0afafb58a9ce7342cc27216"
+    },
+    {
+      "os": "darwin",
+      "arch": "arm64",
+      "archive_sha256": "ed64ef7c897563c7940077adf9ea30890e792315a079e3619f43164b9b161bc4",
+      "binary_sha256": "b09b6de4292f9835729566ff5cd44531da0b1861821accd04eac5e67c4b51c33"
+    },
+    {
+      "os": "linux",
+      "arch": "amd64",
+      "archive_sha256": "cc6c254e6b49a09053a66cc53b9e97ac20849f1e08d01111034c3f92db925009",
+      "binary_sha256": "90fa544b694f6604057e418756c41c11d04f05a20671342e1903ab552a5351d9"
+    },
+    {
+      "os": "linux",
+      "arch": "arm64",
+      "archive_sha256": "c4ab54812e02e2370e96e680887993bb38bcdb85ea353b130787053700da4772",
+      "binary_sha256": "6a4da568878b84516258c03ae9f65499e9ee95ea1748cd31f62ccf93b8e822bf"
+    }
+  ],
+  "kind": "r3_observation_preparation",
+  "candidate_source_commit": "c209756751e29075a7abbbea3c96db5357803dc3",
+  "independent_observation_verified": false
+}

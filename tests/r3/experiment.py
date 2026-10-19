@@ -31,12 +31,19 @@ def checked(argv, **kwargs):
     return result["stdout"].strip()
 
 
-def prepare(root, binary, budget, campaign=None, *, previous_campaign=None, cross_only=False, carry_budget=False):
+def prepare(root, binary, budget, campaign=None, *, previous_campaign=None, cross_only=False, carry_budget=False, value_campaign=None):
     if not 1 <= budget <= 48:
         raise ValueError("R3 budget must be 1..48")
     if previous_campaign and campaign:
         raise ValueError("a separately budgeted follow-up cannot reset/share the prior campaign")
     followup = previous_campaign is not None
+    if value_campaign and (followup or campaign):
+        raise ValueError("value comparison requires a separate frozen campaign")
+    scenario = fixtures
+    order = ORDER
+    if value_campaign:
+        import value_fixtures as scenario
+        order = ["work-single", "work-direct", "work-cross"]
     if (cross_only or carry_budget) and not followup:
         raise ValueError("cross-only/carried budget requires a recovery follow-up")
     inherited = b""
@@ -56,6 +63,8 @@ def prepare(root, binary, budget, campaign=None, *, previous_campaign=None, cros
     tool_names = ["common.py", "native_wrapper.py", "fixtures.py", "experiment.py", "compatibility.py"]
     if followup:
         tool_names.append("revalidate.py")
+    if value_campaign:
+        tool_names.extend(["value.py", "value_fixtures.py"])
     for name in tool_names:
         shutil.copyfile(HERE / name, root / "tools" / name)
     native = {}
@@ -76,12 +85,12 @@ def prepare(root, binary, budget, campaign=None, *, previous_campaign=None, cros
         cfg["agents"][name] = {"adapter": name, "command": str(root / "not-enabled")}
     write_json(root / "config.json", cfg)
     cases = {}
-    for name in ([] if followup else ORDER):
+    for name in ([] if followup else order):
         kind, arm = name.split("-")
         folder = root / "cases" / name
         folder.mkdir(parents=True, mode=0o700)
         source = folder / "source"
-        files = fixtures.WORK_FILES if kind == "work" else fixtures.PROJECT_FILES
+        files = scenario.WORK_FILES if kind == "work" else fixtures.PROJECT_FILES
         fixtures.put_files(source, files)
         if kind == "project":
             commit_env = dict(os.environ, GIT_AUTHOR_DATE="2026-10-17T00:00:00Z", GIT_COMMITTER_DATE="2026-10-17T00:00:00Z")
@@ -91,7 +100,7 @@ def prepare(root, binary, budget, campaign=None, *, previous_campaign=None, cros
         else:
             baseline = None
         cases[name] = {"kind": kind, "arm": arm, "inputs": fixtures.manifest(source), "baseline": baseline,
-                       "goal": fixtures.WORK_GOAL if kind == "work" else fixtures.PROJECT_GOAL}
+                       "goal": scenario.WORK_GOAL if kind == "work" else fixtures.PROJECT_GOAL}
     if campaign:
         original = read_json(campaign / "study.json")
         if original["budget"] != budget or original.get("ledger_root", str(campaign)) != str(campaign):
@@ -109,7 +118,7 @@ def prepare(root, binary, budget, campaign=None, *, previous_campaign=None, cros
     study = {"schema": 1, "prepared_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
              "platform": platform.platform(), "binary": str(binary), "binary_sha256": digest(binary),
              "source_commit": checked(["git", "rev-parse", "HEAD"], cwd=REPOSITORY),
-             "budget": budget, "ledger_root": str(campaign or root), "native": native, "order": [] if followup else ORDER, "cases": cases,
+             "budget": budget, "ledger_root": str(campaign or root), "native": native, "order": [] if followup else order, "cases": cases,
              "profile": "recovery-followup" if followup else "comparison", "previous_campaign": prior,
              "compatibility_cases": (["cursor-readiness", "cross-recovery"] if cross_only else ["cursor-readiness", "single-recovery", "cross-recovery"]) if followup else COMPATIBILITY,
              "case_limits": {"cursor-readiness": 1, "single-recovery": 5, "cross-recovery": 5} if followup else {**{name: 6 for name in ORDER}, **{name: 1 for name in COMPATIBILITY[:4]}, **{name: 4 for name in COMPATIBILITY[4:]}},
@@ -125,6 +134,21 @@ def prepare(root, binary, budget, campaign=None, *, previous_campaign=None, cros
         study["inherited_calls"] = prior["calls"]
         study["historical_before_budget"] = parent.get("historical_before_budget", parent["previous_campaign"]["calls"])
         study["prior_ledgers"] = [prior, *parent.get("prior_ledgers", [parent["previous_campaign"]])]
+    if value_campaign:
+        parent = read_json(value_campaign / "study.json")
+        if digest(value_campaign / "study.json") != read_json(value_campaign / "frozen.json")["study_sha256"]:
+            raise ValueError("previous campaign policy changed")
+        prior_ledger = Ledger(value_campaign)
+        prior = {"path": str(prior_ledger.root), "calls": len(prior_ledger.entries()), "budget": parent["budget"],
+                 "ledger_sha256": digest(prior_ledger.root / "calls.jsonl")}
+        study.update(profile="value-comparison", scenario="release-evidence-v1", previous_campaign=prior,
+                     prior_ledgers=[prior, *parent.get("prior_ledgers", [])], compatibility_cases=[],
+                     case_limits={name: 5 for name in order},
+                     historical_calls_before=parent.get("historical_calls_before", parent.get("historical_before_budget",
+                         (parent.get("previous_campaign") or {}).get("calls", 0))) + prior["calls"])
+        study["limits"].update(comparison_calls=budget, compatibility_calls=0)
+        for spec in cases.values():
+            spec["max_calls"] = 5
     write_json(root / "study.json", study)
     write_json(root / "frozen.json", {"study_sha256": digest(root / "study.json"),
                                       "config_sha256": digest(root / "config.json"),
@@ -220,9 +244,11 @@ def run_direct(root, name, spec, result):
 def run_task(root, study, name, spec, result):
     source = root / "cases" / name / "source"
     goal = spec["goal"]
+    if study.get("profile") == "value-comparison":
+        goal += "\nThe Task coordinator must plan worker delegation and reviewer delegation before complete. Both reports are acceptance artifacts."
     if spec["arm"] == "cross":
         goal += "\nRequire Codex as worker and a different CLI, Cursor, as reviewer. The coordinator must set collaboration_required=true."
-    argv = ["task", goal, "--timeout", "10m", "--max-calls", "6", "--json"]
+    argv = ["task", goal, "--timeout", "10m", "--max-calls", str(spec.get("max_calls", 6)), "--json"]
     if spec["arm"] == "single":
         argv += ["--agent", "codex"]
     if spec["kind"] == "project":
@@ -246,10 +272,16 @@ def run_task(root, study, name, spec, result):
     else:
         result["mode_preserved"] &= "cross_cli" in result["review_kinds"]
     result["current_review_bound"] = bool(task.get("reviews")) and task["reviews"][-1].get("snapshot") == task.get("snapshot")
+    if study.get("profile") == "value-comparison":
+        result["role_agents"] = [{"role": a["role"], "agent": a.get("agent")} for a in task.get("attempts", [])]
+        workers = [a for a in result["role_agents"] if a["role"] == "worker"]
+        reviewers = [a for a in result["role_agents"] if a["role"] == "reviewer"]
+        expected = "cursor" if spec["arm"] == "cross" else "codex"
+        result["expected_roles_preserved"] = bool(workers and reviewers) and all(a["agent"] == "codex" for a in workers) and all(a["agent"] == expected for a in reviewers)
     return Path(task["output"]) if task.get("output") else root / "missing-output"
 
 
-def run_case(root, study, name):
+def run_case(root, study, name, *, work_scorer=None):
     destination = root / "cases" / name / "result.json"
     if destination.exists():
         return read_json(destination)  # Never spend again by changing --out.
@@ -264,13 +296,14 @@ def run_case(root, study, name):
         if fixtures.manifest(source) != spec["inputs"]:
             raise ValueError("frozen inputs changed before execution")
         output = run_direct(root, name, spec, result) if spec["arm"] == "direct" else run_task(root, study, name, spec, result)
-        score = fixtures.score_work(output) if spec["kind"] == "work" else fixtures.score_project(output, root / "private" / f"{name}-oracle.json")
+        score = (work_scorer or fixtures.score_work)(output) if spec["kind"] == "work" else fixtures.score_project(output, root / "private" / f"{name}-oracle.json")
         result["score"] = score
         result["inputs_unchanged"] = fixtures.manifest(source) == spec["inputs"]
         if spec["kind"] == "project":
             result["original_git_clean"] = not checked(["git", "-C", str(source), "status", "--porcelain"])
         result["status"] = "passed" if (score["passed"] and result["inputs_unchanged"] and result.get("original_git_clean", True)
                                              and result.get("mode_preserved", True) and result.get("current_review_bound", True)
+                                             and result.get("expected_roles_preserved", True)
                                              and result.get("runtime_status") == "completed") else "failed"
         result["deliverable_sha256"] = fixtures.manifest(output) if output.is_dir() else {}
     except Exception as error:

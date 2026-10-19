@@ -14,6 +14,8 @@ import fixtures
 import compatibility
 import clarify
 import revalidate
+import value
+import value_fixtures
 
 
 class LedgerTests(unittest.TestCase):
@@ -160,6 +162,23 @@ class IntegrationTests(unittest.TestCase):
         self.addCleanup(self.patch.stop)
         self.root = self.base / "study"
         self.study = experiment.prepare(self.root, Path(os.environ["XCLI_R3_BINARY"]), 48)
+
+    def test_value_comparison_three_arms_no_replay_and_prior_preserved(self):
+        root = self.base / "value"
+        study = experiment.prepare(root, Path(os.environ["XCLI_R3_BINARY"]), 16, value_campaign=self.root)
+        before = digest(self.root / "calls.jsonl")
+        self.assertEqual(study["order"], ["work-single", "work-direct", "work-cross"])
+        for name in study["order"]:
+            result = experiment.run_case(root, study, name, work_scorer=value_fixtures.score)
+            self.assertEqual(result["status"], "passed", result)
+        report = value.summarize(root, study)
+        self.assertEqual(report["new_calls"], 8)
+        self.assertFalse(report["benefit_established_in_this_sample"])
+        for name in study["order"]:
+            experiment.run_case(root, study, name, work_scorer=value_fixtures.score)
+        self.assertEqual(len(Ledger(root).entries()), 8)
+        self.assertEqual(digest(self.root / "calls.jsonl"), before)
+        value.check(root)
 
     def test_six_arms_preservation_scoring_and_no_replay(self):
         experiment.validate(self.root)

@@ -73,10 +73,10 @@ class Ledger:
             if digest(self.root / "study.json") != frozen["study_sha256"]:
                 raise ValueError("invocation budget policy changed")
             inherited = study.get("inherited_calls", 0)
+            for prior in study.get("prior_ledgers", []):
+                if digest(Path(prior["path"]) / "calls.jsonl") != prior["ledger_sha256"]:
+                    raise ValueError("previous campaign ledger changed")
             if inherited:
-                for prior in study["prior_ledgers"]:
-                    if digest(Path(prior["path"]) / "calls.jsonl") != prior["ledger_sha256"]:
-                        raise ValueError("previous campaign ledger changed")
                 prefix = (Path(study["previous_campaign"]["path"]) / "calls.jsonl").read_bytes()
                 if not (self.root / "calls.jsonl").read_bytes().startswith(prefix):
                     raise ValueError("inherited ledger prefix changed")

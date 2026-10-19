@@ -1,0 +1,390 @@
+{
+  "kind": "r3_value_comparison",
+  "scenario": "release-evidence-v1",
+  "source_commit": "c209756751e29075a7abbbea3c96db5357803dc3",
+  "binary_sha256": "b09b6de4292f9835729566ff5cd44531da0b1861821accd04eac5e67c4b51c33",
+  "frozen_study_sha256": "603a9bb0f300984a90aa2d406f5045832ccd29056c0a4652df0ce10c654b8064",
+  "native_versions": {
+    "codex": "codex-cli 0.163.0",
+    "cursor": "2026.10.16-e3cb207"
+  },
+  "order": [
+    "work-single",
+    "work-direct",
+    "work-cross"
+  ],
+  "call_limit": 16,
+  "new_calls": 8,
+  "historical_calls_before": 56,
+  "historical_plus_new_calls": 64,
+  "prior_ledgers_unchanged": true,
+  "ledger": [
+    {
+      "sequence": 1,
+      "case": "work-single",
+      "adapter": "codex",
+      "phase": "task",
+      "binary_sha256": "b09b6de4292f9835729566ff5cd44531da0b1861821accd04eac5e67c4b51c33"
+    },
+    {
+      "sequence": 2,
+      "case": "work-single",
+      "adapter": "codex",
+      "phase": "task",
+      "binary_sha256": "b09b6de4292f9835729566ff5cd44531da0b1861821accd04eac5e67c4b51c33"
+    },
+    {
+      "sequence": 3,
+      "case": "work-single",
+      "adapter": "codex",
+      "phase": "task",
+      "binary_sha256": "b09b6de4292f9835729566ff5cd44531da0b1861821accd04eac5e67c4b51c33"
+    },
+    {
+      "sequence": 4,
+      "case": "work-direct",
+      "adapter": "codex",
+      "phase": "implementation",
+      "binary_sha256": "b09b6de4292f9835729566ff5cd44531da0b1861821accd04eac5e67c4b51c33"
+    },
+    {
+      "sequence": 5,
+      "case": "work-direct",
+      "adapter": "codex",
+      "phase": "self-review",
+      "binary_sha256": "b09b6de4292f9835729566ff5cd44531da0b1861821accd04eac5e67c4b51c33"
+    },
+    {
+      "sequence": 6,
+      "case": "work-cross",
+      "adapter": "codex",
+      "phase": "task",
+      "binary_sha256": "b09b6de4292f9835729566ff5cd44531da0b1861821accd04eac5e67c4b51c33"
+    },
+    {
+      "sequence": 7,
+      "case": "work-cross",
+      "adapter": "codex",
+      "phase": "task",
+      "binary_sha256": "b09b6de4292f9835729566ff5cd44531da0b1861821accd04eac5e67c4b51c33"
+    },
+    {
+      "sequence": 8,
+      "case": "work-cross",
+      "adapter": "cursor",
+      "phase": "task",
+      "binary_sha256": "b09b6de4292f9835729566ff5cd44531da0b1861821accd04eac5e67c4b51c33"
+    }
+  ],
+  "results": [
+    {
+      "case": "work-single",
+      "kind": "work",
+      "arm": "single",
+      "status": "passed",
+      "human_interventions": 0,
+      "human_handoffs": 0,
+      "scripted_external_handoffs": 0,
+      "automatic_handoffs": 1,
+      "estimated_cost_usd": null,
+      "task_id": "task-20261019T062731Z-b167dc5f",
+      "runtime_status": "completed",
+      "exit_code": 0,
+      "repairs": 0,
+      "usage": {
+        "input_tokens": 58636,
+        "cache_read_tokens": 71808,
+        "cache_write_tokens": 0,
+        "output_tokens": 2667,
+        "reasoning_tokens": 92,
+        "total_tokens": 133203
+      },
+      "usage_incomplete": false,
+      "roles": [
+        "coordinator",
+        "worker",
+        "reviewer"
+      ],
+      "adapters": [
+        "codex",
+        "codex",
+        "codex"
+      ],
+      "review_kinds": [
+        "self_check"
+      ],
+      "native_calls": [
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 15744,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+            "output_tokens": 610,
+            "reasoning_tokens": 0,
+            "total_tokens": 16354
+          }
+        },
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 21921,
+            "cache_read_tokens": 38400,
+            "cache_write_tokens": 0,
+            "output_tokens": 1645,
+            "reasoning_tokens": 48,
+            "total_tokens": 62014
+          }
+        },
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 20971,
+            "cache_read_tokens": 33408,
+            "cache_write_tokens": 0,
+            "output_tokens": 412,
+            "reasoning_tokens": 44,
+            "total_tokens": 54835
+          }
+        }
+      ],
+      "mode_preserved": true,
+      "current_review_bound": true,
+      "role_agents": [
+        {
+          "role": "coordinator",
+          "agent": "codex"
+        },
+        {
+          "role": "worker",
+          "agent": "codex"
+        },
+        {
+          "role": "reviewer",
+          "agent": "codex"
+        }
+      ],
+      "expected_roles_preserved": true,
+      "score": {
+        "passed": true,
+        "findings": [
+          "beta/approval_revoked",
+          "gamma/test_missing",
+          "gamma/approval_unsigned",
+          "delta/test_failed",
+          "epsilon/approval_expired",
+          "zeta/dependency_not_ready"
+        ],
+        "omissions": [],
+        "false_positives": [],
+        "errors": []
+      },
+      "inputs_unchanged": true,
+      "deliverable_sha256": {
+        "report.json": "e00408a0dde31ad5488fedfcfec30d28d822b73a247cfac94ac5bab7cf287d99",
+        "report.md": "8396d7442af0a69baa2dff342d50cd4f45d415df9feb107e23707edcbc19e2da"
+      },
+      "seconds": 92.345,
+      "calls": 3
+    },
+    {
+      "case": "work-direct",
+      "kind": "work",
+      "arm": "direct",
+      "status": "passed",
+      "human_interventions": 0,
+      "human_handoffs": 0,
+      "scripted_external_handoffs": 1,
+      "automatic_handoffs": 0,
+      "estimated_cost_usd": null,
+      "native_calls": [
+        {
+          "exit_code": 0,
+          "parse_complete": true,
+          "session_present": true,
+          "usage": {
+            "input_tokens": 73514,
+            "cached_input_tokens": 65024,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1701,
+            "reasoning_output_tokens": 29
+          }
+        },
+        {
+          "exit_code": 0,
+          "parse_complete": true,
+          "session_present": true,
+          "usage": {
+            "input_tokens": 48839,
+            "cached_input_tokens": 39552,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 305,
+            "reasoning_output_tokens": 31
+          }
+        }
+      ],
+      "runtime_status": "completed",
+      "score": {
+        "passed": true,
+        "findings": [
+          "beta/approval_revoked",
+          "gamma/test_missing",
+          "gamma/approval_unsigned",
+          "delta/test_failed",
+          "epsilon/approval_expired",
+          "zeta/dependency_not_ready"
+        ],
+        "omissions": [],
+        "false_positives": [],
+        "errors": []
+      },
+      "inputs_unchanged": true,
+      "deliverable_sha256": {
+        "report.json": "6ef5a5a502235129f3acf3d760df0640ec9487aba42aa3bcfb8aebf642c88812",
+        "report.md": "d72ca50e61f013c296790fc964ecbbf9202ac022202c2b91253dafed365110a7"
+      },
+      "seconds": 72.307,
+      "calls": 2
+    },
+    {
+      "case": "work-cross",
+      "kind": "work",
+      "arm": "cross",
+      "status": "passed",
+      "human_interventions": 0,
+      "human_handoffs": 0,
+      "scripted_external_handoffs": 0,
+      "automatic_handoffs": 1,
+      "estimated_cost_usd": null,
+      "task_id": "task-20261019T063016Z-83ab52f6",
+      "runtime_status": "completed",
+      "exit_code": 0,
+      "repairs": 0,
+      "usage": {
+        "input_tokens": 38011,
+        "cache_read_tokens": 33920,
+        "cache_write_tokens": 0,
+        "output_tokens": 2658,
+        "reasoning_tokens": 96,
+        "total_tokens": 74685
+      },
+      "usage_incomplete": true,
+      "roles": [
+        "coordinator",
+        "worker",
+        "reviewer"
+      ],
+      "adapters": [
+        "codex",
+        "codex",
+        "cursor"
+      ],
+      "review_kinds": [
+        "cross_cli"
+      ],
+      "native_calls": [
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 18128,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+            "output_tokens": 623,
+            "reasoning_tokens": 61,
+            "total_tokens": 18812
+          }
+        },
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 19883,
+            "cache_read_tokens": 33920,
+            "cache_write_tokens": 0,
+            "output_tokens": 2035,
+            "reasoning_tokens": 35,
+            "total_tokens": 55873
+          }
+        },
+        {
+          "adapter": "cursor",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": null
+        }
+      ],
+      "mode_preserved": true,
+      "current_review_bound": true,
+      "role_agents": [
+        {
+          "role": "coordinator",
+          "agent": "codex"
+        },
+        {
+          "role": "worker",
+          "agent": "codex"
+        },
+        {
+          "role": "reviewer",
+          "agent": "cursor"
+        }
+      ],
+      "expected_roles_preserved": true,
+      "score": {
+        "passed": true,
+        "findings": [
+          "beta/approval_revoked",
+          "gamma/test_missing",
+          "gamma/approval_unsigned",
+          "delta/test_failed",
+          "epsilon/approval_expired",
+          "zeta/dependency_not_ready"
+        ],
+        "omissions": [],
+        "false_positives": [],
+        "errors": []
+      },
+      "inputs_unchanged": true,
+      "deliverable_sha256": {
+        "report.json": "0e770b8354c1b8560b4b81fa5f6fe4f66420ae1d9b96ba0e8f57125fde01b95d",
+        "report.md": "4c33085bc421493120a044968eba528ec45b1d43b10609c5c06a1eaa3fa8a709"
+      },
+      "seconds": 119.253,
+      "calls": 3
+    }
+  ],
+  "comparisons": [
+    {
+      "baseline": "direct",
+      "eligible": true,
+      "observed_benefits": []
+    },
+    {
+      "baseline": "single",
+      "eligible": true,
+      "observed_benefits": []
+    }
+  ],
+  "benefit_established_in_this_sample": false,
+  "improvement_vs_any_baseline": false,
+  "claim": "no collaboration benefit established",
+  "human_handoff_benefit": "not_measured",
+  "cost_advantage": "not_established",
+  "independent_user_observation": "pending",
+  "status": "passed"
+}

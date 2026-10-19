@@ -4,6 +4,8 @@ See the [quota-restored recovery follow-up](cursor-restored-20261019.zh-CN.md) f
 
 The [committed-candidate installation acceptance](acceptance-20261019.zh-CN.md) adds 30 configuration, error-reporting and historical-query checks without model calls. The [support matrix](compatibility.zh-CN.md) separates measured roles and platforms from quota failures and unverified combinations.
 
+The [participant kit](field-study-20261019.zh-CN.md) is ready, with no real observations collected. The [new value comparison](value-results-20261019.zh-CN.md) used 8/16 native calls: all three methods found all six supported issues, establishing no collaboration benefit. Completing the experiment does not pass the original benefit gate.
+
 This is an unpublished `0.5.0-r3-dev` candidate. Snapshot versions append the base commit. Published v0.4.0 archives do not contain Task. See the [measured results](results.zh-CN.md), [migration notes](release-notes.md), and [Chinese guide](README.zh-CN.md).
 
 ## Start and recover a task

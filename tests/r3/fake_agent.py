@@ -54,7 +54,13 @@ else:
     if brief and "Before writing report.md" in brief["goal"] and not (folder / "progress.txt").exists():
         (folder / "progress.txt").write_text("started")
         time.sleep(5)
-    if (folder / "cache.go").exists():
+    if "Release evidence audit v1" in (brief["goal"] if brief else prompt):
+        import runpy
+        data = runpy.run_path(str(Path(__file__).with_name("value_fixtures.py")))["reference_report"]()
+        (folder / "report.json").write_text(json.dumps(data))
+        (folder / "report.md").write_text("\n".join(row["component"] + ": " + row["decision"] for row in data["targets"])
+                                         + "\nSources: " + " ".join(data["sources"]) + "\n")
+    elif (folder / "cache.go").exists():
         (folder / "cache.go").write_text("package r3fixture\nfunc Alive(inserted, now, ttl int64) bool { return ttl>0 && now>=inserted && uint64(now)-uint64(inserted)<uint64(ttl) }\n")
     else:
         data = {"north": 12, "south": 9, "total": 21, "release_date": "2026-10-25", "pilot_approved": False,
