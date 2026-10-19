@@ -2,6 +2,8 @@
 
 See the [2026-10-19 recovery follow-up](followup-20261019.zh-CN.md) for the latest native evidence: single-Codex worker recovery passed; Cursor's usage limit prevented cross-CLI recovery validation. The separate supplemental budget used 5/12 invocations, preserving the prior ledger.
 
+The [committed-candidate installation acceptance](acceptance-20261019.zh-CN.md) adds 30 configuration, error-reporting and historical-query checks without model calls. The [support matrix](compatibility.zh-CN.md) separates measured roles and platforms from quota failures and unverified combinations.
+
 This is an unpublished `0.5.0-r3-dev` candidate. Snapshot versions append the base commit. Published v0.4.0 archives do not contain Task. See the [measured results](results.zh-CN.md), [migration notes](release-notes.md), and [Chinese guide](README.zh-CN.md).
 
 ## Start and recover a task
@@ -69,6 +71,8 @@ go mod tidy -diff
 XCLI_R3_BINARY=./xcli python3 -m unittest discover -s tests/r3 -v
 goreleaser release --snapshot --clean
 python3 tests/r3/package.py --dist dist --out /tmp/r3-installation.json
+python3 tests/r3/install_acceptance.py --binary /path/to/extracted/xcli \
+  --study /tmp/old-study --out /tmp/r3-installed-acceptance.json
 ```
 
 CI pins GoReleaser v2.16.0 and runs deterministic protocol fixtures without model credentials. Archive checks cover Darwin/Linux × amd64/arm64. Only the host artifact receives native installation execution; cross-builds do not verify native Agent compatibility on other platforms. No release tag is created by these steps.

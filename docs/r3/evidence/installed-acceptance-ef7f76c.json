@@ -1,0 +1,203 @@
+{
+  "kind": "r3_installed_candidate_acceptance",
+  "binary_sha256": "879c6c470bb0aa0f52ad507100ea1680180176a8ab8e663635fe9a336fd62a6f",
+  "source_commit": "ef7f76cc18b4ba38bb501c1aea49d2037d611f97",
+  "native_model_invocations": 0,
+  "independent_participant": false,
+  "checks": [
+    {
+      "check": "version_from_installed_binary",
+      "status": "passed"
+    },
+    {
+      "check": "unicode_and_space_xdg_path",
+      "status": "passed"
+    },
+    {
+      "check": "defaults_do_not_create_config",
+      "status": "passed"
+    },
+    {
+      "check": "isolated_config_creation",
+      "status": "passed"
+    },
+    {
+      "check": "existing_config_not_overwritten",
+      "status": "passed"
+    },
+    {
+      "check": "config_validation_preserves_bytes",
+      "status": "passed"
+    },
+    {
+      "check": "explicit_config_overrides_xdg",
+      "status": "passed"
+    },
+    {
+      "check": "missing_cli_doctor_fails_truthfully",
+      "status": "passed"
+    },
+    {
+      "check": "missing_cli_task_failed_without_dispatch",
+      "status": "passed"
+    },
+    {
+      "check": "missing_cli_failure_remains_inspectable",
+      "status": "passed"
+    },
+    {
+      "check": "malformed_config_rejected_and_preserved",
+      "status": "passed"
+    },
+    {
+      "check": "config_and_inputs_unchanged_after_errors",
+      "status": "passed"
+    },
+    {
+      "check": "historical_task_data_present_0",
+      "status": "passed"
+    },
+    {
+      "check": "historical_task_task-20261017T141835Z-6dace441",
+      "status": "passed"
+    },
+    {
+      "check": "historical_events_task-20261017T141835Z-6dace441",
+      "status": "passed"
+    },
+    {
+      "check": "historical_task_task-20261017T141949Z-eb7480fc",
+      "status": "passed"
+    },
+    {
+      "check": "historical_events_task-20261017T141949Z-eb7480fc",
+      "status": "passed"
+    },
+    {
+      "check": "historical_task_task-20261017T142146Z-c54be037",
+      "status": "passed"
+    },
+    {
+      "check": "historical_events_task-20261017T142146Z-c54be037",
+      "status": "passed"
+    },
+    {
+      "check": "historical_task_task-20261017T142326Z-9d5eba4d",
+      "status": "passed"
+    },
+    {
+      "check": "historical_events_task-20261017T142326Z-9d5eba4d",
+      "status": "passed"
+    },
+    {
+      "check": "historical_task_task-20261017T142709Z-ad8385f3",
+      "status": "passed"
+    },
+    {
+      "check": "historical_events_task-20261017T142709Z-ad8385f3",
+      "status": "passed"
+    },
+    {
+      "check": "historical_task_task-20261017T142725Z-f8dd14f6",
+      "status": "passed"
+    },
+    {
+      "check": "historical_events_task-20261017T142725Z-f8dd14f6",
+      "status": "passed"
+    },
+    {
+      "check": "historical_source_unchanged_0",
+      "status": "passed"
+    },
+    {
+      "check": "historical_task_data_present_1",
+      "status": "passed"
+    },
+    {
+      "check": "historical_task_task-20261019T022027Z-03e12a30",
+      "status": "passed"
+    },
+    {
+      "check": "historical_events_task-20261019T022027Z-03e12a30",
+      "status": "passed"
+    },
+    {
+      "check": "historical_source_unchanged_1",
+      "status": "passed"
+    }
+  ],
+  "historical_tasks": [
+    {
+      "id": "task-20261017T141835Z-6dace441",
+      "status": "completed",
+      "calls": 3,
+      "events": 33
+    },
+    {
+      "id": "task-20261017T141949Z-eb7480fc",
+      "status": "completed",
+      "calls": 3,
+      "events": 155
+    },
+    {
+      "id": "task-20261017T142146Z-c54be037",
+      "status": "completed",
+      "calls": 3,
+      "events": 184
+    },
+    {
+      "id": "task-20261017T142326Z-9d5eba4d",
+      "status": "completed",
+      "calls": 3,
+      "events": 36
+    },
+    {
+      "id": "task-20261017T142709Z-ad8385f3",
+      "status": "completed",
+      "calls": 4,
+      "events": 41
+    },
+    {
+      "id": "task-20261017T142725Z-f8dd14f6",
+      "status": "needs_reconcile",
+      "calls": 4,
+      "events": 154
+    },
+    {
+      "id": "task-20261019T022027Z-03e12a30",
+      "status": "completed",
+      "calls": 4,
+      "events": 38
+    }
+  ],
+  "status": "passed",
+  "version": "xcli version 0.5.0-r3-dev-ef7f76c",
+  "campaigns_unchanged": {
+    "before": {
+      "original": {
+        "calls": 46,
+        "sha256": "ca6fc0c23760d506912a2c09b50f71b887c5205927fc2f66023ddb56f7580f16"
+      },
+      "supplemental": {
+        "calls": 5,
+        "sha256": "43ea2386e69f45e5600fbb3add31671937e40846e27d055877342b07e3d1de99"
+      }
+    },
+    "after": {
+      "original": {
+        "calls": 46,
+        "sha256": "ca6fc0c23760d506912a2c09b50f71b887c5205927fc2f66023ddb56f7580f16"
+      },
+      "supplemental": {
+        "calls": 5,
+        "sha256": "43ea2386e69f45e5600fbb3add31671937e40846e27d055877342b07e3d1de99"
+      }
+    }
+  },
+  "initial_harness_assessment": {
+    "expectation": "missing CLI creates no Task",
+    "observed": "exit 1; persisted failed Task; zero calls and no attempts",
+    "correction": "check truthful persisted failure instead of absence of Task",
+    "production_change": false
+  }
+}

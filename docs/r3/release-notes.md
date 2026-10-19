@@ -1,6 +1,6 @@
 # R3 candidate notes / R3 候选说明
 
-This is an unpublished `0.5.0-r3-dev` source/snapshot candidate. No release tag or public package was created. Read the [candidate acceptance record](results.zh-CN.md) for measured scope and pending gates.
+This is an unpublished `0.5.0-r3-dev` source/snapshot candidate. No release tag or public package was created. Read the [native comparison record](results.zh-CN.md), [worker recovery follow-up](followup-20261019.zh-CN.md), and [committed-candidate installation acceptance](acceptance-20261019.zh-CN.md) for measured scope and pending gates.
 
 R3 adds repeatable Work/Project comparisons of direct Codex, single-CLI Tasks and Codex/Cursor collaboration, a durable shared invocation budget, independent scoring, native compatibility checks, and installation checks against actual GoReleaser archives. CI runs deterministic protocol fixtures without model credentials. Snapshot archives contain the license and both READMEs.
 
@@ -9,6 +9,10 @@ The first native comparison exposed a source-citation acceptance defect. A uniqu
 Build from source with Go 1.26, or use a locally generated snapshot archive after verifying `checksums.txt`. Native CLI installation, login and quota remain prerequisites. Runtime commands and persisted Task/Run formats retain their R2 contracts.
 
 本候选新增开发与验收工具，未扩展 Task 主命令、团队模式或自动合并。支持声明按本次真实记录限定；其他 Adapter 与平台的既有实现继续保留，但没有因跨平台构建而获得原生实测结论。
+
+The two predefined Work/Project comparisons established no collaboration benefit. This candidate makes no claim of higher quality, fewer human handoffs, faster completion, or lower cost. Cross-CLI background recovery remains unverified because Cursor's current usage limit prevents the final review; single-Codex active worker recovery passed. See the [version, role and platform matrix](compatibility.zh-CN.md). Installation detection and `doctor` do not establish account quota or model readiness.
+
+两个预定义场景均未建立协作收益，当前候选不宣传协作更优、更快、更省或减少人工交接。指定 Codex 的实际 worker 中断恢复通过，跨 CLI 后台完整恢复仍未通过；独立参与者观察仍待完成。这些原始门槛没有因收窄主张或安装通过而自动关闭。
 
 ## Migration / 迁移
 

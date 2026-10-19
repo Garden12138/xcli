@@ -72,4 +72,6 @@ jobs:
           version: v2.16.0
           args: release --snapshot --clean
       - name: Check snapshot archives and native installation
-        run: python3 tests/r3/package.py --dist dist --out /tmp/r3-installation.json
+        run: python3 tests/r3/package.py --dist dist --out /tmp/r3-installation.json --native-copy /tmp/xcli-r3-installed
+      - name: Check installed candidate configuration and failure reporting
+        run: python3 tests/r3/install_acceptance.py --binary /tmp/xcli-r3-installed --out /tmp/r3-installed-acceptance.json

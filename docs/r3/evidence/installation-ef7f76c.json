@@ -1,0 +1,73 @@
+{
+  "kind": "r3_snapshot_installation",
+  "publishes": false,
+  "targets": [
+    {
+      "os": "darwin",
+      "arch": "amd64",
+      "archive": "xcli_0.5.0-r3-dev-ef7f76c_darwin_amd64.tar.gz",
+      "archive_sha256": "5f68a45cbe248fa0b5652c764fd818aaa1bcd761bb675051c0eeb316c905a206",
+      "binary_sha256": "35e5da7807d81692a3a9b14d982e3ae11bad936f4e7f14929dd5cd6cbf8bca39",
+      "archive_check": "passed",
+      "native_execution": "not_verified"
+    },
+    {
+      "os": "darwin",
+      "arch": "arm64",
+      "archive": "xcli_0.5.0-r3-dev-ef7f76c_darwin_arm64.tar.gz",
+      "archive_sha256": "70e17dc20d5749e1af52ba563f16c191840b74d349af687eb868c782c2c54fe8",
+      "binary_sha256": "879c6c470bb0aa0f52ad507100ea1680180176a8ab8e663635fe9a336fd62a6f",
+      "archive_check": "passed",
+      "native_execution": "passed",
+      "native_version": "xcli version 0.5.0-r3-dev-ef7f76c",
+      "installation_checks": {
+        "version": {
+          "exit_code": 0
+        },
+        "help": {
+          "exit_code": 0
+        },
+        "config": {
+          "exit_code": 0
+        },
+        "validate": {
+          "exit_code": 0
+        },
+        "doctor": {
+          "exit_code": 0,
+          "observed": true
+        }
+      }
+    },
+    {
+      "os": "linux",
+      "arch": "amd64",
+      "archive": "xcli_0.5.0-r3-dev-ef7f76c_linux_amd64.tar.gz",
+      "archive_sha256": "b01f57874cd5161e7dbcb1fffb168f62ed894f82e8f0bf9b61e5e98f262496f9",
+      "binary_sha256": "946c38fdc899ea45fe228bb40f97193584bfd034627a97e5f31fb95a9bfa0747",
+      "archive_check": "passed",
+      "native_execution": "not_verified"
+    },
+    {
+      "os": "linux",
+      "arch": "arm64",
+      "archive": "xcli_0.5.0-r3-dev-ef7f76c_linux_arm64.tar.gz",
+      "archive_sha256": "83bf10a254d7feaaefed66fb12e3296d593266b8783371120ec0b37b6925a43a",
+      "binary_sha256": "d0d80c5500aa214630cbc271a3d3775321980537ec6be85c00cdd1a4b0c6a1d1",
+      "archive_check": "passed",
+      "native_execution": "not_verified"
+    }
+  ],
+  "checksums_sha256": "dd2f4e5dc52b60727e3c1ddc550e7e675d7c37cba10faaa51bb766f30ccd32a5",
+  "goreleaser_artifacts_sha256": "27129e587ec25265bddabdd2d89cc7b9ec45eac604af2e0d9ff08db0034e27a7",
+  "status": "passed",
+  "source_binding": {
+    "source_commit": "ef7f76cc18b4ba38bb501c1aea49d2037d611f97",
+    "worktree_dirty": false,
+    "config_override": "dist only; original build/archive/version configuration retained",
+    "goreleaser_version": "2.16.0",
+    "original_config_sha256": "9f07807d850e4f25b69b26298a2ad5438bced75abf485ec33fad9cfb1eac5db6",
+    "production_source_matches_recovery_commit": "c4b49b67bf5d8decde5ceef7523950da824ed69c",
+    "native_model_results_relabelled": false
+  }
+}

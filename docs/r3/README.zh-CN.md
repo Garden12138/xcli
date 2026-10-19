@@ -2,6 +2,8 @@
 
 最新真实补验见 [2026-10-19 后台恢复记录](followup-20261019.zh-CN.md)：指定 Codex 中断恢复通过，Cursor 当前额度耗尽，跨 CLI 后台恢复仍未补齐；独立新增预算使用 5/12，历史账本保持不变。
 
+后续[已提交候选安装验收](acceptance-20261019.zh-CN.md)新增 30 项配置、失败诊断和历史查询检查，无新增模型调用。[实测支持矩阵](compatibility.zh-CN.md)区分已测角色、当前额度失败与未测范围。
+
 本阶段围绕可重复实验、原生兼容、安装和发布材料收敛。候选版本为 `0.5.0-r3-dev`；snapshot 附带基线短提交号。它不是已发布的 v0.5.0。最终结果见 [验收记录](results.zh-CN.md)。
 
 ## 安装与开始
@@ -91,6 +93,9 @@ go mod tidy -diff
 XCLI_R3_BINARY=./xcli python3 -m unittest discover -s tests/r3 -v
 goreleaser release --snapshot --clean
 python3 tests/r3/package.py --dist dist --out /tmp/r3-installation.json
+# 验收实际归档中的本机二进制；可选 study 只复制旧 Task 数据用于查询
+python3 tests/r3/install_acceptance.py --binary /path/to/extracted/xcli \
+  --study /tmp/old-study --out /tmp/r3-installed-acceptance.json
 ```
 
 CI 固定 GoReleaser v2.16.0。package 检查真实 snapshot 的四份归档、SHA-256、内容和权限，并在本机用干净 XDG 和临时 PATH 验证版本、配置及 doctor；非本机归档仅声明构建/归档通过。原生最小 Task 由同一归档二进制的对照实验覆盖。
