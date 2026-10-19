@@ -1,5 +1,7 @@
 # R3 experiments and candidate installation
 
+See the [2026-10-19 recovery follow-up](followup-20261019.zh-CN.md) for the latest native evidence: single-Codex worker recovery passed; Cursor's usage limit prevented cross-CLI recovery validation. The separate supplemental budget used 5/12 invocations, preserving the prior ledger.
+
 This is an unpublished `0.5.0-r3-dev` candidate. Snapshot versions append the base commit. Published v0.4.0 archives do not contain Task. See the [measured results](results.zh-CN.md), [migration notes](release-notes.md), and [Chinese guide](README.zh-CN.md).
 
 ## Start and recover a task
@@ -57,6 +59,8 @@ python3 tests/r3/evidence.py --study /tmp/xcli-r3-study \
 Reported findings must be reproducible. Scripted coordination, automatic handoffs and human intervention are distinct. If collaboration shows no benefit, retain that outcome; one small run cannot establish general superiority or reduced cost. Independent user observations remain a separate gate, with a [participant script and blank record](observation.zh-CN.md).
 
 ## Checks and packaging
+
+For a later recovery-only follow-up, use `tests/r3/revalidate.py prepare --study <new-study> --binary ./xcli --previous-campaign <old-study> --budget <new-limit>`, then `run --study <new-study> --out <fresh-report> --execute`. The new limit must be explicitly established first. The prior ledger remains unchanged and is linked by hash. A failed Cursor readiness check suppresses cross-CLI dispatch. Passing requires an actual canceled worker, a different native worker session after material recovery, preserved mode/budget/bindings, and a review bound to current output. Operator clarification is reported separately. `inspect` reads receipts without spending another native invocation.
 
 ```bash
 go test -race ./...

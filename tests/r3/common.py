@@ -81,7 +81,8 @@ class Ledger:
                 raise ValueError("R3 case invocation budget exhausted")
             is_comparison = case in study["order"]
             partition = study["order"] if is_comparison else study["compatibility_cases"]
-            limit = 36 if is_comparison else 12
+            key, default = ("comparison_calls", 36) if is_comparison else ("compatibility_calls", 12)
+            limit = study.get("limits", {}).get(key, default)
             if sum(e["case"] in partition for e in entries) >= limit:
                 raise ValueError("R3 phase invocation budget exhausted")
             entry = {"sequence": len(entries) + 1, "adapter": adapter, "case": case,

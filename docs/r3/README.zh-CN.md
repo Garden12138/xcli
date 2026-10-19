@@ -1,5 +1,7 @@
 # R3：对照实验与候选验收
 
+最新真实补验见 [2026-10-19 后台恢复记录](followup-20261019.zh-CN.md)：指定 Codex 中断恢复通过，Cursor 当前额度耗尽，跨 CLI 后台恢复仍未补齐；独立新增预算使用 5/12，历史账本保持不变。
+
 本阶段围绕可重复实验、原生兼容、安装和发布材料收敛。候选版本为 `0.5.0-r3-dev`；snapshot 附带基线短提交号。它不是已发布的 v0.5.0。最终结果见 [验收记录](results.zh-CN.md)。
 
 ## 安装与开始
@@ -59,6 +61,20 @@ python3 tests/r3/evidence.py --study /tmp/xcli-r3-study \
 ```
 
 ## 实验口径
+
+后续只补两个后台恢复缺口时，可使用单独的补验入口。它要求显式的新预算，保存旧账本摘要，先做一次 Cursor 真实可用性检查；失败时不重试或换 CLI。运行中的 worker 必须确实被取消，之后新 worker 的原生 session 必须与中断前不同，才判材料恢复通过。单纯澄清 waiting_user 不会计为 worker 中断成功。
+
+```bash
+# <本轮新增上限> 必须先确定，不沿用已耗尽的旧兼容预算
+python3 tests/r3/revalidate.py prepare --study /tmp/r3-followup \
+  --binary ./xcli --previous-campaign /tmp/xcli-r3-study --budget <本轮新增上限>
+python3 tests/r3/revalidate.py run --study /tmp/r3-followup \
+  --out /tmp/r3-followup.json --execute
+python3 tests/r3/revalidate.py inspect --study /tmp/r3-followup \
+  --out /tmp/r3-followup-inspected.json
+```
+
+补验最多为每个恢复场景分派五次调用，可记录一次协调计划澄清；有澄清时标记操作员介入。旧 campaign 的调用数和账本不变，新调用单独记账，公开结果同时显示历史与本轮消耗。失败或中断的补验不因更换输出文件重放。
 
 - Work：三份材料包含旧总数、旧发布日期和缺失审批；生成 `report.md` 与机器可核对的 `report.json`，检查事实、来源、遗漏和误报。
 - Project：修复缓存 TTL 的开区间、非正 TTL、时钟回退及 int64 溢出；可见测试作为运行时反馈，独立测试只用于最终评分。

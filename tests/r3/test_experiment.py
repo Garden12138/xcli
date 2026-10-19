@@ -13,6 +13,7 @@ import experiment
 import fixtures
 import compatibility
 import clarify
+import revalidate
 
 
 class LedgerTests(unittest.TestCase):
@@ -76,6 +77,16 @@ class LedgerTests(unittest.TestCase):
         self.assertEqual(len(ledger.entries()), 48)
         with self.assertRaisesRegex(ValueError, "total"):
             ledger.reserve("cursor", "a", "comparison")
+
+    def test_explicit_followup_partition_still_obeys_global_budget(self):
+        self.study = {"budget": 15, "case_limits": {"a": 20}, "order": [], "compatibility_cases": ["a"], "limits": {"compatibility_calls": 24}}
+        write_json(self.root / "study.json", self.study)
+        write_json(self.root / "frozen.json", {"study_sha256": digest(self.root / "study.json")})
+        ledger = Ledger(self.root)
+        for _ in range(15):
+            ledger.reserve("codex", "a", "followup")
+        with self.assertRaisesRegex(ValueError, "total"):
+            ledger.reserve("codex", "a", "followup")
 
 
 class ScoringTests(unittest.TestCase):
@@ -180,6 +191,41 @@ class IntegrationTests(unittest.TestCase):
         self.assertFalse(report["active_stop_verified"])
         self.assertEqual(report["calls_after"], 4)
         self.assertEqual(len(Ledger(self.root).entries()), 4)
+
+    def test_followup_stops_active_workers_and_keeps_prior_ledger(self):
+        followup = self.base / "followup"
+        study = experiment.prepare(followup, Path(os.environ["XCLI_R3_BINARY"]), 12, previous_campaign=self.root)
+        revalidate.check_study(followup)
+        with self.assertRaisesRegex(ValueError, "follow-ups"):
+            experiment.summarize(followup)
+        ready = revalidate.readiness(followup, study)
+        self.assertEqual(ready["status"], "passed", ready)
+        for name in ("single-recovery", "cross-recovery"):
+            result = revalidate.recovery(followup, study, name)
+            self.assertEqual(result["status"], "passed", result)
+            self.assertTrue(result["worker_interruption_observed"])
+            self.assertTrue(result["fresh_native_session"])
+            self.assertEqual(result["operator_clarifications"], 0)
+        self.assertEqual(len(Ledger(followup).entries()), 9)
+        self.assertEqual(Ledger(self.root).entries(), [])
+        revalidate.check_study(followup)
+        Ledger(self.root).reserve("codex", "work-direct", "changed-prior")
+        with self.assertRaisesRegex(ValueError, "previous campaign"):
+            revalidate.check_study(followup)
+
+    def test_followup_quota_failure_skips_cross_without_retry(self):
+        followup = self.base / "followup"
+        experiment.prepare(followup, Path(os.environ["XCLI_R3_BINARY"]), 12, previous_campaign=self.root)
+        output = self.base / "followup.json"
+        argv = ["revalidate.py", "run", "--study", str(followup), "--out", str(output), "--execute"]
+        with patch.dict(os.environ, {"XCLI_R3_FAKE_CURSOR_QUOTA": "1"}), patch.object(sys, "argv", argv):
+            revalidate.main()
+        result = read_json(output)
+        self.assertEqual(result["status"], "incomplete_or_failed")
+        self.assertEqual(result["new_calls"], 5)
+        self.assertEqual(result["results"][-1]["status"], "not_verified")
+        self.assertTrue(result["prior_ledger_unchanged"])
+        self.assertEqual(sum(e["adapter"] == "cursor" for e in Ledger(followup).entries()), 1)
 
 
 if __name__ == "__main__":

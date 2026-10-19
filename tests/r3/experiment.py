@@ -31,14 +31,20 @@ def checked(argv, **kwargs):
     return result["stdout"].strip()
 
 
-def prepare(root, binary, budget, campaign=None):
+def prepare(root, binary, budget, campaign=None, *, previous_campaign=None):
     if not 1 <= budget <= 48:
         raise ValueError("R3 budget must be 1..48")
+    if previous_campaign and campaign:
+        raise ValueError("a separately budgeted follow-up cannot reset/share the prior campaign")
+    followup = previous_campaign is not None
     binary = binary.resolve(strict=True)
     root.mkdir(mode=0o700, parents=True, exist_ok=False)
     (root / "private").mkdir(mode=0o700)
     (root / "tools").mkdir(mode=0o700)
-    for name in ("common.py", "native_wrapper.py", "fixtures.py", "experiment.py", "compatibility.py"):
+    tool_names = ["common.py", "native_wrapper.py", "fixtures.py", "experiment.py", "compatibility.py"]
+    if followup:
+        tool_names.append("revalidate.py")
+    for name in tool_names:
         shutil.copyfile(HERE / name, root / "tools" / name)
     native = {}
     for adapter, command in (("codex", "codex"), ("cursor", "cursor-agent")):
@@ -58,7 +64,7 @@ def prepare(root, binary, budget, campaign=None):
         cfg["agents"][name] = {"adapter": name, "command": str(root / "not-enabled")}
     write_json(root / "config.json", cfg)
     cases = {}
-    for name in ORDER:
+    for name in ([] if followup else ORDER):
         kind, arm = name.split("-")
         folder = root / "cases" / name
         folder.mkdir(parents=True, mode=0o700)
@@ -79,16 +85,28 @@ def prepare(root, binary, budget, campaign=None):
         if original["budget"] != budget or original.get("ledger_root", str(campaign)) != str(campaign):
             raise ValueError("campaign must name the original study with the same budget")
         Ledger(campaign).entries()
+    prior = None
+    if followup:
+        prior_ledger = Ledger(previous_campaign)
+        prior_entries = prior_ledger.entries()
+        prior = {"path": str(prior_ledger.root), "calls": len(prior_entries),
+                 "ledger_sha256": digest(prior_ledger.root / "calls.jsonl"),
+                 "budget": read_json(prior_ledger.root / "study.json")["budget"]}
+        for name in ("single-recovery", "cross-recovery"):
+            fixtures.put_files(root / "followup" / name / "inputs", {"facts.txt": "North: 12\nSouth: 9\nTotal: 21\n"})
     study = {"schema": 1, "prepared_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
              "platform": platform.platform(), "binary": str(binary), "binary_sha256": digest(binary),
              "source_commit": checked(["git", "rev-parse", "HEAD"], cwd=REPOSITORY),
-             "budget": budget, "ledger_root": str(campaign or root), "native": native, "order": ORDER, "cases": cases,
-             "compatibility_cases": COMPATIBILITY,
-             "case_limits": {**{name: 6 for name in ORDER}, **{name: 1 for name in COMPATIBILITY[:4]}, **{name: 4 for name in COMPATIBILITY[4:]}},
-             "limits": {"comparison_calls": 36, "compatibility_calls": 12, "case_seconds": 600, "call_seconds": 120, "repairs": 1},
+             "budget": budget, "ledger_root": str(campaign or root), "native": native, "order": [] if followup else ORDER, "cases": cases,
+             "profile": "recovery-followup" if followup else "comparison", "previous_campaign": prior,
+             "compatibility_cases": ["cursor-readiness", "single-recovery", "cross-recovery"] if followup else COMPATIBILITY,
+             "case_limits": {"cursor-readiness": 1, "single-recovery": 5, "cross-recovery": 5} if followup else {**{name: 6 for name in ORDER}, **{name: 1 for name in COMPATIBILITY[:4]}, **{name: 4 for name in COMPATIBILITY[4:]}},
+             "limits": {"comparison_calls": 0 if followup else 36, "compatibility_calls": budget if followup else 12, "case_seconds": 600, "call_seconds": 120, "repairs": 1},
              "settings": {"codex_reasoning_effort": "low", "models": "native configured defaults", "cursor_trust": "generated temporary cwd only"},
              "benefit_rule": "Cross arm independently passes with fewer omissions, more reproducible findings, or fewer recorded human handoffs than a baseline; report extra cost. Scripted handoffs are not human observations.",
-             "tools": {name: digest(HERE / name) for name in ("fixtures.py", "common.py", "native_wrapper.py", "experiment.py", "compatibility.py")}}
+             "tools": {name: digest(HERE / name) for name in tool_names}}
+    if followup:
+        study["followup_inputs"] = {name: fixtures.manifest(root / "followup" / name / "inputs") for name in ("single-recovery", "cross-recovery")}
     write_json(root / "study.json", study)
     write_json(root / "frozen.json", {"study_sha256": digest(root / "study.json"),
                                       "config_sha256": digest(root / "config.json"),
@@ -246,6 +264,8 @@ def run_case(root, study, name):
 
 def summarize(root):
     study = read_json(root / "study.json")
+    if study.get("profile", "comparison") != "comparison":
+        raise ValueError("recovery follow-ups require revalidate.py inspect, not an empty comparison summary")
     calls = Ledger(root).entries()
     results = []
     for name in study["order"]:

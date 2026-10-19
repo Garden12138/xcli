@@ -7,7 +7,7 @@ from pathlib import Path
 from common import read_json, write_json
 
 
-ALLOWED_KINDS = {"r3_comparison", "r3_native_compatibility", "r3_snapshot_installation", "r3_engineering_validation", "r3_failure_recovery"}
+ALLOWED_KINDS = {"r3_comparison", "r3_native_compatibility", "r3_snapshot_installation", "r3_engineering_validation", "r3_failure_recovery", "r3_recovery_followup"}
 
 
 def redact(value, replacements):

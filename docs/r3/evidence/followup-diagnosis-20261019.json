@@ -1,0 +1,21 @@
+{
+  "kind": "r3_failure_diagnosis",
+  "observed_at": "2026-10-19",
+  "source_commit": "c4b49b67bf5d8decde5ceef7523950da824ed69c",
+  "binary_sha256": "0f3ff257cb01c104a3d870853a66368f650a49cde7b9a53ecfac9a217b39067f",
+  "case": "cursor-readiness",
+  "native_error_type": "ActionRequiredError",
+  "native_error_reason": "usage limit reached",
+  "private_invocation_sha256": "6fe1057446f2ae7f4da478020b60ec3755e7babdc15e5323dd6b467b9f7a62d1",
+  "exit_code": 1,
+  "cursor_invocations": 1,
+  "retried": false,
+  "cross_recovery": "not_verified",
+  "account_switched": false,
+  "cli_substituted": false,
+  "production_defect_established": false,
+  "new_calls": 5,
+  "new_budget": 12,
+  "prior_calls": 46,
+  "prior_ledger_sha256": "ca6fc0c23760d506912a2c09b50f71b887c5205927fc2f66023ddb56f7580f16"
+}
