@@ -640,7 +640,7 @@ func (r *Runner) accept(ctx context.Context, requirements []Requirement) (bool, 
 					err = fmt.Errorf("artifact lacks source reference %s", source)
 					break
 				}
-				if e := r.checkSource(ctx, source); e != nil {
+				if e := r.checkSource(ctx, source, filepath.Dir(path)); e != nil {
 					err = e
 					break
 				}
@@ -662,7 +662,7 @@ func (r *Runner) accept(ctx context.Context, requirements []Requirement) (bool, 
 	return passed, nil
 }
 
-func (r *Runner) checkSource(ctx context.Context, source string) error {
+func (r *Runner) checkSource(ctx context.Context, source, artifactDir string) error {
 	if u, err := url.Parse(source); err == nil && u.Scheme == "https" && u.Host != "" {
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
@@ -682,7 +682,26 @@ func (r *Runner) checkSource(ctx context.Context, source string) error {
 	}
 	path := source
 	if !filepath.IsAbs(path) {
-		path = filepath.Join(r.task.Cwd, path)
+		// A bare filename can identify a selected input in a document's source
+		// list. Resolve only unique names and still verify the original digest;
+		// never guess between two selected files or trust a workspace copy.
+		var selected string
+		if filepath.Base(source) == source {
+			for _, input := range r.task.Inputs {
+				if filepath.Base(input.Path) != source {
+					continue
+				}
+				if selected != "" && selected != input.Path {
+					return fmt.Errorf("ambiguous input source filename: %s; use an explicit path", source)
+				}
+				selected = input.Path
+			}
+		}
+		if selected != "" {
+			path = selected
+		} else {
+			path = filepath.Join(artifactDir, path)
+		}
 	}
 	path, err := canonical(path)
 	if err != nil {

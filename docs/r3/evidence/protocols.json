@@ -1,0 +1,217 @@
+{
+  "kind": "r3_frozen_protocols",
+  "candidates": [
+    {
+      "schema": 1,
+      "prepared_at": "2026-10-17T13:45:46Z",
+      "platform": "macOS-26.5.1-arm64-arm-64bit",
+      "source_commit": "1bde50155663098a2752cad9ab5e74106abfc3bb",
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca",
+      "order": [
+        "work-direct",
+        "work-single",
+        "work-cross",
+        "project-cross",
+        "project-single",
+        "project-direct"
+      ],
+      "cases": {
+        "work-direct": {
+          "kind": "work",
+          "arm": "direct",
+          "inputs": {
+            "approval.txt": "b20c7d33c235194cb131dcedbc8ed9c62a96229697c8a8e078ab4e90d253bcf7",
+            "draft.txt": "3bc956343014baf4d6920ff29d6ab34f2fafd63f752be13f0024c0d858fa3c7b",
+            "revision.txt": "73fba6eb50fe72e34fb27dc6aafac86ca45e21fa428b5f0355651b41a6ac3ac5"
+          },
+          "baseline": null,
+          "goal": "Read all three input documents and produce report.md and report.json. Prefer the latest approved revision, recompute totals, distinguish pilot readiness from a planned release, and identify contradictions in the obsolete draft. Cite the input filenames in report.md. report.json must be a single JSON object with north, south, total (integers), release_date (YYYY-MM-DD), pilot_approved (boolean), sources (input filenames), and findings (objects with kind, evidence and sources). Use finding kinds total_conflict, date_conflict, approval_missing where supported, and do not invent other findings. Explain each finding with concrete evidence. The two reports must agree. Do not modify inputs or invoke other Agent CLIs."
+        },
+        "work-single": {
+          "kind": "work",
+          "arm": "single",
+          "inputs": {
+            "approval.txt": "b20c7d33c235194cb131dcedbc8ed9c62a96229697c8a8e078ab4e90d253bcf7",
+            "draft.txt": "3bc956343014baf4d6920ff29d6ab34f2fafd63f752be13f0024c0d858fa3c7b",
+            "revision.txt": "73fba6eb50fe72e34fb27dc6aafac86ca45e21fa428b5f0355651b41a6ac3ac5"
+          },
+          "baseline": null,
+          "goal": "Read all three input documents and produce report.md and report.json. Prefer the latest approved revision, recompute totals, distinguish pilot readiness from a planned release, and identify contradictions in the obsolete draft. Cite the input filenames in report.md. report.json must be a single JSON object with north, south, total (integers), release_date (YYYY-MM-DD), pilot_approved (boolean), sources (input filenames), and findings (objects with kind, evidence and sources). Use finding kinds total_conflict, date_conflict, approval_missing where supported, and do not invent other findings. Explain each finding with concrete evidence. The two reports must agree. Do not modify inputs or invoke other Agent CLIs."
+        },
+        "work-cross": {
+          "kind": "work",
+          "arm": "cross",
+          "inputs": {
+            "approval.txt": "b20c7d33c235194cb131dcedbc8ed9c62a96229697c8a8e078ab4e90d253bcf7",
+            "draft.txt": "3bc956343014baf4d6920ff29d6ab34f2fafd63f752be13f0024c0d858fa3c7b",
+            "revision.txt": "73fba6eb50fe72e34fb27dc6aafac86ca45e21fa428b5f0355651b41a6ac3ac5"
+          },
+          "baseline": null,
+          "goal": "Read all three input documents and produce report.md and report.json. Prefer the latest approved revision, recompute totals, distinguish pilot readiness from a planned release, and identify contradictions in the obsolete draft. Cite the input filenames in report.md. report.json must be a single JSON object with north, south, total (integers), release_date (YYYY-MM-DD), pilot_approved (boolean), sources (input filenames), and findings (objects with kind, evidence and sources). Use finding kinds total_conflict, date_conflict, approval_missing where supported, and do not invent other findings. Explain each finding with concrete evidence. The two reports must agree. Do not modify inputs or invoke other Agent CLIs."
+        },
+        "project-cross": {
+          "kind": "project",
+          "arm": "cross",
+          "inputs": {
+            "cache.go": "c76bba7e662fed4f93c4c446a5df05a5d5e3ccdf6db1cba95865d774e1e4a207",
+            "cache_test.go": "8e2e98d24717d0de8e82596297baff5c53065c52816f633d6c6749eabf86a730",
+            "go.mod": "402f0db3985d176116bbd0b0a09ae5f7fe3546069954cede9aed2b3f6e7a99f9",
+            "requirements.txt": "968fdf5ce9e24287feb14a12b82119e226725dd38dd21f3ce177a04a5893655d"
+          },
+          "baseline": "47a0a89454f0bcd86a361dc8a0bede11ed28ca9d",
+          "goal": "Fix Alive in cache.go to meet requirements.txt across the entire int64 range. Preserve go.mod, cache_test.go and requirements.txt byte-for-byte. Only cache.go may change. Produce a correct implementation, check ordinary and boundary cases including nonpositive TTL, clock rollback and overflow, and review the result. Do not install tools or invoke other Agent CLIs."
+        },
+        "project-single": {
+          "kind": "project",
+          "arm": "single",
+          "inputs": {
+            "cache.go": "c76bba7e662fed4f93c4c446a5df05a5d5e3ccdf6db1cba95865d774e1e4a207",
+            "cache_test.go": "8e2e98d24717d0de8e82596297baff5c53065c52816f633d6c6749eabf86a730",
+            "go.mod": "402f0db3985d176116bbd0b0a09ae5f7fe3546069954cede9aed2b3f6e7a99f9",
+            "requirements.txt": "968fdf5ce9e24287feb14a12b82119e226725dd38dd21f3ce177a04a5893655d"
+          },
+          "baseline": "47a0a89454f0bcd86a361dc8a0bede11ed28ca9d",
+          "goal": "Fix Alive in cache.go to meet requirements.txt across the entire int64 range. Preserve go.mod, cache_test.go and requirements.txt byte-for-byte. Only cache.go may change. Produce a correct implementation, check ordinary and boundary cases including nonpositive TTL, clock rollback and overflow, and review the result. Do not install tools or invoke other Agent CLIs."
+        },
+        "project-direct": {
+          "kind": "project",
+          "arm": "direct",
+          "inputs": {
+            "cache.go": "c76bba7e662fed4f93c4c446a5df05a5d5e3ccdf6db1cba95865d774e1e4a207",
+            "cache_test.go": "8e2e98d24717d0de8e82596297baff5c53065c52816f633d6c6749eabf86a730",
+            "go.mod": "402f0db3985d176116bbd0b0a09ae5f7fe3546069954cede9aed2b3f6e7a99f9",
+            "requirements.txt": "968fdf5ce9e24287feb14a12b82119e226725dd38dd21f3ce177a04a5893655d"
+          },
+          "baseline": "47a0a89454f0bcd86a361dc8a0bede11ed28ca9d",
+          "goal": "Fix Alive in cache.go to meet requirements.txt across the entire int64 range. Preserve go.mod, cache_test.go and requirements.txt byte-for-byte. Only cache.go may change. Produce a correct implementation, check ordinary and boundary cases including nonpositive TTL, clock rollback and overflow, and review the result. Do not install tools or invoke other Agent CLIs."
+        }
+      },
+      "limits": {
+        "comparison_calls": 36,
+        "compatibility_calls": 12,
+        "case_seconds": 600,
+        "call_seconds": 120,
+        "repairs": 1
+      },
+      "settings": {
+        "codex_reasoning_effort": "low",
+        "models": "native configured defaults",
+        "cursor_trust": "generated temporary cwd only"
+      },
+      "benefit_rule": "Cross arm independently passes with fewer omissions, more reproducible findings, or fewer recorded human handoffs than a baseline; report extra cost. Scripted handoffs are not human observations.",
+      "tools": {
+        "fixtures.py": "ed8fd8d7c2b1328cf3b7301d3b0444f3237f9885916c8ddf23f290661aee9747",
+        "common.py": "891945a22a3bcd81dabc60c70bc214decfef5c88c9d249f76d0dd21d38a286cd",
+        "native_wrapper.py": "3c6a32d891dfad93f5ea8e215762ed0ae762f96f0ff611773162186ce84f8aa2",
+        "experiment.py": "51a188a18fc13ffbfccdf3994d1c35ab41e56b06ac89eb4bb5c2b9ba81fb36f5",
+        "compatibility.py": "b2f452ee8711f317abb495b1de33abc8d722044e1b3c830e82bbf44686e41094"
+      }
+    },
+    {
+      "schema": 1,
+      "prepared_at": "2026-10-17T13:54:41Z",
+      "platform": "macOS-26.5.1-arm64-arm-64bit",
+      "source_commit": "1bde50155663098a2752cad9ab5e74106abfc3bb",
+      "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb",
+      "order": [
+        "work-direct",
+        "work-single",
+        "work-cross",
+        "project-cross",
+        "project-single",
+        "project-direct"
+      ],
+      "cases": {
+        "work-direct": {
+          "kind": "work",
+          "arm": "direct",
+          "inputs": {
+            "approval.txt": "b20c7d33c235194cb131dcedbc8ed9c62a96229697c8a8e078ab4e90d253bcf7",
+            "draft.txt": "3bc956343014baf4d6920ff29d6ab34f2fafd63f752be13f0024c0d858fa3c7b",
+            "revision.txt": "73fba6eb50fe72e34fb27dc6aafac86ca45e21fa428b5f0355651b41a6ac3ac5"
+          },
+          "baseline": null,
+          "goal": "Read all three input documents and produce report.md and report.json. Prefer the latest approved revision, recompute totals, distinguish pilot readiness from a planned release, and identify contradictions in the obsolete draft. Cite the input filenames in report.md. report.json must be a single JSON object with north, south, total (integers), release_date (YYYY-MM-DD), pilot_approved (boolean), sources (input filenames), and findings (objects with kind, evidence and sources). Use finding kinds total_conflict, date_conflict, approval_missing where supported, and do not invent other findings. Explain each finding with concrete evidence. The two reports must agree. Do not modify inputs or invoke other Agent CLIs."
+        },
+        "work-single": {
+          "kind": "work",
+          "arm": "single",
+          "inputs": {
+            "approval.txt": "b20c7d33c235194cb131dcedbc8ed9c62a96229697c8a8e078ab4e90d253bcf7",
+            "draft.txt": "3bc956343014baf4d6920ff29d6ab34f2fafd63f752be13f0024c0d858fa3c7b",
+            "revision.txt": "73fba6eb50fe72e34fb27dc6aafac86ca45e21fa428b5f0355651b41a6ac3ac5"
+          },
+          "baseline": null,
+          "goal": "Read all three input documents and produce report.md and report.json. Prefer the latest approved revision, recompute totals, distinguish pilot readiness from a planned release, and identify contradictions in the obsolete draft. Cite the input filenames in report.md. report.json must be a single JSON object with north, south, total (integers), release_date (YYYY-MM-DD), pilot_approved (boolean), sources (input filenames), and findings (objects with kind, evidence and sources). Use finding kinds total_conflict, date_conflict, approval_missing where supported, and do not invent other findings. Explain each finding with concrete evidence. The two reports must agree. Do not modify inputs or invoke other Agent CLIs."
+        },
+        "work-cross": {
+          "kind": "work",
+          "arm": "cross",
+          "inputs": {
+            "approval.txt": "b20c7d33c235194cb131dcedbc8ed9c62a96229697c8a8e078ab4e90d253bcf7",
+            "draft.txt": "3bc956343014baf4d6920ff29d6ab34f2fafd63f752be13f0024c0d858fa3c7b",
+            "revision.txt": "73fba6eb50fe72e34fb27dc6aafac86ca45e21fa428b5f0355651b41a6ac3ac5"
+          },
+          "baseline": null,
+          "goal": "Read all three input documents and produce report.md and report.json. Prefer the latest approved revision, recompute totals, distinguish pilot readiness from a planned release, and identify contradictions in the obsolete draft. Cite the input filenames in report.md. report.json must be a single JSON object with north, south, total (integers), release_date (YYYY-MM-DD), pilot_approved (boolean), sources (input filenames), and findings (objects with kind, evidence and sources). Use finding kinds total_conflict, date_conflict, approval_missing where supported, and do not invent other findings. Explain each finding with concrete evidence. The two reports must agree. Do not modify inputs or invoke other Agent CLIs."
+        },
+        "project-cross": {
+          "kind": "project",
+          "arm": "cross",
+          "inputs": {
+            "cache.go": "c76bba7e662fed4f93c4c446a5df05a5d5e3ccdf6db1cba95865d774e1e4a207",
+            "cache_test.go": "8e2e98d24717d0de8e82596297baff5c53065c52816f633d6c6749eabf86a730",
+            "go.mod": "402f0db3985d176116bbd0b0a09ae5f7fe3546069954cede9aed2b3f6e7a99f9",
+            "requirements.txt": "968fdf5ce9e24287feb14a12b82119e226725dd38dd21f3ce177a04a5893655d"
+          },
+          "baseline": "47a0a89454f0bcd86a361dc8a0bede11ed28ca9d",
+          "goal": "Fix Alive in cache.go to meet requirements.txt across the entire int64 range. Preserve go.mod, cache_test.go and requirements.txt byte-for-byte. Only cache.go may change. Produce a correct implementation, check ordinary and boundary cases including nonpositive TTL, clock rollback and overflow, and review the result. Do not install tools or invoke other Agent CLIs."
+        },
+        "project-single": {
+          "kind": "project",
+          "arm": "single",
+          "inputs": {
+            "cache.go": "c76bba7e662fed4f93c4c446a5df05a5d5e3ccdf6db1cba95865d774e1e4a207",
+            "cache_test.go": "8e2e98d24717d0de8e82596297baff5c53065c52816f633d6c6749eabf86a730",
+            "go.mod": "402f0db3985d176116bbd0b0a09ae5f7fe3546069954cede9aed2b3f6e7a99f9",
+            "requirements.txt": "968fdf5ce9e24287feb14a12b82119e226725dd38dd21f3ce177a04a5893655d"
+          },
+          "baseline": "47a0a89454f0bcd86a361dc8a0bede11ed28ca9d",
+          "goal": "Fix Alive in cache.go to meet requirements.txt across the entire int64 range. Preserve go.mod, cache_test.go and requirements.txt byte-for-byte. Only cache.go may change. Produce a correct implementation, check ordinary and boundary cases including nonpositive TTL, clock rollback and overflow, and review the result. Do not install tools or invoke other Agent CLIs."
+        },
+        "project-direct": {
+          "kind": "project",
+          "arm": "direct",
+          "inputs": {
+            "cache.go": "c76bba7e662fed4f93c4c446a5df05a5d5e3ccdf6db1cba95865d774e1e4a207",
+            "cache_test.go": "8e2e98d24717d0de8e82596297baff5c53065c52816f633d6c6749eabf86a730",
+            "go.mod": "402f0db3985d176116bbd0b0a09ae5f7fe3546069954cede9aed2b3f6e7a99f9",
+            "requirements.txt": "968fdf5ce9e24287feb14a12b82119e226725dd38dd21f3ce177a04a5893655d"
+          },
+          "baseline": "47a0a89454f0bcd86a361dc8a0bede11ed28ca9d",
+          "goal": "Fix Alive in cache.go to meet requirements.txt across the entire int64 range. Preserve go.mod, cache_test.go and requirements.txt byte-for-byte. Only cache.go may change. Produce a correct implementation, check ordinary and boundary cases including nonpositive TTL, clock rollback and overflow, and review the result. Do not install tools or invoke other Agent CLIs."
+        }
+      },
+      "limits": {
+        "comparison_calls": 36,
+        "compatibility_calls": 12,
+        "case_seconds": 600,
+        "call_seconds": 120,
+        "repairs": 1
+      },
+      "settings": {
+        "codex_reasoning_effort": "low",
+        "models": "native configured defaults",
+        "cursor_trust": "generated temporary cwd only"
+      },
+      "benefit_rule": "Cross arm independently passes with fewer omissions, more reproducible findings, or fewer recorded human handoffs than a baseline; report extra cost. Scripted handoffs are not human observations.",
+      "tools": {
+        "fixtures.py": "ed8fd8d7c2b1328cf3b7301d3b0444f3237f9885916c8ddf23f290661aee9747",
+        "common.py": "925fd49830daa2cf60635983e318f011107716db37ba75a987faac5e4f80c52f",
+        "native_wrapper.py": "3c6a32d891dfad93f5ea8e215762ed0ae762f96f0ff611773162186ce84f8aa2",
+        "experiment.py": "a663d74d743f855ef0caf3e69593887ba720a1cacd9c202a65fef58bf3b78bcb",
+        "compatibility.py": "fd4b79d2b8d310226f2e855f978c1ea07b5734a05a2cb07172e988cc0b7e95a9"
+      }
+    }
+  ]
+}

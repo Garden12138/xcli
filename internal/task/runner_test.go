@@ -377,6 +377,88 @@ func TestTaskCommandAndMaterialProtection(t *testing.T) {
 }
 
 func TestTaskSelectedSourceAndEvidenceIntegrity(t *testing.T) {
+	t.Run("unique_input_filename", func(t *testing.T) {
+		r, o, root := fixture(t, "", false, true)
+		input := filepath.Join(root, "facts.txt")
+		if err := os.WriteFile(input, []byte("facts"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		input, _ = canonical(input)
+		if err := os.Mkdir(o.Output, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		o.Output, _ = canonical(o.Output)
+		if err := os.WriteFile(filepath.Join(o.Output, "report.json"), []byte(`{"sources":["facts.txt"]}`), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		r.task = &Task{Version: 2, ID: runstore.NewID("task"), Cwd: o.Output, Output: o.Output, Inputs: []Artifact{{Path: input, SHA256: digest([]byte("facts"))}}}
+		check := func(want bool) {
+			t.Helper()
+			passed, err := r.accept(context.Background(), []Requirement{{Path: "report.json", Sources: []string{"facts.txt"}}})
+			if err != nil || passed != want {
+				t.Fatalf("filename citation: passed=%t want=%t err=%v checks=%+v", passed, want, err, r.task.Checks)
+			}
+		}
+		check(true)
+		// A stale selected input must not be hidden by a same-named copy.
+		if err := os.WriteFile(input, []byte("changed"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(o.Output, "facts.txt"), []byte("facts"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		check(false)
+		if err := os.WriteFile(input, []byte("facts"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		other := filepath.Join(root, "other", "facts.txt")
+		if err := os.MkdirAll(filepath.Dir(other), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(other, []byte("other"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		other, _ = canonical(other)
+		r.task.Inputs = append(r.task.Inputs, Artifact{Path: other, SHA256: digest([]byte("other"))})
+		check(false)
+		if err := os.WriteFile(filepath.Join(o.Output, "report.json"), []byte(compactJSON(map[string]any{"sources": []string{input}})), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		passed, err := r.accept(context.Background(), []Requirement{{Path: "report.json", Sources: []string{input}}})
+		if err != nil || !passed {
+			t.Fatalf("explicit input path rejected after filename ambiguity: %t %v", passed, err)
+		}
+	})
+	t.Run("nested_artifact_relative_source", func(t *testing.T) {
+		r, o, root := fixture(t, "", false, true)
+		input := filepath.Join(root, "facts.txt")
+		if err := os.WriteFile(input, []byte("facts"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		input, _ = canonical(input)
+		if err := os.MkdirAll(filepath.Join(o.Output, "reports"), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		o.Output, _ = canonical(o.Output)
+		if err := os.WriteFile(filepath.Join(o.Output, "reports", "report.md"), []byte("source: ../../facts.txt"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		r.task = &Task{Version: 2, ID: runstore.NewID("task"), Cwd: o.Output, Output: o.Output, Inputs: []Artifact{{Path: input, SHA256: digest([]byte("facts"))}}}
+		passed, err := r.accept(context.Background(), []Requirement{{Path: "reports/report.md", Sources: []string{"../../facts.txt"}}})
+		if err != nil || !passed {
+			t.Fatalf("artifact-relative citation: %t %v checks=%+v", passed, err, r.task.Checks)
+		}
+		if err := os.WriteFile(filepath.Join(root, "outside.txt"), []byte("undeclared"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(o.Output, "reports", "report.md"), []byte("source: ../../outside.txt"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		passed, err = r.accept(context.Background(), []Requirement{{Path: "reports/report.md", Sources: []string{"../../outside.txt"}}})
+		if err != nil || passed {
+			t.Fatalf("undeclared source accepted: %t %v", passed, err)
+		}
+	})
 	t.Run("historical_pending_validation", func(t *testing.T) {
 		r, o, _ := fixture(t, "pending_verification", true, true)
 		result, err := r.Run(context.Background(), o)

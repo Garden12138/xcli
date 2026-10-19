@@ -2,10 +2,15 @@ version: 2
 
 project_name: xcli
 
+snapshot:
+  version_template: "0.5.0-r3-dev-{{ .ShortCommit }}"
+
 builds:
   - id: xcli
     main: .
     binary: xcli
+    flags:
+      - -trimpath
     env:
       - CGO_ENABLED=0
     goos:
@@ -19,6 +24,10 @@ builds:
 
 archives:
   - formats: [tar.gz]
+    files:
+      - LICENSE
+      - README.md
+      - README.zh-CN.md
     name_template: >-
       {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
 

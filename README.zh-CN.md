@@ -4,7 +4,7 @@
 
 把 Work 或 Project 目标交给原生 Agent CLI，在有界执行、可追溯交接和真实验证后交付结果。
 
-当前源码为 **R2 / `0.5.0-r2-dev` 开发版**，尚未发布安装包。已发布的 v0.4.0 不包含 Task。后台、继续和恢复见 [R2 使用说明](docs/r2/README.zh-CN.md)与[验收记录](docs/r2/results.zh-CN.md)；退役迁移见 [R1 说明](docs/r1/README.zh-CN.md)。
+当前源码为 **R3 / `0.5.0-r3-dev` 候选版**，尚未正式发布。已发布的 v0.4.0 不包含 Task。实验、安装和阶段边界见 [R3 使用说明](docs/r3/README.zh-CN.md)与[候选验收记录](docs/r3/results.zh-CN.md)；后台恢复见 [R2 说明](docs/r2/README.zh-CN.md)，升级见[迁移说明](docs/r3/release-notes.md)。
 
 ## 快速开始
 
@@ -105,8 +105,12 @@ go test -race ./...
 go vet ./...
 go mod tidy -diff
 
-# 显式真实验收：四个临时任务，最多 24 次 Agent CLI 调用
-python3 tests/r2/native.py --binary ./xcli --out /tmp/r2-native.json --execute
+# R3 确定性夹具，不调用模型
+XCLI_R3_BINARY=./xcli python3 -m unittest discover -s tests/r3 -v
+
+# 显式真实对照：整批累计最多 48 次原生调用
+python3 tests/r3/experiment.py prepare --study /tmp/r3-study --binary ./xcli --budget 48
+python3 tests/r3/experiment.py run --study /tmp/r3-study --out /tmp/r3-comparison.json --execute
 ```
 
-真实脚本沿用 Codex/Cursor 默认登录环境，创建临时项目/数据目录，只对生成的测试目录设置 Cursor trust。失败私有证据保留，公开结果脱敏。历史 [R0](docs/r0/results.zh-CN.md)与阶段 0 记录保留原范围；本批见 [R1 记录](docs/r1/results.zh-CN.md)。
+真实脚本沿用已有 Codex/Cursor 登录环境，创建临时项目/数据目录，只对生成的目录设置 Cursor trust。原始失败证据保留在私有目录；公开报告按 [R3 导出流程](docs/r3/README.zh-CN.md)脱敏。独立用户观察和正式发布与工程候选验收分别判断，历史 R0–R2 证据保留原范围。

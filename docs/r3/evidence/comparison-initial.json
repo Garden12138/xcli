@@ -1,0 +1,719 @@
+{
+  "kind": "r3_comparison",
+  "schema": 1,
+  "prepared_at": "2026-10-17T13:45:46Z",
+  "platform": "macOS-26.5.1-arm64-arm-64bit",
+  "source_commit": "1bde50155663098a2752cad9ab5e74106abfc3bb",
+  "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca",
+  "frozen_study_sha256": "ad9ce41a7b354142cc2b29326a85f91ed621fe82e2a51e39b9c47ba44b1b8989",
+  "native_versions": {
+    "codex": "codex-cli 0.163.0",
+    "cursor": "2026.10.16-e3cb207"
+  },
+  "settings": {
+    "codex_reasoning_effort": "low",
+    "models": "native configured defaults",
+    "cursor_trust": "generated temporary cwd only"
+  },
+  "limits": {
+    "comparison_calls": 36,
+    "compatibility_calls": 12,
+    "case_seconds": 600,
+    "call_seconds": 120,
+    "repairs": 1
+  },
+  "call_limit": 48,
+  "calls": 18,
+  "calls_by_adapter": {
+    "codex": 15,
+    "cursor": 3
+  },
+  "ledger": [
+    {
+      "sequence": 1,
+      "case": "work-direct",
+      "adapter": "codex",
+      "phase": "implementation",
+      "time": 1792244760.2304928,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 2,
+      "case": "work-direct",
+      "adapter": "codex",
+      "phase": "self-review",
+      "time": 1792244797.518322,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 3,
+      "case": "work-single",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792244824.292258,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 4,
+      "case": "work-single",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792244854.4234319,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 5,
+      "case": "work-single",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792244887.234585,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 6,
+      "case": "work-cross",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792244910.6350741,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 7,
+      "case": "work-cross",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792244937.765313,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 8,
+      "case": "work-cross",
+      "adapter": "cursor",
+      "phase": "task",
+      "time": 1792244983.2564192,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 9,
+      "case": "work-cross",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792245017.0624168,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 10,
+      "case": "work-cross",
+      "adapter": "cursor",
+      "phase": "task",
+      "time": 1792245049.4702919,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 11,
+      "case": "project-cross",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792245101.3433018,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 12,
+      "case": "project-cross",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792245125.934877,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 13,
+      "case": "project-cross",
+      "adapter": "cursor",
+      "phase": "task",
+      "time": 1792245156.22287,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 14,
+      "case": "project-single",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792245217.201875,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 15,
+      "case": "project-single",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792245243.416367,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 16,
+      "case": "project-single",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792245346.260455,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 17,
+      "case": "project-direct",
+      "adapter": "codex",
+      "phase": "implementation",
+      "time": 1792245368.358479,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 18,
+      "case": "project-direct",
+      "adapter": "codex",
+      "phase": "self-review",
+      "time": 1792245424.608513,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    }
+  ],
+  "results": [
+    {
+      "case": "work-direct",
+      "kind": "work",
+      "arm": "direct",
+      "status": "passed",
+      "human_interventions": 0,
+      "human_handoffs": 0,
+      "scripted_external_handoffs": 1,
+      "automatic_handoffs": 0,
+      "estimated_cost_usd": null,
+      "native_calls": [
+        {
+          "exit_code": 0,
+          "parse_complete": true,
+          "session_present": true,
+          "usage": {
+            "input_tokens": 71250,
+            "cached_input_tokens": 64128,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1328,
+            "reasoning_output_tokens": 0
+          }
+        },
+        {
+          "exit_code": 0,
+          "parse_complete": true,
+          "session_present": true,
+          "usage": {
+            "input_tokens": 71872,
+            "cached_input_tokens": 63232,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 680,
+            "reasoning_output_tokens": 15
+          }
+        }
+      ],
+      "runtime_status": "completed",
+      "score": {
+        "passed": true,
+        "correct_facts": 5,
+        "findings": [
+          "total_conflict",
+          "date_conflict",
+          "approval_missing"
+        ],
+        "omissions": [],
+        "false_positives": [],
+        "errors": []
+      },
+      "inputs_unchanged": true,
+      "deliverable_sha256": {
+        "report.json": "009a40f779599e80732173163cb194219038b19d3c0b504b5edfcb2948c66866",
+        "report.md": "2e355a1129ea2d8259f4354d29bf52ad87351300441aa3028b3ac8e3b51592a4"
+      },
+      "seconds": 66.844,
+      "calls": 2
+    },
+    {
+      "case": "work-single",
+      "kind": "work",
+      "arm": "single",
+      "status": "passed",
+      "human_interventions": 0,
+      "human_handoffs": 0,
+      "scripted_external_handoffs": 0,
+      "automatic_handoffs": 1,
+      "estimated_cost_usd": null,
+      "task_id": "task-20261017T134703Z-2f051d0d",
+      "runtime_status": "completed",
+      "exit_code": 0,
+      "repairs": 0,
+      "usage": {
+        "input_tokens": 42447,
+        "cache_read_tokens": 95744,
+        "cache_write_tokens": 0,
+        "output_tokens": 2460,
+        "reasoning_tokens": 0,
+        "total_tokens": 140651
+      },
+      "usage_incomplete": false,
+      "roles": [
+        "coordinator",
+        "worker",
+        "reviewer"
+      ],
+      "adapters": [
+        "codex",
+        "codex",
+        "codex"
+      ],
+      "review_kinds": [
+        "self_check"
+      ],
+      "native_calls": [
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 18535,
+            "cache_read_tokens": 17664,
+            "cache_write_tokens": 0,
+            "output_tokens": 813,
+            "reasoning_tokens": 0,
+            "total_tokens": 37012
+          }
+        },
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 5531,
+            "cache_read_tokens": 44928,
+            "cache_write_tokens": 0,
+            "output_tokens": 1262,
+            "reasoning_tokens": 0,
+            "total_tokens": 51721
+          }
+        },
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 18381,
+            "cache_read_tokens": 33152,
+            "cache_write_tokens": 0,
+            "output_tokens": 385,
+            "reasoning_tokens": 0,
+            "total_tokens": 51918
+          }
+        }
+      ],
+      "mode_preserved": true,
+      "current_review_bound": true,
+      "score": {
+        "passed": true,
+        "correct_facts": 5,
+        "findings": [
+          "total_conflict",
+          "date_conflict",
+          "approval_missing"
+        ],
+        "omissions": [],
+        "false_positives": [],
+        "errors": []
+      },
+      "inputs_unchanged": true,
+      "deliverable_sha256": {
+        "report.json": "248d60b2d73288cffe8b4700f5cc84046879f700d54e2c58a7161e0b1d72c5a3",
+        "report.md": "2ea85ad1a365279ba3f7b1d5093c6d995fec5e2a062fcd9814a923a07406f9e5"
+      },
+      "seconds": 85.525,
+      "calls": 3
+    },
+    {
+      "case": "work-cross",
+      "kind": "work",
+      "arm": "cross",
+      "status": "failed",
+      "human_interventions": 0,
+      "human_handoffs": 0,
+      "scripted_external_handoffs": 0,
+      "automatic_handoffs": 2,
+      "estimated_cost_usd": null,
+      "task_id": "task-20261017T134829Z-83e841f5",
+      "runtime_status": "failed",
+      "exit_code": 1,
+      "repairs": 1,
+      "usage": {
+        "input_tokens": 55326,
+        "cache_read_tokens": 87552,
+        "cache_write_tokens": 0,
+        "output_tokens": 2647,
+        "reasoning_tokens": 104,
+        "total_tokens": 145629
+      },
+      "usage_incomplete": true,
+      "roles": [
+        "coordinator",
+        "worker",
+        "reviewer",
+        "repair",
+        "reviewer"
+      ],
+      "adapters": [
+        "codex",
+        "codex",
+        "cursor",
+        "codex",
+        "cursor"
+      ],
+      "review_kinds": [
+        "cross_cli",
+        "cross_cli"
+      ],
+      "native_calls": [
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 16014,
+            "cache_read_tokens": 15360,
+            "cache_write_tokens": 0,
+            "output_tokens": 715,
+            "reasoning_tokens": 18,
+            "total_tokens": 32107
+          }
+        },
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 18005,
+            "cache_read_tokens": 32512,
+            "cache_write_tokens": 0,
+            "output_tokens": 1437,
+            "reasoning_tokens": 10,
+            "total_tokens": 51964
+          }
+        },
+        {
+          "adapter": "cursor",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": null
+        },
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 21307,
+            "cache_read_tokens": 39680,
+            "cache_write_tokens": 0,
+            "output_tokens": 495,
+            "reasoning_tokens": 76,
+            "total_tokens": 61558
+          }
+        },
+        {
+          "adapter": "cursor",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": null
+        }
+      ],
+      "mode_preserved": true,
+      "current_review_bound": true,
+      "score": {
+        "passed": true,
+        "correct_facts": 5,
+        "findings": [
+          "total_conflict",
+          "date_conflict",
+          "approval_missing"
+        ],
+        "omissions": [],
+        "false_positives": [],
+        "errors": []
+      },
+      "inputs_unchanged": true,
+      "deliverable_sha256": {
+        "report.json": "c51f0f8c5605d5e0806d6eef0e13e4cde676dca921cdc458684cbdcc1e0b64f7",
+        "report.md": "9a2b77b71e695872e926c7e8e9d221d1c085ced69d1b3baa63ec00f460410c4e"
+      },
+      "seconds": 190.91,
+      "calls": 5
+    },
+    {
+      "case": "project-cross",
+      "kind": "project",
+      "arm": "cross",
+      "status": "passed",
+      "human_interventions": 0,
+      "human_handoffs": 0,
+      "scripted_external_handoffs": 0,
+      "automatic_handoffs": 1,
+      "estimated_cost_usd": null,
+      "task_id": "task-20261017T135140Z-b85d180f",
+      "runtime_status": "completed",
+      "exit_code": 0,
+      "repairs": 0,
+      "usage": {
+        "input_tokens": 32525,
+        "cache_read_tokens": 46336,
+        "cache_write_tokens": 0,
+        "output_tokens": 1027,
+        "reasoning_tokens": 50,
+        "total_tokens": 79938
+      },
+      "usage_incomplete": true,
+      "roles": [
+        "coordinator",
+        "worker",
+        "verifier",
+        "reviewer"
+      ],
+      "adapters": [
+        "codex",
+        "codex",
+        "cursor"
+      ],
+      "review_kinds": [
+        "cross_cli"
+      ],
+      "native_calls": [
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 15802,
+            "cache_read_tokens": 15104,
+            "cache_write_tokens": 0,
+            "output_tokens": 461,
+            "reasoning_tokens": 0,
+            "total_tokens": 31367
+          }
+        },
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 16723,
+            "cache_read_tokens": 31232,
+            "cache_write_tokens": 0,
+            "output_tokens": 566,
+            "reasoning_tokens": 50,
+            "total_tokens": 48571
+          }
+        },
+        {
+          "adapter": "cursor",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": null
+        }
+      ],
+      "mode_preserved": true,
+      "current_review_bound": true,
+      "score": {
+        "passed": true,
+        "errors": [],
+        "independent_tests": "passed"
+      },
+      "inputs_unchanged": true,
+      "original_git_clean": true,
+      "deliverable_sha256": {
+        ".git": "b2e6159c76f0f0dddf66a5cce2c369edfcc308d2a4f65179a04459e1e89d2d2f",
+        "cache.go": "970d8eb4e81ec3a4016aea0f3a0623763a3d81aaa697d14ecff493ad98e20d22",
+        "cache_test.go": "8e2e98d24717d0de8e82596297baff5c53065c52816f633d6c6749eabf86a730",
+        "go.mod": "402f0db3985d176116bbd0b0a09ae5f7fe3546069954cede9aed2b3f6e7a99f9",
+        "requirements.txt": "968fdf5ce9e24287feb14a12b82119e226725dd38dd21f3ce177a04a5893655d"
+      },
+      "seconds": 116.442,
+      "calls": 3
+    },
+    {
+      "case": "project-single",
+      "kind": "project",
+      "arm": "single",
+      "status": "passed",
+      "human_interventions": 0,
+      "human_handoffs": 0,
+      "scripted_external_handoffs": 0,
+      "automatic_handoffs": 1,
+      "estimated_cost_usd": null,
+      "task_id": "task-20261017T135336Z-1404a89a",
+      "runtime_status": "completed",
+      "exit_code": 0,
+      "repairs": 0,
+      "usage": {
+        "input_tokens": 64529,
+        "cache_read_tokens": 62848,
+        "cache_write_tokens": 0,
+        "output_tokens": 1143,
+        "reasoning_tokens": 159,
+        "total_tokens": 128679
+      },
+      "usage_incomplete": false,
+      "roles": [
+        "coordinator",
+        "worker",
+        "verifier",
+        "reviewer"
+      ],
+      "adapters": [
+        "codex",
+        "codex",
+        "codex"
+      ],
+      "review_kinds": [
+        "self_check"
+      ],
+      "native_calls": [
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 15709,
+            "cache_read_tokens": 15104,
+            "cache_write_tokens": 0,
+            "output_tokens": 375,
+            "reasoning_tokens": 0,
+            "total_tokens": 31188
+          }
+        },
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 31835,
+            "cache_read_tokens": 15872,
+            "cache_write_tokens": 0,
+            "output_tokens": 483,
+            "reasoning_tokens": 159,
+            "total_tokens": 48349
+          }
+        },
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 16985,
+            "cache_read_tokens": 31872,
+            "cache_write_tokens": 0,
+            "output_tokens": 285,
+            "reasoning_tokens": 0,
+            "total_tokens": 49142
+          }
+        }
+      ],
+      "mode_preserved": true,
+      "current_review_bound": true,
+      "score": {
+        "passed": true,
+        "errors": [],
+        "independent_tests": "passed"
+      },
+      "inputs_unchanged": true,
+      "original_git_clean": true,
+      "deliverable_sha256": {
+        ".git": "345046b86d503fa3e078900b068c15429b1157bb5289b45ffe7a57c66a5047da",
+        "cache.go": "31f7920aa482d739ed1e2003c19f3e6682ccf051d3d895fc35b85e0ae6f6dddf",
+        "cache_test.go": "8e2e98d24717d0de8e82596297baff5c53065c52816f633d6c6749eabf86a730",
+        "go.mod": "402f0db3985d176116bbd0b0a09ae5f7fe3546069954cede9aed2b3f6e7a99f9",
+        "requirements.txt": "968fdf5ce9e24287feb14a12b82119e226725dd38dd21f3ce177a04a5893655d"
+      },
+      "seconds": 151.545,
+      "calls": 3
+    },
+    {
+      "case": "project-direct",
+      "kind": "project",
+      "arm": "direct",
+      "status": "passed",
+      "human_interventions": 0,
+      "human_handoffs": 0,
+      "scripted_external_handoffs": 1,
+      "automatic_handoffs": 0,
+      "estimated_cost_usd": null,
+      "native_calls": [
+        {
+          "exit_code": 0,
+          "parse_complete": true,
+          "session_present": true,
+          "usage": {
+            "input_tokens": 116105,
+            "cached_input_tokens": 105856,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1867,
+            "reasoning_output_tokens": 243
+          }
+        },
+        {
+          "exit_code": 0,
+          "parse_complete": true,
+          "session_present": true,
+          "usage": {
+            "input_tokens": 72660,
+            "cached_input_tokens": 59264,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 951,
+            "reasoning_output_tokens": 53
+          }
+        }
+      ],
+      "runtime_status": "completed",
+      "score": {
+        "passed": true,
+        "errors": [],
+        "independent_tests": "passed"
+      },
+      "inputs_unchanged": true,
+      "original_git_clean": true,
+      "deliverable_sha256": {
+        "cache.go": "418bd1cffe8a4447d8d5e801262e3fcf9a6ddd65ad49336367dff6ed94c7b38a",
+        "cache_test.go": "8e2e98d24717d0de8e82596297baff5c53065c52816f633d6c6749eabf86a730",
+        "go.mod": "402f0db3985d176116bbd0b0a09ae5f7fe3546069954cede9aed2b3f6e7a99f9",
+        "requirements.txt": "968fdf5ce9e24287feb14a12b82119e226725dd38dd21f3ce177a04a5893655d"
+      },
+      "seconds": 92.184,
+      "calls": 2
+    }
+  ],
+  "comparisons": [
+    {
+      "kind": "work",
+      "observed_benefits": [],
+      "claim": "no collaboration benefit established"
+    },
+    {
+      "kind": "project",
+      "observed_benefits": [],
+      "claim": "no collaboration benefit established"
+    }
+  ],
+  "independent_user_observation": "pending",
+  "status": "incomplete_or_failed"
+}

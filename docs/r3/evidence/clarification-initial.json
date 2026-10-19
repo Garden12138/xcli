@@ -1,0 +1,21 @@
+{
+  "kind": "r3_failure_recovery",
+  "status": "failed",
+  "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb",
+  "task_id": "task-20261017T142709Z-ad8385f3",
+  "original_failure_retained": true,
+  "operator_assisted": true,
+  "native_worker_interruption_verified": false,
+  "calls_before": 1,
+  "stop_status": "waiting_user",
+  "final_status": "completed",
+  "calls_after": 4,
+  "mode_preserved": true,
+  "same_task": true,
+  "repeat_continue_no_calls": true,
+  "review_kinds": [
+    "self_check"
+  ],
+  "seconds": 64.542,
+  "total_campaign_calls": 46
+}

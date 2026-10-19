@@ -1,0 +1,17 @@
+{
+  "kind": "r3_failure_diagnosis",
+  "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb",
+  "cross_recovery": {
+    "native_error_kind": "ActionRequiredError",
+    "native_error_summary": "Cursor usage limit reached",
+    "raw_diagnostics_retained_privately": true,
+    "task_status_after_repeat_continue": "needs_reconcile",
+    "additional_cursor_invocations_after_diagnosis": 0
+  },
+  "single_recovery": {
+    "initial_error": "complete requires work and review",
+    "clarification_is_operator_assisted": true,
+    "active_worker_stop_not_observed": true
+  },
+  "publishes": false
+}

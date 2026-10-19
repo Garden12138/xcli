@@ -1,0 +1,82 @@
+{
+  "kind": "r3_native_compatibility",
+  "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb",
+  "native_versions": {
+    "codex": "codex-cli 0.163.0",
+    "cursor": "2026.10.16-e3cb207"
+  },
+  "platform": "macOS-26.5.1-arm64-arm-64bit",
+  "results": [
+    {
+      "status": "passed",
+      "same_native_session": true,
+      "exit_code": 0,
+      "parse_status": "complete",
+      "case": "codex-resume",
+      "seconds": 9.395,
+      "ledger_calls": 1
+    },
+    {
+      "status": "passed",
+      "same_native_session": true,
+      "exit_code": 0,
+      "parse_status": "complete",
+      "case": "cursor-resume",
+      "seconds": 21.531,
+      "ledger_calls": 1
+    },
+    {
+      "status": "passed",
+      "native_activity_observed": true,
+      "exit_code": 130,
+      "run_status": "canceled",
+      "parse_status": "parse_error",
+      "case": "codex-cancel",
+      "seconds": 0.331,
+      "ledger_calls": 1
+    },
+    {
+      "status": "passed",
+      "native_activity_observed": true,
+      "exit_code": 130,
+      "run_status": "canceled",
+      "parse_status": "parse_error",
+      "case": "cursor-cancel",
+      "seconds": 3.171,
+      "ledger_calls": 1
+    },
+    {
+      "status": "failed",
+      "error": "Task ended before intended stop: waiting_user",
+      "case": "single-recovery",
+      "seconds": 16.303,
+      "ledger_calls": 1
+    },
+    {
+      "status": "failed",
+      "task_id": "task-20261017T142725Z-f8dd14f6",
+      "background": true,
+      "stop_status": "paused",
+      "final_status": "failed",
+      "same_task": true,
+      "mode_preserved": true,
+      "repeat_continue_no_calls": true,
+      "roles": [
+        "coordinator",
+        "worker",
+        "worker",
+        "reviewer"
+      ],
+      "review_kinds": [],
+      "current_review_bound": false,
+      "material_recovery_requested": true,
+      "calls_before_stop": 2,
+      "calls": 4,
+      "case": "cross-recovery",
+      "seconds": 79.103,
+      "ledger_calls": 4
+    }
+  ],
+  "total_campaign_calls": 43,
+  "status": "incomplete_or_failed"
+}

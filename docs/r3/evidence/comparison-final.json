@@ -1,0 +1,822 @@
+{
+  "kind": "r3_comparison",
+  "schema": 1,
+  "prepared_at": "2026-10-17T13:54:41Z",
+  "platform": "macOS-26.5.1-arm64-arm-64bit",
+  "source_commit": "1bde50155663098a2752cad9ab5e74106abfc3bb",
+  "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb",
+  "frozen_study_sha256": "22e2025c97ad732c95a02b528864b34914ff910ed9940d1853da47b6c729bb2e",
+  "native_versions": {
+    "codex": "codex-cli 0.163.0",
+    "cursor": "2026.10.16-e3cb207"
+  },
+  "settings": {
+    "codex_reasoning_effort": "low",
+    "models": "native configured defaults",
+    "cursor_trust": "generated temporary cwd only"
+  },
+  "limits": {
+    "comparison_calls": 36,
+    "compatibility_calls": 12,
+    "case_seconds": 600,
+    "call_seconds": 120,
+    "repairs": 1
+  },
+  "call_limit": 48,
+  "calls": 34,
+  "calls_by_adapter": {
+    "codex": 29,
+    "cursor": 5
+  },
+  "candidate_calls": 16,
+  "ledger": [
+    {
+      "sequence": 1,
+      "case": "work-direct",
+      "adapter": "codex",
+      "phase": "implementation",
+      "time": 1792244760.2304928,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 2,
+      "case": "work-direct",
+      "adapter": "codex",
+      "phase": "self-review",
+      "time": 1792244797.518322,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 3,
+      "case": "work-single",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792244824.292258,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 4,
+      "case": "work-single",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792244854.4234319,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 5,
+      "case": "work-single",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792244887.234585,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 6,
+      "case": "work-cross",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792244910.6350741,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 7,
+      "case": "work-cross",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792244937.765313,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 8,
+      "case": "work-cross",
+      "adapter": "cursor",
+      "phase": "task",
+      "time": 1792244983.2564192,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 9,
+      "case": "work-cross",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792245017.0624168,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 10,
+      "case": "work-cross",
+      "adapter": "cursor",
+      "phase": "task",
+      "time": 1792245049.4702919,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 11,
+      "case": "project-cross",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792245101.3433018,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 12,
+      "case": "project-cross",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792245125.934877,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 13,
+      "case": "project-cross",
+      "adapter": "cursor",
+      "phase": "task",
+      "time": 1792245156.22287,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 14,
+      "case": "project-single",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792245217.201875,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 15,
+      "case": "project-single",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792245243.416367,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 16,
+      "case": "project-single",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792245346.260455,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 17,
+      "case": "project-direct",
+      "adapter": "codex",
+      "phase": "implementation",
+      "time": 1792245368.358479,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 18,
+      "case": "project-direct",
+      "adapter": "codex",
+      "phase": "self-review",
+      "time": 1792245424.608513,
+      "binary_sha256": "e0503a0cd3a32b6c4d3fef5df6ec82a6ae3486d0ffb788d6b30560c79c61e4ca"
+    },
+    {
+      "sequence": 19,
+      "case": "work-direct",
+      "adapter": "codex",
+      "phase": "implementation",
+      "time": 1792246661.324367,
+      "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb"
+    },
+    {
+      "sequence": 20,
+      "case": "work-direct",
+      "adapter": "codex",
+      "phase": "self-review",
+      "time": 1792246690.052345,
+      "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb"
+    },
+    {
+      "sequence": 21,
+      "case": "work-single",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792246716.0023859,
+      "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb"
+    },
+    {
+      "sequence": 22,
+      "case": "work-single",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792246739.851758,
+      "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb"
+    },
+    {
+      "sequence": 23,
+      "case": "work-single",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792246774.002304,
+      "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb"
+    },
+    {
+      "sequence": 24,
+      "case": "work-cross",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792246791.4361238,
+      "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb"
+    },
+    {
+      "sequence": 25,
+      "case": "work-cross",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792246813.068779,
+      "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb"
+    },
+    {
+      "sequence": 26,
+      "case": "work-cross",
+      "adapter": "cursor",
+      "phase": "task",
+      "time": 1792246849.830485,
+      "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb"
+    },
+    {
+      "sequence": 27,
+      "case": "project-cross",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792246907.870322,
+      "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb"
+    },
+    {
+      "sequence": 28,
+      "case": "project-cross",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792246930.4382982,
+      "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb"
+    },
+    {
+      "sequence": 29,
+      "case": "project-cross",
+      "adapter": "cursor",
+      "phase": "task",
+      "time": 1792246958.8427038,
+      "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb"
+    },
+    {
+      "sequence": 30,
+      "case": "project-single",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792247007.128427,
+      "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb"
+    },
+    {
+      "sequence": 31,
+      "case": "project-single",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792247023.964108,
+      "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb"
+    },
+    {
+      "sequence": 32,
+      "case": "project-single",
+      "adapter": "codex",
+      "phase": "task",
+      "time": 1792247044.732082,
+      "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb"
+    },
+    {
+      "sequence": 33,
+      "case": "project-direct",
+      "adapter": "codex",
+      "phase": "implementation",
+      "time": 1792247066.320263,
+      "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb"
+    },
+    {
+      "sequence": 34,
+      "case": "project-direct",
+      "adapter": "codex",
+      "phase": "self-review",
+      "time": 1792247106.482365,
+      "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb"
+    }
+  ],
+  "results": [
+    {
+      "case": "work-direct",
+      "kind": "work",
+      "arm": "direct",
+      "status": "passed",
+      "human_interventions": 0,
+      "human_handoffs": 0,
+      "scripted_external_handoffs": 1,
+      "automatic_handoffs": 0,
+      "estimated_cost_usd": null,
+      "native_calls": [
+        {
+          "exit_code": 0,
+          "parse_complete": true,
+          "session_present": true,
+          "usage": {
+            "input_tokens": 61585,
+            "cached_input_tokens": 56960,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1135,
+            "reasoning_output_tokens": 0
+          }
+        },
+        {
+          "exit_code": 0,
+          "parse_complete": true,
+          "session_present": true,
+          "usage": {
+            "input_tokens": 62707,
+            "cached_input_tokens": 54016,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 663,
+            "reasoning_output_tokens": 11
+          }
+        }
+      ],
+      "runtime_status": "completed",
+      "score": {
+        "passed": true,
+        "correct_facts": 5,
+        "findings": [
+          "total_conflict",
+          "date_conflict",
+          "approval_missing"
+        ],
+        "omissions": [],
+        "false_positives": [],
+        "errors": []
+      },
+      "inputs_unchanged": true,
+      "deliverable_sha256": {
+        "report.json": "c070a41de472dd43982f46e3f64b09125951c7c1d383b3637d7f3e1bae679ad6",
+        "report.md": "13a0bcef286e24bdd8b87d424659c319de6a9429bd11a347f422598f47463a63"
+      },
+      "seconds": 55.131,
+      "calls": 2
+    },
+    {
+      "case": "work-single",
+      "kind": "work",
+      "arm": "single",
+      "status": "passed",
+      "human_interventions": 0,
+      "human_handoffs": 0,
+      "scripted_external_handoffs": 0,
+      "automatic_handoffs": 1,
+      "estimated_cost_usd": null,
+      "task_id": "task-20261017T141835Z-6dace441",
+      "runtime_status": "completed",
+      "exit_code": 0,
+      "repairs": 0,
+      "usage": {
+        "input_tokens": 41810,
+        "cache_read_tokens": 97152,
+        "cache_write_tokens": 0,
+        "output_tokens": 2253,
+        "reasoning_tokens": 0,
+        "total_tokens": 141215
+      },
+      "usage_incomplete": false,
+      "roles": [
+        "coordinator",
+        "worker",
+        "reviewer"
+      ],
+      "adapters": [
+        "codex",
+        "codex",
+        "codex"
+      ],
+      "review_kinds": [
+        "self_check"
+      ],
+      "native_calls": [
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 3490,
+            "cache_read_tokens": 27904,
+            "cache_write_tokens": 0,
+            "output_tokens": 629,
+            "reasoning_tokens": 0,
+            "total_tokens": 32023
+          }
+        },
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 20199,
+            "cache_read_tokens": 36864,
+            "cache_write_tokens": 0,
+            "output_tokens": 1317,
+            "reasoning_tokens": 0,
+            "total_tokens": 58380
+          }
+        },
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 18121,
+            "cache_read_tokens": 32384,
+            "cache_write_tokens": 0,
+            "output_tokens": 307,
+            "reasoning_tokens": 0,
+            "total_tokens": 50812
+          }
+        }
+      ],
+      "mode_preserved": true,
+      "current_review_bound": true,
+      "score": {
+        "passed": true,
+        "correct_facts": 5,
+        "findings": [
+          "total_conflict",
+          "date_conflict",
+          "approval_missing"
+        ],
+        "omissions": [],
+        "false_positives": [],
+        "errors": []
+      },
+      "inputs_unchanged": true,
+      "deliverable_sha256": {
+        "report.json": "02bb7912c538037324d587e08e80c85c769543a14d0dbf9fcc3ca90a3a917bed",
+        "report.md": "51b0a849444500a09285a54191f398779cdb49e623778250b8324335c1bfd31d"
+      },
+      "seconds": 74.383,
+      "calls": 3
+    },
+    {
+      "case": "work-cross",
+      "kind": "work",
+      "arm": "cross",
+      "status": "passed",
+      "human_interventions": 0,
+      "human_handoffs": 0,
+      "scripted_external_handoffs": 0,
+      "automatic_handoffs": 1,
+      "estimated_cost_usd": null,
+      "task_id": "task-20261017T141949Z-eb7480fc",
+      "runtime_status": "completed",
+      "exit_code": 0,
+      "repairs": 0,
+      "usage": {
+        "input_tokens": 36493,
+        "cache_read_tokens": 52224,
+        "cache_write_tokens": 0,
+        "output_tokens": 2064,
+        "reasoning_tokens": 46,
+        "total_tokens": 90827
+      },
+      "usage_incomplete": true,
+      "roles": [
+        "coordinator",
+        "worker",
+        "reviewer"
+      ],
+      "adapters": [
+        "codex",
+        "codex",
+        "cursor"
+      ],
+      "review_kinds": [
+        "cross_cli"
+      ],
+      "native_calls": [
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 16119,
+            "cache_read_tokens": 15360,
+            "cache_write_tokens": 0,
+            "output_tokens": 655,
+            "reasoning_tokens": 31,
+            "total_tokens": 32165
+          }
+        },
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 20374,
+            "cache_read_tokens": 36864,
+            "cache_write_tokens": 0,
+            "output_tokens": 1409,
+            "reasoning_tokens": 15,
+            "total_tokens": 58662
+          }
+        },
+        {
+          "adapter": "cursor",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": null
+        }
+      ],
+      "mode_preserved": true,
+      "current_review_bound": true,
+      "score": {
+        "passed": true,
+        "correct_facts": 5,
+        "findings": [
+          "total_conflict",
+          "date_conflict",
+          "approval_missing"
+        ],
+        "omissions": [],
+        "false_positives": [],
+        "errors": []
+      },
+      "inputs_unchanged": true,
+      "deliverable_sha256": {
+        "report.json": "883e2dbf761d44c5df349630913a9e8503aa6e4ac908ebe602a2b7a460ff63c6",
+        "report.md": "bf4fb5af138ecee3f7a554bf6408a8f6bf429afbb1772af3540ba57e1973dae6"
+      },
+      "seconds": 116.89,
+      "calls": 3
+    },
+    {
+      "case": "project-cross",
+      "kind": "project",
+      "arm": "cross",
+      "status": "passed",
+      "human_interventions": 0,
+      "human_handoffs": 0,
+      "scripted_external_handoffs": 0,
+      "automatic_handoffs": 1,
+      "estimated_cost_usd": null,
+      "task_id": "task-20261017T142146Z-c54be037",
+      "runtime_status": "completed",
+      "exit_code": 0,
+      "repairs": 0,
+      "usage": {
+        "input_tokens": 32204,
+        "cache_read_tokens": 46080,
+        "cache_write_tokens": 0,
+        "output_tokens": 898,
+        "reasoning_tokens": 173,
+        "total_tokens": 79355
+      },
+      "usage_incomplete": true,
+      "roles": [
+        "coordinator",
+        "worker",
+        "verifier",
+        "reviewer"
+      ],
+      "adapters": [
+        "codex",
+        "codex",
+        "cursor"
+      ],
+      "review_kinds": [
+        "cross_cli"
+      ],
+      "native_calls": [
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 15762,
+            "cache_read_tokens": 15104,
+            "cache_write_tokens": 0,
+            "output_tokens": 371,
+            "reasoning_tokens": 143,
+            "total_tokens": 31380
+          }
+        },
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 16442,
+            "cache_read_tokens": 30976,
+            "cache_write_tokens": 0,
+            "output_tokens": 527,
+            "reasoning_tokens": 30,
+            "total_tokens": 47975
+          }
+        },
+        {
+          "adapter": "cursor",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": null
+        }
+      ],
+      "mode_preserved": true,
+      "current_review_bound": true,
+      "score": {
+        "passed": true,
+        "errors": [],
+        "independent_tests": "passed"
+      },
+      "inputs_unchanged": true,
+      "original_git_clean": true,
+      "deliverable_sha256": {
+        ".git": "0797614f61d7eb06b4b4ec57d1e18ef00da8066a6866e5312077834cf36d5e2b",
+        "cache.go": "edc70c6b1269137a53d3885f5b1a5424fdf9fe392b4e843774c5027796dc526e",
+        "cache_test.go": "8e2e98d24717d0de8e82596297baff5c53065c52816f633d6c6749eabf86a730",
+        "go.mod": "402f0db3985d176116bbd0b0a09ae5f7fe3546069954cede9aed2b3f6e7a99f9",
+        "requirements.txt": "968fdf5ce9e24287feb14a12b82119e226725dd38dd21f3ce177a04a5893655d"
+      },
+      "seconds": 99.753,
+      "calls": 3
+    },
+    {
+      "case": "project-single",
+      "kind": "project",
+      "arm": "single",
+      "status": "passed",
+      "human_interventions": 0,
+      "human_handoffs": 0,
+      "scripted_external_handoffs": 0,
+      "automatic_handoffs": 1,
+      "estimated_cost_usd": null,
+      "task_id": "task-20261017T142326Z-9d5eba4d",
+      "runtime_status": "completed",
+      "exit_code": 0,
+      "repairs": 0,
+      "usage": {
+        "input_tokens": 54035,
+        "cache_read_tokens": 87424,
+        "cache_write_tokens": 0,
+        "output_tokens": 1173,
+        "reasoning_tokens": 22,
+        "total_tokens": 142654
+      },
+      "usage_incomplete": false,
+      "roles": [
+        "coordinator",
+        "worker",
+        "verifier",
+        "reviewer"
+      ],
+      "adapters": [
+        "codex",
+        "codex",
+        "codex"
+      ],
+      "review_kinds": [
+        "self_check"
+      ],
+      "native_calls": [
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 15725,
+            "cache_read_tokens": 15104,
+            "cache_write_tokens": 0,
+            "output_tokens": 386,
+            "reasoning_tokens": 0,
+            "total_tokens": 31215
+          }
+        },
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 18868,
+            "cache_read_tokens": 35840,
+            "cache_write_tokens": 0,
+            "output_tokens": 488,
+            "reasoning_tokens": 22,
+            "total_tokens": 55218
+          }
+        },
+        {
+          "adapter": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "session_present": true,
+          "usage": {
+            "input_tokens": 19442,
+            "cache_read_tokens": 36480,
+            "cache_write_tokens": 0,
+            "output_tokens": 299,
+            "reasoning_tokens": 0,
+            "total_tokens": 56221
+          }
+        }
+      ],
+      "mode_preserved": true,
+      "current_review_bound": true,
+      "score": {
+        "passed": true,
+        "errors": [],
+        "independent_tests": "passed"
+      },
+      "inputs_unchanged": true,
+      "original_git_clean": true,
+      "deliverable_sha256": {
+        ".git": "7b95d4703230010766e9463e5f4f151df5896ea3fb48a120fa0de0fce488eb5b",
+        "cache.go": "b759238c3c5a5e4739f53fb411a08743f79b70af03853c7d36f49a75289b1044",
+        "cache_test.go": "8e2e98d24717d0de8e82596297baff5c53065c52816f633d6c6749eabf86a730",
+        "go.mod": "402f0db3985d176116bbd0b0a09ae5f7fe3546069954cede9aed2b3f6e7a99f9",
+        "requirements.txt": "968fdf5ce9e24287feb14a12b82119e226725dd38dd21f3ce177a04a5893655d"
+      },
+      "seconds": 59.527,
+      "calls": 3
+    },
+    {
+      "case": "project-direct",
+      "kind": "project",
+      "arm": "direct",
+      "status": "passed",
+      "human_interventions": 0,
+      "human_handoffs": 0,
+      "scripted_external_handoffs": 1,
+      "automatic_handoffs": 0,
+      "estimated_cost_usd": null,
+      "native_calls": [
+        {
+          "exit_code": 0,
+          "parse_complete": true,
+          "session_present": true,
+          "usage": {
+            "input_tokens": 72427,
+            "cached_input_tokens": 65024,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1427,
+            "reasoning_output_tokens": 66
+          }
+        },
+        {
+          "exit_code": 0,
+          "parse_complete": true,
+          "session_present": true,
+          "usage": {
+            "input_tokens": 79783,
+            "cached_input_tokens": 74240,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1302,
+            "reasoning_output_tokens": 147
+          }
+        }
+      ],
+      "runtime_status": "completed",
+      "score": {
+        "passed": true,
+        "errors": [],
+        "independent_tests": "passed"
+      },
+      "inputs_unchanged": true,
+      "original_git_clean": true,
+      "deliverable_sha256": {
+        "cache.go": "892cd7da0797eb00325b48a31758b28fd4b957e909988f46511790bb6a9028b5",
+        "cache_test.go": "8e2e98d24717d0de8e82596297baff5c53065c52816f633d6c6749eabf86a730",
+        "go.mod": "402f0db3985d176116bbd0b0a09ae5f7fe3546069954cede9aed2b3f6e7a99f9",
+        "requirements.txt": "968fdf5ce9e24287feb14a12b82119e226725dd38dd21f3ce177a04a5893655d"
+      },
+      "seconds": 76.624,
+      "calls": 2
+    }
+  ],
+  "comparisons": [
+    {
+      "kind": "work",
+      "observed_benefits": [],
+      "claim": "no collaboration benefit established"
+    },
+    {
+      "kind": "project",
+      "observed_benefits": [],
+      "claim": "no collaboration benefit established"
+    }
+  ],
+  "independent_user_observation": "pending",
+  "status": "passed"
+}

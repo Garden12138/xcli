@@ -1,0 +1,64 @@
+{
+  "kind": "r3_snapshot_installation",
+  "publishes": false,
+  "targets": [
+    {
+      "os": "darwin",
+      "arch": "amd64",
+      "archive": "xcli_0.5.0-r3-dev-1bde501_darwin_amd64.tar.gz",
+      "archive_sha256": "cb30fc3f96e817fba46e9e1a04e0dad5564c49a4e39231b8614499516042990a",
+      "binary_sha256": "a93aa2e4214ee1cfff27ab98eb7d83fd3f5fe37d87c15ff8978be427d057139c",
+      "archive_check": "passed",
+      "native_execution": "not_verified"
+    },
+    {
+      "os": "darwin",
+      "arch": "arm64",
+      "archive": "xcli_0.5.0-r3-dev-1bde501_darwin_arm64.tar.gz",
+      "archive_sha256": "6908700e22f814b266e85de98e233ba24b4fbef352f8e9c3cc7778b2173841bf",
+      "binary_sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb",
+      "archive_check": "passed",
+      "native_execution": "passed",
+      "native_version": "xcli version 0.5.0-r3-dev-1bde501",
+      "installation_checks": {
+        "version": {
+          "exit_code": 0
+        },
+        "help": {
+          "exit_code": 0
+        },
+        "config": {
+          "exit_code": 0
+        },
+        "validate": {
+          "exit_code": 0
+        },
+        "doctor": {
+          "exit_code": 0,
+          "observed": true
+        }
+      }
+    },
+    {
+      "os": "linux",
+      "arch": "amd64",
+      "archive": "xcli_0.5.0-r3-dev-1bde501_linux_amd64.tar.gz",
+      "archive_sha256": "c2976def66c672e34b8fa01f71e79624573048fba4fcfe5924ba9d7f95f33c34",
+      "binary_sha256": "ec22f20c1345614ed06ce6b5e130cd59b5c90c0e0a5c659a07e5745845cbaca5",
+      "archive_check": "passed",
+      "native_execution": "not_verified"
+    },
+    {
+      "os": "linux",
+      "arch": "arm64",
+      "archive": "xcli_0.5.0-r3-dev-1bde501_linux_arm64.tar.gz",
+      "archive_sha256": "b5f910289b1412c2c19259b15aaf5a1c6258feae30d189277827822bb1cacc95",
+      "binary_sha256": "283a87110853fd8d86677f0e34047e0dc265d9c53e703e0a7650d61f237fd678",
+      "archive_check": "passed",
+      "native_execution": "not_verified"
+    }
+  ],
+  "checksums_sha256": "101eb79f0a2108620beb6f68ba0085963f0ba5d54ba27bff163ec5a55c3ed3f2",
+  "goreleaser_artifacts_sha256": "dff33cd0704c5540f08fbaf8f58ce35faaa21b1718b085ea3add4251fb54e208",
+  "status": "passed"
+}

@@ -4,7 +4,7 @@
 
 Give a Work or Project goal to native Agent CLIs, with bounded execution, explicit handoffs and verifiable results.
 
-The current source is **R2 / `0.5.0-r2-dev`**, an unreleased development version. Published v0.4.0 packages do not contain Task. See the [R2 lifecycle guide](docs/r2/README.zh-CN.md), [acceptance evidence](docs/r2/results.zh-CN.md), and [R1 migration guide](docs/r1/README.zh-CN.md).
+The current source is **R3 / `0.5.0-r3-dev`**, an unpublished candidate. Published v0.4.0 packages do not contain Task. See the [R3 experiments and installation guide](docs/r3/README.md), [candidate evidence](docs/r3/results.zh-CN.md), [R2 lifecycle guide](docs/r2/README.zh-CN.md), and [migration notes](docs/r3/release-notes.md).
 
 ## Start a task
 
@@ -106,8 +106,12 @@ go test -race ./...
 go vet ./...
 go mod tidy -diff
 
-# Explicit live acceptance: four temporary tasks, at most 24 Agent invocations
-python3 tests/r2/native.py --binary ./xcli --out /tmp/r2-native.json --execute
+# Deterministic R3 fixtures, no model calls
+XCLI_R3_BINARY=./xcli python3 -m unittest discover -s tests/r3 -v
+
+# Opt-in R3 study: shared campaign limit of 48 native invocations
+python3 tests/r3/experiment.py prepare --study /tmp/r3-study --binary ./xcli --budget 48
+python3 tests/r3/experiment.py run --study /tmp/r3-study --out /tmp/r3-comparison.json --execute
 ```
 
-The live harness uses default Codex/Cursor login environments, temporary project/data directories, and Cursor trust only for generated test directories. It preserves private failure evidence and emits sanitized public results. Historical R0 and phase-0 records retain their original validation scope; [R1 results](docs/r1/results.zh-CN.md) describe this development milestone.
+The live harness uses existing Codex/Cursor logins and temporary project/data directories. Cursor trust applies only to generated workspaces. Raw failure evidence stays private; use the [R3 export workflow](docs/r3/README.md) for public summaries. Independent user observations and formal release remain separate from candidate engineering checks. Historical R0–R2 evidence retains its original scope.
