@@ -26,4 +26,6 @@ A third preregistered synthetic release-evidence comparison is now complete: all
 
 ## Remaining gates / 待完成门槛
 
-Independent user observation requires real participants. A single small comparison does not establish general superiority, lower cost or retention. Actual host reboot, sustained thirty-minute execution, other OS/architectures and other Adapter combinations remain outside the measured native scope. Formal release requires evidence review against the final candidate, with directory/configuration integrity and truthful success reporting intact.
+The user subsequently requested three independent experience-level AI personas for this round's usability review. That [simulation review is complete](persona-results-20261019.zh-CN.md); participant recruitment is no longer a prerequisite for this requested task. Human observation, next-day use and retention remain unmeasured. The earlier participant kit remains available for optional research, without simulated attestations.
+
+A small comparison does not establish general superiority, lower cost or retention; collaboration benefit remains unestablished. Actual host reboot, sustained thirty-minute execution, other OS/architectures and other Adapter combinations remain outside the measured native scope. Formal release requires evidence review against the final candidate, with directory/configuration integrity and truthful success reporting intact.

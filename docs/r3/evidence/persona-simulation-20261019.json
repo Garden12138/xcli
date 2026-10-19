@@ -1,0 +1,958 @@
+{
+  "kind": "r3_persona_review",
+  "status": "completed",
+  "candidate_version": "0.5.0-r3-dev-c209756",
+  "binary_sha256": "b09b6de4292f9835729566ff5cd44531da0b1861821accd04eac5e67c4b51c33",
+  "scope": "AI personas; real xcli/Git/Go, deterministic native fixtures",
+  "real_participants": 0,
+  "native_model_calls": 0,
+  "historical_native_calls_unchanged": 64,
+  "next_day_observation": null,
+  "retention_observation": null,
+  "reviewer_checks": {
+    "novice": {
+      "candidate_hash_matches": true,
+      "task_records_queryable_and_idle": true,
+      "feedback_sha256": "b820374518f228ad8932ce28d339d477dfecd02b8110aec3318e182a333e1861",
+      "latest_facts_in_both_outputs": true
+    },
+    "regular": {
+      "candidate_hash_matches": true,
+      "task_records_queryable_and_idle": true,
+      "feedback_sha256": "1df2c251ddf9ab84130eb7653ccd61d49e4ac7f0e82dc67aca5b828e2708dd30",
+      "real_tests_and_1728_boundary_cases_rechecked": true,
+      "source_clean_and_head_unchanged": true,
+      "patch_dry_run_rechecked": true,
+      "only_cache_go_changed": true
+    },
+    "expert": {
+      "candidate_hash_matches": true,
+      "task_records_queryable_and_idle": true,
+      "feedback_sha256": "1fa5aad249c33d2dc554411c6035fed62b62b74b0ab2e73ce26b587a5eff1056",
+      "stop_and_fresh_restore_records_rechecked": true,
+      "bindings_mode_and_cumulative_budget_preserved": true,
+      "events_1_through_26_contiguous": true,
+      "stop_failed_event_has_no_cancellation_reason": true,
+      "completed_plain_continue_no_extra_calls_or_event": true,
+      "budget_raise_retains_same_task": true
+    }
+  },
+  "roles": [
+    {
+      "kind": "r3_persona_simulation",
+      "role": "novice",
+      "real_human": false,
+      "native_backend": "deterministic_fixture",
+      "native_model_calls": 0,
+      "trial_status": "completed_with_fixture_limits",
+      "major_product_command_count": 9,
+      "commands": [
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "--help"
+          ],
+          "exit_code": 0,
+          "observation": "\u4ece\u5e2e\u52a9\u786e\u8ba4 --agent \u9501\u5b9a\u5168\u90e8 Agent \u6267\u884c\uff0c--input \u63a5\u53d7\u6587\u4ef6\u6216\u76ee\u5f55\uff0c--output \u6307\u5b9a\u4ea4\u4ed8\u76ee\u5f55\uff0c--json \u8f93\u51fa\u5355\u4e2a Task \u5bf9\u8c61\u3002"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "agents"
+          ],
+          "exit_code": 0,
+          "observation": "codex \u548c cursor \u5747\u663e\u793a installed=true\uff0c\u7248\u672c\u5e26 r3-simulated \u524d\u7f00\uff1b\u53ea\u9009\u62e9\u719f\u6089\u7684 Codex\u3002"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "doctor",
+            "codex"
+          ],
+          "exit_code": 0,
+          "observation": "codex \u72b6\u6001 ok\uff0c\u7248\u672c r3-simulated-codex\uff1b\u4e0d\u636e\u6b64\u63a8\u65ad\u771f\u5b9e\u8ba4\u8bc1\u3001\u6743\u9650\u6216\u6a21\u578b\u53ef\u7528\u3002"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "\u8bfb\u53d6 materials \u4e2d\u4e09\u4efd\u6750\u6599\uff0c\u4f7f\u7528\u6700\u65b0\u7248\u672c\u4e8b\u5b9e\u751f\u6210 report.md \u548c report.json\u3002\u62a5\u544a\u9700\u7ed9\u51fa North\u3001South\u3001\u91cd\u7b97\u603b\u6570\u3001\u53d1\u5e03\u65e5\u671f\u3001pilot \u5ba1\u6279\u72b6\u6001\uff0c\u9010\u9879\u5217\u51fa\u6765\u6e90\u5e76\u89e3\u91ca\u65e7\u7248\u672c\u88ab\u66ff\u4ee3\u3002\u81ea\u884c\u68c0\u67e5\u4e24\u4e2a\u6587\u4ef6\u5185\u5bb9\u4e0e\u6750\u6599\u4e00\u81f4\u3002",
+            "--input",
+            "./materials",
+            "--output",
+            "./deliverables",
+            "--agent",
+            "codex",
+            "--json"
+          ],
+          "exit_code": 0,
+          "observation": "task-20261019T075645Z-719d77b1 completed\uff1bmode=single\uff0ccalls=3\uff0crepairs=0\uff1bcoordinator/worker/reviewer \u5747 codex\u3002\u4e24\u4e2a\u4ea7\u7269\u5747\u5217\u51fa\u7edd\u5bf9\u8def\u5f84\u548c\u54c8\u5e0c\uff1b\u8fd0\u884c\u65f6 artifact check \u4ec5\u58f0\u660e report.md\uff1bself_check passed\uff0c\u8986\u76d6\u6587\u5b57\u4e3a simulated fixture requirements\u3002"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "status",
+            "task-20261019T075645Z-719d77b1",
+            "--json"
+          ],
+          "exit_code": 0,
+          "observation": "\u67e5\u8be2\u5230\u540c\u4e00\u4efb\u52a1 completed\u3001checkpoint=done\u3001owner_active=false\uff0c\u4e24\u4e2a\u4ea7\u7269\u4e0e\u539f\u7ed3\u679c\u4e00\u81f4\u3002"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "\u8bfb\u53d6\u6750\u6599\uff0c\u751f\u6210 report.md \u548c report.json\uff0c\u6838\u5bf9\u6700\u65b0\u4e8b\u5b9e\u3001\u603b\u6570\u3001\u53d1\u5e03\u65e5\u671f\u548c\u5ba1\u6279\u72b6\u6001\uff0c\u5e76\u5217\u51fa\u6765\u6e90\u3002",
+            "--input",
+            "./material",
+            "--output",
+            "./wrong-path-deliverables",
+            "--agent",
+            "codex",
+            "--json"
+          ],
+          "exit_code": 1,
+          "observation": "task-20261019T075656Z-2e48491e failed\uff1breason \u6307\u51fa\u672c\u76ee\u5f55 material \u4e0d\u5b58\u5728\uff1bcalls=0\u3002\u9519\u8bef\u5c1d\u8bd5\u6ca1\u6709\u8986\u76d6\u9996\u6b21\u6210\u529f\u4ea7\u7269\u3002"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "--help"
+          ],
+          "exit_code": 0,
+          "observation": "\u9519\u8bef\u540e\u91cd\u67e5 --input \u4e3a input file or directory\uff1b\u7ed3\u5408 ls -ld material materials \u7684\u9000\u51fa\u7801 1\uff0c\u786e\u8ba4 material \u4e0d\u5b58\u5728\u800c materials \u5b58\u5728\u3002"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "status",
+            "task-20261019T075656Z-2e48491e",
+            "--json"
+          ],
+          "exit_code": 0,
+          "observation": "\u67e5\u8be2\u672c\u8eab\u6210\u529f\uff1b\u88ab\u67e5\u8be2\u4efb\u52a1\u4ecd\u4e3a failed\u3001exit_code=1\u3001calls=0\uff0c\u7f3a\u5931\u8def\u5f84\u539f\u56e0\u4fdd\u7559\u3002"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "\u8bfb\u53d6\u6750\u6599\uff0c\u751f\u6210 report.md \u548c report.json\uff0c\u6838\u5bf9\u6700\u65b0\u4e8b\u5b9e\u3001\u603b\u6570\u3001\u53d1\u5e03\u65e5\u671f\u548c\u5ba1\u6279\u72b6\u6001\uff0c\u5e76\u5217\u51fa\u6765\u6e90\u3002",
+            "--input",
+            "./materials",
+            "--output",
+            "./recovered-deliverables",
+            "--agent",
+            "codex"
+          ],
+          "exit_code": 0,
+          "observation": "\u4fee\u6b63\u8f93\u5165\u8def\u5f84\u540e\u521b\u5efa task-20261019T075705Z-2a2137ae\uff0ccompleted\uff0csingle codex\uff0ccalls=3\uff0crepairs=0\u3002\u4eba\u7c7b\u53ef\u8bfb\u6458\u8981\u5217\u51fa Output\u3001\u4e24\u4efd Artifact \u8def\u5f84\u3001\u68c0\u67e5\u53ca\u81ea\u67e5\u7ed3\u679c\u3002"
+        }
+      ],
+      "task_ids": [
+        "task-20261019T075645Z-719d77b1",
+        "task-20261019T075656Z-2e48491e",
+        "task-20261019T075705Z-2a2137ae"
+      ],
+      "observed_checks": [
+        {
+          "check": "scope",
+          "result": "\u4ec5\u5728\u672c\u89d2\u8272\u76ee\u5f55\u64cd\u4f5c\uff1b\u53ea\u5b66\u4e60\u672c\u76ee\u5f55\u4e2d\u82f1 README\u3001\u4ea7\u54c1\u5e2e\u52a9/\u72b6\u6001\u53ca materials\uff1b\u672a\u8bfb\u53d6\u4e3b\u4ed3\u5e93\u6e90\u7801\u3001\u5176\u4ed6\u89d2\u8272\u3001\u5386\u53f2\u7ed3\u679c\u6216 .control \u5b9e\u73b0\uff1b\u672a\u76f4\u63a5\u8c03\u7528\u539f\u751f Agent CLI\u3002"
+        },
+        {
+          "check": "latest_materials",
+          "result": "revision.txt \u7684 revision 2 \u660e\u786e supersedes revision 1\uff1bNorth=12\u3001South=9\u3001total=21\uff1b\u53d1\u5e03\u65e5\u671f 2026-10-25\uff1bapproval.txt \u8868\u660e pending\u3001unsigned\uff0c\u672a\u83b7\u6279\u51c6\u3002"
+        },
+        {
+          "check": "backend_constraint",
+          "result": "\u9996\u6b21 Task \u7ed3\u679c\u53ca\u72b6\u6001\u7684 mode=single\u3001agent/coordinator/candidates \u548c\u4e09\u9879 attempts \u5747\u4e3a codex\uff1b\u4fee\u6b63\u4efb\u52a1\u6458\u8981\u540c\u6837\u4e3a single codex\u3002"
+        },
+        {
+          "check": "artifact_verification",
+          "result": {
+            "expected_latest_facts": {
+              "north": 12,
+              "south": 9,
+              "release_date": "2026-10-25",
+              "pilot_approved": false,
+              "total": 21
+            },
+            "checks": [
+              {
+                "directory": "deliverables",
+                "json_parse": "passed",
+                "json_facts": {
+                  "north": true,
+                  "south": true,
+                  "release_date": true,
+                  "pilot_approved": true,
+                  "total": true
+                },
+                "sources_match_three_materials": true,
+                "md_facts_match": true,
+                "approval_source_pending_unsigned": true,
+                "sha256": {
+                  "report.md": "6fe372dc2476d41cc65b39c9bc910895bf306cbca3f96eaffa7b6990382fad90",
+                  "report.json": "29cf5c51a3c114cc523096d22652eca80676b7eef96c1f8ed243c933c0b1367a"
+                }
+              },
+              {
+                "directory": "recovered-deliverables",
+                "json_parse": "passed",
+                "json_facts": {
+                  "north": true,
+                  "south": true,
+                  "release_date": true,
+                  "pilot_approved": true,
+                  "total": true
+                },
+                "sources_match_three_materials": true,
+                "md_facts_match": true,
+                "approval_source_pending_unsigned": true,
+                "sha256": {
+                  "report.md": "6fe372dc2476d41cc65b39c9bc910895bf306cbca3f96eaffa7b6990382fad90",
+                  "report.json": "29cf5c51a3c114cc523096d22652eca80676b7eef96c1f8ed243c933c0b1367a"
+                }
+              }
+            ],
+            "passed": true,
+            "citation_limit": "JSON has aggregate sources and conflict-specific sources, but no source mapping for north/south/latest release fields; Markdown gives only aggregate sources and does not explicitly explain revision 2 superseding revision 1."
+          },
+          "exit_code": 0
+        },
+        {
+          "check": "runtime_acceptance_vs_manual_acceptance",
+          "result": "\u4e24\u4e2a\u4efb\u52a1\u7684\u8fd0\u884c\u65f6\u72b6\u6001\u5747 completed\uff1b\u624b\u5de5\u6bd4\u5bf9\u786e\u8ba4\u4e24\u4e2a\u683c\u5f0f\u7684\u5173\u952e\u4e8b\u5b9e\u6b63\u786e\u3001\u6765\u6e90\u6587\u4ef6\u5217\u8868\u6b63\u786e\uff0c\u4f46\u9010\u9879\u6765\u6e90\u6620\u5c04\u4e0e Markdown \u7248\u672c\u66ff\u4ee3\u8bf4\u660e\u672a\u8fbe\u5230\u9996\u6b21\u76ee\u6807\u7684\u5b8c\u6574\u8868\u8ff0\u3002"
+        },
+        {
+          "check": "failed_input_preserved",
+          "result": "\u9519\u8bef\u8def\u5f84\u4efb\u52a1\u521b\u5efa\u540e\u5373 failed\uff0c\u4efb\u52a1 exit_code=1\u3001calls=0\uff1bstatus \u67e5\u8be2\u4fdd\u7559\u5931\u8d25\u3002\u4fee\u6b63\u8def\u5f84\u521b\u5efa\u72ec\u7acb\u6210\u529f\u4efb\u52a1\uff0c\u672a\u628a\u65e7\u5931\u8d25\u8bb0\u5f55\u6539\u6210\u6210\u529f\u3002"
+        },
+        {
+          "check": "model_call_accounting",
+          "result": "\u4ea7\u54c1 calls=3 \u8868\u793a\u6bcf\u4e2a\u6210\u529f\u4efb\u52a1\u4e09\u4e2a\u6d4b\u8bd5\u66ff\u8eab\u8fdb\u7a0b\u8c03\u7528\uff1b\u8f93\u51fa\u4e2d\u7684\u6a21\u62df token \u7528\u91cf\u4e0d\u4f5c\u4e3a\u771f\u5b9e\u6a21\u578b\u7528\u91cf\u3002\u771f\u5b9e\u539f\u751f\u6a21\u578b\u8c03\u7528\u4e3a 0\u3002"
+        }
+      ],
+      "findings": [
+        {
+          "severity": "info",
+          "category": "observed_success",
+          "claim": "\u6309 README \u548c\u5e2e\u52a9\u6307\u5b9a --agent codex \u540e\uff0c\u672c\u6b21 Work \u6d41\u7a0b\u7684\u534f\u8c03\u3001\u6267\u884c\u3001\u81ea\u67e5\u5747\u4fdd\u6301 Codex\uff0c\u4e14\u4ea7\u7269\u8def\u5f84\u53ef\u76f4\u63a5\u5b9a\u4f4d\u3002",
+          "reproduction_steps": [
+            "\u9605\u8bfb README.zh-CN.md \u5feb\u901f\u5f00\u59cb\u53ca ./xcli task --help\u3002",
+            "\u6267\u884c commands \u7b2c 4 \u9879\u3002",
+            "\u6267\u884c\u7b2c 5 \u9879\u5e76\u8bfb\u53d6 deliverables/report.md \u548c report.json\u3002"
+          ],
+          "expected": "\u4ec5\u4f7f\u7528\u6307\u5b9a CLI\uff1b\u80fd\u627e\u5230\u4e24\u4e2a\u6587\u4ef6\u5e76\u6838\u5bf9\u6765\u6e90\u3002",
+          "observed": "single codex\uff1b\u4e09\u9879 attempts \u90fd\u4e3a codex\uff1b\u4e24\u4e2a\u6587\u4ef6\u5b58\u5728\u4e14\u5185\u5bb9\u5173\u952e\u4e8b\u5b9e\u6b63\u786e\u3002",
+          "recommendation": "\u4fdd\u7559 CLI \u9501\u5b9a\u8bed\u4e49\u548c\u663e\u5f0f\u4ea7\u7269\u8def\u5f84\u6458\u8981\u3002"
+        },
+        {
+          "severity": "info",
+          "category": "observed_error_recovery",
+          "claim": "\u4e0d\u5b58\u5728\u7684\u8f93\u5165\u8def\u5f84\u5728 Agent \u8c03\u7528\u524d\u5931\u8d25\uff0c\u9519\u8bef\u5305\u542b\u5177\u4f53\u8def\u5f84\uff1b\u4ece\u5e2e\u52a9\u548c\u76ee\u5f55\u68c0\u67e5\u53ef\u5b8c\u6210\u8def\u5f84\u4fee\u6b63\u3002",
+          "reproduction_steps": [
+            "\u6267\u884c commands \u7b2c 6 \u9879\uff0c\u8f93\u5165 ./material\u3002",
+            "\u6267\u884c\u7b2c 7\u30018 \u9879\uff0c\u5e76\u8fd0\u884c ls -ld material materials\u3002",
+            "\u6539\u4e3a ./materials \u6267\u884c\u7b2c 9 \u9879\u3002"
+          ],
+          "expected": "\u7f3a\u5931\u8f93\u5165\u4e0d\u88ab\u5ffd\u7565\uff0c\u4e0d\u6d88\u8017 Agent \u8c03\u7528\uff0c\u5e76\u80fd\u4fdd\u7559\u5931\u8d25\u8bc1\u636e\u540e\u91cd\u8bd5\u3002",
+          "observed": "\u9996\u6b21\u9000\u51fa 1\u3001status=failed\u3001calls=0\uff1b\u8def\u5f84\u4fee\u6b63\u540e\u72ec\u7acb\u4efb\u52a1\u9000\u51fa 0\u3001completed\uff1b\u65e7\u4efb\u52a1\u4ecd failed\u3002",
+          "recommendation": "\u53ef\u5728\u7f3a\u5931\u8f93\u5165\u9519\u8bef\u540e\u9644\u7b80\u77ed\u63d0\u793a\uff0c\u4f8b\u5982\u68c0\u67e5 --input \u8def\u5f84\u6216\u8fd0\u884c task --help\uff1b\u5f53\u524d\u9519\u8bef\u5df2\u8db3\u4ee5\u786e\u5b9a\u8def\u5f84\u95ee\u9898\u3002"
+        },
+        {
+          "severity": "low",
+          "category": "fixture_limit",
+          "claim": "\u56fa\u5b9a\u66ff\u8eab\u4ea7\u7269\u901a\u8fc7\u81ea\u67e5\u4e14\u5173\u952e\u4e8b\u5b9e\u6b63\u786e\uff0c\u4f46\u672a\u5b8c\u5168\u5b9e\u73b0\u9996\u6b21\u76ee\u6807\u8981\u6c42\u7684\u9010\u9879\u6765\u6e90\u548c\u7248\u672c\u66ff\u4ee3\u89e3\u91ca\uff1b\u4e0d\u80fd\u636e\u6b64\u8bc4\u4ef7\u771f\u5b9e Codex \u7684\u62a5\u544a\u8d28\u91cf\u6216\u63a8\u7406\u80fd\u529b\u3002",
+          "reproduction_steps": [
+            "\u6267\u884c commands \u7b2c 4 \u9879\u3002",
+            "\u6bd4\u5bf9 materials \u4e09\u6587\u4ef6\u4e0e deliverables/report.md\u3001report.json\u3002",
+            "\u67e5\u770b\u7b2c 5 \u9879\u4e2d\u7684 plans.acceptance\u3001checks \u548c reviews\u3002"
+          ],
+          "expected": "\u4e24\u79cd\u683c\u5f0f\u9010\u9879\u5217\u51fa\u4e8b\u5b9e\u6765\u6e90\uff0c\u5e76\u660e\u786e revision 2 \u66ff\u4ee3 revision 1\uff1b\u9a8c\u6536\u8986\u76d6\u4e24\u4e2a\u8981\u6c42\u4ea7\u7269\u3002",
+          "observed": "Markdown \u662f\u4e00\u884c\u4e8b\u5b9e\u52a0\u4e09\u4e2a\u6765\u6e90\u6587\u4ef6\u540d\uff1b\u672a\u8bf4\u660e supersedes\u3002JSON \u542b\u6b63\u786e\u5b57\u6bb5\u3001\u6c47\u603b\u6765\u6e90\u53ca\u51b2\u7a81\u6765\u6e90\uff0c\u4f46 North/South/\u6700\u65b0 release \u5b57\u6bb5\u6ca1\u6709\u9010\u9879\u6620\u5c04\u3002\u8ba1\u5212 acceptance \u548c\u8fd0\u884c\u65f6 artifact check \u53ea\u5217 report.md\uff0cself_check \u7684 coverage \u4e3a simulated fixture requirements\u3002\u4e24\u4e2a\u6587\u4ef6\u5b9e\u9645\u90fd\u5b58\u5728\u3002",
+          "recommendation": "\u5c06\u672c\u9879\u5f52\u4e3a\u5939\u5177\u8986\u76d6\u8fb9\u754c\uff1b\u771f\u5b9e\u7528\u6237/\u771f\u5b9e\u6a21\u578b\u8bd5\u9a8c\u9700\u72ec\u7acb\u9a8c\u8bc1\u9010\u9879\u5f15\u7528\u3001\u7248\u672c\u51b3\u8bae\u53ca\u4e24\u4e2a\u6587\u4ef6\u7684\u9a8c\u6536\u8986\u76d6\uff0c\u4e0d\u80fd\u628a\u672c\u6b21 completed \u89c6\u4f5c\u5b8c\u6574\u5185\u5bb9\u8d28\u91cf\u8bc1\u636e\u3002"
+        },
+        {
+          "severity": "low",
+          "category": "hypothesis",
+          "claim": "hypothesis\uff1a\u9996\u6b21\u4f7f\u7528\u8005\u5982\u679c\u9009\u62e9 --json\uff0cTask \u5185\u90e8\u5b57\u6bb5\u7684\u6570\u91cf\u53ef\u80fd\u589e\u52a0\u5b9a\u4f4d\u4efb\u52a1\u7ed3\u679c\u7684\u9605\u8bfb\u8d1f\u62c5\uff1b\u672c\u6b21\u6ca1\u6709\u771f\u5b9e\u4eba\u7c7b\u53ef\u7528\u6027\u6216\u8017\u65f6\u6570\u636e\u3002",
+          "reproduction_steps": [
+            "\u5bf9\u6bd4 commands \u7b2c 4 \u9879 --json \u8f93\u51fa\u4e0e\u7b2c 9 \u9879\u9ed8\u8ba4\u6458\u8981\u3002"
+          ],
+          "expected": "\u521d\u5b66\u8005\u80fd\u8fc5\u901f\u8bc6\u522b\u72b6\u6001\u3001\u4ea7\u7269\u4f4d\u7f6e\u548c\u4e0b\u4e00\u6b65\u68c0\u67e5\u5165\u53e3\u3002",
+          "observed": "--json \u540c\u65f6\u5c55\u793a options\u3001owner\u3001bindings\u3001attempts\u3001snapshot \u7b49\u5b57\u6bb5\uff1b\u9ed8\u8ba4\u6458\u8981\u96c6\u4e2d\u5c55\u793a Status\u3001Mode\u3001Output\u3001Artifact \u548c Inspect \u547d\u4ee4\u3002\u8be5\u5dee\u5f02\u5b9e\u9645\u53ef\u89c1\uff0c\u7406\u89e3\u8d1f\u62c5\u5c1a\u672a\u88ab\u4eba\u7c7b\u8bd5\u9a8c\u6d4b\u91cf\u3002",
+          "recommendation": "\u521d\u5b66\u8005\u6587\u6863\u7ee7\u7eed\u4f18\u5148\u9ed8\u8ba4\u6458\u8981\uff0c\u628a --json \u660e\u786e\u6807\u4e3a\u811a\u672c\u548c\u8be6\u7ec6\u68c0\u67e5\u5165\u53e3\uff1b\u662f\u5426\u9700\u8981\u66f4\u7b80\u77ed JSON \u89c6\u771f\u5b9e\u7528\u6237\u7814\u7a76\u786e\u5b9a\u3002"
+        }
+      ],
+      "next_day_observation": null,
+      "retention_observation": null
+    },
+    {
+      "kind": "r3_persona_simulation",
+      "role": "regular",
+      "real_human": false,
+      "native_backend": "deterministic_fixture",
+      "native_model_calls": 0,
+      "trial_status": "completed",
+      "task_ids": [
+        "task-20261019T075702Z-3e55049a"
+      ],
+      "scope": "\u4ec5\u4f7f\u7528 regular \u76ee\u5f55\uff1b\u672a\u8bfb\u53d6\u4e3b\u4ed3\u5e93\u6e90\u7801\u3001\u5176\u4ed6\u89d2\u8272\u76ee\u5f55\u3001\u65e7 R3 \u7ed3\u679c\u6216 .control\uff1b\u672a\u8054\u7f51\u3001\u672a\u8c03\u7528\u771f\u5b9e\u539f\u751f\u6a21\u578b\u3001\u672a\u63d0\u4ea4\u6216\u63a8\u9001\u3002",
+      "commands": [
+        {
+          "argv": [
+            "./xcli",
+            "help"
+          ],
+          "exit_code": 0,
+          "observation": "\u63d0\u4f9b task \u4e0e help \u53d1\u73b0\u5165\u53e3\u3002"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "--help"
+          ],
+          "exit_code": 0,
+          "observation": "\u660e\u786e --agent \u6574\u4f53\u6267\u884c\u7ea6\u675f\u3001--project \u9694\u79bb worktree\u3001--verify \u4e3a JSON argv\u3001--json \u8f93\u51fa\u6a21\u5f0f\u3002"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "\u4fee\u590d project \u7684\u7f13\u5b58 Alive \u5931\u6548\u8fb9\u754c\u3002\u5148\u8bfb\u53d6 requirements.txt\uff0c\u4e25\u683c\u6ee1\u8db3\u6574\u4e2a int64 \u8303\u56f4\u4e14\u4e0d\u6ea2\u51fa\uff0c\u4ec5\u4fee\u6539 cache.go\u3002\u6267\u884c\u771f\u5b9e Go \u6d4b\u8bd5\u5e76\u81ea\u67e5\u6539\u52a8\uff0c\u4ea4\u4ed8\u65f6\u8bf4\u660e\u9a8c\u8bc1\u548c worktree \u6539\u52a8\u63a5\u6536\u65b9\u5f0f\u3002",
+            "--project",
+            "./project",
+            "--agent",
+            "codex",
+            "--verify",
+            "[\"go\",\"test\",\"-count=1\",\"./...\"]",
+            "--json"
+          ],
+          "exit_code": 0,
+          "observation": "\u5355 CLI Project \u6a21\u5f0f\u5b8c\u6210\uff1bstderr \u9636\u6bb5\u8fdb\u5ea6\u3001stdout Task JSON\uff0cstatus=completed\uff0c\u5b9e\u9645 command check passed/exit 0\uff1b\u8f93\u51fa workspace/base_commit/diff_file\u30023 \u6b21\u539f\u751f\u8fdb\u7a0b\u8c03\u7528\u5747\u4e3a\u786e\u5b9a\u6027\u66ff\u8eab\uff0c\u975e\u6a21\u578b\u8c03\u7528\u3002"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "status",
+            "task-20261019T075702Z-3e55049a",
+            "--json"
+          ],
+          "exit_code": 0,
+          "observation": "\u53ef\u518d\u6b21\u67e5\u8be2\u5b8c\u6210\u72b6\u6001\u548c\u6301\u4e45\u5316\u9a8c\u8bc1\u8bc1\u636e\u3002"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "\u68c0\u67e5 Alive \u7f13\u5b58\u8fb9\u754c",
+            "--project",
+            "./project",
+            "--agent",
+            "codex",
+            "--verify",
+            "go test ./...",
+            "--json"
+          ],
+          "exit_code": 1,
+          "observation": "\u7acb\u5373\u8fd4\u56de Error: --verify requires a nonempty JSON argv array\uff1b\u9519\u8bef\u539f\u56e0\u660e\u786e\uff0c\u975e\u96f6\u9000\u51fa\u7801\u9002\u5408\u811a\u672c\u5224\u65ad\u3002"
+        }
+      ],
+      "observed_checks": [
+        {
+          "check": "baseline_test",
+          "argv": [
+            "go",
+            "test",
+            "-count=1",
+            "./..."
+          ],
+          "cwd": "project",
+          "exit_code": 1,
+          "observed": "TestAlive: expiry is exclusive\uff1b\u5b9e\u9645\u6267\u884c\u3002"
+        },
+        {
+          "check": "product_persisted_validation",
+          "argv": [
+            "go",
+            "test",
+            "-count=1",
+            "./..."
+          ],
+          "cwd": "<private-study>/regular/data/xcli/worktrees/task-20261019T075702Z-3e55049a",
+          "exit_code": 0,
+          "observed": "Task checks \u4e2d passed/0\uff1b\u771f\u5b9e\u9a8c\u8bc1\u65e5\u5fd7\u4e3a ok r3fixture 0.476s\u3002"
+        },
+        {
+          "check": "independent_worktree_test",
+          "argv": [
+            "go",
+            "test",
+            "-count=1",
+            "./..."
+          ],
+          "cwd": "<private-study>/regular/data/xcli/worktrees/task-20261019T075702Z-3e55049a",
+          "exit_code": 0,
+          "observed": "\u5b9e\u9645\u91cd\u8dd1\u901a\u8fc7\uff0cok r3fixture 0.376s\u3002"
+        },
+        {
+          "check": "requirements_boundary_probe",
+          "argv": [
+            "go",
+            "test",
+            "-count=1",
+            "-v",
+            "./..."
+          ],
+          "cwd": "checks",
+          "exit_code": 0,
+          "observed": "\u590d\u5236\u4ea7\u7269 cache.go\uff0c\u5728\u72ec\u7acb checks \u76ee\u5f55\u7528 math/big \u6570\u5b66\u5dee\u503c\u4f5c oracle\uff0c\u8986\u76d6\u542b MinInt64/MaxInt64 \u7684 1728 \u7ec4 inserted/now/ttl \u7ec4\u5408\uff0c\u5168\u90e8\u901a\u8fc7\uff1b\u6d4b\u8bd5\u6587\u4ef6\u4e0d\u5199\u5165\u6e90\u4ed3\u5e93\u6216 worktree\u3002",
+          "artifact_sha256": "df161ce92afc29144246d22daaf9fb2f07c20911a2bc4e408265d6c399dcaa39"
+        },
+        {
+          "check": "go_environment",
+          "observed": "\u6240\u6709\u624b\u5de5 Go \u547d\u4ee4\u663e\u5f0f\u8bbe\u7f6e\u672c\u76ee\u5f55 cache/go\u3001cache/modules\u3001GOPROXY=off\u3001GOTOOLCHAIN=local\uff1b\u4ea7\u54c1\u542f\u52a8\u5668\u6309\u8bd5\u9a8c\u7ea6\u675f\u6ce8\u5165\u72ec\u7acb\u7f13\u5b58\u3002"
+        },
+        {
+          "check": "source_repository_unchanged",
+          "argv": [
+            "git",
+            "status",
+            "--porcelain=v1"
+          ],
+          "cwd": "project",
+          "exit_code": 0,
+          "observed": "\u4efb\u52a1\u524d\u540e\u8f93\u51fa\u5747\u4e3a\u7a7a\uff1bHEAD \u5747\u4e3a e6c56b8779d6f8e40e65e12ec70fc702d531ac5c\uff1bgit ls-files -s \u7684\u56db\u4e2a\u7d22\u5f15 blob \u4e0d\u53d8\u3002Git \u65b0\u589e\u53d7\u7ba1\u7406 worktree/branch \u5143\u6570\u636e\u5c5e\u9884\u671f\uff0c\u4e0d\u80fd\u8bf4 .git \u5b8c\u5168\u65e0\u53d8\u66f4\u3002"
+        },
+        {
+          "check": "worktree_scope",
+          "argv": [
+            "git",
+            "diff",
+            "--",
+            "cache.go"
+          ],
+          "cwd": "<private-study>/regular/data/xcli/worktrees/task-20261019T075702Z-3e55049a",
+          "exit_code": 0,
+          "observed": "\u4ec5 cache.go \u4fee\u6539\uff1b\u65e0\u672a\u8ddf\u8e2a\u6587\u4ef6\u3002\u5b9e\u73b0 ttl>0 && now>=inserted && uint64(now)-uint64(inserted)<uint64(ttl)\uff0c\u6ee1\u8db3\u6b63 TTL\u3001\u65f6\u949f\u56de\u9000\u3001\u4e25\u683c\u5931\u6548\u8fb9\u754c\u4e0e\u5168\u8303\u56f4\u5dee\u503c\u3002"
+        },
+        {
+          "check": "acceptance_dry_run",
+          "argv": [
+            "git",
+            "apply",
+            "--check",
+            "<private-study>/regular/data/xcli/tasks/task-20261019T075702Z-3e55049a/changes.patch"
+          ],
+          "cwd": "project",
+          "exit_code": 0,
+          "observed": "\u4ea7\u7269 patch \u53ef\u5e94\u7528\u5230\u6e90\u4ed3\u5e93\uff1b\u4ec5\u4f5c dry run\uff0c\u672a\u63a5\u6536\u4fee\u6539\u3002\u7406\u89e3\u63a5\u6536\u65b9\u5f0f\uff1a\u5ba1\u67e5 worktree \u5b8c\u6574 diff \u548c\u672a\u8ddf\u8e2a\u6587\u4ef6\u540e\uff0c\u5728\u6e90\u4ed3\u5e93 git apply \u8be5 patch \u5e76\u91cd\u6d4b\uff0c\u6216\u5148\u5728 worktree \u63d0\u4ea4\u518d\u6309\u6b63\u5e38 Git \u6d41\u7a0b\u63a5\u6536\uff1b\u5f53\u524d xcli \u5206\u652f\u6ca1\u6709\u63d0\u4ea4\u6539\u52a8\uff0c\u76f4\u63a5 merge \u8be5\u5206\u652f\u4e0d\u4f1a\u63a5\u6536\u672a\u63d0\u4ea4\u5185\u5bb9\u3002"
+        }
+      ],
+      "findings": [
+        {
+          "severity": "info",
+          "category": "observed",
+          "claim": "\u672c\u6b21\u5355 CLI Project \u6d41\u7a0b\u7ed9\u51fa\u53ef\u6838\u67e5\u7684\u9694\u79bb\u4ea7\u7269\u548c\u771f\u5b9e\u6d4b\u8bd5\u7ed3\u679c\uff1b\u6e90\u4ed3\u5e93\u6587\u4ef6\u4e0e HEAD \u4fdd\u6301\u4e0d\u53d8\u3002",
+          "reproduction_steps": [
+            "\u4ece\u5e72\u51c0 project \u542f\u52a8\u8bb0\u5f55\u4e2d\u7684 task \u547d\u4ee4",
+            "\u68c0\u67e5 Task checks\u3001worktree diff\u3001\u6e90\u4ed3\u5e93 status/HEAD",
+            "\u5728 worktree \u5b9e\u9645\u8fd0\u884c Go \u6d4b\u8bd5"
+          ],
+          "expected": "\u4ec5 cache.go \u5728\u9694\u79bb worktree \u6539\u53d8\uff0c\u5b9e\u9645\u9a8c\u8bc1\u901a\u8fc7\uff0c\u6e90\u4ed3\u5e93\u4fdd\u6301\u57fa\u7ebf\u3002",
+          "observed": "\u7b26\u5408\uff1b\u65e0\u63d0\u4ea4\u3001\u63a8\u9001\u6216\u81ea\u52a8\u5408\u5e76\u3002",
+          "recommendation": "\u4fdd\u7559 workspace/base_commit/diff_file \u4e0e\u771f\u5b9e command check \u8bc1\u636e\u3002"
+        },
+        {
+          "severity": "low",
+          "category": "observed",
+          "claim": "\u6700\u7ec8 JSON \u80fd\u5b9a\u4f4d diff \u548c worktree\uff0c\u4f46\u6ca1\u6709\u5177\u4f53\u7684\u4eba\u5de5\u63a5\u6536\u547d\u4ee4\u3002",
+          "reproduction_steps": [
+            "\u8fd0\u884c\u6210\u529f task --json",
+            "\u67e5\u770b status\u3001reason\u3001workspace\u3001diff_file \u5b57\u6bb5",
+            "\u7ed3\u5408 README \u7684\u4eba\u5de5\u63a5\u6536\u8bf4\u660e\u5e76\u7528 git apply --check \u9a8c\u8bc1 patch"
+          ],
+          "expected": "\u719f\u7ec3 Git \u7528\u6237\u80fd\u786e\u5b9a\u4e0b\u4e00\u6b65\u5b89\u5168\u63a5\u6536\u65b9\u6cd5\u3002",
+          "observed": "\u53ef\u4ee5\u901a\u8fc7\u73b0\u6709\u8def\u5f84\u81ea\u884c\u63a8\u5bfc\u5e76 dry-run\uff1b\u9700\u8981\u7528\u6237\u77e5\u9053 worktree \u672a\u63d0\u4ea4\u6539\u52a8\u4e0d\u80fd\u76f4\u63a5 merge\u3002",
+          "recommendation": "\u53ef\u589e\u52a0\u53ef\u9009\u7684 next_steps \u6216\u63a5\u6536\u8bf4\u660e\uff0c\u660e\u786e\u5148\u68c0\u67e5 diff/\u672a\u8ddf\u8e2a\u6587\u4ef6\uff0c\u518d\u9009\u62e9 patch \u6216\u63d0\u4ea4\u540e\u7684 Git \u6d41\u7a0b\uff1b\u4e0d\u81ea\u52a8\u5408\u5e76\u3002"
+        },
+        {
+          "severity": "info",
+          "category": "observed",
+          "claim": "\u683c\u5f0f\u9519\u8bef\u7684 --verify \u8fd4\u56de\u6e05\u695a\u7684\u8bca\u65ad\u4e0e\u9000\u51fa\u7801 1\u3002",
+          "reproduction_steps": [
+            "\u8fd0\u884c\u8bb0\u5f55\u4e2d\u7684\u65e0\u6548 --verify \u547d\u4ee4"
+          ],
+          "expected": "\u62d2\u7edd\u975e JSON argv\uff0c\u975e\u96f6\u9000\u51fa\u5e76\u8bf4\u660e\u683c\u5f0f\u3002",
+          "observed": "Error: --verify requires a nonempty JSON argv array\uff1bexit 1\u3002",
+          "recommendation": "\u53ef\u5728\u9519\u8bef\u4e2d\u9644\u5408\u6cd5\u793a\u4f8b [\"go\",\"test\",\"./...\"]\uff0c\u51cf\u5c11\u56de\u67e5 help\u3002"
+        },
+        {
+          "severity": "info",
+          "category": "fixture_limit",
+          "claim": "\u672c\u8f6e\u4e0d\u80fd\u8bc1\u660e\u771f\u5b9e\u6a21\u578b\u7684\u4fee\u590d\u3001\u81ea\u67e5\u6216\u4ea4\u63a5\u8d28\u91cf\uff0c\u4e5f\u4e0d\u80fd\u8bc1\u660e\u771f\u5b9e\u4eba\u7c7b\u5b66\u4e60\u4e0e\u7559\u5b58\u3002",
+          "reproduction_steps": [
+            "\u4f7f\u7528\u672c\u8bd5\u9a8c\u786e\u5b9a\u6027\u539f\u751f\u66ff\u8eab\u5b8c\u6210 task"
+          ],
+          "expected": "\u533a\u5206\u4ea7\u54c1\u771f\u5b9e\u547d\u4ee4\u9a8c\u8bc1\u4e0e\u66ff\u8eab\u751f\u6210\u5185\u5bb9\u3002",
+          "observed": "\u4fee\u590d\u4e0e reviewer \u8f93\u51fa\u7531\u66ff\u8eab\u751f\u6210\uff1b\u771f\u5b9e Go \u6d4b\u8bd5\u548c Git \u68c0\u67e5\u72ec\u7acb\u5b9e\u8dd1\u3002\u672a\u628a\u6a21\u62df reviewer passed \u6216 usage \u5f53\u6210\u771f\u5b9e\u6a21\u578b\u8d28\u91cf/\u6210\u672c\u3002",
+          "recommendation": "\u771f\u5b9e\u6a21\u578b\u8d28\u91cf\u3001\u4eba\u7c7b\u5b66\u4e60\u6210\u672c\u548c\u9694\u5929\u7559\u5b58\u9700\u72ec\u7acb\u8bd5\u9a8c\u3002"
+        }
+      ],
+      "next_day_observation": null,
+      "retention_observation": null
+    },
+    {
+      "kind": "r3_persona_simulation",
+      "role": "expert",
+      "real_human": false,
+      "native_backend": "deterministic_fixture",
+      "native_model_calls": 0,
+      "trial_status": "completed",
+      "product_command_count": 20,
+      "harness_failures": 2,
+      "commands": [
+        {
+          "argv": [
+            "./xcli",
+            "--help"
+          ],
+          "exit_code": 0,
+          "observation": "Read public CLI help successfully.",
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "--help"
+          ],
+          "exit_code": 0,
+          "observation": "Read public CLI help successfully.",
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "status",
+            "--help"
+          ],
+          "exit_code": 0,
+          "observation": "Read public CLI help successfully.",
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "stop",
+            "--help"
+          ],
+          "exit_code": 0,
+          "observation": "Read public CLI help successfully.",
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "continue",
+            "--help"
+          ],
+          "exit_code": 0,
+          "observation": "Read public CLI help successfully.",
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "Read facts.txt and create report.md containing North: 12, South: 9, Total: 21, citing facts.txt. Before writing report.md, write progress.txt with a brief progress marker.",
+            "--input",
+            "./materials",
+            "--output",
+            "./deliverables",
+            "--agent",
+            "codex",
+            "--max-calls",
+            "5",
+            "--timeout",
+            "2m",
+            "--detach",
+            "--json"
+          ],
+          "exit_code": 0,
+          "observation": "Detached task creation; parsed JSON.",
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "status",
+            "task-20261019T075720Z-44635d37",
+            "--json"
+          ],
+          "exit_code": 0,
+          "observation": {
+            "status": "completed",
+            "calls": 3,
+            "owner_active": false
+          },
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "Read facts.txt and create report.md containing North: 12, South: 9, Total: 21, citing facts.txt. Before writing report.md, write progress.txt with a brief progress marker.",
+            "--input",
+            "./materials",
+            "--output",
+            "./recovery-deliverables",
+            "--agent",
+            "codex",
+            "--max-calls",
+            "5",
+            "--timeout",
+            "2m",
+            "--detach",
+            "--json"
+          ],
+          "exit_code": 0,
+          "observation": "Product creation exited 0, but my first polling script parsed pretty JSON as independent scalar lines; harness failed before reading task id or stopping worker. This was not a product failure.",
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "Read facts.txt and create report.md containing North: 12, South: 9, Total: 21, citing facts.txt. Before writing report.md, write progress.txt with a brief progress marker.",
+            "--input",
+            "./materials",
+            "--output",
+            "./recovery2-deliverables",
+            "--agent",
+            "codex",
+            "--max-calls",
+            "5",
+            "--timeout",
+            "2m",
+            "--detach",
+            "--json"
+          ],
+          "exit_code": 0,
+          "observation": "recovery-created",
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "status",
+            "task-20261019T075810Z-2d6fb6a1",
+            "--json"
+          ],
+          "exit_code": 0,
+          "observation": "before-stop",
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "status",
+            "task-20261019T075810Z-2d6fb6a1",
+            "--events"
+          ],
+          "exit_code": 0,
+          "observation": "before-stop-events",
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "stop",
+            "task-20261019T075810Z-2d6fb6a1",
+            "--json"
+          ],
+          "exit_code": 0,
+          "observation": "stopped",
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "status",
+            "task-20261019T075810Z-2d6fb6a1",
+            "--events",
+            "--after",
+            "7"
+          ],
+          "exit_code": 0,
+          "observation": "paused-events",
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "continue",
+            "task-20261019T075810Z-2d6fb6a1",
+            "--fresh-session",
+            "--json"
+          ],
+          "exit_code": 0,
+          "observation": "resumed",
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "continue",
+            "task-20261019T075810Z-2d6fb6a1",
+            "--fresh-session",
+            "--json"
+          ],
+          "exit_code": 0,
+          "observation": "repeated-continue",
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "status",
+            "task-20261019T075810Z-2d6fb6a1",
+            "--events"
+          ],
+          "exit_code": 0,
+          "observation": "final-events",
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "continue",
+            "task-20261019T075810Z-2d6fb6a1",
+            "--json"
+          ],
+          "exit_code": 0,
+          "observation": "plain-repeated-continue",
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "status",
+            "task-20261019T075810Z-2d6fb6a1",
+            "--events",
+            "--after",
+            "25"
+          ],
+          "exit_code": 0,
+          "observation": "events-after-25",
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "Read facts.txt and create report.md containing North: 12, South: 9, Total: 21, citing facts.txt.",
+            "--input",
+            "./materials",
+            "--output",
+            "./budget-deliverables",
+            "--agent",
+            "codex",
+            "--max-calls",
+            "1",
+            "--timeout",
+            "2m",
+            "--json"
+          ],
+          "exit_code": 1,
+          "observation": "budget-exhausted",
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "./xcli",
+            "task",
+            "continue",
+            "task-20261019T075848Z-a819b4f1",
+            "--max-calls",
+            "3",
+            "--json"
+          ],
+          "exit_code": 0,
+          "observation": "budget-raised",
+          "command_kind": "product"
+        },
+        {
+          "argv": [
+            "python3",
+            "capture_stop.py"
+          ],
+          "exit_code": 1,
+          "command_kind": "harness",
+          "observation": "First harness JSON parser mishandled multiline JSON; TypeError before stop. Corrected to parse a whole JSON object first."
+        },
+        {
+          "argv": [
+            "python3",
+            "-"
+          ],
+          "exit_code": 1,
+          "command_kind": "harness",
+          "observation": "Final summary assumed a JSONL result with one event was a list; AttributeError after all four product commands had already finished. Corrected summary offline without rerunning product commands."
+        }
+      ],
+      "task_ids": [
+        "task-20261019T075720Z-44635d37",
+        "task-20261019T075848Z-a819b4f1",
+        "task-20261019T075810Z-2d6fb6a1",
+        "task-20261019T075750Z-961ca6a1"
+      ],
+      "primary_task_id": "task-20261019T075810Z-2d6fb6a1",
+      "observed_checks": {
+        "active_worker_stop": {
+          "passed": true,
+          "evidence": "progress.txt existed, report.md did not; worker started event 8 preceded failed event 10 and paused Task finish 11; stop exited 0"
+        },
+        "same_task_material_restore": {
+          "passed": true,
+          "method": "continue --fresh-session --json; fresh session material restore, not native resume claim"
+        },
+        "mode_candidate_pool_preserved": {
+          "passed": true,
+          "mode": "single",
+          "candidates": [
+            "codex"
+          ]
+        },
+        "cumulative_budget": {
+          "passed": true,
+          "before_stop_calls": 2,
+          "after_resume_calls": 4,
+          "max_calls": 5,
+          "elapsed_ns_after_stop": 536993666,
+          "elapsed_ns_after_resume": 1022073749,
+          "usage_incomplete": true
+        },
+        "interrupted_attempt_preserved": {
+          "passed": true,
+          "interrupted_run_id": "run-20261019T075810Z-82d0a5c7",
+          "events": "worker attempt 1: started 8, failed 10; fresh worker attempt 2: started 14, completed 18"
+        },
+        "event_sequence": {
+          "passed": true,
+          "observed_range": [
+            1,
+            26
+          ],
+          "after_25_returned": [
+            26
+          ]
+        },
+        "json_contract": {
+          "passed": true,
+          "evidence": "task --json and status --json parsed as one object; status --events parsed linewise as objects; a one-line JSONL response needs no enclosing array"
+        },
+        "report_acceptance": {
+          "passed": true,
+          "path": "recovery2-deliverables/report.md"
+        },
+        "completed_continue_idempotence": {
+          "passed": true,
+          "calls": 4,
+          "default_continue_no_new_event": true,
+          "fresh_session_repeat_note": "Repeating with --fresh-session added input_applied event 26 and applied_update=2 but did not call any Agent or alter the report; plain continue then left state unchanged."
+        },
+        "budget_exhaustion_and_raise": {
+          "passed": true,
+          "exhausted_exit_code": 1,
+          "recovery_exit_code": 0,
+          "same_task": true,
+          "normal_boundary": true
+        }
+      },
+      "findings": [
+        {
+          "severity": "info",
+          "category": "observed",
+          "classification": "contract_normal_boundary",
+          "claim": "1 \u6b21\u7d2f\u8ba1\u8c03\u7528\u4e0a\u9650\u4f1a\u5728\u534f\u8c03\u5b8c\u6210\u540e\u963b\u6b62 worker\uff0cTask=failed \u4e14\u547d\u4ee4\u9000\u51fa 1\uff1b\u540c\u4e00 Task \u663e\u5f0f\u63d0\u5347\u81f3 3 \u540e\u5b8c\u6210\uff0c\u7d2f\u8ba1 calls=3\u3002",
+          "reproduction_steps": [
+            "task <report goal> --agent codex --max-calls 1 --json",
+            "task continue <id> --max-calls 3 --json"
+          ],
+          "expected": "\u9884\u7b97\u8017\u5c3d\u4e0d\u989d\u5916\u8c03\u7528\uff1b\u7528\u6237\u663e\u5f0f\u63d0\u9ad8\u7d2f\u8ba1\u4e0a\u9650\u540e\u53ef\u7ee7\u7eed\u3002",
+          "observed": "1/1 \u65f6\u5931\u8d25\uff1b\u63d0\u9ad8\u540e 3/3 \u5b8c\u6210\uff0c\u6a21\u5f0f\u548c\u5019\u9009\u6c60\u4fdd\u7559\u3002",
+          "recommendation": "\u8fd9\u662f\u6b63\u5e38\u9884\u7b97\u8fb9\u754c\uff0c\u4e0d\u4f5c\u4e3a\u7f3a\u9677\uff1b\u53ef\u5728\u9884\u7b97\u9519\u8bef\u4e2d\u9644\u5e26 continue --max-calls \u793a\u4f8b\u3002"
+        },
+        {
+          "severity": "low",
+          "category": "hypothesis",
+          "classification": "ux_friction_hypothesis",
+          "claim": "\u4e3b\u52a8 stop \u7684 worker \u4e8b\u4ef6\u540d\u4e3a failed\uff0c\u4e8b\u4ef6\u672c\u8eab\u6ca1\u6709\u53d6\u6d88\u539f\u56e0\uff0c\u6d41\u6d88\u8d39\u8005\u53ef\u80fd\u8bef\u5224\u4e3a\u6a21\u578b/\u5de5\u5177\u9519\u8bef\u3002",
+          "reproduction_steps": [
+            "\u5728 progress.txt \u51fa\u73b0\u4e14 status \u68c0\u67e5\u70b9\u4e3a worker/in_flight \u65f6 stop",
+            "\u67e5\u770b status <id> --events --after 7"
+          ],
+          "expected": "\u5efa\u8bae\u4e2d\u65ad\u4e8b\u4ef6\u80fd\u5355\u72ec\u8868\u8fbe\u7528\u6237\u505c\u6b62\uff0c\u6216\u643a\u5e26\u660e\u786e\u505c\u6b62\u539f\u56e0\u3002",
+          "observed": "\u4e8b\u4ef6 10 \u4e3a worker failed\uff1b\u4e8b\u4ef6 11 \u7684 Task finish \u6587\u672c\u8bf4\u660e Stopped\uff0c\u6574\u4f53\u53ef\u6b63\u786e\u89e3\u91ca\u4e3a\u6682\u505c\u3002",
+          "recommendation": "\u8003\u8651\u5728 failed \u4e8b\u4ef6\u643a\u5e26 cancellation reason\uff1b\u6b64\u4e3a UX \u5047\u8bbe\uff0c\u672a\u8bc1\u660e\u8fdd\u53cd\u516c\u5f00\u5951\u7ea6\u3002"
+        },
+        {
+          "severity": "info",
+          "category": "observed",
+          "classification": "contract_normal_boundary",
+          "claim": "\u5b8c\u6210\u540e\u65e0\u53c2\u6570 continue \u5e42\u7b49\uff1b\u91cd\u590d --fresh-session \u4f1a\u7559\u4e0b input_applied \u8bb0\u5f55\u4f46\u4e0d\u91cd\u8dd1\u3002",
+          "reproduction_steps": [
+            "\u5b8c\u6210 Task \u540e continue <id> --fresh-session --json",
+            "\u968f\u540e continue <id> --json \u5e76\u67e5\u770b events --after 25"
+          ],
+          "expected": "\u65e0\u53c2\u6570 continue \u4e0d\u65b0\u589e\u8c03\u7528\u3001\u4e0d\u6539\u53d8\u4ea7\u7269\u3002",
+          "observed": "\u8c03\u7528\u4fdd\u6301 4\uff1b\u62a5\u544a hash \u4e0d\u53d8\uff1b\u5e26 fresh-session \u7684\u91cd\u590d\u4ea7\u751f\u4e8b\u4ef6 26\uff0c\u968f\u540e\u65e0\u53c2\u6570 continue \u5e8f\u53f7\u4fdd\u6301 26\u3002",
+          "recommendation": "\u65e0\u9700\u636e\u6b64\u8ba4\u5b9a\u5e42\u7b49\u7f3a\u9677\uff1b\u5982\u9700\u66f4\u4e25\u683c\u7684\u4e8b\u4ef6\u5e42\u7b49\uff0c\u53ef\u6f84\u6e05\u5df2\u5b8c\u6210 Task \u4e0a fresh-session \u7684\u5904\u7406\u3002"
+        },
+        {
+          "severity": "info",
+          "category": "fixture_limit",
+          "classification": "evidence_limit",
+          "claim": "\u672c\u6b21\u4f7f\u7528\u786e\u5b9a\u6027 native CLI \u66ff\u8eab\uff0c\u4e0d\u80fd\u636e\u6b64\u5224\u65ad\u539f\u751f\u6a21\u578b\u8d28\u91cf\u3001\u539f\u751f\u8d26\u53f7\u517c\u5bb9\u6027\u3001\u771f\u5b9e\u5ef6\u8fdf\u6216\u771f\u5b9e token \u7528\u91cf\u3002",
+          "reproduction_steps": [
+            "\u4f7f\u7528\u672c\u89d2\u8272 ./xcli \u9694\u79bb\u5165\u53e3\u6267\u884c\u4e0a\u8ff0\u547d\u4ee4"
+          ],
+          "expected": "\u660e\u786e\u533a\u5206\u4ea7\u54c1\u6d41\u7a0b\u9a8c\u8bc1\u4e0e\u771f\u5b9e\u6a21\u578b/\u7528\u6237\u89c2\u5bdf\u3002",
+          "observed": "\u66ff\u8eab\u53ef\u63a7 worker \u6682\u505c\u7528\u4e8e\u6545\u969c\u6ce8\u5165\uff1bnative_model_calls=0\uff1b\u672a\u8054\u7f51\u6216\u76f4\u63a5\u8c03\u7528\u771f\u5b9e Agent CLI\u3002",
+          "recommendation": "\u771f\u5b9e\u539f\u751f\u517c\u5bb9\u6027\u4e0e\u957f\u671f\u7559\u5b58\u53e6\u884c\u5b9e\u6d4b\uff0c\u4e0d\u4ece\u672c\u6b21\u7ed3\u679c\u5916\u63a8\u3002"
+        }
+      ],
+      "confirmed_product_defects": 0,
+      "next_day_observation": null,
+      "retention_observation": null,
+      "scope_notes": [
+        "AI \u6a21\u62df\u8d44\u6df1\u5de5\u7a0b\u5e08\uff0c\u4e0d\u662f\u4eba\u7c7b\u53d7\u8bd5\u8005\u3002",
+        "\u4ec5\u8bfb\u53d6\u672c\u76ee\u5f55 README\u3001materials\u3001\u516c\u5f00 CLI help/status/events \u4e0e\u672c\u89d2\u8272\u751f\u6210\u6570\u636e\uff1b\u672a\u8bfb\u53d6\u4ea7\u54c1\u5b9e\u73b0\u3001\u5176\u4ed6\u89d2\u8272\u6216\u5386\u53f2 R3 \u7ed3\u8bba\u3002",
+        "\u6240\u6709\u67e5\u8be2\u5728\u540c\u4e00\u5929\uff1b\u6ca1\u6709\u9694\u5929\u6216\u4e03\u5929\u7559\u5b58\u89c2\u5bdf\u3002",
+        "4 \u4e2a Task \u7684 max-calls \u5206\u522b\u4e3a 5\u30015\u30015\u30011\uff08\u6700\u540e\u4e00\u4e2a\u663e\u5f0f\u63d0\u5347\u5230 3\uff09\uff0c\u5747\u672a\u8d85\u8fc7 5\u3002",
+        "\u9996\u4e2a\u4efb\u52a1\u81ea\u7136\u5b8c\u6210\uff1b\u7b2c\u4e8c\u4e2a\u4efb\u52a1\u7684\u8f6e\u8be2\u811a\u672c\u9519\u8bef\u5bfc\u81f4\u6ca1\u6709\u53ca\u65f6 stop\uff1b\u4e8c\u8005\u5747\u4e0d\u5192\u5145\u6d3b\u8dc3\u4e2d\u65ad\u6d4b\u8bd5\u3002\u7b2c\u4e09\u4e2a\u4efb\u52a1\u5b8c\u6210\u771f\u5b9e\u6d3b\u52a8 worker stop/continue\u3002",
+        "\u8bd5\u9a8c\u811a\u672c\u7684\u4e24\u6b21\u5f02\u5e38\u5747\u4e3a\u672c\u89d2\u8272\u7f16\u5199\u7684 JSON \u6d88\u8d39\u9519\u8bef\uff0c\u4e0d\u8ba1\u4ea7\u54c1\u7f3a\u9677\u3002"
+      ]
+    }
+  ]
+}

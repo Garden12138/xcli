@@ -1,6 +1,11 @@
+import json
+from pathlib import Path
+import sys
+import tempfile
 import unittest
+from unittest.mock import patch
 
-from evidence import redact
+from evidence import main, redact
 
 
 class EvidenceTests(unittest.TestCase):
@@ -11,6 +16,23 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual(public["results"][0]["error"], "<private-study>/file unavailable")
         self.assertEqual(set(public["results"][0]), {"error", "native_calls"})
         self.assertEqual(source["results"][0]["session_id"], "secret")
+
+    def test_persona_summary_redacts_symlink_and_resolved_study_paths(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            study = root / "study"
+            study.mkdir()
+            alias = root / "alias"
+            alias.symlink_to(study, target_is_directory=True)
+            report, out = root / "report.json", root / "public.json"
+            report.write_text(json.dumps({"kind": "r3_persona_review", "status": "completed",
+                "paths": [str(alias / "feedback.json"), str(study.resolve() / "feedback.json")],
+                "roles": [{"real_human": False, "session_id": "private", "stdout": "raw"}]}))
+            with patch.object(sys, "argv", ["evidence.py", "--study", str(alias), "--report", str(report), "--out", str(out)]):
+                main()
+            public = json.loads(out.read_text())
+            self.assertEqual(public["paths"], ["<private-study>/feedback.json"] * 2)
+            self.assertEqual(public["roles"], [{"real_human": False}])
 
 
 if __name__ == "__main__":
