@@ -1,6 +1,6 @@
 # R3 experiments and candidate installation
 
-See the [2026-10-19 recovery follow-up](followup-20261019.zh-CN.md) for the latest native evidence: single-Codex worker recovery passed; Cursor's usage limit prevented cross-CLI recovery validation. The separate supplemental budget used 5/12 invocations, preserving the prior ledger.
+See the [quota-restored recovery follow-up](cursor-restored-20261019.zh-CN.md) for the latest native evidence: cross-CLI worker recovery passed, completing both background recovery checks alongside the earlier single-Codex result. The supplemental budget now uses 10/12 invocations, preserving prior ledgers and failures. Independent user observation and collaboration benefit remain pending.
 
 The [committed-candidate installation acceptance](acceptance-20261019.zh-CN.md) adds 30 configuration, error-reporting and historical-query checks without model calls. The [support matrix](compatibility.zh-CN.md) separates measured roles and platforms from quota failures and unverified combinations.
 
@@ -63,6 +63,8 @@ Reported findings must be reproducible. Scripted coordination, automatic handoff
 ## Checks and packaging
 
 For a later recovery-only follow-up, use `tests/r3/revalidate.py prepare --study <new-study> --binary ./xcli --previous-campaign <old-study> --budget <new-limit>`, then `run --study <new-study> --out <fresh-report> --execute`. The new limit must be explicitly established first. The prior ledger remains unchanged and is linked by hash. A failed Cursor readiness check suppresses cross-CLI dispatch. Passing requires an actual canceled worker, a different native worker session after material recovery, preserved mode/budget/bindings, and a review bound to current output. Operator clarification is reported separately. `inspect` reads receipts without spending another native invocation.
+
+After the user confirms quota recovery, use `prepare --study <fresh-study> --binary ./xcli --previous-campaign <recovery-study> --cross-only --carry-budget` to spend the remaining recovery allowance. This forbids a new `--budget`, preserves the original total cap, copies prior ledger bytes as an immutable prefix, and skips single-CLI recovery. Each new dispatch checks prior ledger hashes and the inherited prefix. Global accounting includes inherited calls; reports separate new calls from the carried total. Old failures and ledgers remain intact.
 
 ```bash
 go test -race ./...

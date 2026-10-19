@@ -1,6 +1,6 @@
 # R3：对照实验与候选验收
 
-最新真实补验见 [2026-10-19 后台恢复记录](followup-20261019.zh-CN.md)：指定 Codex 中断恢复通过，Cursor 当前额度耗尽，跨 CLI 后台恢复仍未补齐；独立新增预算使用 5/12，历史账本保持不变。
+最新真实补验见 [Cursor 额度恢复后记录](cursor-restored-20261019.zh-CN.md)：跨 CLI 后台恢复通过，与此前指定 Codex 的记录合并后，两个后台缺口已补齐；补充预算累计使用 10/12，旧账本与失败记录保留。独立用户观察与协作收益门槛仍未完成。
 
 后续[已提交候选安装验收](acceptance-20261019.zh-CN.md)新增 30 项配置、失败诊断和历史查询检查，无新增模型调用。[实测支持矩阵](compatibility.zh-CN.md)区分已测角色、当前额度失败与未测范围。
 
@@ -77,6 +77,17 @@ python3 tests/r3/revalidate.py inspect --study /tmp/r3-followup \
 ```
 
 补验最多为每个恢复场景分派五次调用，可记录一次协调计划澄清；有澄清时标记操作员介入。旧 campaign 的调用数和账本不变，新调用单独记账，公开结果同时显示历史与本轮消耗。失败或中断的补验不因更换输出文件重放。
+
+若用户确认额度恢复，只补跨 CLI 路径且沿用补充预算余额，可准备新的批次：
+
+```bash
+python3 tests/r3/revalidate.py prepare --study /tmp/r3-cursor-restored \
+  --binary ./xcli --previous-campaign /tmp/r3-followup --cross-only --carry-budget
+python3 tests/r3/revalidate.py run --study /tmp/r3-cursor-restored \
+  --out /tmp/r3-cursor-restored.json --execute
+```
+
+`--carry-budget` 不接受新的 `--budget`，准备时校验旧预算未变，总上限与旧补充批次一致；新账本逐字继承已有分派，再追加本轮记录。旧账本保持不变，新批次的预算、继承前缀或祖先账本发生变化即拒绝新分派。每个新场景的次数只计算本轮，但全局上限包含继承的用量；不会因新候选重置总预算。`--cross-only` 不调度已通过的单 CLI 恢复。报告分别列出本轮新增调用、继承用量、补充预算累计和历史总数。
 
 - Work：三份材料包含旧总数、旧发布日期和缺失审批；生成 `report.md` 与机器可核对的 `report.json`，检查事实、来源、遗漏和误报。
 - Project：修复缓存 TTL 的开区间、非正 TTL、时钟回退及 int64 溢出；可见测试作为运行时反馈，独立测试只用于最终评分。

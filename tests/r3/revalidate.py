@@ -21,9 +21,13 @@ def check_study(root):
     study = validate(root)
     if study.get("profile") != "recovery-followup":
         raise ValueError("use a separately prepared recovery follow-up")
-    prior = study["previous_campaign"]
-    if digest(Path(prior["path"]) / "calls.jsonl") != prior["ledger_sha256"]:
-        raise ValueError("previous campaign ledger changed")
+    for prior in study.get("prior_ledgers", [study["previous_campaign"]]):
+        if digest(Path(prior["path"]) / "calls.jsonl") != prior["ledger_sha256"]:
+            raise ValueError("previous campaign ledger changed")
+    if study.get("inherited_calls"):
+        prefix = (Path(study["previous_campaign"]["path"]) / "calls.jsonl").read_bytes()
+        if not (root / "calls.jsonl").read_bytes().startswith(prefix):
+            raise ValueError("inherited ledger prefix changed")
     for name, expected in study["followup_inputs"].items():
         if manifest(root / "followup" / name / "inputs") != expected:
             raise ValueError("frozen recovery input changed")
@@ -159,14 +163,18 @@ def recovery(root, study, name):
 
 def summarize(root, study):
     entries = Ledger(root).entries()
+    inherited = study.get("inherited_calls", 0)
+    new_entries = entries[inherited:]
     results = [read_json(root / "followup" / (name + ".json")) if (root / "followup" / (name + ".json")).exists() else {"case": name, "status": "not_run"} for name in study["compatibility_cases"]]
     prior = study["previous_campaign"]
     return {"kind": "r3_recovery_followup", "source_commit": study["source_commit"], "binary_sha256": study["binary_sha256"],
             "platform": study["platform"], "native_versions": {a: n["version"] for a, n in study["native"].items()},
             "prior_campaign": {k: prior[k] for k in ("calls", "budget", "ledger_sha256")},
             "prior_ledger_unchanged": digest(Path(prior["path"]) / "calls.jsonl") == prior["ledger_sha256"],
-            "new_budget": study["budget"], "new_calls": len(entries), "historical_plus_new_calls": prior["calls"] + len(entries),
-            "ledger": [{k: e[k] for k in ("sequence", "case", "adapter", "phase", "binary_sha256")} for e in entries],
+            "new_budget": study["budget"] - inherited, "new_calls": len(new_entries),
+            "budget_total": study["budget"], "budget_calls": len(entries), "inherited_calls": inherited,
+            "historical_plus_new_calls": study.get("historical_before_budget", prior["calls"]) + len(entries),
+            "ledger": [{k: e[k] for k in ("sequence", "case", "adapter", "phase", "binary_sha256")} for e in new_entries],
             "results": results, "status": "passed" if all(r["status"] == "passed" for r in results) else "incomplete_or_failed"}
 
 
@@ -177,18 +185,26 @@ def main():
     parser.add_argument("--binary", type=Path)
     parser.add_argument("--previous-campaign", type=Path)
     parser.add_argument("--budget", type=int, help="explicit separately authorized supplemental limit; prepare only")
+    parser.add_argument("--cross-only", action="store_true", help="prepare readiness and cross-CLI recovery only")
+    parser.add_argument("--carry-budget", action="store_true", help="inherit prior recovery ledger and unchanged total cap")
     parser.add_argument("--out", type=Path)
     parser.add_argument("--execute", action="store_true")
     args = parser.parse_args()
     os.umask(0o077)
     root = args.study.resolve()
     if args.action == "prepare":
+        if args.carry_budget:
+            if not args.previous_campaign or args.budget is not None:
+                parser.error("--carry-budget requires --previous-campaign and forbids a new --budget")
+            args.budget = read_json(args.previous_campaign / "study.json")["budget"]
         if not args.binary or not args.previous_campaign or args.budget is None:
             parser.error("prepare requires --binary, --previous-campaign and explicit --budget")
-        prepare(root, args.binary, args.budget, previous_campaign=args.previous_campaign.resolve())
-        print(json.dumps({"status": "prepared", "supplemental_budget": args.budget, "native_calls": 0}))
+        study = prepare(root, args.binary, args.budget, previous_campaign=args.previous_campaign.resolve(),
+                        cross_only=args.cross_only, carry_budget=args.carry_budget)
+        print(json.dumps({"status": "prepared", "budget_total": args.budget,
+                          "inherited_calls": study.get("inherited_calls", 0), "native_calls": 0}))
         return
-    if not args.out or args.out.exists() or args.budget is not None:
+    if not args.out or args.out.exists() or args.budget is not None or args.cross_only or args.carry_budget:
         parser.error("a fresh --out is required; --budget is prepare-only")
     study = check_study(root)
     if args.action == "run":
@@ -208,7 +224,7 @@ def main():
                     result = readiness(root, study) if name == "cursor-readiness" else recovery(root, study, name)
                 except Exception as error:
                     result = {"status": "failed", "error": str(error)}
-                result.update(case=name, seconds=round(time.monotonic() - start, 3), calls=sum(e["case"] == name for e in Ledger(root).entries()))
+                result.update(case=name, seconds=round(time.monotonic() - start, 3), calls=sum(e["case"] == name for e in Ledger(root).entries()[study.get("inherited_calls", 0):]))
                 write_json(receipt, result)
                 print(json.dumps(result), flush=True)
     write_json(args.out, summarize(root, study))

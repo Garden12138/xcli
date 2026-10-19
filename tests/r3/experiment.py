@@ -31,12 +31,24 @@ def checked(argv, **kwargs):
     return result["stdout"].strip()
 
 
-def prepare(root, binary, budget, campaign=None, *, previous_campaign=None):
+def prepare(root, binary, budget, campaign=None, *, previous_campaign=None, cross_only=False, carry_budget=False):
     if not 1 <= budget <= 48:
         raise ValueError("R3 budget must be 1..48")
     if previous_campaign and campaign:
         raise ValueError("a separately budgeted follow-up cannot reset/share the prior campaign")
     followup = previous_campaign is not None
+    if (cross_only or carry_budget) and not followup:
+        raise ValueError("cross-only/carried budget requires a recovery follow-up")
+    inherited = b""
+    if carry_budget:
+        if digest(previous_campaign / "study.json") != read_json(previous_campaign / "frozen.json")["study_sha256"]:
+            raise ValueError("previous recovery budget policy changed")
+        parent = read_json(previous_campaign / "study.json")
+        if parent.get("profile") != "recovery-followup" or parent["budget"] != budget:
+            raise ValueError("carry the unchanged recovery budget; do not allocate a new limit")
+        inherited = (Ledger(previous_campaign).root / "calls.jsonl").read_bytes()
+        if len(Ledger(previous_campaign).entries()) >= budget:
+            raise ValueError("previous recovery budget exhausted")
     binary = binary.resolve(strict=True)
     root.mkdir(mode=0o700, parents=True, exist_ok=False)
     (root / "private").mkdir(mode=0o700)
@@ -92,27 +104,35 @@ def prepare(root, binary, budget, campaign=None, *, previous_campaign=None):
         prior = {"path": str(prior_ledger.root), "calls": len(prior_entries),
                  "ledger_sha256": digest(prior_ledger.root / "calls.jsonl"),
                  "budget": read_json(prior_ledger.root / "study.json")["budget"]}
-        for name in ("single-recovery", "cross-recovery"):
+        for name in (["cross-recovery"] if cross_only else ("single-recovery", "cross-recovery")):
             fixtures.put_files(root / "followup" / name / "inputs", {"facts.txt": "North: 12\nSouth: 9\nTotal: 21\n"})
     study = {"schema": 1, "prepared_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
              "platform": platform.platform(), "binary": str(binary), "binary_sha256": digest(binary),
              "source_commit": checked(["git", "rev-parse", "HEAD"], cwd=REPOSITORY),
              "budget": budget, "ledger_root": str(campaign or root), "native": native, "order": [] if followup else ORDER, "cases": cases,
              "profile": "recovery-followup" if followup else "comparison", "previous_campaign": prior,
-             "compatibility_cases": ["cursor-readiness", "single-recovery", "cross-recovery"] if followup else COMPATIBILITY,
+             "compatibility_cases": (["cursor-readiness", "cross-recovery"] if cross_only else ["cursor-readiness", "single-recovery", "cross-recovery"]) if followup else COMPATIBILITY,
              "case_limits": {"cursor-readiness": 1, "single-recovery": 5, "cross-recovery": 5} if followup else {**{name: 6 for name in ORDER}, **{name: 1 for name in COMPATIBILITY[:4]}, **{name: 4 for name in COMPATIBILITY[4:]}},
              "limits": {"comparison_calls": 0 if followup else 36, "compatibility_calls": budget if followup else 12, "case_seconds": 600, "call_seconds": 120, "repairs": 1},
              "settings": {"codex_reasoning_effort": "low", "models": "native configured defaults", "cursor_trust": "generated temporary cwd only"},
              "benefit_rule": "Cross arm independently passes with fewer omissions, more reproducible findings, or fewer recorded human handoffs than a baseline; report extra cost. Scripted handoffs are not human observations.",
              "tools": {name: digest(HERE / name) for name in tool_names}}
     if followup:
-        study["followup_inputs"] = {name: fixtures.manifest(root / "followup" / name / "inputs") for name in ("single-recovery", "cross-recovery")}
+        study["followup_inputs"] = {name: fixtures.manifest(root / "followup" / name / "inputs") for name in study["compatibility_cases"] if name.endswith("recovery")}
+    if cross_only:
+        del study["case_limits"]["single-recovery"]
+    if carry_budget:
+        study["inherited_calls"] = prior["calls"]
+        study["historical_before_budget"] = parent.get("historical_before_budget", parent["previous_campaign"]["calls"])
+        study["prior_ledgers"] = [prior, *parent.get("prior_ledgers", [parent["previous_campaign"]])]
     write_json(root / "study.json", study)
     write_json(root / "frozen.json", {"study_sha256": digest(root / "study.json"),
                                       "config_sha256": digest(root / "config.json"),
                                       "tools": {p.name: digest(p) for p in (root / "tools").iterdir()}})
     if not campaign:
-        (root / "calls.jsonl").touch(mode=0o600, exist_ok=False)
+        with (root / "calls.jsonl").open("xb") as stream:
+            stream.write(inherited)
+        (root / "calls.jsonl").chmod(0o600)
     return study
 
 

@@ -88,6 +88,27 @@ class LedgerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "total"):
             ledger.reserve("codex", "a", "followup")
 
+    def test_carried_ledger_keeps_total_cap_and_rejects_changed_history(self):
+        Ledger(self.root).reserve("codex", "a", "prior")
+        parent_hash = digest(self.root / "calls.jsonl")
+        child = self.root / "carry"
+        child.mkdir()
+        prior = {"path": str(self.root), "ledger_sha256": parent_hash}
+        study = {"budget": 7, "case_limits": {"a": 20}, "order": [], "compatibility_cases": ["a"],
+                 "inherited_calls": 1, "previous_campaign": prior, "prior_ledgers": [prior]}
+        write_json(child / "study.json", study)
+        write_json(child / "frozen.json", {"study_sha256": digest(child / "study.json")})
+        (child / "calls.jsonl").write_bytes((self.root / "calls.jsonl").read_bytes())
+        ledger = Ledger(child)
+        for _ in range(6):
+            ledger.reserve("codex", "a", "new")
+        with self.assertRaisesRegex(ValueError, "total"):
+            ledger.reserve("codex", "a", "over-budget")
+        self.assertEqual(digest(self.root / "calls.jsonl"), parent_hash)
+        Ledger(self.root).reserve("codex", "b", "history-changed")
+        with self.assertRaisesRegex(ValueError, "previous campaign"):
+            ledger.reserve("codex", "a", "changed-history")
+
 
 class ScoringTests(unittest.TestCase):
     def test_work_missing_false_finding_and_wrong_facts(self):
@@ -226,6 +247,44 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(result["results"][-1]["status"], "not_verified")
         self.assertTrue(result["prior_ledger_unchanged"])
         self.assertEqual(sum(e["adapter"] == "cursor" for e in Ledger(followup).entries()), 1)
+
+    def test_cross_only_carries_remaining_budget_without_replaying_single(self):
+        prior = self.base / "prior"
+        experiment.prepare(prior, Path(os.environ["XCLI_R3_BINARY"]), 12, previous_campaign=self.root)
+        Ledger(prior).reserve("cursor", "cursor-readiness", "failed-readiness")
+        for _ in range(4):
+            Ledger(prior).reserve("codex", "single-recovery", "completed-single")
+        prior_hash = digest(prior / "calls.jsonl")
+        followup = self.base / "carry"
+        study = experiment.prepare(followup, Path(os.environ["XCLI_R3_BINARY"]), 12,
+                                   previous_campaign=prior, cross_only=True, carry_budget=True)
+        self.assertEqual(study["inherited_calls"], 5)
+        self.assertEqual(study["compatibility_cases"], ["cursor-readiness", "cross-recovery"])
+        self.assertNotIn("single-recovery", study["case_limits"])
+        self.assertFalse((followup / "followup/single-recovery").exists())
+        output = self.base / "carry.json"
+        with patch.object(sys, "argv", ["revalidate.py", "run", "--study", str(followup), "--out", str(output), "--execute"]):
+            revalidate.main()
+        result = read_json(output)
+        self.assertEqual(result["status"], "passed", result)
+        self.assertEqual(result["new_budget"], 7)
+        self.assertEqual(result["new_calls"], 5)
+        self.assertEqual(result["budget_total"], 12)
+        self.assertEqual(result["budget_calls"], 10)
+        self.assertEqual(result["historical_plus_new_calls"], 10)
+        self.assertEqual([r["calls"] for r in result["results"]], [1, 4])
+        self.assertEqual(digest(prior / "calls.jsonl"), prior_hash)
+        revalidate.check_study(followup)
+        data = (followup / "calls.jsonl").read_bytes()
+        (followup / "calls.jsonl").write_bytes(b" " + data)
+        with self.assertRaisesRegex(ValueError, "inherited ledger prefix"):
+            revalidate.check_study(followup)
+        changed = read_json(prior / "study.json")
+        changed["budget"] = 13
+        write_json(prior / "study.json", changed)
+        with self.assertRaisesRegex(ValueError, "budget policy changed"):
+            experiment.prepare(self.base / "tampered", Path(os.environ["XCLI_R3_BINARY"]), 13,
+                               previous_campaign=prior, cross_only=True, carry_budget=True)
 
 
 if __name__ == "__main__":

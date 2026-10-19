@@ -5,8 +5,8 @@
 | 环境 / 角色 | 已验证 | 限制与证据 |
 | --- | --- | --- |
 | macOS arm64 / Codex 0.163.0：协调、执行、自查 | Work、Project、原生 resume、取消；实际 worker 中断及新 session 材料恢复 | [最终对照](evidence/comparison-final.json)、[原生兼容](evidence/compatibility.json)、[恢复补验](evidence/followup-native-20261019.json)；自查不等于跨 CLI 独立复核 |
-| macOS arm64 / Cursor 2026.10.16-e3cb207：复核 | 10 月 17 日最终 Work / Project 跨 CLI 对照中的当前摘要复核；原生 resume 和取消 | [对照](evidence/comparison-final.json)与[兼容](evidence/compatibility.json)；10 月 19 日请求因额度耗尽失败，不能声称当前账号可执行模型任务 |
-| Codex 执行 / Cursor 复核：后台材料恢复 | worker 中断和恢复执行曾成功 | 最终 Cursor 复核曾因额度失败；本轮可用性检查失败后跳过，完整路径仍未通过，见[补验](followup-20261019.zh-CN.md) |
+| macOS arm64 / Cursor 2026.10.16-e3cb207：复核 | Work / Project 当前摘要复核；原生 resume 和取消；额度恢复后的真实请求与后台恢复最终复核 | [对照](evidence/comparison-final.json)、[兼容](evidence/compatibility.json)与[额度恢复后补验](cursor-restored-20261019.zh-CN.md)；此前额度失败保留，本次成功不保证未来额度 |
+| Codex 执行 / Cursor 复核：后台材料恢复 | 实际 worker 取消、paused、同 Task 新 session 材料恢复，以及当前摘要的 Cursor 复核均通过 | [原生补验](evidence/cursor-restored-20261019.json)，Task 自动模式、候选池、绑定与累计预算保留；未覆盖此前失败 |
 | macOS arm64：已提交候选的安装与故障诊断 | 实际归档解包、PATH/XDG、中文和空格路径、已有配置保护、损坏配置拒绝、缺失 CLI 明确失败、历史记录查询 | [安装](evidence/installation-ef7f76c.json)、[安装验收](evidence/installed-acceptance-ef7f76c.json)；本批安装检查未调用模型 |
 | Darwin / Linux × amd64 / arm64：分发包 | 四组归档内容、执行权限、SHA-256 | 本机之外的三组只证明构建与归档。CI 的 Linux 安装检查也不证明 Linux 上真实 CLI 模型执行通过 |
 | Cursor 写入、其他 Adapter 与角色组合 | 本阶段未做真实验证 | 代码中已有实现不自动扩大 R3 实测声明；R0–R2 的历史结果保留各自版本与角色范围 |

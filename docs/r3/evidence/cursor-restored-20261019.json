@@ -1,0 +1,138 @@
+{
+  "kind": "r3_recovery_followup",
+  "source_commit": "f2bc6d3afafbda578b9b60fd24603eac7ac8e933",
+  "binary_sha256": "06e5fcffe3931b931d538dc0dac032378e5d6b97ca54f222ff17ea1332063bd1",
+  "platform": "macOS-26.5.1-arm64-arm-64bit",
+  "native_versions": {
+    "codex": "codex-cli 0.163.0",
+    "cursor": "2026.10.16-e3cb207"
+  },
+  "prior_campaign": {
+    "calls": 5,
+    "budget": 12,
+    "ledger_sha256": "43ea2386e69f45e5600fbb3add31671937e40846e27d055877342b07e3d1de99"
+  },
+  "prior_ledger_unchanged": true,
+  "new_budget": 7,
+  "new_calls": 5,
+  "budget_total": 12,
+  "budget_calls": 10,
+  "inherited_calls": 5,
+  "historical_plus_new_calls": 56,
+  "ledger": [
+    {
+      "sequence": 6,
+      "case": "cursor-readiness",
+      "adapter": "cursor",
+      "phase": "readiness",
+      "binary_sha256": "06e5fcffe3931b931d538dc0dac032378e5d6b97ca54f222ff17ea1332063bd1"
+    },
+    {
+      "sequence": 7,
+      "case": "cross-recovery",
+      "adapter": "codex",
+      "phase": "start",
+      "binary_sha256": "06e5fcffe3931b931d538dc0dac032378e5d6b97ca54f222ff17ea1332063bd1"
+    },
+    {
+      "sequence": 8,
+      "case": "cross-recovery",
+      "adapter": "codex",
+      "phase": "start",
+      "binary_sha256": "06e5fcffe3931b931d538dc0dac032378e5d6b97ca54f222ff17ea1332063bd1"
+    },
+    {
+      "sequence": 9,
+      "case": "cross-recovery",
+      "adapter": "codex",
+      "phase": "fresh-material-continue",
+      "binary_sha256": "06e5fcffe3931b931d538dc0dac032378e5d6b97ca54f222ff17ea1332063bd1"
+    },
+    {
+      "sequence": 10,
+      "case": "cross-recovery",
+      "adapter": "cursor",
+      "phase": "fresh-material-continue",
+      "binary_sha256": "06e5fcffe3931b931d538dc0dac032378e5d6b97ca54f222ff17ea1332063bd1"
+    }
+  ],
+  "results": [
+    {
+      "status": "passed",
+      "exit_code": 0,
+      "parse_status": "complete",
+      "meaning": "one real read-only invocation; not a guarantee of future quota",
+      "case": "cursor-readiness",
+      "seconds": 30.768,
+      "calls": 1
+    },
+    {
+      "task_id": "task-20261019T032056Z-39d25912",
+      "mode": "auto",
+      "operator_clarifications": 0,
+      "worker_interruption_observed": true,
+      "background": true,
+      "stop_status": "paused",
+      "stopped_run_status": "canceled",
+      "calls_before_stop": 2,
+      "final_status": "completed",
+      "calls": 4,
+      "same_task": true,
+      "mode_preserved": true,
+      "candidates_preserved": true,
+      "bindings_preserved": true,
+      "budget_preserved": true,
+      "interrupted_attempt_retained": true,
+      "fresh_worker_attempt": true,
+      "fresh_native_session": true,
+      "current_review_bound": true,
+      "review_kinds": [
+        "cross_cli"
+      ],
+      "events_monotonic": true,
+      "artifact_correct": true,
+      "input_unchanged": true,
+      "single_cli_locked": true,
+      "repeat_continue_no_calls": true,
+      "status": "passed",
+      "case": "cross-recovery",
+      "seconds": 89.377
+    }
+  ],
+  "status": "passed",
+  "postflight": {
+    "independent_read_only_inspection_matches": true,
+    "exact_roles_verified": true,
+    "roles": [
+      {
+        "role": "coordinator",
+        "agent": "codex",
+        "status": "success"
+      },
+      {
+        "role": "worker",
+        "agent": "codex",
+        "status": "canceled"
+      },
+      {
+        "role": "worker",
+        "agent": "codex",
+        "status": "success"
+      },
+      {
+        "role": "reviewer",
+        "agent": "cursor",
+        "status": "success"
+      }
+    ],
+    "original_campaign_calls": 46,
+    "original_ledger_sha256": "ca6fc0c23760d506912a2c09b50f71b887c5205927fc2f66023ddb56f7580f16",
+    "prior_supplemental_calls": 5,
+    "prior_supplemental_ledger_sha256": "43ea2386e69f45e5600fbb3add31671937e40846e27d055877342b07e3d1de99",
+    "carried_ledger_sha256": "a0783f8cd2a786e9bcdc0045d9c0181302b639fb1289d0d3a1ddc1c5c7a71ffe",
+    "original_and_prior_ledgers_unchanged": true,
+    "inherited_prefix_unchanged": true,
+    "native_result_sha256": "a17e50a79772e97a34349523f3e072ad2dfce3613dad6ef4bdfe80480fefca83",
+    "remaining_supplemental_calls": 2
+  }
+}

@@ -72,18 +72,26 @@ class Ledger:
             frozen = read_json(self.root / "frozen.json")
             if digest(self.root / "study.json") != frozen["study_sha256"]:
                 raise ValueError("invocation budget policy changed")
+            inherited = study.get("inherited_calls", 0)
+            if inherited:
+                for prior in study["prior_ledgers"]:
+                    if digest(Path(prior["path"]) / "calls.jsonl") != prior["ledger_sha256"]:
+                        raise ValueError("previous campaign ledger changed")
+                prefix = (Path(study["previous_campaign"]["path"]) / "calls.jsonl").read_bytes()
+                if not (self.root / "calls.jsonl").read_bytes().startswith(prefix):
+                    raise ValueError("inherited ledger prefix changed")
             if case not in study["case_limits"]:
                 raise ValueError("unregistered study case")
             entries = self.entries()
             if len(entries) >= study["budget"]:
                 raise ValueError("R3 total invocation budget exhausted")
-            if sum(e["case"] == case and e.get("binary_sha256") == self.binary_sha256 for e in entries) >= study["case_limits"][case]:
+            if sum(e["case"] == case and e.get("binary_sha256") == self.binary_sha256 for e in entries[inherited:]) >= study["case_limits"][case]:
                 raise ValueError("R3 case invocation budget exhausted")
             is_comparison = case in study["order"]
             partition = study["order"] if is_comparison else study["compatibility_cases"]
             key, default = ("comparison_calls", 36) if is_comparison else ("compatibility_calls", 12)
             limit = study.get("limits", {}).get(key, default)
-            if sum(e["case"] in partition for e in entries) >= limit:
+            if sum(e["case"] in partition for e in entries[inherited:]) >= limit:
                 raise ValueError("R3 phase invocation budget exhausted")
             entry = {"sequence": len(entries) + 1, "adapter": adapter, "case": case,
                      "phase": phase, "time": time.time(), "pid": os.getpid(), "binary_sha256": self.binary_sha256}
