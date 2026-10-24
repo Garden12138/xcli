@@ -1,0 +1,52 @@
+Checking chat-insight: npm test
+
+> chat-insight@0.1.8 test
+> vitest run
+
+
+ RUN  v3.2.7 <体验目录>/data/xcli/worktrees/task-20261024T074906Z-8f6737ab
+
+ ✓ src/guide.test.ts (4 tests) 2ms
+ ✓ src/commitments.test.ts (3 tests) 9ms
+ ✓ src/components/States.test.tsx (2 tests) 52ms
+ ✓ src/components/GettingStarted.test.tsx (2 tests) 126ms
+ ✓ src/components/DateRangePicker.test.tsx (13 tests) 328ms
+ ✓ src/components/Media.test.tsx (9 tests) 245ms
+ ✓ src/components/ChatMemoryPanel.test.tsx (3 tests) 239ms
+ ✓ src/components/Ai.test.tsx (7 tests) 290ms
+ ✓ src/views/Ask.test.tsx (4 tests) 352ms
+ ✓ src/media.test.ts (3 tests) 2ms
+ ✓ src/emoji.test.ts (2 tests) 3ms
+ ✓ src/views/Commitments.test.tsx (6 tests) 447ms
+ ✓ src/utils.test.ts (3 tests) 1ms
+ ✓ src/App.test.tsx (5 tests) 243ms
+
+ Test Files  14 passed (14)
+      Tests  66 passed (66)
+   Start at  15:56:22
+   Duration  2.09s (transform 1.05s, setup 2.60s, collect 2.84s, tests 2.34s, environment 6.83s, prepare 1.09s)
+
+Checking chat-insight: npm run lint
+
+> chat-insight@0.1.8 lint
+> eslint . --max-warnings=0
+
+Checking chat-insight: npm run build
+
+> chat-insight@0.1.8 build
+> tsc -b && vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 653 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.56 kB │ gzip:   0.38 kB
+dist/assets/index-C8_VoX-K.css   42.39 kB │ gzip:   8.86 kB
+dist/assets/index-B5vm_D-5.js   911.86 kB │ gzip: 306.21 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 1.61s

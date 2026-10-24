@@ -90,7 +90,7 @@ func TestResumeNonInteractiveFromRunRecord(t *testing.T) {
 		"cwd=" + physicalDirectory,
 		"env=present",
 		"arg=--base", "arg=one", "arg=exec", "arg=resume", "arg=--json",
-		"arg=--sandbox", "arg=workspace-write", "arg=old-session", "arg=continue work", "",
+		"arg=-c", "arg=sandbox_mode=\"workspace-write\"", "arg=old-session", "arg=continue work", "",
 	}, "\n")
 	if string(captured) != wantInvocation {
 		t.Fatalf("invocation = %q, want %q", string(captured), wantInvocation)

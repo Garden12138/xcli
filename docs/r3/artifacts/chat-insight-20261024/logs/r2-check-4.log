@@ -1,0 +1,19 @@
+Checking chat-insight: npm run build
+
+> chat-insight@0.1.8 build
+> tsc -b && vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 653 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.56 kB │ gzip:   0.38 kB
+dist/assets/index-C8_VoX-K.css   42.39 kB │ gzip:   8.86 kB
+dist/assets/index-CJsUKYSv.js   911.90 kB │ gzip: 306.23 kB
+✓ built in 1.49s
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.

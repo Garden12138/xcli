@@ -1,0 +1,107 @@
+
+> chat-insight@0.1.8 test
+> vitest run src/components/DateRangePicker.acceptance.test.tsx
+
+
+ RUN  v3.2.7 <体验目录>/evaluation/baseline
+
+ ❯ src/components/DateRangePicker.acceptance.test.tsx (6 tests | 5 failed) 66ms
+   × independent chat-insight date range acceptance > exposes exactly the selected 30d preset 37ms
+     → expect(element).toHaveAttribute("aria-pressed", "true") // element.getAttribute("aria-pressed") === "true"
+
+Expected the element to have attribute:
+  aria-pressed="true"
+Received:
+  null
+   × independent chat-insight date range acceptance > exposes exactly the selected 1y preset 5ms
+     → expect(element).toHaveAttribute("aria-pressed", "false") // element.getAttribute("aria-pressed") === "false"
+
+Expected the element to have attribute:
+  aria-pressed="false"
+Received:
+  null
+   × independent chat-insight date range acceptance > exposes exactly the selected all preset 6ms
+     → expect(element).toHaveAttribute("aria-pressed", "false") // element.getAttribute("aria-pressed") === "false"
+
+Expected the element to have attribute:
+  aria-pressed="false"
+Received:
+  null
+   × independent chat-insight date range acceptance > exposes exactly the selected custom preset 6ms
+     → expect(element).toHaveAttribute("aria-pressed", "false") // element.getAttribute("aria-pressed") === "false"
+
+Expected the element to have attribute:
+  aria-pressed="false"
+Received:
+  null
+   × independent chat-insight date range acceptance > reflects external props and preserves the selection callback 8ms
+     → expect(element).toHaveAttribute("aria-pressed", "true") // element.getAttribute("aria-pressed") === "true"
+
+Expected the element to have attribute:
+  aria-pressed="true"
+Received:
+  null
+   ✓ independent chat-insight date range acceptance > keeps the other custom endpoint and permits clearing 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/DateRangePicker.acceptance.test.tsx > independent chat-insight date range acceptance > exposes exactly the selected 30d preset
+Error: expect(element).toHaveAttribute("aria-pressed", "true") // element.getAttribute("aria-pressed") === "true"
+
+Expected the element to have attribute:
+  aria-pressed="true"
+Received:
+  null
+ ❯ src/components/DateRangePicker.acceptance.test.tsx:14:59
+     12|     render(<DateRangePicker preset={selected} range={{}} onPresetChang…
+     13|     for (const [preset, label] of presets) {
+     14|       expect(screen.getByRole("button", { name: label })).toHaveAttrib…
+       |                                                           ^
+     15|     }
+     16|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  src/components/DateRangePicker.acceptance.test.tsx > independent chat-insight date range acceptance > exposes exactly the selected 1y preset
+ FAIL  src/components/DateRangePicker.acceptance.test.tsx > independent chat-insight date range acceptance > exposes exactly the selected all preset
+ FAIL  src/components/DateRangePicker.acceptance.test.tsx > independent chat-insight date range acceptance > exposes exactly the selected custom preset
+Error: expect(element).toHaveAttribute("aria-pressed", "false") // element.getAttribute("aria-pressed") === "false"
+
+Expected the element to have attribute:
+  aria-pressed="false"
+Received:
+  null
+ ❯ src/components/DateRangePicker.acceptance.test.tsx:14:59
+     12|     render(<DateRangePicker preset={selected} range={{}} onPresetChang…
+     13|     for (const [preset, label] of presets) {
+     14|       expect(screen.getByRole("button", { name: label })).toHaveAttrib…
+       |                                                           ^
+     15|     }
+     16|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  src/components/DateRangePicker.acceptance.test.tsx > independent chat-insight date range acceptance > reflects external props and preserves the selection callback
+Error: expect(element).toHaveAttribute("aria-pressed", "true") // element.getAttribute("aria-pressed") === "true"
+
+Expected the element to have attribute:
+  aria-pressed="true"
+Received:
+  null
+ ❯ src/components/DateRangePicker.acceptance.test.tsx:25:57
+     23|     expect(onPresetChange).toHaveBeenLastCalledWith("custom");
+     24|     rerender(<DateRangePicker {...props} preset="custom" />);
+     25|     expect(screen.getByRole("button", { name: "自定义" })).toHaveAttribut…
+       |                                                         ^
+     26|     expect(screen.getByLabelText("开始日期")).toBeVisible();
+     27|     rerender(<DateRangePicker {...props} preset="all" />);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 1 passed (6)
+   Start at  14:58:02
+   Duration  570ms (transform 30ms, setup 92ms, collect 20ms, tests 66ms, environment 242ms, prepare 31ms)
+
+\n

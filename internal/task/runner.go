@@ -302,7 +302,7 @@ func (r *Runner) call(ctx context.Context, name, role, cwd, prompt, snapshot str
 		boundary = cwd
 	}
 	wr := workflow.Runner{Config: r.Config, Registry: r.Registry, Store: r.Runs, Stderr: r.Stderr, Events: func(e agent.Event) error { return r.emit(e.Type, id, role, e.Message, nil) }}
-	step := workflow.Step{ID: role, Agent: name, Prompt: prompt, Timeout: "120s", Args: roleArgs(d.Config.Adapter, role)}
+	step := workflow.Step{ID: role, Agent: name, Prompt: prompt, Timeout: callTimeout(r.options.CallTimeout).String(), Args: roleArgs(d.Config.Adapter, role)}
 	if d.Config.Adapter == "codex" || d.Config.Adapter == "antigravity" {
 		name := role + ".schema.json"
 		if err := r.Store.Write(t.ID, name, roleSchema(role)); err != nil {
@@ -374,6 +374,9 @@ func (r *Runner) call(ctx context.Context, name, role, cwd, prompt, snapshot str
 	if res.Status != "success" || res.CLIExitCode != 0 {
 		if err := r.Store.Write(t.ID, role+".rejected.txt", []byte(res.Output+"\n"+res.Diagnostics)); err != nil {
 			return "", err
+		}
+		if res.Status == "timed_out" && ctx.Err() == nil {
+			return "", fmt.Errorf("%s %s exceeded the per-call limit %s; --timeout is the cumulative Task budget. Inspect retained materials, then continue with a larger --call-timeout (status %s, native exit %d)", role, name, step.Timeout, res.Status, res.ExitCode)
 		}
 		return "", fmt.Errorf("%s %s failed: %s (status %s, native exit %d)", role, name, res.Error, res.Status, res.ExitCode)
 	}

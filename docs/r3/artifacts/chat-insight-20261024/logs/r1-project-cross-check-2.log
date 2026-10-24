@@ -1,0 +1,27 @@
+Checking chat-insight: npm test
+
+> chat-insight@0.1.8 test
+> vitest run
+
+
+ RUN  v3.2.7 <体验目录>/data/xcli/worktrees/task-20261024T075146Z-3101a540
+
+ ✓ src/emoji.test.ts (2 tests) 2ms
+ ✓ src/commitments.test.ts (3 tests) 8ms
+ ✓ src/components/States.test.tsx (2 tests) 66ms
+ ✓ src/components/GettingStarted.test.tsx (2 tests) 259ms
+ ✓ src/components/DateRangePicker.test.tsx (13 tests) 325ms
+ ✓ src/components/Media.test.tsx (9 tests) 294ms
+ ✓ src/components/ChatMemoryPanel.test.tsx (3 tests) 207ms
+ ✓ src/components/Ai.test.tsx (7 tests) 234ms
+ ✓ src/views/Ask.test.tsx (4 tests) 362ms
+ ✓ src/views/Commitments.test.tsx (6 tests) 443ms
+ ✓ src/utils.test.ts (3 tests) 2ms
+ ✓ src/guide.test.ts (4 tests) 3ms
+ ✓ src/media.test.ts (3 tests) 2ms
+ ✓ src/App.test.tsx (5 tests) 243ms
+
+ Test Files  14 passed (14)
+      Tests  66 passed (66)
+   Start at  19:47:50
+   Duration  2.00s (transform 803ms, setup 2.24s, collect 2.34s, tests 2.45s, environment 6.88s, prepare 1.34s)

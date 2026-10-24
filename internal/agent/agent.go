@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os/exec"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -194,7 +195,18 @@ func (d Definition) Resume(sessionID, prompt string, structured bool, extra []st
 			if structured {
 				base = append(base, "--json")
 			}
-			base = append(base, extra...)
+			// exec resume accepts config overrides, but not exec's --sandbox
+			// option. Apply the same policy without mutating the caller's argv.
+			for i := 0; i < len(extra); i++ {
+				if extra[i] == "--sandbox" && i+1 < len(extra) {
+					i++
+					base = append(base, "-c", "sandbox_mode="+strconv.Quote(extra[i]))
+				} else if strings.HasPrefix(extra[i], "--sandbox=") {
+					base = append(base, "-c", "sandbox_mode="+strconv.Quote(strings.TrimPrefix(extra[i], "--sandbox=")))
+				} else {
+					base = append(base, extra[i])
+				}
+			}
 			base = append(base, sessionID, prompt)
 		}
 	case "gemini":

@@ -1,0 +1,36 @@
+test_paths_and_private_payloads_do_not_enter_public_reports (test_evidence.EvidenceTests) ... ok
+test_persona_summary_redacts_symlink_and_resolved_study_paths (test_evidence.EvidenceTests) ... ok
+test_assisted_clarification_keeps_initial_failure_and_budget (test_experiment.IntegrationTests) ... ok
+test_bad_stream_retained_without_retry (test_experiment.IntegrationTests) ... ok
+test_cross_only_carries_remaining_budget_without_replaying_single (test_experiment.IntegrationTests) ... {"kind": "r3_persona_review", "status": "completed"}
+{"kind": "r3_failure_recovery", "status": "passed", "binary_sha256": "5f210523dc68566ea978795dffbc5581e3c5538f8e15e293966db19aadf9c3a2", "task_id": "task-20261024T080053Z-0ae4b6b3", "original_failure_retained": true, "operator_assisted": true, "native_worker_interruption_verified": false, "calls_before": 1, "stop_status": "waiting_user", "stop_was_idle_noop": true, "active_stop_verified": false, "final_status": "completed", "calls_after": 4, "mode_preserved": true, "same_task": true, "repeat_continue_no_calls": true, "review_kinds": ["self_check"], "seconds": 6.038, "total_campaign_calls": 4}
+{"status": "passed", "exit_code": 0, "parse_status": "complete", "meaning": "one real read-only invocation; not a guarantee of future quota", "case": "cursor-readiness", "seconds": 0.432, "calls": 1}
+{"task_id": "task-20261024T080102Z-d0c6c78b", "mode": "auto", "operator_clarifications": 0, "worker_interruption_observed": true, "background": true, "stop_status": "paused", "stopped_run_status": "canceled", "calls_before_stop": 2, "final_status": "completed", "calls": 4, "same_task": true, "mode_preserved": true, "candidates_preserved": true, "bindings_preserved": true, "budget_preserved": true, "interrupted_attempt_retained": true, "fresh_worker_attempt": true, "fresh_native_session": true, "current_review_bound": true, "review_kinds": ["cross_cli"], "events_monotonic": true, "artifact_correct": true, "input_unchanged": true, "single_cli_locked": true, "repeat_continue_no_calls": true, "status": "passed", "case": "cross-recovery", "seconds": 2.234}
+ok
+test_followup_quota_failure_skips_cross_without_retry (test_experiment.IntegrationTests) ... {"status": "failed", "exit_code": 1, "parse_status": "parse_error", "meaning": "one real read-only invocation; not a guarantee of future quota", "case": "cursor-readiness", "seconds": 0.442, "calls": 1}
+{"task_id": "task-20261024T080105Z-7497393f", "mode": "single", "operator_clarifications": 0, "worker_interruption_observed": true, "background": true, "stop_status": "paused", "stopped_run_status": "canceled", "calls_before_stop": 2, "final_status": "completed", "calls": 4, "same_task": true, "mode_preserved": true, "candidates_preserved": true, "bindings_preserved": true, "budget_preserved": true, "interrupted_attempt_retained": true, "fresh_worker_attempt": true, "fresh_native_session": true, "current_review_bound": true, "review_kinds": ["self_check"], "events_monotonic": true, "artifact_correct": true, "input_unchanged": true, "single_cli_locked": true, "repeat_continue_no_calls": true, "status": "passed", "case": "single-recovery", "seconds": 2.166}
+ok
+test_followup_stops_active_workers_and_keeps_prior_ledger (test_experiment.IntegrationTests) ... ok
+test_interrupted_case_receipt_cannot_be_replayed (test_experiment.IntegrationTests) ... ok
+test_six_arms_preservation_scoring_and_no_replay (test_experiment.IntegrationTests) ... ok
+test_value_comparison_three_arms_no_replay_and_prior_preserved (test_experiment.IntegrationTests) ... ok
+test_carried_ledger_keeps_total_cap_and_rejects_changed_history (test_experiment.LedgerTests) ... ok
+test_comparison_and_compatibility_partitions_cannot_borrow (test_experiment.LedgerTests) ... ok
+test_concurrent_reservations_and_restart_cannot_exceed_total (test_experiment.LedgerTests) ... ok
+test_corrupt_missing_and_changed_budget_fail_closed (test_experiment.LedgerTests) ... ok
+test_explicit_followup_partition_still_obeys_global_budget (test_experiment.LedgerTests) ... ok
+test_per_case_limit_and_new_candidate_share_campaign (test_experiment.LedgerTests) ... ok
+test_project_oracle_rejects_original_and_tampered_tests (test_experiment.ScoringTests) ... ok
+test_timeout_terminates_children_and_preserves_diagnostics (test_experiment.ScoringTests) ... ok
+test_work_missing_false_finding_and_wrong_facts (test_experiment.ScoringTests) ... ok
+test_checksum_and_nonregular_file_rejected_before_execution (test_package.ArchiveTests) ... ok
+test_clean_ci_without_native_agent_reports_prerequisite (test_package.ArchiveTests) ... ok
+test_blank_kit_is_not_evidence_and_tampered_candidates_are_rejected (test_value.ObservationTests) ... ok
+test_filled_forms_still_require_manual_independence_review (test_value.ObservationTests) ... ok
+test_independent_score_rejects_omissions_wrong_decisions_and_unbacked_citations (test_value.ValueTests) ... ok
+test_infrastructure_failure_never_becomes_quality_benefit (test_value.ValueTests) ... ok
+
+----------------------------------------------------------------------
+Ran 25 tests in 43.234s
+
+OK

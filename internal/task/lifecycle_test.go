@@ -107,6 +107,61 @@ func TestCumulativeBudgetAndQueuedInput(t *testing.T) {
 	})
 }
 
+func TestPerCallTimeoutSurvivesContinueAndKeepsTotalBudget(t *testing.T) {
+	r, o, _ := fixture(t, "", false, true)
+	o.MaxCalls = 2
+	o.CallTimeout = 8 * time.Minute
+	var limits []string
+	r.Execute = func(ctx context.Context, id, cwd, boundary string, step workflow.Step, output bool, sink func(agent.Event) error) workflow.StepResult {
+		limits = append(limits, step.Timeout)
+		deadline, ok := ctx.Deadline()
+		if !ok || time.Until(deadline) > o.Timeout {
+			t.Fatal("per-call timeout removed the cumulative deadline")
+		}
+		wr := workflow.Runner{Config: r.Config, Registry: r.Registry, Store: r.Runs, Events: sink}
+		return wr.ExecuteAttempt(ctx, id, cwd, boundary, step, output)
+	}
+	first, err := r.Run(context.Background(), o)
+	if err == nil || first.Calls != 2 || first.Options.CallTimeout != 8*time.Minute {
+		t.Fatalf("first Task: %+v %v", first, err)
+	}
+	next, err := r.Continue(context.Background(), first.ID, Update{MaxCalls: 3, CallTimeout: 10 * time.Minute})
+	if err != nil || next.Status != "completed" || next.ID != first.ID || next.Calls != 3 || next.Options.CallTimeout != 10*time.Minute {
+		t.Fatalf("continued Task: %+v %v", next, err)
+	}
+	if strings.Join(limits, ",") != "8m0s,8m0s,10m0s" {
+		t.Fatalf("Agent call limits: %v", limits)
+	}
+}
+
+func TestLegacyCallTimeoutAndInvalidQueuedReduction(t *testing.T) {
+	r, o, _ := fixture(t, "", false, true)
+	first, err := r.Run(context.Background(), o)
+	if err != nil || first.Options.CallTimeout != DefaultCallTimeout {
+		t.Fatal("missing compatible default", err)
+	}
+	first.Options.CallTimeout = 0 // Task saved by a previous binary.
+	if err := r.Store.Save(&first); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Store.Queue(first.ID, Update{CallTimeout: 8 * time.Minute}, false); err != nil {
+		t.Fatal(err)
+	}
+	for _, value := range []time.Duration{-time.Second, 5 * time.Minute} {
+		if _, err := r.Store.Queue(first.ID, Update{CallTimeout: value}, false); err == nil {
+			t.Fatal("accepted reduced pending call timeout", value)
+		}
+	}
+	control, err := r.Store.Control(first.ID)
+	if err != nil || len(control.Updates) != 1 {
+		t.Fatal("invalid update poisoned the control queue", err)
+	}
+	next, err := r.Continue(context.Background(), first.ID, Update{})
+	if err != nil || next.Options.CallTimeout != 8*time.Minute || next.Calls != first.Calls {
+		t.Fatalf("legacy continuation: %+v %v", next, err)
+	}
+}
+
 func TestJournalAndLockRecovery(t *testing.T) {
 	r, o, _ := fixture(t, "", false, true)
 	first, err := r.Run(context.Background(), o)

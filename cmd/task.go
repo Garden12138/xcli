@@ -73,7 +73,7 @@ func writeTaskResult(command *cobra.Command, t task.Task, err error, asJSON, eve
 	return nil
 }
 func (a *app) newTaskCommand() *cobra.Command {
-	opts := task.Options{Timeout: 10 * time.Minute, MaxCalls: 6}
+	opts := task.Options{Timeout: 10 * time.Minute, CallTimeout: task.DefaultCallTimeout, MaxCalls: 6}
 	var asJSON, events, detach bool
 	var verifies []string
 	command := &cobra.Command{Use: "task <goal>", Short: "Complete a resumable Work or Project task", Args: cobra.ExactArgs(1), RunE: func(command *cobra.Command, args []string) error {
@@ -82,6 +82,9 @@ func (a *app) newTaskCommand() *cobra.Command {
 		}
 		if detach && events {
 			return errors.New("use task status --events --follow to observe a detached Task")
+		}
+		if opts.CallTimeout <= 0 {
+			return errors.New("call-timeout must be positive")
 		}
 		var err error
 		opts.Goal = args[0]
@@ -112,6 +115,7 @@ func (a *app) newTaskCommand() *cobra.Command {
 	command.Flags().StringVar(&opts.Output, "output", "", "deliverable directory")
 	command.Flags().StringArrayVar(&verifies, "verify", nil, "explicit validation JSON argv array (repeatable)")
 	command.Flags().DurationVar(&opts.Timeout, "timeout", 10*time.Minute, "cumulative execution time budget (excluding pauses)")
+	command.Flags().DurationVar(&opts.CallTimeout, "call-timeout", task.DefaultCallTimeout, "maximum duration of each Agent CLI invocation (total --timeout still applies)")
 	command.Flags().IntVar(&opts.MaxCalls, "max-calls", 6, "cumulative maximum Agent CLI invocations")
 	command.Flags().BoolVar(&asJSON, "json", false, "print a single Task object")
 	command.Flags().BoolVar(&events, "events", false, "stream Task JSONL events")
@@ -135,6 +139,9 @@ func (a *app) newTaskContinueCommand() *cobra.Command {
 		}
 		if c.Flags().Changed("max-calls") && u.MaxCalls <= 0 {
 			return errors.New("max-calls must be positive")
+		}
+		if c.Flags().Changed("call-timeout") && u.CallTimeout <= 0 {
+			return errors.New("call-timeout must be positive")
 		}
 		if len(args) > 1 {
 			u.Message = args[1]
@@ -167,6 +174,7 @@ func (a *app) newTaskContinueCommand() *cobra.Command {
 	}}
 	c.Flags().StringArrayVar(&verifies, "verify", nil, "replace explicit validation JSON argv arrays")
 	c.Flags().DurationVar(&u.Timeout, "timeout", 0, "raise the Task's cumulative execution time limit")
+	c.Flags().DurationVar(&u.CallTimeout, "call-timeout", 0, "raise the per-invocation Agent CLI time limit")
 	c.Flags().IntVar(&u.MaxCalls, "max-calls", 0, "raise the Task's cumulative invocation limit")
 	c.Flags().BoolVar(&u.Reconcile, "reconcile", false, "acknowledge uncertain operations and current materials")
 	c.Flags().BoolVar(&u.FreshSession, "fresh-session", false, "restore from materials without resuming a native session")

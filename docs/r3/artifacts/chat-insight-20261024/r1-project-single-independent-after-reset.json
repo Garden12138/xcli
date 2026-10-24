@@ -1,0 +1,10 @@
+{
+  "case": "r1-project-single",
+  "task_id": "task-20261024T074906Z-8f6737ab",
+  "exit_code": 0,
+  "expected_tests": 6,
+  "component_sha256": "3f5611030dc8ad2f15c5b5962f8997d63aa76399c2445f82312e822a9435d249",
+  "live_component_unchanged": true,
+  "task_snapshot": "c80a5a5cf78c0e44b4ce90f9734e70a457712a1207b84c3fa6a4d390af0accae",
+  "test_source_sha256": "1481090e1a1f41c71786a7fb5db29de8e958046c7a1a311d45bb9f00d3a53b36"
+}

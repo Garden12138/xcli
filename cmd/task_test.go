@@ -46,7 +46,7 @@ func TestTaskCLIJSONEventsAndStatus(t *testing.T) {
 			var out, diagnostics bytes.Buffer
 			root.SetOut(&out)
 			root.SetErr(&diagnostics)
-			root.SetArgs([]string{"--config", path, "task", "write a file", "--agent", "test", mode})
+			root.SetArgs([]string{"--config", path, "task", "write a file", "--agent", "test", "--call-timeout", "5m", mode})
 			if err := root.Execute(); err != nil {
 				t.Fatalf("%v %s", err, diagnostics.String())
 			}
@@ -79,7 +79,7 @@ func TestTaskCLIJSONEventsAndStatus(t *testing.T) {
 					}
 				}
 			}
-			if result.Status != "completed" || result.Calls != 3 {
+			if result.Status != "completed" || result.Calls != 3 || result.Options.CallTimeout.String() != "5m0s" {
 				t.Fatalf("%+v", result)
 			}
 			root = newRootCommand()
@@ -98,6 +98,15 @@ func TestTaskCLIJSONEventsAndStatus(t *testing.T) {
 }
 
 func TestTaskCLIInvalidOptionsAndRetirement(t *testing.T) {
+	for _, args := range [][]string{{"task", "goal", "--call-timeout", "0s"}, {"task", "goal", "--call-timeout=-1s"}, {"task", "continue", "task-test", "--call-timeout", "0s"}} {
+		root := newRootCommand()
+		root.SetOut(&bytes.Buffer{})
+		root.SetErr(&bytes.Buffer{})
+		root.SetArgs(args)
+		if err := root.Execute(); err == nil {
+			t.Fatalf("accepted invalid per-call timeout: %v", args)
+		}
+	}
 	for _, args := range [][]string{{"task", "goal", "--json", "--events"}, {"task", "goal", "--verify", "echo bad"}, {"task", "goal", "--max-calls", "0"}, {"task", "goal", "--timeout", "0s"}, {"task", "goal", "--detach", "--events"}, {"task", "continue", "task-test"}, {"install"}, {"auth"}, {"default"}, {"acp"}, {"route"}, {"workflow"}, {"usage"}, {"mcp", "import"}, {"mcp", "sync"}, {"mcp", "plan"}} {
 		root := newRootCommand()
 		root.SetOut(&bytes.Buffer{})

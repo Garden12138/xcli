@@ -1,0 +1,343 @@
+diff --git a/src/components/DateRangePicker.tsx b/src/components/DateRangePicker.tsx
+index f54223f..5744377 100644
+--- a/src/components/DateRangePicker.tsx
++++ b/src/components/DateRangePicker.tsx
+@@ -20,16 +20,16 @@ export function DateRangePicker({ preset, range, onPresetChange, onRangeChange }
+     <div className="range-picker" data-guide={guideTarget.range} aria-label="时间范围">
+       <div className="segmented">
+         {presets.map((item) => (
+-          <button key={item.value} className={preset === item.value ? "active" : ""} onClick={() => onPresetChange(item.value)}>
++          <button key={item.value} className={preset === item.value ? "active" : ""} aria-pressed={preset === item.value} onClick={() => onPresetChange(item.value)}>
+             {item.label}
+           </button>
+         ))}
+       </div>
+       {preset === "custom" && (
+         <div className="custom-range">
+-          <input aria-label="开始日期" type="date" value={range.from ?? ""} onChange={(event) => onRangeChange({ ...range, from: event.target.value || undefined })} />
++          <input aria-label="开始日期" type="date" value={range.from ?? ""} max={range.to || undefined} onChange={(event) => onRangeChange({ ...range, from: event.target.value || undefined })} />
+           <span>至</span>
+-          <input aria-label="结束日期" type="date" value={range.to ?? ""} onChange={(event) => onRangeChange({ ...range, to: event.target.value || undefined })} />
++          <input aria-label="结束日期" type="date" value={range.to ?? ""} min={range.from || undefined} onChange={(event) => onRangeChange({ ...range, to: event.target.value || undefined })} />
+         </div>
+       )}
+     </div>
+diff --git a/src/components/DateRangePicker.test.tsx b/src/components/DateRangePicker.test.tsx
+new file mode 100644
+--- /dev/null
++++ b/src/components/DateRangePicker.test.tsx
+@@ -0,0 +1,314 @@
++import { fireEvent, render, screen } from "@testing-library/react";
++import { describe, expect, it, vi } from "vitest";
++import type { DateRange, RangePreset } from "../types";
++import { DateRangePicker } from "./DateRangePicker";
++
++const presetOptions: Array<{ value: RangePreset; label: string }> = [
++  { value: "30d", label: "近 30 天" },
++  { value: "1y", label: "近 1 年" },
++  { value: "all", label: "全部" },
++  { value: "custom", label: "自定义" },
++];
++
++function renderPicker(preset: RangePreset, range: DateRange = {}) {
++  const onPresetChange = vi.fn();
++  const onRangeChange = vi.fn();
++  return {
++    ...render(<DateRangePicker preset={preset} range={range} onPresetChange={onPresetChange} onRangeChange={onRangeChange} />),
++    onPresetChange,
++    onRangeChange,
++  };
++}
++
++function expectSelectedPreset(preset: RangePreset) {
++  expect(screen.getAllByRole("button")).toHaveLength(4);
++  expect(screen.getAllByRole("button", { pressed: true })).toHaveLength(1);
++  for (const option of presetOptions) {
++    const button = screen.getByRole("button", { name: option.label });
++    expect(button).toHaveAttribute("aria-pressed", String(option.value === preset));
++    if (option.value === preset) {
++      expect(button).toHaveClass("active");
++    } else {
++      expect(button).not.toHaveClass("active");
++    }
++  }
++}
++
++function expectDateLimits(max: string | undefined, min: string | undefined) {
++  const start = screen.getByLabelText("开始日期");
++  const end = screen.getByLabelText("结束日期");
++  if (max === undefined) {
++    expect(start).not.toHaveAttribute("max");
++  } else {
++    expect(start).toHaveAttribute("max", max);
++  }
++  if (min === undefined) {
++    expect(end).not.toHaveAttribute("min");
++  } else {
++    expect(end).toHaveAttribute("min", min);
++  }
++}
++
++function expectPickerState(preset: RangePreset, range: DateRange) {
++  expectSelectedPreset(preset);
++  if (preset === "custom") {
++    expect(screen.getByLabelText("开始日期")).toBeVisible();
++    expect(screen.getByLabelText("开始日期")).toHaveValue(range.from ?? "");
++    expect(screen.getByLabelText("结束日期")).toBeVisible();
++    expect(screen.getByLabelText("结束日期")).toHaveValue(range.to ?? "");
++    expectDateLimits(range.to || undefined, range.from || undefined);
++  } else {
++    expect(screen.queryByLabelText("开始日期")).not.toBeInTheDocument();
++    expect(screen.queryByLabelText("结束日期")).not.toBeInTheDocument();
++  }
++}
++
++describe("DateRangePicker", () => {
++  it.each(presetOptions)("marks only $value as pressed and preserves the active style", ({ value }) => {
++    renderPicker(value);
++
++    expectSelectedPreset(value);
++    if (value === "custom") {
++      expect(screen.getByLabelText("开始日期")).toBeVisible();
++      expect(screen.getByLabelText("结束日期")).toBeVisible();
++    } else {
++      expect(screen.queryByLabelText("开始日期")).not.toBeInTheDocument();
++      expect(screen.queryByLabelText("结束日期")).not.toBeInTheDocument();
++    }
++  });
++
++  it("updates the pressed state and custom inputs when the external preset changes", () => {
++    const { rerender, onPresetChange, onRangeChange } = renderPicker("30d");
++    expectSelectedPreset("30d");
++
++    const updates: RangePreset[] = ["custom", "all", "1y", "30d"];
++    for (const preset of updates) {
++      rerender(<DateRangePicker preset={preset} range={{}} onPresetChange={onPresetChange} onRangeChange={onRangeChange} />);
++      expectSelectedPreset(preset);
++      if (preset === "custom") {
++        expect(screen.getByLabelText("开始日期")).toBeVisible();
++        expect(screen.getByLabelText("结束日期")).toBeVisible();
++      } else {
++        expect(screen.queryByLabelText("开始日期")).not.toBeInTheDocument();
++        expect(screen.queryByLabelText("结束日期")).not.toBeInTheDocument();
++      }
++    }
++
++    expect(onPresetChange).not.toHaveBeenCalled();
++    expect(onRangeChange).not.toHaveBeenCalled();
++  });
++
++  it.each(presetOptions)("passes $value when its button is clicked", ({ value, label }) => {
++    const { onPresetChange, onRangeChange } = renderPicker("30d");
++
++    fireEvent.click(screen.getByRole("button", { name: label }));
++
++    expect(onPresetChange.mock.calls).toStrictEqual([[value]]);
++    expect(onRangeChange).not.toHaveBeenCalled();
++    expectSelectedPreset("30d");
++  });
++
++  it.each([
++    { name: "changes the start date", label: "开始日期", value: "2026-09-10", expected: { from: "2026-09-10", to: "2026-09-30" } },
++    { name: "changes the end date", label: "结束日期", value: "2026-09-20", expected: { from: "2026-09-01", to: "2026-09-20" } },
++    { name: "clears the start date", label: "开始日期", value: "", expected: { from: undefined, to: "2026-09-30" } },
++    { name: "clears the end date", label: "结束日期", value: "", expected: { from: "2026-09-01", to: undefined } },
++    { name: "passes a start date after the end unchanged", label: "开始日期", value: "2026-10-05", expected: { from: "2026-10-05", to: "2026-09-30" } },
++    { name: "passes an end date before the start unchanged", label: "结束日期", value: "2026-08-25", expected: { from: "2026-09-01", to: "2026-08-25" } },
++  ])("$name and preserves the other endpoint", ({ label, value, expected }) => {
++    const range = { from: "2026-09-01", to: "2026-09-30" };
++    const { onPresetChange, onRangeChange } = renderPicker("custom", range);
++
++    fireEvent.change(screen.getByLabelText(label), { target: { value } });
++
++    expect(onRangeChange.mock.calls).toStrictEqual([[expected]]);
++    expect(onPresetChange).not.toHaveBeenCalled();
++    expect(range).toStrictEqual({ from: "2026-09-01", to: "2026-09-30" });
++  });
++
++  const rangeCases: Array<{ name: string; range: DateRange; max?: string; min?: string }> = [
++    { name: "both dates", range: { from: "2026-09-01", to: "2026-09-30" }, max: "2026-09-30", min: "2026-09-01" },
++    { name: "omitted start", range: { to: "2026-09-30" }, max: "2026-09-30" },
++    { name: "undefined start", range: { from: undefined, to: "2026-09-30" }, max: "2026-09-30" },
++    { name: "empty string start", range: { from: "", to: "2026-09-30" }, max: "2026-09-30" },
++    { name: "omitted end", range: { from: "2026-09-01" }, min: "2026-09-01" },
++    { name: "undefined end", range: { from: "2026-09-01", to: undefined }, min: "2026-09-01" },
++    { name: "empty string end", range: { from: "2026-09-01", to: "" }, min: "2026-09-01" },
++    { name: "both omitted", range: {} },
++    { name: "both undefined", range: { from: undefined, to: undefined } },
++    { name: "both empty strings", range: { from: "", to: "" } },
++    { name: "undefined start and empty end", range: { from: undefined, to: "" } },
++    { name: "empty start and undefined end", range: { from: "", to: undefined } },
++  ];
++
++  it.each(rangeCases)("sets limits only for populated endpoints: $name", ({ range, max, min }) => {
++    const { onPresetChange, onRangeChange } = renderPicker("custom", range);
++
++    expectDateLimits(max, min);
++    expect(screen.getByLabelText("开始日期")).toHaveValue(range.from ?? "");
++    expect(screen.getByLabelText("结束日期")).toHaveValue(range.to ?? "");
++    expect(onPresetChange).not.toHaveBeenCalled();
++    expect(onRangeChange).not.toHaveBeenCalled();
++  });
++
++  it("syncs limits with external range updates without rewriting dates or emitting changes", () => {
++    const { rerender, onPresetChange, onRangeChange } = renderPicker("custom", { from: "2026-09-01", to: "2026-09-30" });
++    expectDateLimits("2026-09-30", "2026-09-01");
++
++    const updates: Array<{ range: DateRange; max?: string; min?: string }> = [
++      { range: { from: "2026-10-20", to: "2026-10-05" }, max: "2026-10-05", min: "2026-10-20" },
++      { range: { from: "", to: "2026-10-12" }, max: "2026-10-12" },
++      { range: { from: "2026-11-01", to: undefined }, min: "2026-11-01" },
++      { range: { from: undefined, to: "" } },
++    ];
++    for (const { range, max, min } of updates) {
++      rerender(<DateRangePicker preset="custom" range={range} onPresetChange={onPresetChange} onRangeChange={onRangeChange} />);
++
++      expectDateLimits(max, min);
++      expect(screen.getByLabelText("开始日期")).toHaveValue(range.from ?? "");
++      expect(screen.getByLabelText("结束日期")).toHaveValue(range.to ?? "");
++      expect(onPresetChange).not.toHaveBeenCalled();
++      expect(onRangeChange).not.toHaveBeenCalled();
++    }
++  });
++
++  describe.each(presetOptions.filter(({ value }) => value !== "custom"))("switching between custom and $value", ({ value, label }) => {
++    it("waits for parent preset updates and preserves the supplied dates in both directions", () => {
++      const range: DateRange = { from: "2026-09-01", to: "2026-09-30" };
++      const { rerender, onPresetChange, onRangeChange } = renderPicker("custom", range);
++      expectPickerState("custom", range);
++      expect(onPresetChange).not.toHaveBeenCalled();
++      expect(onRangeChange).not.toHaveBeenCalled();
++
++      fireEvent.click(screen.getByRole("button", { name: label }));
++
++      expect(onPresetChange.mock.calls).toStrictEqual([[value]]);
++      expect(onRangeChange).not.toHaveBeenCalled();
++      expectPickerState("custom", range);
++
++      rerender(<DateRangePicker preset={value} range={range} onPresetChange={onPresetChange} onRangeChange={onRangeChange} />);
++
++      expectPickerState(value, range);
++      expect(onPresetChange.mock.calls).toStrictEqual([[value]]);
++      expect(onRangeChange).not.toHaveBeenCalled();
++
++      fireEvent.click(screen.getByRole("button", { name: "自定义" }));
++
++      expect(onPresetChange.mock.calls).toStrictEqual([[value], ["custom"]]);
++      expect(onRangeChange).not.toHaveBeenCalled();
++      expectPickerState(value, range);
++
++      rerender(<DateRangePicker preset="custom" range={range} onPresetChange={onPresetChange} onRangeChange={onRangeChange} />);
++
++      expectPickerState("custom", range);
++      expect(onPresetChange.mock.calls).toStrictEqual([[value], ["custom"]]);
++      expect(onRangeChange).not.toHaveBeenCalled();
++      expect(range).toStrictEqual({ from: "2026-09-01", to: "2026-09-30" });
++    });
++
++    it.each([
++      ...rangeCases,
++      { name: "reversed dates", range: { from: "2026-10-20", to: "2026-10-05" }, max: "2026-10-05", min: "2026-10-20" },
++    ])("uses external range updates made while the preset is active: $name", ({ range, max, min }) => {
++      const initialRange: DateRange = { from: "2026-07-01", to: "2026-07-31" };
++      const expectedRange = { ...range };
++      const { rerender, onPresetChange, onRangeChange } = renderPicker("custom", initialRange);
++
++      fireEvent.click(screen.getByRole("button", { name: label }));
++
++      expect(onPresetChange.mock.calls).toStrictEqual([[value]]);
++      expect(onRangeChange).not.toHaveBeenCalled();
++      expectPickerState("custom", initialRange);
++
++      rerender(<DateRangePicker preset={value} range={initialRange} onPresetChange={onPresetChange} onRangeChange={onRangeChange} />);
++
++      expectPickerState(value, initialRange);
++      expect(onPresetChange.mock.calls).toStrictEqual([[value]]);
++      expect(onRangeChange).not.toHaveBeenCalled();
++
++      rerender(<DateRangePicker preset={value} range={range} onPresetChange={onPresetChange} onRangeChange={onRangeChange} />);
++
++      expectPickerState(value, range);
++      expect(onPresetChange.mock.calls).toStrictEqual([[value]]);
++      expect(onRangeChange).not.toHaveBeenCalled();
++
++      fireEvent.click(screen.getByRole("button", { name: "自定义" }));
++
++      expect(onPresetChange.mock.calls).toStrictEqual([[value], ["custom"]]);
++      expect(onRangeChange).not.toHaveBeenCalled();
++      expectPickerState(value, range);
++
++      rerender(<DateRangePicker preset="custom" range={range} onPresetChange={onPresetChange} onRangeChange={onRangeChange} />);
++
++      expectPickerState("custom", range);
++      expectDateLimits(max, min);
++      expect(range).toStrictEqual(expectedRange);
++      expect(initialRange).toStrictEqual({ from: "2026-07-01", to: "2026-07-31" });
++      expect(onPresetChange.mock.calls).toStrictEqual([[value], ["custom"]]);
++      expect(onRangeChange).not.toHaveBeenCalled();
++    });
++
++    it("uses the latest range for edits and clearing after returning to custom", () => {
++      const initialRange: DateRange = { from: "2026-07-01", to: "2026-07-31" };
++      let range: DateRange = { from: "2026-10-01", to: "2026-10-25" };
++      const { rerender, onPresetChange, onRangeChange } = renderPicker("custom", initialRange);
++
++      fireEvent.click(screen.getByRole("button", { name: label }));
++
++      expect(onPresetChange.mock.calls).toStrictEqual([[value]]);
++      expect(onRangeChange).not.toHaveBeenCalled();
++      expectPickerState("custom", initialRange);
++
++      rerender(<DateRangePicker preset={value} range={initialRange} onPresetChange={onPresetChange} onRangeChange={onRangeChange} />);
++
++      expectPickerState(value, initialRange);
++      expect(onPresetChange.mock.calls).toStrictEqual([[value]]);
++      expect(onRangeChange).not.toHaveBeenCalled();
++
++      rerender(<DateRangePicker preset={value} range={range} onPresetChange={onPresetChange} onRangeChange={onRangeChange} />);
++
++      expectPickerState(value, range);
++      expect(onPresetChange.mock.calls).toStrictEqual([[value]]);
++      expect(onRangeChange).not.toHaveBeenCalled();
++
++      fireEvent.click(screen.getByRole("button", { name: "自定义" }));
++
++      expect(onPresetChange.mock.calls).toStrictEqual([[value], ["custom"]]);
++      expect(onRangeChange).not.toHaveBeenCalled();
++      expectPickerState(value, range);
++
++      rerender(<DateRangePicker preset="custom" range={range} onPresetChange={onPresetChange} onRangeChange={onRangeChange} />);
++
++      expectPickerState("custom", range);
++      expect(onPresetChange.mock.calls).toStrictEqual([[value], ["custom"]]);
++      expect(onRangeChange).not.toHaveBeenCalled();
++
++      const edits: Array<{ label: string; value: string; expected: DateRange }> = [
++        { label: "开始日期", value: "2026-10-08", expected: { from: "2026-10-08", to: "2026-10-25" } },
++        { label: "结束日期", value: "2026-10-22", expected: { from: "2026-10-08", to: "2026-10-22" } },
++        { label: "结束日期", value: "", expected: { from: "2026-10-08", to: undefined } },
++        { label: "结束日期", value: "2026-10-28", expected: { from: "2026-10-08", to: "2026-10-28" } },
++        { label: "开始日期", value: "", expected: { from: undefined, to: "2026-10-28" } },
++        { label: "结束日期", value: "", expected: { from: undefined, to: undefined } },
++      ];
++      const expectedRangeCalls: Array<[DateRange]> = [];
++      for (const { label: inputLabel, value: inputValue, expected } of edits) {
++        const previousRange = { ...range };
++        fireEvent.change(screen.getByLabelText(inputLabel), { target: { value: inputValue } });
++        expectedRangeCalls.push([expected]);
++
++        expect(onRangeChange.mock.calls).toStrictEqual(expectedRangeCalls);
++        expect(onPresetChange.mock.calls).toStrictEqual([[value], ["custom"]]);
++        expect(range).toStrictEqual(previousRange);
++        expectPickerState("custom", previousRange);
++
++        range = onRangeChange.mock.lastCall![0];
++        rerender(<DateRangePicker preset="custom" range={range} onPresetChange={onPresetChange} onRangeChange={onRangeChange} />);
++
++        expectPickerState("custom", expected);
++        expect(onRangeChange.mock.calls).toStrictEqual(expectedRangeCalls);
++        expect(onPresetChange.mock.calls).toStrictEqual([[value], ["custom"]]);
++      }
++    });
++  });
++});

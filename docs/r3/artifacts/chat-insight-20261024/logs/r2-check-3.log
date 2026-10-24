@@ -1,0 +1,4 @@
+Checking chat-insight: npm run lint
+
+> chat-insight@0.1.8 lint
+> eslint . --max-warnings=0

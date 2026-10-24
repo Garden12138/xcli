@@ -1,0 +1,29 @@
+Checking chat-insight: npm test
+
+> chat-insight@0.1.8 test
+> vitest run
+
+
+ RUN  v3.2.7 <体验目录>/data/xcli/worktrees/task-20261024T074906Z-8f6737ab
+
+ ✓ src/commitments.test.ts (3 tests) 8ms
+ ✓ src/emoji.test.ts (2 tests) 3ms
+ ✓ src/components/States.test.tsx (2 tests) 56ms
+ ✓ src/components/GettingStarted.test.tsx (2 tests) 320ms
+ ✓ src/components/Media.test.tsx (9 tests) 258ms
+ ✓ src/components/ChatMemoryPanel.test.tsx (3 tests) 245ms
+ ✓ src/components/DateRangePicker.test.tsx (14 tests) 418ms
+ ✓ src/components/Ai.test.tsx (7 tests) 680ms
+   ✓ AiSettings > saves without resending an untouched API key  386ms
+ ✓ src/views/Ask.test.tsx (4 tests) 773ms
+ ✓ src/views/Commitments.test.tsx (6 tests) 885ms
+   ✓ commitment queue > dismisses and edits suggestions  422ms
+ ✓ src/guide.test.ts (4 tests) 2ms
+ ✓ src/media.test.ts (3 tests) 2ms
+ ✓ src/utils.test.ts (3 tests) 2ms
+ ✓ src/App.test.tsx (5 tests) 240ms
+
+ Test Files  14 passed (14)
+      Tests  67 passed (67)
+   Start at  19:39:06
+   Duration  2.27s (transform 718ms, setup 2.12s, collect 2.69s, tests 3.89s, environment 6.81s, prepare 996ms)

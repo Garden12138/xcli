@@ -1,0 +1,10 @@
+{
+  "case": "r2",
+  "task_id": "task-20261024T075150Z-dcc59341",
+  "exit_code": 0,
+  "expected_tests": 8,
+  "component_sha256": "a975120bad725bdfb8fe4c40b82f9423846b5597d46bad1f03fee7114958f72a",
+  "live_component_unchanged": true,
+  "task_snapshot": "14bb315c8f3c0666bffdb52306b511489603eae0fbbfe952633016067e3c305f",
+  "test_source_sha256": "88c51780d476aa0b5558dcb70920a6aee8f938f70bd424510546b46ec6bbada4"
+}

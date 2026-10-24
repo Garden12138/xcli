@@ -1,0 +1,449 @@
+{
+  "kind": "chat_insight_real_walkthrough",
+  "date": "2026-10-24",
+  "status": "incomplete_due_to_native_quota",
+  "execution": "R0 performed by user; subsequent real CLI attempts explicitly authorized and performed by assistant",
+  "project_base_commit": "b20ad1e276f3b5566585be50f96549171dbf107c",
+  "xcli_base_commit": "c712f35",
+  "codex_version": "0.164.0",
+  "cursor_version": "2026.10.16-e3cb207",
+  "final_binary_sha256": "5f210523dc68566ea978795dffbc5581e3c5538f8e15e293966db19aadf9c3a2",
+  "original_user_binary_sha256": "221f381f15889ad2edf4ca0014be41bd8754db102c8fb0a97c2201a8958b0bff",
+  "native_execution_candidate": "single-call timeout/resume fix; final quota diagnostic fix tested offline after quota exhaustion",
+  "final_quota_diagnostic_native_retest": false,
+  "r0": [
+    {
+      "id": "run-20261024T063258Z-5d305437",
+      "agent": "codex",
+      "status": "success",
+      "parse_status": "complete",
+      "exit_code": 0,
+      "resumed_from": null,
+      "started_at": "2026-10-24T06:32:58.597666Z",
+      "ended_at": "2026-10-24T06:34:10.751734Z"
+    },
+    {
+      "id": "run-20261024T063544Z-7f459630",
+      "agent": "codex",
+      "status": "success",
+      "parse_status": "complete",
+      "exit_code": 0,
+      "resumed_from": "run-20261024T063258Z-5d305437",
+      "started_at": "2026-10-24T06:35:44.57037Z",
+      "ended_at": "2026-10-24T06:37:51.187556Z"
+    }
+  ],
+  "r0_same_native_session": true,
+  "cases": {
+    "r1-work-single": {
+      "task_id": "task-20261024T063848Z-07fa437f",
+      "kind": "work",
+      "mode": "single",
+      "status": "failed",
+      "recorded_reason": "worker codex failed: native process exited with code 1 (status failed, native exit 1)",
+      "calls": 5,
+      "max_calls": 8,
+      "active_seconds": 878.57,
+      "per_call_seconds": 900.0,
+      "checks": [],
+      "reviews": [],
+      "attempts": [
+        {
+          "id": "run-20261024T063848Z-64756fe9",
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T06:38:48.236811Z",
+          "ended_at": "2026-10-24T06:40:09.591117Z",
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T064009Z-78f9a2a2",
+          "role": "worker",
+          "agent": "codex",
+          "status": "timed_out",
+          "parse_status": "parse_error",
+          "error_kind": "timeout",
+          "error": "execution timed out",
+          "exit_code": -1,
+          "resumed_from": null,
+          "started_at": "2026-10-24T06:40:09.664935Z",
+          "ended_at": "2026-10-24T06:42:09.747204Z",
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T065242Z-6f1b4587",
+          "role": "worker",
+          "agent": "codex",
+          "status": "timed_out",
+          "parse_status": "parse_error",
+          "error_kind": "timeout",
+          "error": "execution timed out",
+          "exit_code": -1,
+          "resumed_from": "run-20261024T064009Z-78f9a2a2",
+          "started_at": "2026-10-24T06:52:42.45951Z",
+          "ended_at": "2026-10-24T07:00:42.54657Z",
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T074814Z-7c7b506e",
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T07:48:14.485687Z",
+          "ended_at": "2026-10-24T07:49:06.686372Z",
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T074906Z-5c4f50d7",
+          "role": "worker",
+          "agent": "codex",
+          "status": "failed",
+          "parse_status": "parse_error",
+          "error_kind": "process_failed",
+          "error": "native process exited with code 1",
+          "exit_code": 1,
+          "resumed_from": null,
+          "started_at": "2026-10-24T07:49:06.764083Z",
+          "ended_at": "2026-10-24T07:51:31.066554Z",
+          "quota_evidence": {
+            "code": "usage_limit_exceeded",
+            "native_event_time": "2026-10-24T07:51:30.399Z",
+            "raw_native_log_sha256": "543f75aec5462003c53dd58bf6910000889d58ffaec1e5be40cc107dee052756"
+          }
+        }
+      ],
+      "workspace": "<体验目录>/outputs/r1-work-single"
+    },
+    "r1-project-single": {
+      "task_id": "task-20261024T074906Z-8f6737ab",
+      "kind": "project",
+      "mode": "single",
+      "status": "failed",
+      "recorded_reason": "worker codex failed: native process exited with code 1 (status failed, native exit 1)",
+      "calls": 2,
+      "max_calls": 6,
+      "active_seconds": 146.585,
+      "per_call_seconds": 480.0,
+      "checks": [],
+      "reviews": [],
+      "attempts": [
+        {
+          "id": "run-20261024T074907Z-093e6dd6",
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T07:49:07.232703Z",
+          "ended_at": "2026-10-24T07:50:10.218037Z",
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T075010Z-483cb760",
+          "role": "worker",
+          "agent": "codex",
+          "status": "failed",
+          "parse_status": "parse_error",
+          "error_kind": "process_failed",
+          "error": "native process exited with code 1",
+          "exit_code": 1,
+          "resumed_from": null,
+          "started_at": "2026-10-24T07:50:10.344469Z",
+          "ended_at": "2026-10-24T07:51:33.426573Z",
+          "quota_evidence": {
+            "code": "usage_limit_exceeded",
+            "native_event_time": "2026-10-24T07:51:32.493Z",
+            "raw_native_log_sha256": "636519bc7ffdc51e61350d4291add6a9e85ef26344754d45b1742e11e4ac64d0"
+          }
+        }
+      ],
+      "workspace": "<体验目录>/data/xcli/worktrees/task-20261024T074906Z-8f6737ab"
+    },
+    "r1-work-cross": {
+      "task_id": "task-20261024T075141Z-f1b96a03",
+      "kind": "work",
+      "mode": "auto",
+      "status": "failed",
+      "recorded_reason": "coordinator codex failed: native process exited with code 1 (status failed, native exit 1)",
+      "calls": 1,
+      "max_calls": 6,
+      "active_seconds": 4.655,
+      "per_call_seconds": 900.0,
+      "checks": [],
+      "reviews": [],
+      "attempts": [
+        {
+          "id": "run-20261024T075141Z-6331e880",
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "failed",
+          "parse_status": "parse_error",
+          "error_kind": "process_failed",
+          "error": "native process exited with code 1",
+          "exit_code": 1,
+          "resumed_from": null,
+          "started_at": "2026-10-24T07:51:41.867521Z",
+          "ended_at": "2026-10-24T07:51:45.873497Z",
+          "quota_evidence": {
+            "code": "usage_limit_exceeded",
+            "native_event_time": "2026-10-24T07:51:45.435Z",
+            "raw_native_log_sha256": "4471a10c8c84678243808d65873a4b1d95ecfc49252cd6c9b4479d0dfe23ba90"
+          }
+        }
+      ],
+      "workspace": "<体验目录>/outputs/r1-work-cross"
+    },
+    "r1-project-cross": {
+      "task_id": "task-20261024T075146Z-3101a540",
+      "kind": "project",
+      "mode": "auto",
+      "status": "failed",
+      "recorded_reason": "coordinator codex failed: native process exited with code 1 (status failed, native exit 1)",
+      "calls": 1,
+      "max_calls": 6,
+      "active_seconds": 4.32,
+      "per_call_seconds": 480.0,
+      "checks": [],
+      "reviews": [],
+      "attempts": [
+        {
+          "id": "run-20261024T075147Z-0b38e0f7",
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "failed",
+          "parse_status": "parse_error",
+          "error_kind": "process_failed",
+          "error": "native process exited with code 1",
+          "exit_code": 1,
+          "resumed_from": null,
+          "started_at": "2026-10-24T07:51:47.167176Z",
+          "ended_at": "2026-10-24T07:51:50.644168Z",
+          "quota_evidence": {
+            "code": "usage_limit_exceeded",
+            "native_event_time": "2026-10-24T07:51:49.995Z",
+            "raw_native_log_sha256": "d60a66cfff0e0054e3520de07b024eb5cde175c2149dd4c56823f8c1f24b96da"
+          }
+        }
+      ],
+      "workspace": "<体验目录>/data/xcli/worktrees/task-20261024T075146Z-3101a540"
+    },
+    "r2": {
+      "task_id": "task-20261024T075150Z-dcc59341",
+      "kind": "project",
+      "mode": "single",
+      "status": "failed",
+      "recorded_reason": "coordinator codex failed: native process exited with code 1 (status failed, native exit 1)",
+      "calls": 1,
+      "max_calls": 10,
+      "active_seconds": 3.622,
+      "per_call_seconds": 480.0,
+      "checks": [],
+      "reviews": [],
+      "attempts": [
+        {
+          "id": "run-20261024T075151Z-1a8b6ba1",
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "failed",
+          "parse_status": "parse_error",
+          "error_kind": "process_failed",
+          "error": "native process exited with code 1",
+          "exit_code": 1,
+          "resumed_from": null,
+          "started_at": "2026-10-24T07:51:51.065625Z",
+          "ended_at": "2026-10-24T07:51:54.473318Z",
+          "quota_evidence": {
+            "code": "usage_limit_exceeded",
+            "native_event_time": "2026-10-24T07:51:53.955Z",
+            "raw_native_log_sha256": "3d351bd4b167cc035a74b013d508858979a41d7be7222cef7cb07117f5a8126d"
+          }
+        }
+      ],
+      "workspace": "<体验目录>/data/xcli/worktrees/task-20261024T075150Z-dcc59341",
+      "live_worker_canceled": false,
+      "material_recovery_passed": false,
+      "reason": "Native quota failure occurred before reaching a live worker; stop/continue was not certified."
+    }
+  },
+  "native_direct": {
+    "exit_code": 1,
+    "quota_exceeded": true,
+    "deliverables_exist": false
+  },
+  "account_entry": "original user default Codex entry; no account change",
+  "native_invocations": {
+    "historical_user_r0": 2,
+    "user_original_task": 2,
+    "additional_assistant_invocations": 9,
+    "cumulative_this_walkthrough": 13,
+    "native_internal_model_requests": "unknown"
+  },
+  "partial_project_postcheck": {
+    "tests": 66,
+    "test_files": 14,
+    "npm_test": "passed",
+    "lint": "passed",
+    "build": "passed",
+    "performed_after_failed_task": true,
+    "does_not_change_task_acceptance": true
+  },
+  "independent_behavior_check": {
+    "baseline": "5 failed, 1 passed",
+    "generated_component": "6 passed",
+    "live_workspace_unchanged_by_independent_check": true
+  },
+  "original_project_status": [
+    "?? docs/chat-insight-experience.md",
+    "?? dream_exam_story.mp4"
+  ],
+  "artifacts": [
+    {
+      "file": "artifacts/chat-insight-20261024/onboarding-review.partial.md",
+      "raw_sha256": "f8d862a976f518430f7a08adfc238e05fd8c4aad48c1d4482b054e919152e1a5",
+      "export_sha256": "e387cece22f9d6c368867afacabc8ea2caabf0352e298211605bf71a57ba9916"
+    },
+    {
+      "file": "artifacts/chat-insight-20261024/DateRangePicker.tsx",
+      "raw_sha256": "3f5611030dc8ad2f15c5b5962f8997d63aa76399c2445f82312e822a9435d249",
+      "export_sha256": "3f5611030dc8ad2f15c5b5962f8997d63aa76399c2445f82312e822a9435d249"
+    },
+    {
+      "file": "artifacts/chat-insight-20261024/DateRangePicker.test.tsx",
+      "raw_sha256": "3002ecb57a7d11badc496bbe53eb01459adc56d866554a5040db5327ce087846",
+      "export_sha256": "3002ecb57a7d11badc496bbe53eb01459adc56d866554a5040db5327ce087846"
+    },
+    {
+      "file": "artifacts/chat-insight-20261024/DateRangePicker.acceptance.test.tsx",
+      "raw_sha256": "1481090e1a1f41c71786a7fb5db29de8e958046c7a1a311d45bb9f00d3a53b36",
+      "export_sha256": "1481090e1a1f41c71786a7fb5db29de8e958046c7a1a311d45bb9f00d3a53b36"
+    },
+    {
+      "file": "artifacts/chat-insight-20261024/partial-project-postcheck.log",
+      "raw_sha256": "2bc5437ed100e4ebdfd74bf70d2c5d344be83a7b904ae339cc4f06eceedc2719",
+      "export_sha256": "5ad16cfcd0b7f2ebffbaa6fbae998a153c3dd51485582bcefe6e8f4b3868ddea"
+    },
+    {
+      "file": "artifacts/chat-insight-20261024/independent-project-single.log",
+      "raw_sha256": "fb35e3600ec3501e9362b0556919042faa68b0c849dc5841892533eb16646226",
+      "export_sha256": "8269a26a85ab31f0db989ffeb75d31054f06f6c9300f5760f90b0208db58016c"
+    },
+    {
+      "file": "artifacts/chat-insight-20261024/independent-baseline.log",
+      "raw_sha256": "6935659d4404d95c7a93eaea347be71d114ab568f2016db8e5934239042e442b",
+      "export_sha256": "e26154151d565a0e6dcdce491da1d69de17e514ac2bac6345303168b1b8a665e"
+    }
+  ],
+  "engineering_validation": {
+    "race": {
+      "log_present": true,
+      "sha256": "4d62f38a541aefa14aab6def0b573d5ca8ce61667b1e8130828e1d5a8413d299"
+    },
+    "vet": {
+      "log_present": true,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "r3_fixtures": {
+      "log_present": true,
+      "sha256": "f80d61fc07c9d5678dce7e00b2a926fa92a91aae8a0d39fdf84123745db5b9eb"
+    },
+    "modules": {
+      "log_present": true,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "go_source_sha256": {
+    "cmd/agents_doctor.go": "b9387227ac193b62a14df77d8ce2443980b22b358e9331cb24b73e40827a0452",
+    "cmd/config_default.go": "05f69cf8eeb46049f6231ab80d4ecc4c1d18ff5c9c457944532c35ec845dc481",
+    "cmd/execution.go": "9dda2093d45c4eeb80b7f6315832b24dffb29b24a057d24309432cfe4f7b888e",
+    "cmd/jobs.go": "89c047a9ca21ff781e92058cdced2db22254c35661c30ef69e8022608c4deaa5",
+    "cmd/jobs_test.go": "8acb004504ef8df6c43cacf422584ba595795730c8fbfe7ac2843083e67633c5",
+    "cmd/mcp.go": "a7a404fb2f72e139b7dc6360d8542b3cee09b6380b9a921edc4a4d6bba8cff57",
+    "cmd/r0_test.go": "e79b52cb9fc8854c4cf626e2f35075db0851d7e0437c89ffeeafc7775a7f54cb",
+    "cmd/resume.go": "f5786644cd3af69c22ab7779b2c69335bedaabc0c25ad576207549109a41f92c",
+    "cmd/resume_test.go": "b45e5d65da651643d7038b78713410f4782001e13463a6f42db6bcdd9b8f5f4a",
+    "cmd/root.go": "77ca65bae008fd84309c3486b922e8464af4b341211af3c5ccebd021b164e972",
+    "cmd/root_test.go": "a76758605aae8f9dc3c5f8f3f06c4bd4a087bca57e27606c7c5d1f4eee21e71f",
+    "cmd/run_exec.go": "534927dbd4cee6f6498881ae0a5e27d6ec7aa6606e5c59d4cca82f98e1b856fc",
+    "cmd/run_use.go": "78965c7e24b4efd6d0292f493ebc2599e8626144fbd77ea5e970ca81fe27b46c",
+    "cmd/runs.go": "26157b86110a6fef4bb8213f4a1aa95b3cc7a696f35a0d68f52b9f7a49ee7cae",
+    "cmd/selection.go": "e0e3d33c49d701eb9064c6650da18dc1eedfe42533027a09f6dc2a3c7fe5e7b9",
+    "cmd/task.go": "aa709bca7ccaa984968407a4b1a28aaaa5218b23165ff3f7b7409dc7be5ed597",
+    "cmd/task_lifecycle_test.go": "8a99b41118cfbdc3711f2672d1c1cdb33478b8c1eff76f513e344c249d055d48",
+    "cmd/task_process.go": "daf7673a95402d8cf11982aea7666f8ccfde56370cc5e08968ba9933380e6161",
+    "cmd/task_test.go": "3e8de639fab859325633f139a8d85f3e07785bd7343d9f3edb075493f15f5a8d",
+    "cmd/workflow_compat.go": "f6feddfcc4592186660817b30475c0b37076652838e18be1c795ac7454881c4d",
+    "internal/agent/agent.go": "bfd0ad262a2f14abc6c5c4860e38d9784dd60a7145182a2ddacaf260d6bf6e00",
+    "internal/agent/agent_test.go": "d3625a9a4f1fb14759591a6092ee81292de7b02ca251a051ade63dcc265baf54",
+    "internal/agent/diagnostics.go": "ed6b9c430be6e539ebba9dc1977cdd26d5c274cbb2ce61cea9ee33395510b378",
+    "internal/agent/diagnostics_test.go": "05803d8cd89059ce15aa00bd664a6f87681add40493d7b3542ee5513e9296dfb",
+    "internal/agent/probe.go": "7e2ef57dbae66f5a46c30020559996ba70eb62dc1b14333d608d6cc617845335",
+    "internal/agent/r0_test.go": "008254c6b396b786790db48837554a99b49f4e478f44b34b1149b3cbcacd7099",
+    "internal/agent/stream.go": "9de180c7e51b71098d41a009970a83fb38e1d1853d59b21f5c17a41a93893fe6",
+    "internal/agent/stream_test.go": "6e90d2b1b34f15d335673f5ef96f0ca8ee439bf800c1b8cba9c33df2d43c7326",
+    "internal/agent/usage.go": "58b9b232140da44ce401f8f1ca0ac10eea3bbd8ef9435122fa5a944629601697",
+    "internal/config/config.go": "80005280c35de0b0fce0d8b395608f9288a9bdcee9c38b499539b05fd8e0ed4f",
+    "internal/config/config_test.go": "4a26a643faab047d19962562833c6d7160e3a7d8a13df72f831d83a45391d00a",
+    "internal/jobs/jobs.go": "0cd87e0c0cabd3a302797692da563ba17d69cce24be62daef425a1142631aae0",
+    "internal/jobs/jobs_test.go": "a12261fb7e6fca39ea48bc5d22e20b07eb8c48739a4775a6391cbbc80b4f0f15",
+    "internal/jobs/process_unix.go": "97865598afa6cd21b1d7ee3db76f775965c6d89979db8cdb683815c00c456999",
+    "internal/mcp/serve.go": "86b37d43cb6ad42cc3934ebad836b27ec6123f4ac1e910d27610723ad4296be1",
+    "internal/mcp/serve_test.go": "276da43f1cc44213af74dbef71460d3fdfb6f188c5dc2d3f7669e91bd9630ebe",
+    "internal/runstore/store.go": "e7410efadf1e99eb57005cf0a9d85606dbeccb3fd59bbfcda14996c5c2c4e1df",
+    "internal/runstore/store_test.go": "222d0da62264cf23f804d18d98106d491a4ae48d5aac9ff58fe507c2cf6e821a",
+    "internal/runtime/environment.go": "c3c55155c49eaff0c241737a6e22314b27baca3b99e7265754a49c3d27ccdb43",
+    "internal/runtime/environment_test.go": "6fa0fd3091d4ee60c5d939dc2bc88a24d77a0989d81a9af3786873e6cdffd496",
+    "internal/runtime/execution.go": "7ac2dd69703ad137fc18ace71bdf2f3fca2e56340d4727790e2cb8851b31823b",
+    "internal/runtime/execution_test.go": "e3de983c63165f855aa4f8de376a5b58b8a1445f2c0506280cf9b47aadcd1df4",
+    "internal/runtime/process.go": "5dea9e205e1069af5de6de6ca4c056c318e76e316e0940b85db2c3c36f1a219d",
+    "internal/runtime/process_unix.go": "b5eb4311eb4a68520bd343800b58f1ea25824db016251a4324feb248330153c4",
+    "internal/task/integrity.go": "f3cf2cd9341736ac59d2e4df546311a6edbe1e167ecacf362aa54b2ebd18f68f",
+    "internal/task/lifecycle.go": "4520b4c12dcb308f0255ea2319b8110074c98e3f557784cf56e9587bd942b3ba",
+    "internal/task/lifecycle_test.go": "45b31b19b8a57cdf85c4c9450afc1c31d0546469c8655e9996d7720c66883f98",
+    "internal/task/lock_unix.go": "770544cfc3b97cfd15ad11f48beb234e40f2f1763ee3cea8f165a640ea741ed6",
+    "internal/task/material.go": "96200ca9e863d22e11a855faf08381da8b7a762acfdff7aac4138a20f2df03d3",
+    "internal/task/policy.go": "873386ae8bd840d4636c4b29c04d47389d814a174b018a92ab8d7ac8755de83c",
+    "internal/task/protocol.go": "4690dd01f54053a9523f754edbf91562ae76792df85815c2ea3d778a3e4ab915",
+    "internal/task/review_material.go": "63229ea86cc186e801ed74f87e09841fa393af4f7f1c4db46ba60e80a737d194",
+    "internal/task/runner.go": "7362675b4ada4d2a21902bfcc9206d929f857db0fe857438fedc57d90f9df74d",
+    "internal/task/runner_test.go": "796e1cc010cfdd1a5606d2f4399d1239cb0d9d9e125d610ee5c9ef3b2fb7c1fc",
+    "internal/task/schema.go": "7c78f98cb61ae6a01a65bd78ef106af0640504c1795ff37b1609da8caee07382",
+    "internal/task/store.go": "d9fb16bf1d4d7042c6e9730c36e4dd2659718dd1147f3e31a5ed8129797b372b",
+    "internal/task/types.go": "051f39820d43ca03097afddb33eb3d913999cd2036510d7ade1829397c4c8010",
+    "internal/workflow/attempt.go": "162433c05df0921c6c20aaddb1277aba03f8fbbf50f3b7828f666c8dcf88c083",
+    "internal/workflow/plan.go": "148c5a95abf4cbd4e490ea6d66e9656ac9de42327091455b72173d4e1277c4b3",
+    "internal/workflow/runner.go": "74028cde8c143d5c987060dc17c71429c9d5879ce33025e20a6175064432ff01",
+    "internal/workflow/runner_test.go": "2ede6e7233993e6732196d3589d6cd63db6391f207ffc5492e879e1558f0c48b",
+    "internal/workflow/template.go": "1fe161ffad0f02bfd2a4092dcc9d06bf8e36e0aa8acef2eab26f9ddbfd45638c",
+    "internal/workflow/template_test.go": "fb1a4780153c37c779a014cd089bca4ed08adc5abbf16c9e373f5c35b0e2d912",
+    "internal/workflow/workflow.go": "f11c06fc7d5ba8681777c06f11c4a79bb5d47f4ccf5ca8b779a38b3cad1fb629",
+    "internal/worktree/manager.go": "536c55cd3a21c4011baecc5f301c146a2d05c2d267798d3568050a2282308721",
+    "internal/worktree/manager_test.go": "72df8e52cc350ca8485828e9b1769e835bfadb75be19481b5754a5c122af4ca1",
+    "internal/worktree/r0_test.go": "0ad8aeca530e29b990d8abfaa67b7b0bc67c97939066e1db699d793dbe112dc8",
+    "main.go": "e95bde0fd8b776159ee6ec9e7d45d7aa0f2150e6d1c0bb865c84db6e0e1c9d04",
+    "tests/phase0/cases.go": "acef0bc765037c634151403f06586736c2c64ef4eb2225cccefc38b5b0489015",
+    "tests/phase0/contracts_test.go": "eb95f715f3ac6eba9aaf9172f52e2323c33590e1f1b6e4f5195bef5aa992375e",
+    "tests/phase0/main.go": "a13740729eea13bcae18aa7b816195a6a2c6d60ead3546d5e0de006f49d6920c",
+    "tests/phase0/smoke.go": "e451db502d72aa3f7ddec092791e0e364eb7cb25a22b350321db7f2f53d926ee"
+  },
+  "limitations": [
+    "no successful cross-CLI handoff or review in this batch",
+    "no live-worker cancellation/material recovery certified",
+    "no quality or collaboration benefit conclusion",
+    "no independent human study",
+    "no merge, push, tag or release"
+  ]
+}

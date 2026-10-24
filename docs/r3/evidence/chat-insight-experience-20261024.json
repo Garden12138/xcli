@@ -1,0 +1,1819 @@
+{
+  "kind": "chat_insight_real_walkthrough",
+  "date": "2026-10-24",
+  "status": "completed",
+  "execution": "R0 performed by user; subsequent real CLI attempts explicitly authorized and performed by assistant",
+  "project_base_commit": "b20ad1e276f3b5566585be50f96549171dbf107c",
+  "xcli_base_commit": "c712f35",
+  "codex_version": "0.164.0",
+  "cursor_version": "2026.10.16-e3cb207",
+  "final_binary_sha256": "5f210523dc68566ea978795dffbc5581e3c5538f8e15e293966db19aadf9c3a2",
+  "original_user_binary_sha256": "221f381f15889ad2edf4ca0014be41bd8754db102c8fb0a97c2201a8958b0bff",
+  "native_execution_candidate": "single-call timeout/resume fix; final quota diagnostic fix tested offline after quota exhaustion",
+  "resumed_native_candidate": "final timeout/resume/quota-diagnostic candidate; same original login entry after quota reset",
+  "final_quota_diagnostic_native_retest": false,
+  "r0": [
+    {
+      "id": "run-20261024T063258Z-5d305437",
+      "agent": "codex",
+      "status": "success",
+      "parse_status": "complete",
+      "exit_code": 0,
+      "resumed_from": null,
+      "started_at": "2026-10-24T06:32:58.597666Z",
+      "ended_at": "2026-10-24T06:34:10.751734Z"
+    },
+    {
+      "id": "run-20261024T063544Z-7f459630",
+      "agent": "codex",
+      "status": "success",
+      "parse_status": "complete",
+      "exit_code": 0,
+      "resumed_from": "run-20261024T063258Z-5d305437",
+      "started_at": "2026-10-24T06:35:44.57037Z",
+      "ended_at": "2026-10-24T06:37:51.187556Z"
+    }
+  ],
+  "r0_same_native_session": true,
+  "cases": {
+    "r1-work-single": {
+      "task_id": "task-20261024T063848Z-07fa437f",
+      "kind": "work",
+      "mode": "single",
+      "status": "completed",
+      "recorded_reason": "Current artifacts, validation and review satisfy the declared acceptance; user acceptance is separate.",
+      "goal": "基于输入中的 chat-insight 当前源码和 README，为维护者交付 onboarding-review.md 和 acceptance-checklist.md 两份中文文档。前者按“首次使用、连接与同步、JSONL 导入导出、关键词搜索、AI 开关与云端确认”梳理真实用户路径，列出对应前端入口、api.ts 的命令映射和 Rust 实现；后者逐项写出操作、预期结果、证据源码位置及未验证项。明确浏览器预览与桌面运行时的差别、Apple Silicon/Intel Mac/Windows 的边界、AI 默认关闭、无需 AI 的功能、云端内容发送确认、JSONL 不包含约定和群决策。核对 history/chat-insight-experience.md 的旧导览，历史文档只作线索，结论以当前源码为准。把已确认行为、改进建议和需要实际运行应用验证的事项分开；不假称启动了桌面应用或读取过真实微信数据。每项关键结论引用选定输入文件的真实路径和具体符号；不要修改输入源码。\n\nUser update: 交付篇幅约束：两份文档各最多约4000汉字（源码路径和表格格式不计），使用简明表格覆盖原目标所有事实项；引用以唯一输入文件名和具体符号为主，避免重复长绝对路径。不增加原目标之外的模块审计。可以复用已有核实结果，不重复读取无关源码。必须实际保存两份文件，再返回交接 JSON。",
+      "original_goal": "基于输入中的 chat-insight 当前源码和 README，为维护者交付 onboarding-review.md 和 acceptance-checklist.md 两份中文文档。前者按“首次使用、连接与同步、JSONL 导入导出、关键词搜索、AI 开关与云端确认”梳理真实用户路径，列出对应前端入口、api.ts 的命令映射和 Rust 实现；后者逐项写出操作、预期结果、证据源码位置及未验证项。明确浏览器预览与桌面运行时的差别、Apple Silicon/Intel Mac/Windows 的边界、AI 默认关闭、无需 AI 的功能、云端内容发送确认、JSONL 不包含约定和群决策。核对 history/chat-insight-experience.md 的旧导览，历史文档只作线索，结论以当前源码为准。把已确认行为、改进建议和需要实际运行应用验证的事项分开；不假称启动了桌面应用或读取过真实微信数据。每项关键结论引用选定输入文件的真实路径和具体符号；不要修改输入源码。",
+      "usage_incomplete": true,
+      "user_updates": [
+        {
+          "sequence": 1,
+          "time": "2026-10-24T06:52:42.347713Z",
+          "timeout_ns": 1800000000000,
+          "call_timeout_ns": 480000000000,
+          "max_calls": 8,
+          "reconcile": true
+        },
+        {
+          "sequence": 2,
+          "time": "2026-10-24T07:48:14.317137Z",
+          "timeout_ns": 3600000000000,
+          "call_timeout_ns": 900000000000,
+          "max_calls": 8,
+          "reconcile": true
+        },
+        {
+          "sequence": 3,
+          "time": "2026-10-24T11:16:22.945101Z",
+          "timeout_ns": 3600000000000,
+          "call_timeout_ns": 900000000000,
+          "max_calls": 10,
+          "reconcile": true
+        },
+        {
+          "sequence": 4,
+          "time": "2026-10-24T11:29:19.928215Z",
+          "message": "交付篇幅约束：两份文档各最多约4000汉字（源码路径和表格格式不计），使用简明表格覆盖原目标所有事实项；引用以唯一输入文件名和具体符号为主，避免重复长绝对路径。不增加原目标之外的模块审计。可以复用已有核实结果，不重复读取无关源码。必须实际保存两份文件，再返回交接 JSON。",
+          "timeout_ns": 3600000000000,
+          "call_timeout_ns": 900000000000,
+          "max_calls": 12,
+          "reconcile": true,
+          "fresh_session": true
+        }
+      ],
+      "calls": 11,
+      "max_calls": 12,
+      "active_seconds": 2671.473,
+      "per_call_seconds": 900.0,
+      "checks": [
+        {
+          "kind": "artifact",
+          "cwd": "<体验目录>/outputs/r1-work-single",
+          "snapshot": "206406eb06478c347c065caedf8c5828feb1854ecbe3a283266f09dbdc951904",
+          "status": "passed",
+          "exit_code": 0,
+          "detail": "onboarding-review.md"
+        },
+        {
+          "kind": "artifact",
+          "cwd": "<体验目录>/outputs/r1-work-single",
+          "snapshot": "206406eb06478c347c065caedf8c5828feb1854ecbe3a283266f09dbdc951904",
+          "status": "passed",
+          "exit_code": 0,
+          "detail": "acceptance-checklist.md"
+        },
+        {
+          "kind": "artifact",
+          "cwd": "<体验目录>/outputs/r1-work-single",
+          "snapshot": "ea99b61fdf41ea7596216fc81f7aa01ae777af03d8e8ee9efeaef62e1a751219",
+          "status": "passed",
+          "exit_code": 0,
+          "detail": "onboarding-review.md"
+        },
+        {
+          "kind": "artifact",
+          "cwd": "<体验目录>/outputs/r1-work-single",
+          "snapshot": "ea99b61fdf41ea7596216fc81f7aa01ae777af03d8e8ee9efeaef62e1a751219",
+          "status": "passed",
+          "exit_code": 0,
+          "detail": "acceptance-checklist.md"
+        }
+      ],
+      "reviews": [
+        {
+          "run_id": "run-20261024T113949Z-797fed74",
+          "kind": "self_check",
+          "snapshot": "206406eb06478c347c065caedf8c5828feb1854ecbe3a283266f09dbdc951904",
+          "passed": false,
+          "findings": [
+            "onboarding-review.md:83 的“原说法”将 README 概括为“只发数字”，并把包含名称列为需要纠正的边界，转述不准确。固定输入 .xcli-task-evidence/source-1-README.md:138 已明确年度报告发送“统计数字和聊天对象名称”，与 .xcli-task-evidence/source-11-features.rs 的 report_payload/year_report 一致。应将名称发送标为一致，仅保留逐次确认表述的适用范围说明。"
+          ],
+          "coverage": [
+            "两份实文件存在，各少于4000汉字；使用简明表格，未扩展模块审计。",
+            "逐项核对五条用户路径的前端入口、api.ts 映射、lib.rs 注册及 Rust 实现。",
+            "核对浏览器与桌面、Apple Silicon／Intel Mac／Windows 的连接、同步及 JSONL 边界。",
+            "核对 AI 默认关闭、无需 AI 的功能、云端确认门禁与发送范围、年报及连接测试例外。",
+            "核对 JSONL 不包含约定和群决策、事务回滚及去重依据。",
+            "核对旧导览与当前源码对照、同名文件区分、acceptance.sources，以及相对链接从原产物目录的解析。",
+            "已确认行为、改进建议和待运行验证分别呈现；清单各项具备操作、预期结果、源码位置及未验证项，未冒充运行通过。",
+            "未验证：应用启动、安装包、权限、微信兼容、实际同步与取消、JSONL 往返、搜索效果、模型载荷及质量。固定副本未提供 LogFile 或 diff_file，无法独立核验历史执行及源码未修改声明。"
+          ],
+          "sources": [
+            "onboarding-review.md",
+            "acceptance-checklist.md",
+            ".xcli-task-evidence/source-1-README.md",
+            ".xcli-task-evidence/source-2-chat-insight-experience.md",
+            ".xcli-task-evidence/source-3-package.json",
+            ".xcli-task-evidence/source-6-commands.rs",
+            ".xcli-task-evidence/source-7-commitments.rs",
+            ".xcli-task-evidence/source-8-decisions.rs",
+            ".xcli-task-evidence/source-9-extraction.rs",
+            ".xcli-task-evidence/source-11-features.rs",
+            ".xcli-task-evidence/source-12-indexer.rs",
+            ".xcli-task-evidence/source-14-retrieval.rs",
+            ".xcli-task-evidence/source-15-settings.rs",
+            ".xcli-task-evidence/source-16-store.rs",
+            ".xcli-task-evidence/source-17-analysis.rs",
+            ".xcli-task-evidence/source-18-bridge.rs",
+            ".xcli-task-evidence/source-19-commitments.rs",
+            ".xcli-task-evidence/source-20-database.rs",
+            ".xcli-task-evidence/source-21-decisions.rs",
+            ".xcli-task-evidence/source-23-insights.rs",
+            ".xcli-task-evidence/source-24-lib.rs",
+            ".xcli-task-evidence/source-29-portable.rs",
+            ".xcli-task-evidence/source-30-wechat_account.rs",
+            ".xcli-task-evidence/source-32-App.tsx",
+            ".xcli-task-evidence/source-34-aiDefaults.ts",
+            ".xcli-task-evidence/source-35-api.ts",
+            ".xcli-task-evidence/source-39-AiProvider.tsx",
+            ".xcli-task-evidence/source-40-AiSettings.tsx",
+            ".xcli-task-evidence/source-41-AiSummaryPanel.tsx",
+            ".xcli-task-evidence/source-45-ChatMemoryPanel.tsx",
+            ".xcli-task-evidence/source-46-CloudConsent.tsx",
+            ".xcli-task-evidence/source-49-GettingStarted.tsx",
+            ".xcli-task-evidence/source-56-MessageContext.tsx",
+            ".xcli-task-evidence/source-59-TopicsPanel.tsx",
+            ".xcli-task-evidence/source-63-guide.ts",
+            ".xcli-task-evidence/source-73-Ask.tsx",
+            ".xcli-task-evidence/source-74-ChatDetail.tsx",
+            ".xcli-task-evidence/source-76-Commitments.tsx",
+            ".xcli-task-evidence/source-77-DataManagement.tsx",
+            ".xcli-task-evidence/source-78-Onboarding.tsx",
+            ".xcli-task-evidence/source-79-Overview.tsx",
+            ".xcli-task-evidence/source-80-Report.tsx"
+          ]
+        },
+        {
+          "run_id": "run-20261024T114416Z-703e2d0a",
+          "kind": "self_check",
+          "snapshot": "ea99b61fdf41ea7596216fc81f7aa01ae777af03d8e8ee9efeaef62e1a751219",
+          "passed": true,
+          "findings": [],
+          "coverage": [
+            "两份实文件存在，分别约1916、1978汉字；表格简明，无额外模块审计。",
+            "复核五条用户路径的前端入口、api.ts 命令映射、lib.rs 注册及 Rust 实现，并确认原生对话框和指引的绕行链路。",
+            "核对浏览器与桌面区别，以及 Apple Silicon、Intel Mac、Windows 的连接、同步和 JSONL 边界。",
+            "核对 AI 默认关闭、无需 AI 的功能、云端正文确认条件、操作批次覆盖范围，以及年报和连接测试例外。",
+            "确认 JSONL 不包含约定和群决策，核对导入事务、去重、回滚及既有记录保留行为。",
+            "旧导览已与当前源码比较；年报发送范围的历史误述已修复，当前表述有 report_payload/year_report 支持。",
+            "关键引用满足 acceptance.sources；同名文件路径可区分，相对链接按原产物目录正确解析并对应固定输入。",
+            "已确认行为、建议、待运行验证明确分开；清单每项均有操作、预期结果、源码位置和未验证项，没有虚称运行通过。",
+            "未验证：应用启动、三平台安装包、权限和微信兼容、换号取消、JSONL 往返、搜索效果、实际云端载荷及模型质量。本次未执行测试、启动应用、读取真实微信数据或修改文件。",
+            "固定副本未提供独立 validation LogFile 或 diff_file，无法独立复核基线差异；结论依据当前产物、固定源码及题载当前快照 checks/handoff。"
+          ],
+          "sources": [
+            "onboarding-review.md",
+            "acceptance-checklist.md",
+            ".xcli-task-evidence/source-1-README.md",
+            ".xcli-task-evidence/source-2-chat-insight-experience.md",
+            ".xcli-task-evidence/source-3-package.json",
+            ".xcli-task-evidence/source-6-commands.rs",
+            ".xcli-task-evidence/source-7-commitments.rs",
+            ".xcli-task-evidence/source-8-decisions.rs",
+            ".xcli-task-evidence/source-9-extraction.rs",
+            ".xcli-task-evidence/source-11-features.rs",
+            ".xcli-task-evidence/source-12-indexer.rs",
+            ".xcli-task-evidence/source-14-retrieval.rs",
+            ".xcli-task-evidence/source-15-settings.rs",
+            ".xcli-task-evidence/source-16-store.rs",
+            ".xcli-task-evidence/source-17-analysis.rs",
+            ".xcli-task-evidence/source-18-bridge.rs",
+            ".xcli-task-evidence/source-19-commitments.rs",
+            ".xcli-task-evidence/source-20-database.rs",
+            ".xcli-task-evidence/source-21-decisions.rs",
+            ".xcli-task-evidence/source-23-insights.rs",
+            ".xcli-task-evidence/source-24-lib.rs",
+            ".xcli-task-evidence/source-29-portable.rs",
+            ".xcli-task-evidence/source-30-wechat_account.rs",
+            ".xcli-task-evidence/source-32-App.tsx",
+            ".xcli-task-evidence/source-34-aiDefaults.ts",
+            ".xcli-task-evidence/source-35-api.ts",
+            ".xcli-task-evidence/source-39-AiProvider.tsx",
+            ".xcli-task-evidence/source-40-AiSettings.tsx",
+            ".xcli-task-evidence/source-41-AiSummaryPanel.tsx",
+            ".xcli-task-evidence/source-45-ChatMemoryPanel.tsx",
+            ".xcli-task-evidence/source-46-CloudConsent.tsx",
+            ".xcli-task-evidence/source-49-GettingStarted.tsx",
+            ".xcli-task-evidence/source-56-MessageContext.tsx",
+            ".xcli-task-evidence/source-59-TopicsPanel.tsx",
+            ".xcli-task-evidence/source-63-guide.ts",
+            ".xcli-task-evidence/source-73-Ask.tsx",
+            ".xcli-task-evidence/source-74-ChatDetail.tsx",
+            ".xcli-task-evidence/source-76-Commitments.tsx",
+            ".xcli-task-evidence/source-77-DataManagement.tsx",
+            ".xcli-task-evidence/source-78-Onboarding.tsx",
+            ".xcli-task-evidence/source-79-Overview.tsx",
+            ".xcli-task-evidence/source-80-Report.tsx"
+          ]
+        }
+      ],
+      "attempts": [
+        {
+          "id": "run-20261024T063848Z-64756fe9",
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T06:38:48.236811Z",
+          "ended_at": "2026-10-24T06:40:09.591117Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T064009Z-78f9a2a2",
+          "role": "worker",
+          "agent": "codex",
+          "status": "timed_out",
+          "parse_status": "parse_error",
+          "error_kind": "timeout",
+          "error": "execution timed out",
+          "exit_code": -1,
+          "resumed_from": null,
+          "started_at": "2026-10-24T06:40:09.664935Z",
+          "ended_at": "2026-10-24T06:42:09.747204Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T065242Z-6f1b4587",
+          "role": "worker",
+          "agent": "codex",
+          "status": "timed_out",
+          "parse_status": "parse_error",
+          "error_kind": "timeout",
+          "error": "execution timed out",
+          "exit_code": -1,
+          "resumed_from": "run-20261024T064009Z-78f9a2a2",
+          "started_at": "2026-10-24T06:52:42.45951Z",
+          "ended_at": "2026-10-24T07:00:42.54657Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T074814Z-7c7b506e",
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T07:48:14.485687Z",
+          "ended_at": "2026-10-24T07:49:06.686372Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T074906Z-5c4f50d7",
+          "role": "worker",
+          "agent": "codex",
+          "status": "failed",
+          "parse_status": "parse_error",
+          "error_kind": "process_failed",
+          "error": "native process exited with code 1",
+          "exit_code": 1,
+          "resumed_from": null,
+          "started_at": "2026-10-24T07:49:06.764083Z",
+          "ended_at": "2026-10-24T07:51:31.066554Z",
+          "retry_notices": null,
+          "quota_evidence": {
+            "code": "usage_limit_exceeded",
+            "native_event_time": "2026-10-24T07:51:30.399Z",
+            "raw_native_log_sha256": "c628336fadad93eee8aa3d097939b60a8f2644d2be278f148fd22764d7452292"
+          }
+        },
+        {
+          "id": "run-20261024T111623Z-0ac4dc6f",
+          "role": "worker",
+          "agent": "codex",
+          "status": "canceled",
+          "parse_status": "parse_error",
+          "error_kind": "canceled",
+          "error": "execution canceled",
+          "exit_code": -1,
+          "resumed_from": "run-20261024T074906Z-5c4f50d7",
+          "started_at": "2026-10-24T11:16:23.083981Z",
+          "ended_at": "2026-10-24T11:27:47.647611Z",
+          "retry_notices": 2,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T112920Z-dea46ab3",
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T11:29:20.099449Z",
+          "ended_at": "2026-10-24T11:30:35.003586Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T113035Z-52adaa16",
+          "role": "worker",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T11:30:35.076975Z",
+          "ended_at": "2026-10-24T11:39:49.048235Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T113949Z-797fed74",
+          "role": "reviewer",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T11:39:49.189422Z",
+          "ended_at": "2026-10-24T11:43:22.043179Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T114322Z-4c22616c",
+          "role": "repair",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T11:43:22.151079Z",
+          "ended_at": "2026-10-24T11:44:15.879041Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T114416Z-703e2d0a",
+          "role": "reviewer",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T11:44:16.020134Z",
+          "ended_at": "2026-10-24T11:47:48.153208Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        }
+      ],
+      "workspace": "<体验目录>/outputs/r1-work-single"
+    },
+    "r1-project-single": {
+      "task_id": "task-20261024T074906Z-8f6737ab",
+      "kind": "project",
+      "mode": "single",
+      "status": "completed",
+      "recorded_reason": "Current artifacts, validation and review satisfy the declared acceptance; user acceptance is separate.",
+      "goal": "完善 chat-insight 的时间范围选择器可访问性：src/components/DateRangePicker.tsx 的“近 30 天、近 1 年、全部、自定义”四个按钮目前仅用 active class 表示选中，请增加准确的 aria-pressed 状态，保留原有视觉样式和 onPresetChange/onRangeChange 行为。在 src/components/DateRangePicker.test.tsx 增加组件回归测试，覆盖四个 preset 的互斥选中、外部 props 更新后的状态、按钮点击传递对应 preset、自定义日期输入的现有回调。使用现有 Vitest/Testing Library，不添加依赖、不改变 package.json 或锁文件。只修改这两个组件相关文件。验收由运行时使用 chat-insight-check 执行真实 npm test、npm run lint、npm run build；不要自行安装工具或运行桌面数据同步。",
+      "original_goal": "完善 chat-insight 的时间范围选择器可访问性：src/components/DateRangePicker.tsx 的“近 30 天、近 1 年、全部、自定义”四个按钮目前仅用 active class 表示选中，请增加准确的 aria-pressed 状态，保留原有视觉样式和 onPresetChange/onRangeChange 行为。在 src/components/DateRangePicker.test.tsx 增加组件回归测试，覆盖四个 preset 的互斥选中、外部 props 更新后的状态、按钮点击传递对应 preset、自定义日期输入的现有回调。使用现有 Vitest/Testing Library，不添加依赖、不改变 package.json 或锁文件。只修改这两个组件相关文件。验收由运行时使用 chat-insight-check 执行真实 npm test、npm run lint、npm run build；不要自行安装工具或运行桌面数据同步。",
+      "usage_incomplete": true,
+      "user_updates": [
+        {
+          "sequence": 1,
+          "time": "2026-10-24T11:36:32.266663Z",
+          "timeout_ns": 1800000000000,
+          "call_timeout_ns": 480000000000,
+          "max_calls": 8,
+          "reconcile": true
+        }
+      ],
+      "calls": 5,
+      "max_calls": 8,
+      "active_seconds": 359.822,
+      "per_call_seconds": 480.0,
+      "checks": [
+        {
+          "kind": "artifact",
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T074906Z-8f6737ab",
+          "snapshot": "c80a5a5cf78c0e44b4ce90f9734e70a457712a1207b84c3fa6a4d390af0accae",
+          "status": "passed",
+          "exit_code": 0,
+          "detail": "src/components/DateRangePicker.tsx"
+        },
+        {
+          "kind": "artifact",
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T074906Z-8f6737ab",
+          "snapshot": "c80a5a5cf78c0e44b4ce90f9734e70a457712a1207b84c3fa6a4d390af0accae",
+          "status": "passed",
+          "exit_code": 0,
+          "detail": "src/components/DateRangePicker.test.tsx"
+        },
+        {
+          "run_id": "run-20261024T113905Z-3f8ddfd2",
+          "kind": "command",
+          "argv": [
+            "chat-insight-check",
+            "test"
+          ],
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T074906Z-8f6737ab",
+          "snapshot": "c80a5a5cf78c0e44b4ce90f9734e70a457712a1207b84c3fa6a4d390af0accae",
+          "status": "passed",
+          "exit_code": 0,
+          "log_file": "<体验目录>/data/xcli/tasks/task-20261024T074906Z-8f6737ab/run-20261024T113905Z-3f8ddfd2.check.txt",
+          "exported_log": "artifacts/chat-insight-20261024/logs/r1-project-single-check-2.log",
+          "raw_log_sha256": "18587bdfdd4e17b8fbd4496773c95aebe14b00893d22adab5b59da4128f1eba3"
+        },
+        {
+          "run_id": "run-20261024T113908Z-f5fc5acc",
+          "kind": "command",
+          "argv": [
+            "chat-insight-check",
+            "lint"
+          ],
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T074906Z-8f6737ab",
+          "snapshot": "c80a5a5cf78c0e44b4ce90f9734e70a457712a1207b84c3fa6a4d390af0accae",
+          "status": "passed",
+          "exit_code": 0,
+          "log_file": "<体验目录>/data/xcli/tasks/task-20261024T074906Z-8f6737ab/run-20261024T113908Z-f5fc5acc.check.txt",
+          "exported_log": "artifacts/chat-insight-20261024/logs/r1-project-single-check-3.log",
+          "raw_log_sha256": "7dd73b990a93c84934eb5c3e0e4c3293888844299f9a51d5b8f10be6c93c9013"
+        },
+        {
+          "run_id": "run-20261024T113910Z-f04cbed2",
+          "kind": "command",
+          "argv": [
+            "chat-insight-check",
+            "build"
+          ],
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T074906Z-8f6737ab",
+          "snapshot": "c80a5a5cf78c0e44b4ce90f9734e70a457712a1207b84c3fa6a4d390af0accae",
+          "status": "passed",
+          "exit_code": 0,
+          "log_file": "<体验目录>/data/xcli/tasks/task-20261024T074906Z-8f6737ab/run-20261024T113910Z-f04cbed2.check.txt",
+          "exported_log": "artifacts/chat-insight-20261024/logs/r1-project-single-check-4.log",
+          "raw_log_sha256": "34c35656313a7c52c0be5ea42bb7bfb7c0d40846613e382bcc818477d266256c"
+        }
+      ],
+      "reviews": [
+        {
+          "run_id": "run-20261024T113913Z-ef601da5",
+          "kind": "self_check",
+          "snapshot": "c80a5a5cf78c0e44b4ce90f9734e70a457712a1207b84c3fa6a4d390af0accae",
+          "passed": true,
+          "findings": [],
+          "coverage": [
+            "核对固定文件、基线 diff 和 worker handoff；变更限于指定组件及测试，未见依赖、package.json、锁文件或其他文件变更。",
+            "四个按钮的 aria-pressed 分别对应 30d、1y、all、custom，由 preset prop 控制且互斥；原 active class、视觉样式及两类回调保持。",
+            "14 项组件测试覆盖四个 preset、外部 preset/range 更新、所有按钮点击参数和受控状态，以及日期两端修改、保留另一端、清空传递 undefined。",
+            "当前快照绑定的 chat-insight-check 验证日志确认真实 npm test、npm run lint、npm run build 均通过；测试共 14 个文件、67 项通过。",
+            "handoff 中待运行时验证事项已由最新检查解决；build 的体积提示不影响通过。"
+          ],
+          "sources": [
+            "src/components/DateRangePicker.tsx",
+            "src/components/DateRangePicker.test.tsx",
+            ".xcli-task-evidence/changes.patch",
+            ".xcli-task-evidence/check-2.txt",
+            ".xcli-task-evidence/check-3.txt",
+            ".xcli-task-evidence/check-4.txt",
+            "package.json",
+            "vitest.setup.ts",
+            "vite.config.ts",
+            "src/types.ts",
+            "src/styles.css",
+            "src/App.tsx",
+            "任务简报：handoffs[0]、当前快照 c80a5a5cf78c0e44b4ce90f9734e70a457712a1207b84c3fa6a4d390af0accae 对应的 checks"
+          ]
+        }
+      ],
+      "attempts": [
+        {
+          "id": "run-20261024T074907Z-093e6dd6",
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T07:49:07.232703Z",
+          "ended_at": "2026-10-24T07:50:10.218037Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T075010Z-483cb760",
+          "role": "worker",
+          "agent": "codex",
+          "status": "failed",
+          "parse_status": "parse_error",
+          "error_kind": "process_failed",
+          "error": "native process exited with code 1",
+          "exit_code": 1,
+          "resumed_from": null,
+          "started_at": "2026-10-24T07:50:10.344469Z",
+          "ended_at": "2026-10-24T07:51:33.426573Z",
+          "retry_notices": null,
+          "quota_evidence": {
+            "code": "usage_limit_exceeded",
+            "native_event_time": "2026-10-24T07:51:32.493Z",
+            "raw_native_log_sha256": "636519bc7ffdc51e61350d4291add6a9e85ef26344754d45b1742e11e4ac64d0"
+          }
+        },
+        {
+          "id": "run-20261024T113632Z-54cf544b",
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T11:36:32.461029Z",
+          "ended_at": "2026-10-24T11:37:15.809826Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T113715Z-c4a538a6",
+          "role": "worker",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T11:37:15.906203Z",
+          "ended_at": "2026-10-24T11:39:05.750221Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T113905Z-3f8ddfd2",
+          "role": "verifier",
+          "agent": null,
+          "status": "success",
+          "parse_status": "not_applicable",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T11:39:05.921281Z",
+          "ended_at": "2026-10-24T11:39:08.717739Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T113908Z-f5fc5acc",
+          "role": "verifier",
+          "agent": null,
+          "status": "success",
+          "parse_status": "not_applicable",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T11:39:08.857992Z",
+          "ended_at": "2026-10-24T11:39:09.999441Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T113910Z-f04cbed2",
+          "role": "verifier",
+          "agent": null,
+          "status": "success",
+          "parse_status": "not_applicable",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T11:39:10.155486Z",
+          "ended_at": "2026-10-24T11:39:13.442131Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T113913Z-ef601da5",
+          "role": "reviewer",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T11:39:13.635553Z",
+          "ended_at": "2026-10-24T11:40:05.497089Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        }
+      ],
+      "workspace": "<体验目录>/data/xcli/worktrees/task-20261024T074906Z-8f6737ab",
+      "latest_frontend_test_count": 67,
+      "changed_paths": [
+        "src/components/DateRangePicker.test.tsx",
+        "src/components/DateRangePicker.tsx"
+      ],
+      "only_requested_component_files": true,
+      "independent_acceptance": {
+        "case": "r1-project-single",
+        "task_id": "task-20261024T074906Z-8f6737ab",
+        "exit_code": 0,
+        "expected_tests": 6,
+        "component_sha256": "3f5611030dc8ad2f15c5b5962f8997d63aa76399c2445f82312e822a9435d249",
+        "live_component_unchanged": true,
+        "task_snapshot": "c80a5a5cf78c0e44b4ce90f9734e70a457712a1207b84c3fa6a4d390af0accae",
+        "test_source_sha256": "1481090e1a1f41c71786a7fb5db29de8e958046c7a1a311d45bb9f00d3a53b36"
+      }
+    },
+    "r1-work-cross": {
+      "task_id": "task-20261024T075141Z-f1b96a03",
+      "kind": "work",
+      "mode": "auto",
+      "status": "completed",
+      "recorded_reason": "Current artifacts, validation and review satisfy the declared acceptance; user acceptance is separate.",
+      "goal": "基于输入中的 chat-insight 当前源码和 README，为维护者交付 onboarding-review.md 和 acceptance-checklist.md 两份中文文档。前者按“首次使用、连接与同步、JSONL 导入导出、关键词搜索、AI 开关与云端确认”梳理真实用户路径，列出对应前端入口、api.ts 的命令映射和 Rust 实现；后者逐项写出操作、预期结果、证据源码位置及未验证项。明确浏览器预览与桌面运行时的差别、Apple Silicon/Intel Mac/Windows 的边界、AI 默认关闭、无需 AI 的功能、云端内容发送确认、JSONL 不包含约定和群决策。核对 history/chat-insight-experience.md 的旧导览，历史文档只作线索，结论以当前源码为准。把已确认行为、改进建议和需要实际运行应用验证的事项分开；不假称启动了桌面应用或读取过真实微信数据。每项关键结论引用选定输入文件的真实路径和具体符号；不要修改输入源码。 必须由另一种 CLI 独立复核执行者的产物、源码依据及本轮验证证据。\n\nUser update: 交付篇幅约束：两份文档各最多约4000汉字（源码路径和表格格式不计），使用简明表格覆盖原目标所有事实项；引用以唯一输入文件名和具体符号为主，避免重复长绝对路径。不增加原目标之外的模块审计。可以复用已有核实结果，不重复读取无关源码。必须实际保存两份文件，再返回交接 JSON。",
+      "original_goal": "基于输入中的 chat-insight 当前源码和 README，为维护者交付 onboarding-review.md 和 acceptance-checklist.md 两份中文文档。前者按“首次使用、连接与同步、JSONL 导入导出、关键词搜索、AI 开关与云端确认”梳理真实用户路径，列出对应前端入口、api.ts 的命令映射和 Rust 实现；后者逐项写出操作、预期结果、证据源码位置及未验证项。明确浏览器预览与桌面运行时的差别、Apple Silicon/Intel Mac/Windows 的边界、AI 默认关闭、无需 AI 的功能、云端内容发送确认、JSONL 不包含约定和群决策。核对 history/chat-insight-experience.md 的旧导览，历史文档只作线索，结论以当前源码为准。把已确认行为、改进建议和需要实际运行应用验证的事项分开；不假称启动了桌面应用或读取过真实微信数据。每项关键结论引用选定输入文件的真实路径和具体符号；不要修改输入源码。 必须由另一种 CLI 独立复核执行者的产物、源码依据及本轮验证证据。",
+      "usage_incomplete": true,
+      "user_updates": [
+        {
+          "sequence": 1,
+          "time": "2026-10-24T11:47:48.790493Z",
+          "message": "交付篇幅约束：两份文档各最多约4000汉字（源码路径和表格格式不计），使用简明表格覆盖原目标所有事实项；引用以唯一输入文件名和具体符号为主，避免重复长绝对路径。不增加原目标之外的模块审计。可以复用已有核实结果，不重复读取无关源码。必须实际保存两份文件，再返回交接 JSON。",
+          "timeout_ns": 3600000000000,
+          "call_timeout_ns": 900000000000,
+          "max_calls": 8,
+          "reconcile": true,
+          "fresh_session": true
+        }
+      ],
+      "calls": 4,
+      "max_calls": 8,
+      "active_seconds": 850.154,
+      "per_call_seconds": 900.0,
+      "checks": [
+        {
+          "kind": "artifact",
+          "cwd": "<体验目录>/outputs/r1-work-cross",
+          "snapshot": "d53f886bb8ea88069c32638acb797e23cd1efec368354b5a071ac3929f2a18f8",
+          "status": "passed",
+          "exit_code": 0,
+          "detail": "onboarding-review.md"
+        },
+        {
+          "kind": "artifact",
+          "cwd": "<体验目录>/outputs/r1-work-cross",
+          "snapshot": "d53f886bb8ea88069c32638acb797e23cd1efec368354b5a071ac3929f2a18f8",
+          "status": "passed",
+          "exit_code": 0,
+          "detail": "acceptance-checklist.md"
+        }
+      ],
+      "reviews": [
+        {
+          "run_id": "run-20261024T115649Z-dba69fd6",
+          "kind": "cross_cli",
+          "snapshot": "d53f886bb8ea88069c32638acb797e23cd1efec368354b5a071ac3929f2a18f8",
+          "passed": true,
+          "findings": [],
+          "coverage": [
+            "两份文档均已保存在产物副本，并分成已确认行为、改进建议、需实际运行验证；清单含操作、预期结果、证据源码位置、未验证项，汉字篇幅在排除路径与表格标记后仍约在4000字内。",
+            "五条路径的前端入口、api.ts 包装与命令、lib.rs generate_handler! 及 Rust 实现对应：App.bootstrapAndSync/runSync/importData/exportData、Onboarding/GettingStarted/guide.ts、bridge.capabilities/connect/sync_wechat、portable.import_jsonl/export_jsonl、Ask.searchMessages 至 Database.search_messages、AI 命令至 commands.rs。",
+            "浏览器 inTauri/browserCapabilities/call 与桌面差异、Apple Silicon/Intel Mac/Windows x64 及缺 cli/仅缺 wxkey 的边界，与 bridge.rs capabilities、Onboarding.canConnect、DataManagement.canReadWechat 一致。",
+            "AI 默认关闭（aiDefaults.ts、AiSettings::default）、无需模型的本地能力、is_local_endpoint/ensure_allowed/confirmCloud/CloudConsent 的确认与 null 取消，以及索引、问答、摘要、话题、约定与群决策、年报和连接测试的发送边界，与当前源码一致；群约定要求我发言、群决策不要求。",
+            "JSONL 的 manifest/chat/message、import: 前缀、事务回滚、INSERT OR IGNORE，以及不包含约定、群决策、密钥、原库和专用媒体路径，与 portable.rs 及 README「便携数据格式」一致。",
+            "历史导览仅作线索：dialog 与 localStorage 不走统一 api，tauri.conf.json 不在选定输入，文档未把旧文中的自动启动 Vite/加载 dist 写成已确认事实，也未把测试定义或未执行步骤写成通过。",
+            "重名 commitments.rs 与 decisions.rs 已用 src-tauri/src 与 ai/ 区分；引用为唯一文件名加从 outputs/r1-work-cross 可解析的 ../../materials 相对路径。本轮无命令验证日志；桌面启动、真实微信读取和测试通过均未被声称，运行项仍标为未验证。"
+          ],
+          "sources": [
+            "onboarding-review.md",
+            "acceptance-checklist.md",
+            ".xcli-task-evidence/source-1-README.md",
+            ".xcli-task-evidence/source-2-chat-insight-experience.md",
+            ".xcli-task-evidence/source-3-package.json",
+            ".xcli-task-evidence/source-5-client.rs",
+            ".xcli-task-evidence/source-6-commands.rs",
+            ".xcli-task-evidence/source-7-commitments.rs",
+            ".xcli-task-evidence/source-8-decisions.rs",
+            ".xcli-task-evidence/source-9-extraction.rs",
+            ".xcli-task-evidence/source-11-features.rs",
+            ".xcli-task-evidence/source-12-indexer.rs",
+            ".xcli-task-evidence/source-14-retrieval.rs",
+            ".xcli-task-evidence/source-15-settings.rs",
+            ".xcli-task-evidence/source-16-store.rs",
+            ".xcli-task-evidence/source-18-bridge.rs",
+            ".xcli-task-evidence/source-19-commitments.rs",
+            ".xcli-task-evidence/source-20-database.rs",
+            ".xcli-task-evidence/source-21-decisions.rs",
+            ".xcli-task-evidence/source-23-insights.rs",
+            ".xcli-task-evidence/source-24-lib.rs",
+            ".xcli-task-evidence/source-25-main.rs",
+            ".xcli-task-evidence/source-29-portable.rs",
+            ".xcli-task-evidence/source-30-wechat_account.rs",
+            ".xcli-task-evidence/source-32-App.tsx",
+            ".xcli-task-evidence/source-34-aiDefaults.ts",
+            ".xcli-task-evidence/source-35-api.ts",
+            ".xcli-task-evidence/source-39-AiProvider.tsx",
+            ".xcli-task-evidence/source-40-AiSettings.tsx",
+            ".xcli-task-evidence/source-41-AiSummaryPanel.tsx",
+            ".xcli-task-evidence/source-45-ChatMemoryPanel.tsx",
+            ".xcli-task-evidence/source-46-CloudConsent.tsx",
+            ".xcli-task-evidence/source-49-GettingStarted.tsx",
+            ".xcli-task-evidence/source-56-MessageContext.tsx",
+            ".xcli-task-evidence/source-59-TopicsPanel.tsx",
+            ".xcli-task-evidence/source-63-guide.ts",
+            ".xcli-task-evidence/source-73-Ask.tsx",
+            ".xcli-task-evidence/source-74-ChatDetail.tsx",
+            ".xcli-task-evidence/source-76-Commitments.tsx",
+            ".xcli-task-evidence/source-77-DataManagement.tsx",
+            ".xcli-task-evidence/source-78-Onboarding.tsx",
+            ".xcli-task-evidence/source-79-Overview.tsx",
+            ".xcli-task-evidence/source-80-Report.tsx"
+          ]
+        }
+      ],
+      "attempts": [
+        {
+          "id": "run-20261024T075141Z-6331e880",
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "failed",
+          "parse_status": "parse_error",
+          "error_kind": "process_failed",
+          "error": "native process exited with code 1",
+          "exit_code": 1,
+          "resumed_from": null,
+          "started_at": "2026-10-24T07:51:41.867521Z",
+          "ended_at": "2026-10-24T07:51:45.873497Z",
+          "retry_notices": null,
+          "quota_evidence": {
+            "code": "usage_limit_exceeded",
+            "native_event_time": "2026-10-24T07:51:45.435Z",
+            "raw_native_log_sha256": "4471a10c8c84678243808d65873a4b1d95ecfc49252cd6c9b4479d0dfe23ba90"
+          }
+        },
+        {
+          "id": "run-20261024T114748Z-c9ef241a",
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T11:47:48.879764Z",
+          "ended_at": "2026-10-24T11:48:56.121428Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T114856Z-c75cddc0",
+          "role": "worker",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T11:48:56.193305Z",
+          "ended_at": "2026-10-24T11:56:49.295792Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T115649Z-dba69fd6",
+          "role": "reviewer",
+          "agent": "cursor",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T11:56:49.822744Z",
+          "ended_at": "2026-10-24T12:01:54.268389Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        }
+      ],
+      "workspace": "<体验目录>/outputs/r1-work-cross"
+    },
+    "r1-project-cross": {
+      "task_id": "task-20261024T075146Z-3101a540",
+      "kind": "project",
+      "mode": "auto",
+      "status": "completed",
+      "recorded_reason": "Current artifacts, validation and review satisfy the declared acceptance; user acceptance is separate.",
+      "goal": "完善 chat-insight 的时间范围选择器可访问性：src/components/DateRangePicker.tsx 的“近 30 天、近 1 年、全部、自定义”四个按钮目前仅用 active class 表示选中，请增加准确的 aria-pressed 状态，保留原有视觉样式和 onPresetChange/onRangeChange 行为。在 src/components/DateRangePicker.test.tsx 增加组件回归测试，覆盖四个 preset 的互斥选中、外部 props 更新后的状态、按钮点击传递对应 preset、自定义日期输入的现有回调。使用现有 Vitest/Testing Library，不添加依赖、不改变 package.json 或锁文件。只修改这两个组件相关文件。验收由运行时使用 chat-insight-check 执行真实 npm test、npm run lint、npm run build；不要自行安装工具或运行桌面数据同步。 必须由另一种 CLI 独立复核执行者的产物、源码依据及本轮验证证据。",
+      "original_goal": "完善 chat-insight 的时间范围选择器可访问性：src/components/DateRangePicker.tsx 的“近 30 天、近 1 年、全部、自定义”四个按钮目前仅用 active class 表示选中，请增加准确的 aria-pressed 状态，保留原有视觉样式和 onPresetChange/onRangeChange 行为。在 src/components/DateRangePicker.test.tsx 增加组件回归测试，覆盖四个 preset 的互斥选中、外部 props 更新后的状态、按钮点击传递对应 preset、自定义日期输入的现有回调。使用现有 Vitest/Testing Library，不添加依赖、不改变 package.json 或锁文件。只修改这两个组件相关文件。验收由运行时使用 chat-insight-check 执行真实 npm test、npm run lint、npm run build；不要自行安装工具或运行桌面数据同步。 必须由另一种 CLI 独立复核执行者的产物、源码依据及本轮验证证据。",
+      "usage_incomplete": true,
+      "user_updates": [
+        {
+          "sequence": 1,
+          "time": "2026-10-24T11:45:33.702626Z",
+          "timeout_ns": 1800000000000,
+          "call_timeout_ns": 480000000000,
+          "max_calls": 8,
+          "reconcile": true
+        }
+      ],
+      "calls": 4,
+      "max_calls": 8,
+      "active_seconds": 262.386,
+      "per_call_seconds": 480.0,
+      "checks": [
+        {
+          "kind": "artifact",
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T075146Z-3101a540",
+          "snapshot": "417701b428cfc06ee83bd7f317fb7c9d339580df44ca0b70e481ecb04cded371",
+          "status": "passed",
+          "exit_code": 0,
+          "detail": "src/components/DateRangePicker.tsx"
+        },
+        {
+          "kind": "artifact",
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T075146Z-3101a540",
+          "snapshot": "417701b428cfc06ee83bd7f317fb7c9d339580df44ca0b70e481ecb04cded371",
+          "status": "passed",
+          "exit_code": 0,
+          "detail": "src/components/DateRangePicker.test.tsx"
+        },
+        {
+          "run_id": "run-20261024T114749Z-7a6bdf80",
+          "kind": "command",
+          "argv": [
+            "chat-insight-check",
+            "test"
+          ],
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T075146Z-3101a540",
+          "snapshot": "417701b428cfc06ee83bd7f317fb7c9d339580df44ca0b70e481ecb04cded371",
+          "status": "passed",
+          "exit_code": 0,
+          "log_file": "<体验目录>/data/xcli/tasks/task-20261024T075146Z-3101a540/run-20261024T114749Z-7a6bdf80.check.txt",
+          "exported_log": "artifacts/chat-insight-20261024/logs/r1-project-cross-check-2.log",
+          "raw_log_sha256": "30bfbace9489858a0e95d9d56378a0a6e3e86f0f573dafe76ccf6ed672d05c18"
+        },
+        {
+          "run_id": "run-20261024T114752Z-98277a11",
+          "kind": "command",
+          "argv": [
+            "chat-insight-check",
+            "lint"
+          ],
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T075146Z-3101a540",
+          "snapshot": "417701b428cfc06ee83bd7f317fb7c9d339580df44ca0b70e481ecb04cded371",
+          "status": "passed",
+          "exit_code": 0,
+          "log_file": "<体验目录>/data/xcli/tasks/task-20261024T075146Z-3101a540/run-20261024T114752Z-98277a11.check.txt",
+          "exported_log": "artifacts/chat-insight-20261024/logs/r1-project-cross-check-3.log",
+          "raw_log_sha256": "7dd73b990a93c84934eb5c3e0e4c3293888844299f9a51d5b8f10be6c93c9013"
+        },
+        {
+          "run_id": "run-20261024T114754Z-15d02f04",
+          "kind": "command",
+          "argv": [
+            "chat-insight-check",
+            "build"
+          ],
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T075146Z-3101a540",
+          "snapshot": "417701b428cfc06ee83bd7f317fb7c9d339580df44ca0b70e481ecb04cded371",
+          "status": "passed",
+          "exit_code": 0,
+          "log_file": "<体验目录>/data/xcli/tasks/task-20261024T075146Z-3101a540/run-20261024T114754Z-15d02f04.check.txt",
+          "exported_log": "artifacts/chat-insight-20261024/logs/r1-project-cross-check-4.log",
+          "raw_log_sha256": "914d9ceb2e6cfae5952b1b1be5f84e685d543616dcfea7e64686dd49631b7f91"
+        }
+      ],
+      "reviews": [
+        {
+          "run_id": "run-20261024T114758Z-31b7c619",
+          "kind": "cross_cli",
+          "snapshot": "417701b428cfc06ee83bd7f317fb7c9d339580df44ca0b70e481ecb04cded371",
+          "passed": true,
+          "findings": [],
+          "coverage": [
+            "changes.patch 仅修改 src/components/DateRangePicker.tsx 一处，为四个 preset 按钮增加 aria-pressed；package.json、package-lock.json、Cargo.lock 与 src/styles.css 不在 diff 中",
+            "DateRangePicker.tsx:11-16、23 的 aria-pressed={preset === item.value} 与受控 preset 一致，30d/1y/all/custom 同时只有一个为 true，active class 与 onPresetChange(item.value) 仍在",
+            "日期输入仍为展开 range 后把空字符串转成 undefined（DateRangePicker.tsx:30-32），样式仍依赖既有 .segmented button.active 与 .custom-range（src/styles.css:98-103）",
+            "DateRangePicker.test.tsx 共 13 例：四种 preset 互斥 pressed/active、rerender 外部 props、四按钮点击映射、起止日期修改与清空并保留另一端",
+            "check-2 为 npm test/vitest run，DateRangePicker.test.tsx 13 通过、合计 66 通过；check-3 为 eslint . --max-warnings=0 且无报错；check-4 为 tsc -b && vite build 并 built in 1.52s，均与 package.json 脚本及当前快照 417701b428cfc06ee83bd7f317fb7c9d339580df44ca0b70e481ecb04cded371 对应"
+          ],
+          "sources": [
+            "src/components/DateRangePicker.tsx",
+            "src/components/DateRangePicker.test.tsx",
+            ".xcli-task-evidence/changes.patch",
+            ".xcli-task-evidence/check-2.txt",
+            ".xcli-task-evidence/check-3.txt",
+            ".xcli-task-evidence/check-4.txt",
+            "package.json",
+            "src/types.ts",
+            "src/styles.css",
+            "vitest.setup.ts"
+          ]
+        }
+      ],
+      "attempts": [
+        {
+          "id": "run-20261024T075147Z-0b38e0f7",
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "failed",
+          "parse_status": "parse_error",
+          "error_kind": "process_failed",
+          "error": "native process exited with code 1",
+          "exit_code": 1,
+          "resumed_from": null,
+          "started_at": "2026-10-24T07:51:47.167176Z",
+          "ended_at": "2026-10-24T07:51:50.644168Z",
+          "retry_notices": null,
+          "quota_evidence": {
+            "code": "usage_limit_exceeded",
+            "native_event_time": "2026-10-24T07:51:49.995Z",
+            "raw_native_log_sha256": "b7b13cd3bd8ad806ea69e926d5e71a80ad67b2d299e88274586d92f859f387a5"
+          }
+        },
+        {
+          "id": "run-20261024T114533Z-6134d398",
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": "run-20261024T075147Z-0b38e0f7",
+          "started_at": "2026-10-24T11:45:33.946776Z",
+          "ended_at": "2026-10-24T11:46:28.09925Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T114628Z-15628671",
+          "role": "worker",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T11:46:28.208561Z",
+          "ended_at": "2026-10-24T11:47:49.757043Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T114749Z-7a6bdf80",
+          "role": "verifier",
+          "agent": null,
+          "status": "success",
+          "parse_status": "not_applicable",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T11:47:49.962873Z",
+          "ended_at": "2026-10-24T11:47:52.549877Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T114752Z-98277a11",
+          "role": "verifier",
+          "agent": null,
+          "status": "success",
+          "parse_status": "not_applicable",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T11:47:52.714902Z",
+          "ended_at": "2026-10-24T11:47:54.042932Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T114754Z-15d02f04",
+          "role": "verifier",
+          "agent": null,
+          "status": "success",
+          "parse_status": "not_applicable",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T11:47:54.22297Z",
+          "ended_at": "2026-10-24T11:47:57.534448Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T114758Z-31b7c619",
+          "role": "reviewer",
+          "agent": "cursor",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T11:47:58.054692Z",
+          "ended_at": "2026-10-24T11:49:51.728953Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        }
+      ],
+      "workspace": "<体验目录>/data/xcli/worktrees/task-20261024T075146Z-3101a540",
+      "latest_frontend_test_count": 66,
+      "changed_paths": [
+        "src/components/DateRangePicker.test.tsx",
+        "src/components/DateRangePicker.tsx"
+      ],
+      "only_requested_component_files": true,
+      "independent_acceptance": {
+        "case": "r1-project-cross",
+        "task_id": "task-20261024T075146Z-3101a540",
+        "exit_code": 0,
+        "expected_tests": 6,
+        "component_sha256": "3f5611030dc8ad2f15c5b5962f8997d63aa76399c2445f82312e822a9435d249",
+        "live_component_unchanged": true,
+        "task_snapshot": "417701b428cfc06ee83bd7f317fb7c9d339580df44ca0b70e481ecb04cded371",
+        "test_source_sha256": "1481090e1a1f41c71786a7fb5db29de8e958046c7a1a311d45bb9f00d3a53b36"
+      }
+    },
+    "r2": {
+      "task_id": "task-20261024T075150Z-dcc59341",
+      "kind": "project",
+      "mode": "single",
+      "status": "completed",
+      "recorded_reason": "Current artifacts, validation and review satisfy the declared acceptance; user acceptance is separate.",
+      "goal": "完善 chat-insight 的时间范围选择器可访问性：src/components/DateRangePicker.tsx 的“近 30 天、近 1 年、全部、自定义”四个按钮目前仅用 active class 表示选中，请增加准确的 aria-pressed 状态，保留原有视觉样式和 onPresetChange/onRangeChange 行为。在 src/components/DateRangePicker.test.tsx 增加组件回归测试，覆盖四个 preset 的互斥选中、外部 props 更新后的状态、按钮点击传递对应 preset、自定义日期输入的现有回调。使用现有 Vitest/Testing Library，不添加依赖、不改变 package.json 或锁文件。只修改这两个组件相关文件。验收由运行时使用 chat-insight-check 执行真实 npm test、npm run lint、npm run build；不要自行安装工具或运行桌面数据同步。 同时为自定义日期补充互相约束：开始日期输入的 max 取当前结束日期，结束日期输入的 min 取当前开始日期；另一端为空时不要设置错误的限制。允许清空输入，不静默改写用户日期。为这些行为补充组件测试。\n\nUser update: 保留现有改进，再检查切换自定义与预设日期时的回调是否兼容；如有遗漏，补充组件回归测试。",
+      "original_goal": "完善 chat-insight 的时间范围选择器可访问性：src/components/DateRangePicker.tsx 的“近 30 天、近 1 年、全部、自定义”四个按钮目前仅用 active class 表示选中，请增加准确的 aria-pressed 状态，保留原有视觉样式和 onPresetChange/onRangeChange 行为。在 src/components/DateRangePicker.test.tsx 增加组件回归测试，覆盖四个 preset 的互斥选中、外部 props 更新后的状态、按钮点击传递对应 preset、自定义日期输入的现有回调。使用现有 Vitest/Testing Library，不添加依赖、不改变 package.json 或锁文件。只修改这两个组件相关文件。验收由运行时使用 chat-insight-check 执行真实 npm test、npm run lint、npm run build；不要自行安装工具或运行桌面数据同步。 同时为自定义日期补充互相约束：开始日期输入的 max 取当前结束日期，结束日期输入的 min 取当前开始日期；另一端为空时不要设置错误的限制。允许清空输入，不静默改写用户日期。为这些行为补充组件测试。",
+      "usage_incomplete": true,
+      "user_updates": [
+        {
+          "sequence": 1,
+          "time": "2026-10-24T12:01:54.917834Z",
+          "timeout_ns": 2700000000000,
+          "call_timeout_ns": 480000000000,
+          "max_calls": 10,
+          "reconcile": true
+        },
+        {
+          "sequence": 2,
+          "time": "2026-10-24T12:03:20.681783Z",
+          "reconcile": true,
+          "fresh_session": true
+        },
+        {
+          "sequence": 3,
+          "time": "2026-10-24T12:07:44.779323Z",
+          "message": "保留现有改进，再检查切换自定义与预设日期时的回调是否兼容；如有遗漏，补充组件回归测试。",
+          "fresh_session": true
+        }
+      ],
+      "calls": 8,
+      "max_calls": 10,
+      "active_seconds": 698.385,
+      "per_call_seconds": 480.0,
+      "checks": [
+        {
+          "kind": "artifact",
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T075150Z-dcc59341",
+          "snapshot": "6ded342d09120686a328e65b3b94382294990cc06b57b337a05b11a44e1b837e",
+          "status": "passed",
+          "exit_code": 0,
+          "detail": "src/components/DateRangePicker.tsx"
+        },
+        {
+          "kind": "artifact",
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T075150Z-dcc59341",
+          "snapshot": "6ded342d09120686a328e65b3b94382294990cc06b57b337a05b11a44e1b837e",
+          "status": "passed",
+          "exit_code": 0,
+          "detail": "src/components/DateRangePicker.test.tsx"
+        },
+        {
+          "run_id": "run-20261024T120627Z-2bd22bc0",
+          "kind": "command",
+          "argv": [
+            "chat-insight-check",
+            "test"
+          ],
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T075150Z-dcc59341",
+          "snapshot": "6ded342d09120686a328e65b3b94382294990cc06b57b337a05b11a44e1b837e",
+          "status": "passed",
+          "exit_code": 0,
+          "log_file": "<体验目录>/data/xcli/tasks/task-20261024T075150Z-dcc59341/run-20261024T120627Z-2bd22bc0.check.txt",
+          "exported_log": "artifacts/chat-insight-20261024/logs/r2-check-2.log",
+          "raw_log_sha256": "6f322427d6d062188f233e39c7e2ed2e8d7e1570ab81417601c06ff7f17d5a95"
+        },
+        {
+          "run_id": "run-20261024T120629Z-5b9baa41",
+          "kind": "command",
+          "argv": [
+            "chat-insight-check",
+            "lint"
+          ],
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T075150Z-dcc59341",
+          "snapshot": "6ded342d09120686a328e65b3b94382294990cc06b57b337a05b11a44e1b837e",
+          "status": "passed",
+          "exit_code": 0,
+          "log_file": "<体验目录>/data/xcli/tasks/task-20261024T075150Z-dcc59341/run-20261024T120629Z-5b9baa41.check.txt",
+          "exported_log": "artifacts/chat-insight-20261024/logs/r2-check-3.log",
+          "raw_log_sha256": "7dd73b990a93c84934eb5c3e0e4c3293888844299f9a51d5b8f10be6c93c9013"
+        },
+        {
+          "run_id": "run-20261024T120631Z-d8c698b1",
+          "kind": "command",
+          "argv": [
+            "chat-insight-check",
+            "build"
+          ],
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T075150Z-dcc59341",
+          "snapshot": "6ded342d09120686a328e65b3b94382294990cc06b57b337a05b11a44e1b837e",
+          "status": "passed",
+          "exit_code": 0,
+          "log_file": "<体验目录>/data/xcli/tasks/task-20261024T075150Z-dcc59341/run-20261024T120631Z-d8c698b1.check.txt",
+          "exported_log": "artifacts/chat-insight-20261024/logs/r2-check-4.log",
+          "raw_log_sha256": "30a5b6237b5e7d855c678ed20501b15522009335a712823ba7368c24930a87d5"
+        },
+        {
+          "kind": "artifact",
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T075150Z-dcc59341",
+          "snapshot": "14bb315c8f3c0666bffdb52306b511489603eae0fbbfe952633016067e3c305f",
+          "status": "passed",
+          "exit_code": 0,
+          "detail": "src/components/DateRangePicker.tsx"
+        },
+        {
+          "kind": "artifact",
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T075150Z-dcc59341",
+          "snapshot": "14bb315c8f3c0666bffdb52306b511489603eae0fbbfe952633016067e3c305f",
+          "status": "passed",
+          "exit_code": 0,
+          "detail": "src/components/DateRangePicker.test.tsx"
+        },
+        {
+          "run_id": "run-20261024T121203Z-b4d12039",
+          "kind": "command",
+          "argv": [
+            "chat-insight-check",
+            "test"
+          ],
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T075150Z-dcc59341",
+          "snapshot": "14bb315c8f3c0666bffdb52306b511489603eae0fbbfe952633016067e3c305f",
+          "status": "passed",
+          "exit_code": 0,
+          "log_file": "<体验目录>/data/xcli/tasks/task-20261024T075150Z-dcc59341/run-20261024T121203Z-b4d12039.check.txt",
+          "exported_log": "artifacts/chat-insight-20261024/logs/r2-check-7.log",
+          "raw_log_sha256": "f9ab820de5f3ec3fe1feaaaf6172b76ba1113597cd4bcdb438087351a92bed60"
+        },
+        {
+          "run_id": "run-20261024T121206Z-57d16f4c",
+          "kind": "command",
+          "argv": [
+            "chat-insight-check",
+            "lint"
+          ],
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T075150Z-dcc59341",
+          "snapshot": "14bb315c8f3c0666bffdb52306b511489603eae0fbbfe952633016067e3c305f",
+          "status": "passed",
+          "exit_code": 0,
+          "log_file": "<体验目录>/data/xcli/tasks/task-20261024T075150Z-dcc59341/run-20261024T121206Z-57d16f4c.check.txt",
+          "exported_log": "artifacts/chat-insight-20261024/logs/r2-check-8.log",
+          "raw_log_sha256": "7dd73b990a93c84934eb5c3e0e4c3293888844299f9a51d5b8f10be6c93c9013"
+        },
+        {
+          "run_id": "run-20261024T121207Z-7e73f85f",
+          "kind": "command",
+          "argv": [
+            "chat-insight-check",
+            "build"
+          ],
+          "cwd": "<体验目录>/data/xcli/worktrees/task-20261024T075150Z-dcc59341",
+          "snapshot": "14bb315c8f3c0666bffdb52306b511489603eae0fbbfe952633016067e3c305f",
+          "status": "passed",
+          "exit_code": 0,
+          "log_file": "<体验目录>/data/xcli/tasks/task-20261024T075150Z-dcc59341/run-20261024T121207Z-7e73f85f.check.txt",
+          "exported_log": "artifacts/chat-insight-20261024/logs/r2-check-9.log",
+          "raw_log_sha256": "62792c5371ba774c148f111fabf1be18ac39683810a5f8380db737bd91dc2a5b"
+        }
+      ],
+      "reviews": [
+        {
+          "run_id": "run-20261024T120634Z-a8281692",
+          "kind": "self_check",
+          "snapshot": "6ded342d09120686a328e65b3b94382294990cc06b57b337a05b11a44e1b837e",
+          "passed": true,
+          "findings": [],
+          "coverage": [
+            "基线差异未显示两个指定文件之外的改动；package.json 和锁文件无变更记录。",
+            "四个按钮的 aria-pressed 随受控 preset 准确互斥，保留 active 样式、文案、显示条件及原有回调。",
+            "开始日期 max、结束日期 min 取另一端当前 props；省略、undefined 或空字符串端点均不产生限制，外部更新后同步变化。",
+            "日期修改及清空保留另一端，清空仍回调 undefined；不交换、截断或静默改写日期。",
+            "28 项组件测试覆盖全部要求，使用现有 Vitest、Testing Library 和 jest-dom；断言检查精确属性、完整回调参数及受控更新，能够发现相关回归。",
+            "当前快照的真实验证日志显示 npm test 全部通过（14 个文件、81 项测试），lint 和 build 通过；build 存在非阻塞的 chunk 大小警告。handoff 中待运行验证事项已完成，无当前阻塞问题。"
+          ],
+          "sources": [
+            ".xcli-task-evidence/changes.patch",
+            ".xcli-task-evidence/check-2.txt",
+            ".xcli-task-evidence/check-3.txt",
+            ".xcli-task-evidence/check-4.txt",
+            "src/components/DateRangePicker.tsx",
+            "src/components/DateRangePicker.test.tsx",
+            "src/types.ts",
+            "src/styles.css",
+            "package.json",
+            "package-lock.json",
+            "vite.config.ts",
+            "vitest.setup.ts"
+          ]
+        },
+        {
+          "run_id": "run-20261024T121211Z-a1b5b6c5",
+          "kind": "self_check",
+          "snapshot": "14bb315c8f3c0666bffdb52306b511489603eae0fbbfe952633016067e3c305f",
+          "passed": true,
+          "findings": [],
+          "coverage": [
+            "基线差异与交付材料一致：修改限于指定组件及其测试，package.json 和锁文件无变更，使用现有依赖。",
+            "四个 preset 的 aria-pressed 准确互斥，保留 active 样式、文案及原有回调行为。",
+            "测试参数化覆盖 custom 与三个预设的双向切换，断言父组件更新前后的受控状态、输入显隐、日期保留及完整回调参数和次数。",
+            "切换及 props 更新不触发 onRangeChange；日期编辑不串扰 onPresetChange，重复回调会被严格断言发现。",
+            "返回 custom 后连续编辑和清空通过回调结果更新 props，验证使用最新 range、保留另一端及清空传 undefined。",
+            "max/min 随最新端点更新，覆盖缺失、undefined、空字符串及逆序日期，不静默改写日期。",
+            "当前快照 14bb315c 的真实验证日志显示：14 个测试文件、126 项测试通过，其中组件测试 73 项；lint 和 build 通过。构建体积提示与前次相同，不影响验收。",
+            "handoff 中待运行时验证事项已由最新日志解决；本次仅进行只读审查，未自行运行检查。"
+          ],
+          "sources": [
+            "任务简报中的 checks、handoffs、plans 及当前快照绑定信息",
+            ".xcli-task-evidence/changes.patch",
+            ".xcli-task-evidence/check-7.txt",
+            ".xcli-task-evidence/check-8.txt",
+            ".xcli-task-evidence/check-9.txt",
+            ".xcli-task-evidence/check-2.txt",
+            ".xcli-task-evidence/check-3.txt",
+            ".xcli-task-evidence/check-4.txt",
+            "src/components/DateRangePicker.tsx",
+            "src/components/DateRangePicker.test.tsx",
+            "src/App.tsx",
+            "src/types.ts",
+            "src/styles.css",
+            "package.json",
+            "package-lock.json:1",
+            "vite.config.ts",
+            "vitest.setup.ts"
+          ]
+        }
+      ],
+      "attempts": [
+        {
+          "id": "run-20261024T075151Z-1a8b6ba1",
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "failed",
+          "parse_status": "parse_error",
+          "error_kind": "process_failed",
+          "error": "native process exited with code 1",
+          "exit_code": 1,
+          "resumed_from": null,
+          "started_at": "2026-10-24T07:51:51.065625Z",
+          "ended_at": "2026-10-24T07:51:54.473318Z",
+          "retry_notices": null,
+          "quota_evidence": {
+            "code": "usage_limit_exceeded",
+            "native_event_time": "2026-10-24T07:51:53.955Z",
+            "raw_native_log_sha256": "79c2672abb945c1dcca13ddcde2df8345746b7d60d6121f1d71cca2fc3244958"
+          }
+        },
+        {
+          "id": "run-20261024T120155Z-1a822caf",
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": "run-20261024T075151Z-1a8b6ba1",
+          "started_at": "2026-10-24T12:01:55.164141Z",
+          "ended_at": "2026-10-24T12:03:18.889764Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T120319Z-5e56f90c",
+          "role": "worker",
+          "agent": "codex",
+          "status": "canceled",
+          "parse_status": "parse_error",
+          "error_kind": "canceled",
+          "error": "execution canceled",
+          "exit_code": -1,
+          "resumed_from": null,
+          "started_at": "2026-10-24T12:03:19.002844Z",
+          "ended_at": "2026-10-24T12:03:20.213776Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T120320Z-a6fac248",
+          "role": "worker",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T12:03:20.796583Z",
+          "ended_at": "2026-10-24T12:06:27.641793Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T120627Z-2bd22bc0",
+          "role": "verifier",
+          "agent": null,
+          "status": "success",
+          "parse_status": "not_applicable",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T12:06:27.799899Z",
+          "ended_at": "2026-10-24T12:06:29.869456Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T120629Z-5b9baa41",
+          "role": "verifier",
+          "agent": null,
+          "status": "success",
+          "parse_status": "not_applicable",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T12:06:29.999414Z",
+          "ended_at": "2026-10-24T12:06:31.105639Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T120631Z-d8c698b1",
+          "role": "verifier",
+          "agent": null,
+          "status": "success",
+          "parse_status": "not_applicable",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T12:06:31.241566Z",
+          "ended_at": "2026-10-24T12:06:34.41112Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T120634Z-a8281692",
+          "role": "reviewer",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T12:06:34.588726Z",
+          "ended_at": "2026-10-24T12:07:44.354455Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T120744Z-926d2eaf",
+          "role": "coordinator",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T12:07:44.933622Z",
+          "ended_at": "2026-10-24T12:08:50.239868Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T120850Z-9139b1fb",
+          "role": "worker",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T12:08:50.334969Z",
+          "ended_at": "2026-10-24T12:12:03.072104Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T121203Z-b4d12039",
+          "role": "verifier",
+          "agent": null,
+          "status": "success",
+          "parse_status": "not_applicable",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T12:12:03.24516Z",
+          "ended_at": "2026-10-24T12:12:06.088634Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T121206Z-57d16f4c",
+          "role": "verifier",
+          "agent": null,
+          "status": "success",
+          "parse_status": "not_applicable",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T12:12:06.242608Z",
+          "ended_at": "2026-10-24T12:12:07.44967Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T121207Z-7e73f85f",
+          "role": "verifier",
+          "agent": null,
+          "status": "success",
+          "parse_status": "not_applicable",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T12:12:07.597714Z",
+          "ended_at": "2026-10-24T12:12:10.81781Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        },
+        {
+          "id": "run-20261024T121211Z-a1b5b6c5",
+          "role": "reviewer",
+          "agent": "codex",
+          "status": "success",
+          "parse_status": "complete",
+          "error_kind": null,
+          "error": null,
+          "exit_code": 0,
+          "resumed_from": null,
+          "started_at": "2026-10-24T12:12:11.01807Z",
+          "ended_at": "2026-10-24T12:13:30.552911Z",
+          "retry_notices": null,
+          "quota_evidence": null
+        }
+      ],
+      "workspace": "<体验目录>/data/xcli/worktrees/task-20261024T075150Z-dcc59341",
+      "latest_frontend_test_count": 126,
+      "changed_paths": [
+        "src/components/DateRangePicker.test.tsx",
+        "src/components/DateRangePicker.tsx"
+      ],
+      "only_requested_component_files": true,
+      "live_worker_canceled": true,
+      "material_recovery_passed": true,
+      "independent_observer_recorded": true,
+      "supplement_completed": true,
+      "recovery_identity_preserved": true,
+      "recovery_call_counts": [
+        3,
+        5
+      ],
+      "reason": "See the preserved initial quota failure and subsequent stop/material-restoration receipts.",
+      "independent_acceptance": {
+        "case": "r2",
+        "task_id": "task-20261024T075150Z-dcc59341",
+        "exit_code": 0,
+        "expected_tests": 8,
+        "component_sha256": "a975120bad725bdfb8fe4c40b82f9423846b5597d46bad1f03fee7114958f72a",
+        "live_component_unchanged": true,
+        "task_snapshot": "14bb315c8f3c0666bffdb52306b511489603eae0fbbfe952633016067e3c305f",
+        "test_source_sha256": "88c51780d476aa0b5558dcb70920a6aee8f938f70bd424510546b46ec6bbada4"
+      },
+      "observer_event_count": 47,
+      "observer_sequence_monotonic": true
+    }
+  },
+  "native_direct": {
+    "attempts": [
+      {
+        "label": "r3-native",
+        "exit_code": 1,
+        "seconds": 3.529,
+        "started_at": "2026-10-24T07:51:54.577320+00:00"
+      },
+      {
+        "label": "r3-native-after-reset",
+        "exit_code": 0,
+        "seconds": 676.15,
+        "started_at": "2026-10-24T12:13:30.960798+00:00"
+      }
+    ],
+    "completed": true,
+    "protocol_event_counts": {
+      "thread.started": 1,
+      "turn.started": 1,
+      "item.completed": 32,
+      "item.started": 27,
+      "turn.completed": 1
+    }
+  },
+  "comparison": {
+    "fixed_selected_inputs_equal": true,
+    "selected_input_count": 83,
+    "controlled_repeated_experiment": false,
+    "same_project_implementation_sha256": true,
+    "successful_segments": [
+      {
+        "group": "single",
+        "seconds": 1108.869,
+        "agent_calls": 5
+      },
+      {
+        "group": "cross",
+        "seconds": 846.127,
+        "agent_calls": 3
+      },
+      {
+        "group": "native",
+        "seconds": 676.15,
+        "agent_calls": 1
+      }
+    ]
+  },
+  "account_entry": "original user default Codex entry; no account change",
+  "native_invocations": {
+    "historical_user_r0": 2,
+    "user_original_task": 2,
+    "additional_assistant_invocations": 32,
+    "cumulative_this_walkthrough": 36,
+    "native_internal_model_requests": "unknown"
+  },
+  "partial_project_postcheck": {
+    "tests": 66,
+    "test_files": 14,
+    "npm_test": "passed",
+    "lint": "passed",
+    "build": "passed",
+    "performed_after_failed_task": true,
+    "does_not_change_task_acceptance": true
+  },
+  "independent_behavior_check": {
+    "baseline": "5 failed, 1 passed",
+    "generated_component": "6 passed",
+    "live_workspace_unchanged_by_independent_check": true
+  },
+  "original_project_status": [
+    "?? docs/chat-insight-experience.md",
+    "?? dream_exam_story.mp4"
+  ],
+  "artifacts": [
+    {
+      "file": "artifacts/chat-insight-20261024/onboarding-review.partial.md",
+      "raw_sha256": "f8d862a976f518430f7a08adfc238e05fd8c4aad48c1d4482b054e919152e1a5",
+      "export_sha256": "e387cece22f9d6c368867afacabc8ea2caabf0352e298211605bf71a57ba9916",
+      "historical_before_reset": true
+    },
+    {
+      "file": "artifacts/chat-insight-20261024/DateRangePicker.tsx",
+      "raw_sha256": "3f5611030dc8ad2f15c5b5962f8997d63aa76399c2445f82312e822a9435d249",
+      "export_sha256": "3f5611030dc8ad2f15c5b5962f8997d63aa76399c2445f82312e822a9435d249",
+      "historical_before_reset": true
+    },
+    {
+      "file": "artifacts/chat-insight-20261024/DateRangePicker.test.tsx",
+      "raw_sha256": "3002ecb57a7d11badc496bbe53eb01459adc56d866554a5040db5327ce087846",
+      "export_sha256": "3002ecb57a7d11badc496bbe53eb01459adc56d866554a5040db5327ce087846",
+      "historical_before_reset": true
+    },
+    {
+      "file": "artifacts/chat-insight-20261024/DateRangePicker.acceptance.test.tsx",
+      "raw_sha256": "1481090e1a1f41c71786a7fb5db29de8e958046c7a1a311d45bb9f00d3a53b36",
+      "export_sha256": "1481090e1a1f41c71786a7fb5db29de8e958046c7a1a311d45bb9f00d3a53b36",
+      "historical_before_reset": true
+    },
+    {
+      "file": "artifacts/chat-insight-20261024/partial-project-postcheck.log",
+      "raw_sha256": "2bc5437ed100e4ebdfd74bf70d2c5d344be83a7b904ae339cc4f06eceedc2719",
+      "export_sha256": "5ad16cfcd0b7f2ebffbaa6fbae998a153c3dd51485582bcefe6e8f4b3868ddea",
+      "historical_before_reset": true
+    },
+    {
+      "file": "artifacts/chat-insight-20261024/independent-project-single.log",
+      "raw_sha256": "fb35e3600ec3501e9362b0556919042faa68b0c849dc5841892533eb16646226",
+      "export_sha256": "8269a26a85ab31f0db989ffeb75d31054f06f6c9300f5760f90b0208db58016c",
+      "historical_before_reset": true
+    },
+    {
+      "file": "artifacts/chat-insight-20261024/independent-baseline.log",
+      "raw_sha256": "6935659d4404d95c7a93eaea347be71d114ab568f2016db8e5934239042e442b",
+      "export_sha256": "e26154151d565a0e6dcdce491da1d69de17e514ac2bac6345303168b1b8a665e",
+      "historical_before_reset": true
+    },
+    {
+      "file": "artifacts/chat-insight-20261024/onboarding-review.single.md",
+      "raw_sha256": "26a56d59d23f8a5edc7334d4f181320486c9b78f0d156fbba0d590f1c30a4248",
+      "export_sha256": "5c90dbf20f2d65379ac5194afb2117247abe821d1b5c23c4b250105b1568390f"
+    },
+    {
+      "file": "artifacts/chat-insight-20261024/acceptance-checklist.single.md",
+      "raw_sha256": "bede263fdd325e186c8e88472fe1faba596c63aa3fa108f93e247c9364a9ac5f",
+      "export_sha256": "7cedbba1602ede94054187409edb913ec1c3cd3b0b06e7e7448d1cbea253ad87"
+    },
+    {
+      "file": "artifacts/chat-insight-20261024/onboarding-review.cross.md",
+      "raw_sha256": "1e52aed3e07b99447f8478b4441ca8bdecff511c35b3d9076bb0a665e225ac34",
+      "export_sha256": "a3d20101599af020fd59e0bda79d4c37ae4ce517a272d09ccfb4ca18e0616f37"
+    },
+    {
+      "file": "artifacts/chat-insight-20261024/acceptance-checklist.cross.md",
+      "raw_sha256": "de29d3d9123049eae03f4a76c1218064441d2742b251e72d5eda16b8f44f5c65",
+      "export_sha256": "90c2ab7bd8e7a259d6cc25cd086eeb48b1c1274234edd2e85ac9dcbf8ebe3cc5"
+    },
+    {
+      "file": "artifacts/chat-insight-20261024/onboarding-review.native.md",
+      "raw_sha256": "f3c1ad769126e4a9b6c6c1e47ef2a20dd00c3f864d50740ad9471f0d39b9da0c",
+      "export_sha256": "aa02f6c49c5c55bbcf93be3ca88e2bcaf60b41fbf33e1e7093454bb103b3a29f"
+    },
+    {
+      "file": "artifacts/chat-insight-20261024/acceptance-checklist.native.md",
+      "raw_sha256": "d735181ffbe9b0a97164a3a62ef6842e13934a28553e3b8d29f648010c926bcf",
+      "export_sha256": "cff221d534cd3eaba5a5a7732e27205ff24e3079f3809ca4cabc861ba99e18f4"
+    }
+  ],
+  "engineering_validation": {
+    "race": {
+      "log_present": true,
+      "sha256": "4d62f38a541aefa14aab6def0b573d5ca8ce61667b1e8130828e1d5a8413d299"
+    },
+    "vet": {
+      "log_present": true,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "r3_fixtures": {
+      "log_present": true,
+      "sha256": "f80d61fc07c9d5678dce7e00b2a926fa92a91aae8a0d39fdf84123745db5b9eb"
+    },
+    "modules": {
+      "log_present": true,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "go_source_sha256": {
+    "cmd/agents_doctor.go": "b9387227ac193b62a14df77d8ce2443980b22b358e9331cb24b73e40827a0452",
+    "cmd/config_default.go": "05f69cf8eeb46049f6231ab80d4ecc4c1d18ff5c9c457944532c35ec845dc481",
+    "cmd/execution.go": "9dda2093d45c4eeb80b7f6315832b24dffb29b24a057d24309432cfe4f7b888e",
+    "cmd/jobs.go": "89c047a9ca21ff781e92058cdced2db22254c35661c30ef69e8022608c4deaa5",
+    "cmd/jobs_test.go": "8acb004504ef8df6c43cacf422584ba595795730c8fbfe7ac2843083e67633c5",
+    "cmd/mcp.go": "a7a404fb2f72e139b7dc6360d8542b3cee09b6380b9a921edc4a4d6bba8cff57",
+    "cmd/r0_test.go": "e79b52cb9fc8854c4cf626e2f35075db0851d7e0437c89ffeeafc7775a7f54cb",
+    "cmd/resume.go": "f5786644cd3af69c22ab7779b2c69335bedaabc0c25ad576207549109a41f92c",
+    "cmd/resume_test.go": "b45e5d65da651643d7038b78713410f4782001e13463a6f42db6bcdd9b8f5f4a",
+    "cmd/root.go": "77ca65bae008fd84309c3486b922e8464af4b341211af3c5ccebd021b164e972",
+    "cmd/root_test.go": "a76758605aae8f9dc3c5f8f3f06c4bd4a087bca57e27606c7c5d1f4eee21e71f",
+    "cmd/run_exec.go": "534927dbd4cee6f6498881ae0a5e27d6ec7aa6606e5c59d4cca82f98e1b856fc",
+    "cmd/run_use.go": "78965c7e24b4efd6d0292f493ebc2599e8626144fbd77ea5e970ca81fe27b46c",
+    "cmd/runs.go": "26157b86110a6fef4bb8213f4a1aa95b3cc7a696f35a0d68f52b9f7a49ee7cae",
+    "cmd/selection.go": "e0e3d33c49d701eb9064c6650da18dc1eedfe42533027a09f6dc2a3c7fe5e7b9",
+    "cmd/task.go": "aa709bca7ccaa984968407a4b1a28aaaa5218b23165ff3f7b7409dc7be5ed597",
+    "cmd/task_lifecycle_test.go": "8a99b41118cfbdc3711f2672d1c1cdb33478b8c1eff76f513e344c249d055d48",
+    "cmd/task_process.go": "daf7673a95402d8cf11982aea7666f8ccfde56370cc5e08968ba9933380e6161",
+    "cmd/task_test.go": "3e8de639fab859325633f139a8d85f3e07785bd7343d9f3edb075493f15f5a8d",
+    "cmd/workflow_compat.go": "f6feddfcc4592186660817b30475c0b37076652838e18be1c795ac7454881c4d",
+    "internal/agent/agent.go": "bfd0ad262a2f14abc6c5c4860e38d9784dd60a7145182a2ddacaf260d6bf6e00",
+    "internal/agent/agent_test.go": "d3625a9a4f1fb14759591a6092ee81292de7b02ca251a051ade63dcc265baf54",
+    "internal/agent/diagnostics.go": "ed6b9c430be6e539ebba9dc1977cdd26d5c274cbb2ce61cea9ee33395510b378",
+    "internal/agent/diagnostics_test.go": "05803d8cd89059ce15aa00bd664a6f87681add40493d7b3542ee5513e9296dfb",
+    "internal/agent/probe.go": "7e2ef57dbae66f5a46c30020559996ba70eb62dc1b14333d608d6cc617845335",
+    "internal/agent/r0_test.go": "008254c6b396b786790db48837554a99b49f4e478f44b34b1149b3cbcacd7099",
+    "internal/agent/stream.go": "9de180c7e51b71098d41a009970a83fb38e1d1853d59b21f5c17a41a93893fe6",
+    "internal/agent/stream_test.go": "6e90d2b1b34f15d335673f5ef96f0ca8ee439bf800c1b8cba9c33df2d43c7326",
+    "internal/agent/usage.go": "58b9b232140da44ce401f8f1ca0ac10eea3bbd8ef9435122fa5a944629601697",
+    "internal/config/config.go": "80005280c35de0b0fce0d8b395608f9288a9bdcee9c38b499539b05fd8e0ed4f",
+    "internal/config/config_test.go": "4a26a643faab047d19962562833c6d7160e3a7d8a13df72f831d83a45391d00a",
+    "internal/jobs/jobs.go": "0cd87e0c0cabd3a302797692da563ba17d69cce24be62daef425a1142631aae0",
+    "internal/jobs/jobs_test.go": "a12261fb7e6fca39ea48bc5d22e20b07eb8c48739a4775a6391cbbc80b4f0f15",
+    "internal/jobs/process_unix.go": "97865598afa6cd21b1d7ee3db76f775965c6d89979db8cdb683815c00c456999",
+    "internal/mcp/serve.go": "86b37d43cb6ad42cc3934ebad836b27ec6123f4ac1e910d27610723ad4296be1",
+    "internal/mcp/serve_test.go": "276da43f1cc44213af74dbef71460d3fdfb6f188c5dc2d3f7669e91bd9630ebe",
+    "internal/runstore/store.go": "e7410efadf1e99eb57005cf0a9d85606dbeccb3fd59bbfcda14996c5c2c4e1df",
+    "internal/runstore/store_test.go": "222d0da62264cf23f804d18d98106d491a4ae48d5aac9ff58fe507c2cf6e821a",
+    "internal/runtime/environment.go": "c3c55155c49eaff0c241737a6e22314b27baca3b99e7265754a49c3d27ccdb43",
+    "internal/runtime/environment_test.go": "6fa0fd3091d4ee60c5d939dc2bc88a24d77a0989d81a9af3786873e6cdffd496",
+    "internal/runtime/execution.go": "7ac2dd69703ad137fc18ace71bdf2f3fca2e56340d4727790e2cb8851b31823b",
+    "internal/runtime/execution_test.go": "e3de983c63165f855aa4f8de376a5b58b8a1445f2c0506280cf9b47aadcd1df4",
+    "internal/runtime/process.go": "5dea9e205e1069af5de6de6ca4c056c318e76e316e0940b85db2c3c36f1a219d",
+    "internal/runtime/process_unix.go": "b5eb4311eb4a68520bd343800b58f1ea25824db016251a4324feb248330153c4",
+    "internal/task/integrity.go": "f3cf2cd9341736ac59d2e4df546311a6edbe1e167ecacf362aa54b2ebd18f68f",
+    "internal/task/lifecycle.go": "4520b4c12dcb308f0255ea2319b8110074c98e3f557784cf56e9587bd942b3ba",
+    "internal/task/lifecycle_test.go": "45b31b19b8a57cdf85c4c9450afc1c31d0546469c8655e9996d7720c66883f98",
+    "internal/task/lock_unix.go": "770544cfc3b97cfd15ad11f48beb234e40f2f1763ee3cea8f165a640ea741ed6",
+    "internal/task/material.go": "96200ca9e863d22e11a855faf08381da8b7a762acfdff7aac4138a20f2df03d3",
+    "internal/task/policy.go": "873386ae8bd840d4636c4b29c04d47389d814a174b018a92ab8d7ac8755de83c",
+    "internal/task/protocol.go": "4690dd01f54053a9523f754edbf91562ae76792df85815c2ea3d778a3e4ab915",
+    "internal/task/review_material.go": "63229ea86cc186e801ed74f87e09841fa393af4f7f1c4db46ba60e80a737d194",
+    "internal/task/runner.go": "7362675b4ada4d2a21902bfcc9206d929f857db0fe857438fedc57d90f9df74d",
+    "internal/task/runner_test.go": "796e1cc010cfdd1a5606d2f4399d1239cb0d9d9e125d610ee5c9ef3b2fb7c1fc",
+    "internal/task/schema.go": "7c78f98cb61ae6a01a65bd78ef106af0640504c1795ff37b1609da8caee07382",
+    "internal/task/store.go": "d9fb16bf1d4d7042c6e9730c36e4dd2659718dd1147f3e31a5ed8129797b372b",
+    "internal/task/types.go": "051f39820d43ca03097afddb33eb3d913999cd2036510d7ade1829397c4c8010",
+    "internal/workflow/attempt.go": "162433c05df0921c6c20aaddb1277aba03f8fbbf50f3b7828f666c8dcf88c083",
+    "internal/workflow/plan.go": "148c5a95abf4cbd4e490ea6d66e9656ac9de42327091455b72173d4e1277c4b3",
+    "internal/workflow/runner.go": "74028cde8c143d5c987060dc17c71429c9d5879ce33025e20a6175064432ff01",
+    "internal/workflow/runner_test.go": "2ede6e7233993e6732196d3589d6cd63db6391f207ffc5492e879e1558f0c48b",
+    "internal/workflow/template.go": "1fe161ffad0f02bfd2a4092dcc9d06bf8e36e0aa8acef2eab26f9ddbfd45638c",
+    "internal/workflow/template_test.go": "fb1a4780153c37c779a014cd089bca4ed08adc5abbf16c9e373f5c35b0e2d912",
+    "internal/workflow/workflow.go": "f11c06fc7d5ba8681777c06f11c4a79bb5d47f4ccf5ca8b779a38b3cad1fb629",
+    "internal/worktree/manager.go": "536c55cd3a21c4011baecc5f301c146a2d05c2d267798d3568050a2282308721",
+    "internal/worktree/manager_test.go": "72df8e52cc350ca8485828e9b1769e835bfadb75be19481b5754a5c122af4ca1",
+    "internal/worktree/r0_test.go": "0ad8aeca530e29b990d8abfaa67b7b0bc67c97939066e1db699d793dbe112dc8",
+    "main.go": "e95bde0fd8b776159ee6ec9e7d45d7aa0f2150e6d1c0bb865c84db6e0e1c9d04",
+    "tests/phase0/cases.go": "acef0bc765037c634151403f06586736c2c64ef4eb2225cccefc38b5b0489015",
+    "tests/phase0/contracts_test.go": "eb95f715f3ac6eba9aaf9172f52e2323c33590e1f1b6e4f5195bef5aa992375e",
+    "tests/phase0/main.go": "a13740729eea13bcae18aa7b816195a6a2c6d60ead3546d5e0de006f49d6920c",
+    "tests/phase0/smoke.go": "e451db502d72aa3f7ddec092791e0e364eb7cb25a22b350321db7f2f53d926ee"
+  },
+  "limitations": [
+    "no controlled quality or collaboration benefit conclusion",
+    "no independent human study",
+    "no merge, push, tag or release"
+  ],
+  "pre_reset_evidence": "chat-insight-experience-20261024-before-reset.json"
+}

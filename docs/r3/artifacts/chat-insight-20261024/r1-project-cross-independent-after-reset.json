@@ -1,0 +1,10 @@
+{
+  "case": "r1-project-cross",
+  "task_id": "task-20261024T075146Z-3101a540",
+  "exit_code": 0,
+  "expected_tests": 6,
+  "component_sha256": "3f5611030dc8ad2f15c5b5962f8997d63aa76399c2445f82312e822a9435d249",
+  "live_component_unchanged": true,
+  "task_snapshot": "417701b428cfc06ee83bd7f317fb7c9d339580df44ca0b70e481ecb04cded371",
+  "test_source_sha256": "1481090e1a1f41c71786a7fb5db29de8e958046c7a1a311d45bb9f00d3a53b36"
+}

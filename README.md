@@ -41,7 +41,7 @@ go build -o xcli .
 
 `--agent` locks all xcli Agent invocations to the configured CLI, including planning, repair and self-check. It never silently falls back to another CLI. Without it, available structured adapters are selected using the configured default preference and deterministic candidate ordering; the coordinator assigns roles. Different aliases of the same adapter do not count as cross-CLI review.
 
-Default bounds are 10 minutes of cumulative execution time (excluding pauses and waiting), 6 Agent CLI invocations, 120 seconds per invocation, and one repair followed by revalidation. Change total limits with `--timeout` and `--max-calls`. Native internal model calls and subagents may not be observable; invocation counts are not model request counts.
+Default bounds are 10 minutes of cumulative execution time (excluding pauses and waiting), 6 Agent CLI invocations, 120 seconds per invocation, and one repair followed by revalidation. Change total limits with `--timeout` and `--max-calls`, and each Agent invocation's limit with `--call-timeout`. Increasing the total budget does not extend individual calls, and the remaining total budget still bounds every call. For substantial source reviews, explicitly use `--call-timeout 8m --timeout 30m`. Native internal model calls and subagents may not be observable; invocation counts are not model request counts.
 
 ## Results and verification
 

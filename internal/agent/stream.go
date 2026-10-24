@@ -18,6 +18,26 @@ const MaxOutputBytes = 8 << 20
 // its observed reconnect notice; completion and native exit remain required.
 var codexReconnect = regexp.MustCompile(`^Reconnecting\.\.\. ([1-9][0-9]*)/([1-9][0-9]*)( \([^\r\n]*\))?$`)
 
+func codexUsageLimit(event map[string]any) bool {
+	values := []map[string]any{event}
+	if nested, ok := event["error"].(map[string]any); ok {
+		values = append(values, nested)
+	}
+	for _, value := range values {
+		for _, key := range []string{"code", "codex_error_info"} {
+			if code, _ := value[key].(string); code == "usage_limit_exceeded" || code == "quota_exceeded" {
+				return true
+			}
+		}
+		message, _ := value["message"].(string)
+		message = strings.ToLower(message)
+		if strings.Contains(message, "you’ve hit your usage limit") || strings.Contains(message, "you've hit your usage limit") {
+			return true
+		}
+	}
+	return false
+}
+
 func codexRetryNotice(event map[string]any) bool {
 	if retry, ok := event["will_retry"].(bool); ok && !retry {
 		return false
@@ -280,7 +300,16 @@ func (d *StreamDecoder) consume(data []byte) {
 		return
 	}
 	if failed {
-		d.fail("parse_error", "native protocol reported failure")
+		if d.adapter == "codex" && (kind == "error" || kind == "turn.failed") && codexUsageLimit(event) && d.result.ParseStatus == "complete" {
+			// Keep a recognized, sanitized operational cause instead of copying
+			// arbitrary native error messages (which can contain private data).
+			d.terminal = true
+			d.result.Status = "failed"
+			d.result.ErrorKind = "quota_exceeded"
+			d.result.Error = "codex: usage limit reached; wait for quota recovery or explicitly choose another execution entry for a new Task"
+		} else {
+			d.fail("parse_error", "native protocol reported failure")
+		}
 	}
 	if len(pieces) > 0 {
 		d.setOutput(strings.Join(pieces, ""), !replace)
@@ -346,8 +375,10 @@ func Normalize(result RunResult, nativeExit int, canceled, timedOut bool, startE
 		return result, 130
 	case nativeExit != 0:
 		result.Status = "failed"
-		result.ErrorKind = "process_failed"
-		result.Error = fmt.Sprintf("native process exited with code %d", nativeExit)
+		if result.ErrorKind != "quota_exceeded" {
+			result.ErrorKind = "process_failed"
+			result.Error = fmt.Sprintf("native process exited with code %d", nativeExit)
+		}
 		if nativeExit > 0 {
 			return result, nativeExit
 		}

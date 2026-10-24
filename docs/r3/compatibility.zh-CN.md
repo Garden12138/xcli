@@ -4,6 +4,7 @@
 
 | 环境 / 角色 | 已验证 | 限制与证据 |
 | --- | --- | --- |
+| macOS arm64 / Codex 0.164.0、Cursor 2026.10.16-e3cb207，2026-10-24 修复候选 | chat-insight 的 Work/Project × 指定/自动四条路径；实际 worker 取消、同 Task 新 session 材料恢复与追加需求；Codex 执行、Cursor 复核 | [完整体验记录](chat-insight-experience-20261024.zh-CN.md)与[证据](evidence/chat-insight-experience-20261024.json)。保留超时、额度失败及重连中断；原项目未修改，未扩大到 Cursor 写入、实机重启或连续满三十分钟运行 |
 | macOS arm64 / Codex 0.163.0：协调、执行、自查 | Work、Project、原生 resume、取消；实际 worker 中断及新 session 材料恢复 | [最终对照](evidence/comparison-final.json)、[原生兼容](evidence/compatibility.json)、[恢复补验](evidence/followup-native-20261019.json)；自查不等于跨 CLI 独立复核 |
 | macOS arm64 / Cursor 2026.10.16-e3cb207：复核 | Work / Project 当前摘要复核；原生 resume 和取消；额度恢复后的真实请求与后台恢复最终复核 | [对照](evidence/comparison-final.json)、[兼容](evidence/compatibility.json)与[额度恢复后补验](cursor-restored-20261019.zh-CN.md)；此前额度失败保留，本次成功不保证未来额度 |
 | Codex 执行 / Cursor 复核：后台材料恢复 | 实际 worker 取消、paused、同 Task 新 session 材料恢复，以及当前摘要的 Cursor 复核均通过 | [原生补验](evidence/cursor-restored-20261019.json)，Task 自动模式、候选池、绑定与累计预算保留；未覆盖此前失败 |

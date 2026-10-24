@@ -206,6 +206,34 @@ func TestAntigravityDeniedActionsPreserveAnswerButFailExecution(t *testing.T) {
 	}
 }
 
+func TestCodexQuotaFailureKeepsSanitizedCauseAndNativeExit(t *testing.T) {
+	for _, event := range []string{
+		`{"type":"error","message":"You’ve hit your usage limit. private@example.invalid try again at 7:04 PM."}`,
+		`{"type":"turn.failed","error":{"message":"private@example.invalid","codex_error_info":"usage_limit_exceeded"}}`,
+	} {
+		stream := `{"type":"thread.started","thread_id":"quota-session"}` + "\n" + event
+		for _, native := range []int{0, 1} {
+			parsed := ParseStructured("codex", "jsonl", []byte(stream))
+			result, code := Normalize(parsed, native, false, false, nil)
+			if code != 1 || result.ExitCode != native || result.Status != "failed" || result.ParseStatus != "complete" || result.ErrorKind != "quota_exceeded" || result.SessionID != "quota-session" || strings.Contains(result.Error, "private@example.invalid") {
+				t.Fatalf("quota cause lost or private native text leaked: %+v exit=%d", result, code)
+			}
+			canceled, code := Normalize(parsed, native, true, false, nil)
+			if code != 130 || canceled.ErrorKind != "canceled" {
+				t.Fatal("quota overrode cancellation")
+			}
+		}
+		broken := ParseStructured("codex", "jsonl", []byte("BAD secret\n"+stream))
+		if broken.ErrorKind != "parse_error" || strings.Contains(broken.Error, "secret") {
+			t.Fatal("quota hid protocol damage", broken)
+		}
+	}
+	quoted := ParseStructured("codex", "jsonl", []byte(`{"type":"item.completed","item":{"type":"agent_message","text":"You've hit your usage limit is an example diagnostic."}}`+"\n"+`{"type":"turn.completed"}`))
+	if quoted.Status != "success" {
+		t.Fatal("ordinary response was classified as a native quota failure")
+	}
+}
+
 func BenchmarkDecoderOutput(b *testing.B) {
 	for _, size := range []int{100 << 20, 1 << 30} {
 		b.Run(fmt.Sprint(size), func(b *testing.B) {

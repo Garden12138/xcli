@@ -1,0 +1,12 @@
+?   	github.com/Garden12138/xcli	[no test files]
+ok  	github.com/Garden12138/xcli/cmd	47.294s
+ok  	github.com/Garden12138/xcli/internal/agent	3.734s
+ok  	github.com/Garden12138/xcli/internal/config	(cached)
+ok  	github.com/Garden12138/xcli/internal/jobs	(cached)
+ok  	github.com/Garden12138/xcli/internal/mcp	(cached)
+ok  	github.com/Garden12138/xcli/internal/runstore	(cached)
+ok  	github.com/Garden12138/xcli/internal/runtime	7.022s
+ok  	github.com/Garden12138/xcli/internal/task	156.202s
+ok  	github.com/Garden12138/xcli/internal/workflow	9.965s
+ok  	github.com/Garden12138/xcli/internal/worktree	(cached)
+ok  	github.com/Garden12138/xcli/tests/phase0	(cached)

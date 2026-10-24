@@ -281,6 +281,7 @@ func (s *Store) Queue(id string, u Update, stop bool) (Update, error) {
 	}
 	if !stop {
 		maxCalls, timeout := t.MaxCalls, t.Options.Timeout
+		perCall := callTimeout(t.Options.CallTimeout)
 		for _, pending := range c.Updates {
 			if pending.MaxCalls > maxCalls {
 				maxCalls = pending.MaxCalls
@@ -288,12 +289,18 @@ func (s *Store) Queue(id string, u Update, stop bool) (Update, error) {
 			if pending.Timeout > timeout {
 				timeout = pending.Timeout
 			}
+			if pending.CallTimeout > perCall {
+				perCall = pending.CallTimeout
+			}
 		}
 		if u.Timeout < 0 || (u.Timeout != 0 && (u.Timeout < timeout || u.Timeout <= t.Elapsed)) {
 			return u, errors.New("--timeout cannot reduce the cumulative execution budget")
 		}
 		if u.MaxCalls < 0 || (u.MaxCalls != 0 && (u.MaxCalls < maxCalls || u.MaxCalls < t.Calls)) {
 			return u, errors.New("--max-calls cannot reduce the cumulative invocation budget")
+		}
+		if u.CallTimeout < 0 || (u.CallTimeout != 0 && u.CallTimeout < perCall) {
+			return u, errors.New("--call-timeout cannot reduce the per-invocation time limit")
 		}
 		if len(u.Message) > 128<<10 {
 			return u, errors.New("Task update exceeds 128 KiB")

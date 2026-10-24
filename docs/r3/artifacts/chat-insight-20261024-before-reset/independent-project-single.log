@@ -1,0 +1,15 @@
+
+> chat-insight@0.1.8 test
+> vitest run src/components/DateRangePicker.acceptance.test.tsx
+
+
+ RUN  v3.2.7 <体验目录>/evaluation/project-single
+
+ ✓ src/components/DateRangePicker.acceptance.test.tsx (6 tests) 78ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  15:57:23
+   Duration  506ms (transform 27ms, setup 66ms, collect 22ms, tests 78ms, environment 151ms, prepare 28ms)
+
+\n

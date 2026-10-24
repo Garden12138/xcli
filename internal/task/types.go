@@ -9,15 +9,25 @@ import (
 	"github.com/Garden12138/xcli/internal/worktree"
 )
 
+const DefaultCallTimeout = 2 * time.Minute
+
+func callTimeout(value time.Duration) time.Duration {
+	if value == 0 {
+		return DefaultCallTimeout
+	}
+	return value
+}
+
 type Options struct {
-	Goal     string
-	Agent    string
-	Project  string
-	Inputs   []string
-	Output   string
-	Verify   [][]string
-	Timeout  time.Duration
-	MaxCalls int
+	Goal        string
+	Agent       string
+	Project     string
+	Inputs      []string
+	Output      string
+	Verify      [][]string
+	Timeout     time.Duration
+	CallTimeout time.Duration
+	MaxCalls    int
 }
 
 type Task struct {
@@ -85,6 +95,7 @@ type Update struct {
 	Message      string        `json:"message,omitempty"`
 	Verify       [][]string    `json:"verify,omitempty"`
 	Timeout      time.Duration `json:"timeout_ns,omitempty"`
+	CallTimeout  time.Duration `json:"call_timeout_ns,omitempty"`
 	MaxCalls     int           `json:"max_calls,omitempty"`
 	Reconcile    bool          `json:"reconcile,omitempty"`
 	FreshSession bool          `json:"fresh_session,omitempty"`

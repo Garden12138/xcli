@@ -46,6 +46,10 @@ func (r *Runner) Create(ctx context.Context, opts Options) (Task, error) {
 	if opts.Timeout <= 0 || opts.MaxCalls <= 0 {
 		return Task{}, errors.New("timeout and max-calls must be positive")
 	}
+	if opts.CallTimeout < 0 {
+		return Task{}, errors.New("call-timeout must be positive")
+	}
+	opts.CallTimeout = callTimeout(opts.CallTimeout)
 	now := time.Now().UTC()
 	t := &Task{Version: 2, ID: runstore.NewID("task"), Goal: opts.Goal, OriginalGoal: opts.Goal, Kind: "work", Mode: "auto", Agent: opts.Agent, Status: "planning", StartedAt: now, MaxCalls: opts.MaxCalls, Options: opts, Candidates: []string{}, Bindings: map[string]string{}}
 	if opts.Agent != "" {
@@ -82,7 +86,7 @@ func (r *Runner) Create(ctx context.Context, opts Options) (Task, error) {
 }
 
 func hasUpdate(u Update) bool {
-	return u.Message != "" || len(u.Verify) > 0 || u.Timeout != 0 || u.MaxCalls != 0 || u.Reconcile || u.FreshSession
+	return u.Message != "" || len(u.Verify) > 0 || u.Timeout != 0 || u.CallTimeout != 0 || u.MaxCalls != 0 || u.Reconcile || u.FreshSession
 }
 
 func (r *Runner) Continue(ctx context.Context, id string, u Update) (Task, error) {
@@ -300,8 +304,14 @@ func (r *Runner) applyUpdates() error {
 		if u.MaxCalls != 0 && (u.MaxCalls < t.MaxCalls || u.MaxCalls < t.Calls) {
 			return errors.New("--max-calls cannot reduce the cumulative budget")
 		}
+		if u.CallTimeout < 0 || (u.CallTimeout != 0 && u.CallTimeout < callTimeout(t.Options.CallTimeout)) {
+			return errors.New("--call-timeout cannot reduce the per-invocation time limit")
+		}
 		if u.Timeout > 0 {
 			t.Options.Timeout = u.Timeout
+		}
+		if u.CallTimeout > 0 {
+			t.Options.CallTimeout = u.CallTimeout
 		}
 		if u.MaxCalls > 0 {
 			t.Options.MaxCalls, t.MaxCalls = u.MaxCalls, u.MaxCalls
@@ -542,16 +552,6 @@ type Receipt struct {
 }
 
 func (r *Runner) attempt(ctx context.Context, wr workflow.Runner, id, cwd, boundary string, step workflow.Step, output bool) workflow.StepResult {
-	if step.ResumeSession != "" {
-		d, _ := r.Registry.Get(step.Agent)
-		if d.Config.Adapter == "codex" {
-			for i := 0; i+1 < len(step.Args); i++ {
-				if step.Args[i] == "--sandbox" {
-					step.Args[i], step.Args[i+1] = "-c", "sandbox_mode="+strconvQuote(step.Args[i+1])
-				}
-			}
-		}
-	}
 	var res workflow.StepResult
 	if r.Execute != nil {
 		res = r.Execute(ctx, id, cwd, boundary, step, output, wr.Events)
@@ -575,8 +575,6 @@ func (r *Runner) attempt(ctx context.Context, wr workflow.Runner, id, cwd, bound
 	}
 	return res
 }
-func strconvQuote(s string) string { b, _ := json.Marshal(s); return string(b) }
-
 func sessionUnavailable(res workflow.StepResult) bool {
 	if res.Status == "success" || res.ParseStatus == "complete" {
 		return false

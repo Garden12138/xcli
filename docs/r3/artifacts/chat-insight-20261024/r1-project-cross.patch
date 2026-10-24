@@ -1,0 +1,105 @@
+diff --git a/src/components/DateRangePicker.tsx b/src/components/DateRangePicker.tsx
+index f54223f..aebfa89 100644
+--- a/src/components/DateRangePicker.tsx
++++ b/src/components/DateRangePicker.tsx
+@@ -20,7 +20,7 @@ export function DateRangePicker({ preset, range, onPresetChange, onRangeChange }
+     <div className="range-picker" data-guide={guideTarget.range} aria-label="时间范围">
+       <div className="segmented">
+         {presets.map((item) => (
+-          <button key={item.value} className={preset === item.value ? "active" : ""} onClick={() => onPresetChange(item.value)}>
++          <button key={item.value} className={preset === item.value ? "active" : ""} aria-pressed={preset === item.value} onClick={() => onPresetChange(item.value)}>
+             {item.label}
+           </button>
+         ))}
+diff --git a/src/components/DateRangePicker.test.tsx b/src/components/DateRangePicker.test.tsx
+new file mode 100644
+--- /dev/null
++++ b/src/components/DateRangePicker.test.tsx
+@@ -0,0 +1,87 @@
++import { fireEvent, render, screen } from "@testing-library/react";
++import { describe, expect, it, vi } from "vitest";
++import type { DateRange, RangePreset } from "../types";
++import { DateRangePicker } from "./DateRangePicker";
++
++const presetOptions: Array<{ value: RangePreset; label: string }> = [
++  { value: "30d", label: "近 30 天" },
++  { value: "1y", label: "近 1 年" },
++  { value: "all", label: "全部" },
++  { value: "custom", label: "自定义" },
++];
++
++function expectSelectedPreset(preset: RangePreset) {
++  expect(screen.getAllByRole("button", { pressed: true })).toHaveLength(1);
++  expect(screen.getAllByRole("button", { pressed: false })).toHaveLength(3);
++
++  for (const option of presetOptions) {
++    const button = screen.getByRole("button", { name: option.label });
++    const selected = option.value === preset;
++    expect(button).toHaveAttribute("aria-pressed", String(selected));
++    if (selected) {
++      expect(button).toHaveClass("active");
++    } else {
++      expect(button).not.toHaveClass("active");
++    }
++  }
++}
++
++describe("DateRangePicker", () => {
++  it.each(presetOptions)("marks only $value as pressed", ({ value }) => {
++    render(<DateRangePicker preset={value} range={{}} onPresetChange={vi.fn()} onRangeChange={vi.fn()} />);
++
++    expectSelectedPreset(value);
++  });
++
++  it("updates pressed states when the parent changes the preset prop", () => {
++    const onPresetChange = vi.fn();
++    const onRangeChange = vi.fn();
++    const { rerender } = render(
++      <DateRangePicker preset="30d" range={{}} onPresetChange={onPresetChange} onRangeChange={onRangeChange} />,
++    );
++    expectSelectedPreset("30d");
++
++    const updates: RangePreset[] = ["1y", "all", "custom", "30d"];
++    for (const preset of updates) {
++      rerender(<DateRangePicker preset={preset} range={{}} onPresetChange={onPresetChange} onRangeChange={onRangeChange} />);
++      expectSelectedPreset(preset);
++    }
++
++    expect(onPresetChange).not.toHaveBeenCalled();
++    expect(onRangeChange).not.toHaveBeenCalled();
++  });
++
++  it.each(presetOptions)("passes $value to onPresetChange when $label is clicked", ({ value, label }) => {
++    const onPresetChange = vi.fn();
++    const onRangeChange = vi.fn();
++    render(<DateRangePicker preset="30d" range={{}} onPresetChange={onPresetChange} onRangeChange={onRangeChange} />);
++
++    fireEvent.click(screen.getByRole("button", { name: label }));
++
++    expect(onPresetChange).toHaveBeenCalledOnce();
++    expect(onPresetChange).toHaveBeenCalledWith(value);
++    expect(onRangeChange).not.toHaveBeenCalled();
++    expectSelectedPreset("30d");
++  });
++
++  const range: DateRange = { from: "2026-09-01", to: "2026-09-30" };
++
++  it.each([
++    { label: "开始日期", action: "changes", value: "2026-09-02", expected: { from: "2026-09-02", to: "2026-09-30" } },
++    { label: "结束日期", action: "changes", value: "2026-10-01", expected: { from: "2026-09-01", to: "2026-10-01" } },
++    { label: "开始日期", action: "clears", value: "", expected: { from: undefined, to: "2026-09-30" } },
++    { label: "结束日期", action: "clears", value: "", expected: { from: "2026-09-01", to: undefined } },
++  ])("$action $label through onRangeChange while preserving the other date", ({ label, value, expected }) => {
++    const onPresetChange = vi.fn();
++    const onRangeChange = vi.fn();
++    render(<DateRangePicker preset="custom" range={range} onPresetChange={onPresetChange} onRangeChange={onRangeChange} />);
++    expect(screen.getByLabelText("开始日期")).toHaveValue(range.from);
++    expect(screen.getByLabelText("结束日期")).toHaveValue(range.to);
++
++    fireEvent.change(screen.getByLabelText(label), { target: { value } });
++
++    expect(onRangeChange).toHaveBeenCalledOnce();
++    expect(onRangeChange.mock.calls[0]).toStrictEqual([expected]);
++    expect(onPresetChange).not.toHaveBeenCalled();
++  });
++});
