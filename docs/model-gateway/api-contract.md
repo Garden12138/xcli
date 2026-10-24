@@ -28,3 +28,5 @@ SSE 使用 `data: <chat.completion.chunk JSON>\n\n`，结束 `data: [DONE]\n\n`�
 M2：Vision 单请求仍为 4 MiB JSON（base64 也计入预算），仅 text/image_url 内容部件；图片上传/结果单图 20 MiB、16,777,216 像素，总 multipart/图片结果 32 MiB，最多 4 张。先 DecodeConfig 再完整 Decode，支持 PNG/JPEG/WebP。编辑文件从 multipart 流有界读入内存，不用临时路径，客户端文件名不会落盘或转发。mask 必须是与第一张参考图等尺寸的 PNG；多图/mask 分别要求 image.multi_reference/image.mask，未经验证返回422。
 
 图片 size 接受正数 WxH 或 auto（同时受像素限制），n=1..4；实际输出数量与指定尺寸必须匹配。只接收 b64_json 或原生默认 base64；请求 response_format=url 返回422，上游仅URL返回502，均不发起下载。配置真实供应商时应选支持该返回方式的模型；上游不支持的参数会明确失败，不模拟或自动换模型。协议参考：[Image edit](https://developers.openai.com/api/reference/resources/images/methods/edit)。WebP 解码来自 [Go x/image](https://pkg.go.dev/golang.org/x/image/webp)。
+
+M3：Embedding支持字符串、字符串批量、token ID数组/批量（批次最多2048），float/base64结果严格透传，保留上游usage。模型必须配置`dimensions`与`index_version`；请求dimensions必须等于alias配置，另一维度使用独立alias。校验数量/index顺序/有限值/维度，拒绝空或伪造向量。目录与响应返回`index_fingerprint`，覆盖实际上游endpoint、模型名、维度和版本（不含密钥）；客户端检测变化并要求显式重建。推理位置是配置者的声明；loopback上游本身仍可能是云代理，配置为local前需独立核实。无法核实必须用unknown。

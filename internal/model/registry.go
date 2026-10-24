@@ -59,6 +59,9 @@ func NewRegistry(descriptors []Descriptor) (*Registry, error) {
 		if seen[Embeddings] && d.Metadata.Kind != "embedding" {
 			return nil, fmt.Errorf("embeddings require embedding model kind")
 		}
+		if seen[Embeddings] && (d.Metadata.Dimensions < 1 || d.Metadata.Dimensions > 65536 || d.Metadata.IndexVersion == "") {
+			return nil, fmt.Errorf("embedding model needs dimensions (1..65536) and index_version")
+		}
 		if (seen[Stream] || seen[Vision] || seen[Tools] || seen[JSONObject] || seen[JSONSchema]) && !seen[Text] {
 			return nil, fmt.Errorf("text extension requires text.generate")
 		}

@@ -26,6 +26,7 @@ type Options struct {
 	Timeout       time.Duration
 	Chats         map[string]model.ChatBackend
 	Images        map[string]model.ImageBackend
+	Embeddings    map[string]model.EmbeddingBackend
 }
 
 type Server struct {
@@ -120,6 +121,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.inference(w, r, client, s.generate)
 	case r.Method == http.MethodPost && r.URL.Path == "/v1/images/edits":
 		s.inference(w, r, client, s.edit)
+	case r.Method == http.MethodPost && r.URL.Path == "/v1/embeddings":
+		s.inference(w, r, client, s.embed)
 	default:
 		writeError(w, model.Failure(404, "not_found", "API route not found"))
 	}

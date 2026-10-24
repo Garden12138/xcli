@@ -3,6 +3,9 @@ package modelstore
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -125,6 +128,11 @@ func (c Config) Registry() (*model.Registry, error) {
 			return nil, fmt.Errorf("model %q references missing backend", id)
 		}
 		m.Metadata.InferenceLocation, m.Metadata.ProviderFamily = b.InferenceLocation, b.Type
+		if m.Kind == "embedding" {
+			identity, _ := json.Marshal([]any{b.Type, b.Endpoint, m.UpstreamModel, m.Dimensions, m.IndexVersion})
+			sum := sha256.Sum256(identity)
+			m.Metadata.IndexFingerprint = hex.EncodeToString(sum[:])
+		}
 		descriptors = append(descriptors, model.Descriptor{ID: id, BackendID: m.Backend, UpstreamModel: m.UpstreamModel, Metadata: m.Metadata})
 	}
 	return model.NewRegistry(descriptors)

@@ -43,6 +43,7 @@ type Metadata struct {
 	Validated         bool         `json:"validated" yaml:"-"`
 	Dimensions        int          `json:"dimensions,omitempty" yaml:"dimensions,omitempty"`
 	IndexVersion      string       `json:"index_version,omitempty" yaml:"index_version,omitempty"`
+	IndexFingerprint  string       `json:"index_fingerprint,omitempty" yaml:"-"`
 }
 
 type Descriptor struct {

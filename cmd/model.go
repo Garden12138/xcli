@@ -32,6 +32,7 @@ func (a *app) newModelCommand() *cobra.Command {
 		}
 		chats := map[string]model.ChatBackend{}
 		images := map[string]model.ImageBackend{}
+		embeddings := map[string]model.EmbeddingBackend{}
 		for id, b := range cfg.Backends {
 			key, err := modelstore.ResolveSecret(b.APIKeyRef, filepath.Dir(configPath))
 			if err != nil {
@@ -48,8 +49,11 @@ func (a *app) newModelCommand() *cobra.Command {
 			if b.Type == "openai-images" || b.Type == "openai-compatible" {
 				images[id] = backend
 			}
+			if b.Type == "openai-compatible-embeddings" || b.Type == "openai-compatible" {
+				embeddings[id] = backend
+			}
 		}
-		s, err := modelgateway.New(modelgateway.Options{Registry: registry, Authenticate: store.Authenticate, Chats: chats, Images: images, MaxConcurrent: cfg.Server.MaxConcurrent, Timeout: time.Duration(cfg.Server.TimeoutSeconds) * time.Second})
+		s, err := modelgateway.New(modelgateway.Options{Registry: registry, Authenticate: store.Authenticate, Chats: chats, Images: images, Embeddings: embeddings, MaxConcurrent: cfg.Server.MaxConcurrent, Timeout: time.Duration(cfg.Server.TimeoutSeconds) * time.Second})
 		if err != nil {
 			return err
 		}
