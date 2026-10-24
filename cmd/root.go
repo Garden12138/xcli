@@ -61,6 +61,7 @@ func newRootCommand() *cobra.Command {
 		a.newResumeCommand(),
 		a.newRunsCommand(),
 		a.newConfigCommand(),
+		a.newModelCommand(),
 	)
 	return root
 }
