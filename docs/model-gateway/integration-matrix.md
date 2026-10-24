@@ -10,3 +10,5 @@
 | Contribution OS | 受控 xcli_local Provider；保留内部 Gateway、短期作用域 Token、冻结 Profile、普通公共 HTTPS 校验 | Plan/Review/JSON/Tools；重复/过期 Token 拒绝；沙箱/恶意 URL 拒绝 |
 
 外部仓库访问/修改权限、付费模型请求与各 OS 实机验收分别记录，不以 curl 200 宣称集成通过。后续 M4 提供可执行验收程序与精确修改清单。
+
+M4交付入口：`integrations/{worklog,chat-insight,garden-flow,contribution-os}.md`、Worklog可应用provider补丁、`examples/model-gateway/{client,smoke}.py`。`go test -race ./tests/model_gateway`实际启动网关，由Python消费四类协议画像。画像测试只证明API合同；四个外部应用的真实E2E都仍为未验证。smoke默认只读models，只有显式`--execute --max-model-requests N`才发合成推理请求；真实后端会产生费用，须先获得授权。本轮只对Fake Backend执行。

@@ -1,0 +1,54 @@
+--- a/src-tauri/src/commands.rs
++++ b/src-tauri/src/commands.rs
+@@ -552,6 +552,7 @@
+ 
+ fn provider_defaults(provider: &str) -> AppResult<(&'static str, &'static str, i64)> {
+     match provider {
++        "xcli" => Ok(("http://127.0.0.1:18741/v1", "xcli/text-default", 180)),
+         "openai" => Ok(("https://api.openai.com/v1", "gpt-4.1-mini", 60)),
+         "nvidia" => Ok((
+             "https://integrate.api.nvidia.com/v1",
+@@ -1390,6 +1391,7 @@
+                 60
+             )
+         );
++        assert_eq!(provider_defaults("xcli").unwrap(), ("http://127.0.0.1:18741/v1", "xcli/text-default", 180));
+         assert!(provider_defaults("unsupported").is_err());
+     }
+ }
+--- a/frontend/src/types.ts
++++ b/frontend/src/types.ts
+@@ -1,6 +1,6 @@
+ export type ReportType = "weekly_report" | "monthly_report" | "performance_review";
+ export type Priority = "low" | "medium" | "high" | "urgent";
+-export type Provider = "openai" | "nvidia" | "openrouter" | "minimax" | "bailian";
++export type Provider = "xcli" | "openai" | "nvidia" | "openrouter" | "minimax" | "bailian";
+ export type ActivitySourceType = "git" | "codex" | "cursor";
+ export type EmailSecurity = "starttls" | "ssl";
+ export type EmailDeliveryStatus = "pending" | "sent" | "failed";
+--- a/frontend/src/main.tsx
++++ b/frontend/src/main.tsx
+@@ -59,6 +59,7 @@
+ };
+ 
+ const providerLabels: Record<Provider, string> = {
++  xcli: "xcli 本机网关（推理位置取决于上游）",
+   openai: "OpenAI",
+   nvidia: "NVIDIA",
+   openrouter: "OpenRouter",
+@@ -67,6 +68,7 @@
+ };
+ 
+ const providerDefaults: Record<Provider, { base_url: string; model: string; timeout_seconds: number }> = {
++  xcli: { base_url: "http://127.0.0.1:18741/v1", model: "xcli/text-default", timeout_seconds: 180 },
+   openai: { base_url: "https://api.openai.com/v1", model: "gpt-4.1-mini", timeout_seconds: 60 },
+   nvidia: { base_url: "https://integrate.api.nvidia.com/v1", model: "meta/llama-3.1-70b-instruct", timeout_seconds: 180 },
+   openrouter: { base_url: "https://openrouter.ai/api/v1", model: "openai/gpt-4.1-mini", timeout_seconds: 60 },
+@@ -2688,6 +2690,7 @@
+             <label>
+               Provider
+               <select value={form.provider} onChange={(event) => setProvider(event.target.value as Provider)}>
++                <option value="xcli">xcli 本机网关</option>
+                 <option value="openai">OpenAI</option>
+                 <option value="nvidia">NVIDIA</option>
+                 <option value="openrouter">OpenRouter</option>

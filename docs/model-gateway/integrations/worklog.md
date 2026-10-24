@@ -9,6 +9,8 @@
 
 实施前先核对外部 Git 状态与 HEAD，获得外部写权限；补丁需同时覆盖 Rust 默认值测试和前端设置选择。没有复制 Worklog 数据库或真实日志。
 
+本轮提供`tests/model_gateway/prepare_integrations.py`：只读当前源码生成`worklog-provider.patch`，包含后端provider分支/断言和前端类型/默认值/选择框；原文锚点不匹配立即拒绝。生成后`git apply --check`已验证当前源码可应用，尚未应用或运行外部测试。目录检查、Keyring和应用级异常处理仍按上方清单实施，不以基础provider补丁冒充完整联调。
+
 离线网关验收：`go test -race ./internal/modelgateway -run 'TestChat|TestRealSSE|TestSSE|TestGatewayBody'`。这些只证明协议和边界，不证明 Worklog 日报/周报真实成功。
 
 真实验收待执行：日报、周报、模板导入/优化、日报 JSON、fallback、断网、额度错误、Token 撤销与 Keyring 隔离。需要非敏感合成材料及用户授权的请求预算；本轮请求次数为零。

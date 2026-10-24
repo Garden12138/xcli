@@ -6,9 +6,11 @@ Only synthetic fixtures are used by tests. Real requests require an explicit cal
 from __future__ import annotations
 
 import json
+import base64
 import urllib.error
 import urllib.parse
 import urllib.request
+import uuid
 from dataclasses import dataclass
 
 
@@ -124,3 +126,31 @@ class GatewayClient:
         if (meta.get("index_fingerprint") != identity.fingerprint or meta.get("dimensions") != identity.dimensions):
             raise ValueError("embedding route changed during inference; discard result and rebuild explicitly")
         return result, identity
+
+    def generate_image(self, alias: str, prompt: str, *, allow_cloud=False, **options):
+        _, cloud = self.authorize(alias, "image.generate", allow_cloud)
+        with self._request("/images/generations", {**options, "model": alias, "prompt": prompt}, cloud) as response:
+            result = json.load(response)
+        for item in result["data"]:
+            base64.b64decode(item["b64_json"], validate=True)
+        return result
+
+    def edit_image(self, alias: str, prompt: str, image: bytes, *, mask: bytes | None = None,
+                   size="auto", allow_cloud=False):
+        descriptor, cloud = self.authorize(alias, "image.edit", allow_cloud)
+        if mask is not None and "image.mask" not in descriptor["xcli"].get("capabilities", []):
+            raise PermissionError("selected model does not support masks")
+        boundary = "xcli-" + uuid.uuid4().hex
+        parts = []
+        for name, value in (("model", alias), ("prompt", prompt), ("size", size)):
+            parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{value}\r\n'.encode())
+        for name, value in (("image", image), ("mask", mask)):
+            if value is not None:
+                parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"; filename="fixture.png"\r\nContent-Type: image/png\r\n\r\n'.encode() + value + b"\r\n")
+        parts.append(f"--{boundary}--\r\n".encode())
+        headers = {"Authorization": f"Bearer {self.token}", "Content-Type": f"multipart/form-data; boundary={boundary}"}
+        if cloud:
+            headers["X-Xcli-Remote-Consent"] = "allow"
+        request = urllib.request.Request(self.base_url + "/images/edits", data=b"".join(parts), headers=headers)
+        with self.opener.open(request, timeout=self.timeout) as response:
+            return json.load(response)

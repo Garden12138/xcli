@@ -12,8 +12,8 @@
 | M1 | 已实现，离线工程检查通过 | 真实 Worklog 调用未验证；外部写权限/计费授权待具备 |
 | M2 | 已实现，离线工程检查通过 | 真实 Vision/生成/编辑未验证，未调用付费上游 |
 | M3 | 已实现，离线工程检查通过 | Chat Insight应用内隐私修复与真实检索未验证 |
-| M4 | 实现中 | 四应用端到端未验证 |
-| M5 | 未开始 | 跨平台实机与休眠恢复未验证 |
+| M4 | 已交付协议验收与外部接入清单/补丁 | 四应用端到端未验证，外部写权限/发布门禁待满足 |
+| M5 | 实现中 | 跨平台实机与休眠恢复未验证 |
 
 恢复：先读本文件、`git status --short` 和 `api-contract.md`，继续当前阶段，不重做已通过检查。每阶段保留新增文件/本地 Git 检查点，不覆盖用户改动。
 
@@ -31,7 +31,8 @@
 - M1：完整 `go test -race ./...`、Vet、构建通过；最终新增 CLI/Consent 变更经针对 model*/cmd 的 Race 契约复验通过。覆盖实时 HTTP SSE、取消传播、截断、401/403/429/5xx、并发、超时、请求预算、Token 轮换/撤销/并发写、私有凭据及 CLI 隔离。见 acceptance/M1.md。
 - M2：完整 Race、Vet、mod tidy -diff、构建、diff check通过；最后补充的Vision成功转发/多图/非法上传再经Race通过。新增固定Go官方x/image v0.47.0用于WebP，不使用外部图像进程或真实图片模型。见acceptance/M2.md。
 - M3：完整Race、Vet、构建、diff check通过，Python参考客户端4项隐私/索引策略测试通过。HTTP假上游验证remote/unknown拒绝授权时调用次数不增、local无云头可用；批量index/维度/base64/有限值均校验。见acceptance/M3.md。
+- M4：完整Race、Vet、构建、diff check与Python策略测试通过；真实本地HTTP + Python四消费画像、JSON/Tool流、显式供应商切换/no fallback通过。Worklog补丁对外部当前源码git apply --check通过，但未应用。见acceptance/M4.md。
 
 ## 下一步
 
-继续M4：四应用消费协议、JSON/Tool流与供应商切换契约；生成外部接入补丁/清单和可执行验收。已提供Worklog/Chat Insight精确改点与Python参考适配器。外部/真实Gate保持阻塞，不可标记整体完成。
+继续M5：单实例/状态发现/启动停止、诊断/日志、安全Token与跨平台构建；外部接入的4份具体清单、Worklog补丁和显式预算smoke已交付，均未改动外部源码。整体真实Gate保持开放。
