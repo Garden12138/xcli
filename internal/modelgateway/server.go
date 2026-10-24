@@ -9,16 +9,13 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Garden12138/xcli/internal/model"
 )
 
-type Client struct {
-	ID            string
-	AllowedModels []string
-	AllowRemote   bool
-}
+type Client = model.Client
 
 type Authenticator func(string) (Client, error)
 
@@ -27,15 +24,37 @@ type Options struct {
 	Authenticate  Authenticator
 	MaxConcurrent int
 	Timeout       time.Duration
+	Chats         map[string]model.ChatBackend
 }
 
-type Server struct{ options Options }
+type Server struct {
+	options Options
+	slots   chan struct{}
+	mu      sync.Mutex
+	rates   map[string]rateWindow
+}
+type rateWindow struct {
+	start time.Time
+	count int
+}
 
 func New(options Options) (*Server, error) {
 	if options.Registry == nil {
 		return nil, errors.New("model registry is required")
 	}
-	return &Server{options: options}, nil
+	if options.MaxConcurrent == 0 {
+		options.MaxConcurrent = 3
+	}
+	if options.MaxConcurrent < 1 || options.MaxConcurrent > 64 {
+		return nil, errors.New("invalid concurrent request limit")
+	}
+	if options.Timeout == 0 {
+		options.Timeout = 180 * time.Second
+	}
+	if options.Timeout < 0 {
+		return nil, errors.New("invalid request timeout")
+	}
+	return &Server{options: options, slots: make(chan struct{}, options.MaxConcurrent), rates: map[string]rateWindow{}}, nil
 }
 
 func (s *Server) Serve(ctx context.Context, listener net.Listener) error {
@@ -43,7 +62,7 @@ func (s *Server) Serve(ctx context.Context, listener net.Listener) error {
 	if err != nil || net.ParseIP(ip) == nil || !net.ParseIP(ip).IsLoopback() {
 		return errors.New("gateway listener must be loopback")
 	}
-	h := &http.Server{Handler: s, ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
+	h := &http.Server{Handler: s, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10, BaseContext: func(net.Listener) context.Context { return ctx }}
 	finished := make(chan struct{})
 	defer close(finished)
 	go func() {
@@ -86,12 +105,73 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	switch {
 	case r.Method == http.MethodGet && r.URL.Path == "/readyz":
-		writeJSON(w, 200, map[string]any{"status": "ready", "models": len(s.visibleModels(client))})
+		visible := s.visibleModels(client)
+		if len(visible) == 0 {
+			writeError(w, model.Failure(503, "not_ready", "no models are available for this client"))
+			return
+		}
+		writeJSON(w, 200, map[string]any{"status": "configured", "models": len(visible), "upstream_verified": false})
 	case r.Method == http.MethodGet && r.URL.Path == "/v1/models":
 		writeJSON(w, 200, map[string]any{"object": "list", "data": s.visibleModels(client)})
+	case r.Method == http.MethodPost && r.URL.Path == "/v1/chat/completions":
+		s.inference(w, r, client, s.chat)
 	default:
 		writeError(w, model.Failure(404, "not_found", "API route not found"))
 	}
+}
+
+func (s *Server) inference(w http.ResponseWriter, r *http.Request, c Client, handler func(http.ResponseWriter, *http.Request, Client)) {
+	if c.RequestsPerMinute > 0 {
+		s.mu.Lock()
+		window := s.rates[c.ID]
+		now := time.Now()
+		if now.Sub(window.start) >= time.Minute {
+			window = rateWindow{start: now}
+		}
+		window.count++
+		s.rates[c.ID] = window
+		s.mu.Unlock()
+		if window.count > c.RequestsPerMinute {
+			w.Header().Set("Retry-After", "60")
+			writeError(w, model.Failure(429, "client_rate_limit", "client request rate exceeded"))
+			return
+		}
+	}
+	select {
+	case s.slots <- struct{}{}:
+		defer func() { <-s.slots }()
+	default:
+		w.Header().Set("Retry-After", "1")
+		writeError(w, model.Failure(429, "concurrency_limit", "gateway concurrent request limit reached"))
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), s.options.Timeout)
+	defer cancel()
+	controller := http.NewResponseController(w)
+	_ = controller.SetWriteDeadline(time.Now().Add(s.options.Timeout + time.Second))
+	_ = controller.SetReadDeadline(time.Now().Add(min(s.options.Timeout, 30*time.Second)))
+	handler(w, r.WithContext(ctx), c)
+}
+
+func (s *Server) resolve(c Client, id string, caps ...model.Capability) (model.Descriptor, error) {
+	if !allowed(c, id) {
+		return model.Descriptor{}, model.Failure(403, "model_access_denied", "client is not authorized for this model alias")
+	}
+	d, err := s.options.Registry.Resolve(id, caps...)
+	if err != nil {
+		return d, err
+	}
+	if d.Metadata.InferenceLocation != "local" && !c.AllowRemote {
+		return model.Descriptor{}, model.Failure(403, "data_location_denied", "client is not authorized to send data to remote or unknown inference")
+	}
+	return d, nil
+}
+
+func (s *Server) consent(r *http.Request, c Client, d model.Descriptor) error {
+	if c.RequireConsent && d.Metadata.InferenceLocation != "local" && r.Header.Get("X-Xcli-Remote-Consent") != "allow" {
+		return model.Failure(403, "cloud_consent_required", "explicit request consent is required for remote or unknown inference")
+	}
+	return nil
 }
 
 func (s *Server) visibleModels(c Client) []model.Descriptor {

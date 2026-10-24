@@ -8,6 +8,14 @@ import (
 
 type Capability string
 
+type Client struct {
+	ID                string   `json:"id"`
+	AllowedModels     []string `json:"allowed_models"`
+	AllowRemote       bool     `json:"allow_remote"`
+	RequireConsent    bool     `json:"require_consent"`
+	RequestsPerMinute int      `json:"requests_per_minute"`
+}
+
 const (
 	Text           Capability = "text.generate"
 	Stream         Capability = "text.stream"

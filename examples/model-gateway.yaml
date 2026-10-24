@@ -1,0 +1,20 @@
+# Separate from the existing Agent Runtime config. Placeholder endpoint/model only.
+version: 1
+server:
+  host: 127.0.0.1
+  port: 18741
+  max_concurrent_requests: 3
+  timeout_seconds: 180
+backends:
+  text-main:
+    type: openai-compatible
+    endpoint: https://provider.example.invalid/v1
+    api_key_ref: env:XCLI_UPSTREAM_API_KEY
+    inference_location: remote
+models:
+  xcli/text-default:
+    backend: text-main
+    upstream_model: user-selected-model
+    kind: text
+    capabilities: [text.generate, text.stream]
+    verification: declared

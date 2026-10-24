@@ -18,3 +18,9 @@ SSE 使用 `data: <chat.completion.chunk JSON>\n\n`，结束 `data: [DONE]\n\n`�
 图片仅接收解码有效的 PNG/JPEG/WebP；Vision 使用受限 data URL，远程输入 URL 默认拒绝。禁止 file URL/路径读取。图片 URL 输出须受限下载验证，不能直接把上游鉴权 URL 交给客户端；初始实现允许只接收 b64_json 并明确拒绝 URL，不得伪造成功。尺寸/数量必须与请求一致。
 
 此文件是实现合同，不代表每阶段或真实上游已验收；当前状态见 PROGRESS.md。
+
+文本 MVP 配置见 `examples/model-gateway.yaml`。`model client issue <id> --model <alias> --token-file <new-private-file>` 交付 256-bit Token；不会打印。服务端只留 SHA-256 摘要。`rotate` 保留范围并使旧 Token 失效，`revoke` 对新请求立即生效；在途请求仍受原超时/取消约束。使用 `--allow-remote` 才能访问 remote/unknown 模型；`--require-consent` 客户端还需每个请求携带 `X-Xcli-Remote-Consent: allow`。`chat-insight` 身份强制要求该字段。此头不转发上游。
+
+上游适配仅使用明确配置的 endpoint、API Key 引用；不继承环境 HTTP 代理，不跟随重定向。没有自动重试。JSON 请求 4 MiB，响应 32 MiB，SSE 单事件 1 MiB/全流 32 MiB，默认 3 并发/180 秒。每客户端默认 60 请求/分钟。超限明确失败。`/readyz` 仅报告本地配置而非实际上游额度/模型可用性。
+
+协议核对依据：[Chat Completions](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)、[Streaming events](https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events)。本地适配保留合法 usage/tool 参数，不推断未知计费用量。

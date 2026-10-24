@@ -9,8 +9,8 @@
 | 阶段 | 工程状态 | 验收状态 |
 | --- | --- | --- |
 | M0 | 已实现 | 离线 Gate 通过，见 acceptance/M0.md |
-| M1 | 实现中 | 真实 Worklog 调用未验证 |
-| M2 | 未开始 | 真实 Vision/生成/编辑未验证 |
+| M1 | 已实现，离线工程检查通过 | 真实 Worklog 调用未验证；外部写权限/计费授权待具备 |
+| M2 | 实现中 | 真实 Vision/生成/编辑未验证 |
 | M3 | 未开始 | Chat Insight 隐私修复与真实检索未验证 |
 | M4 | 未开始 | 四应用端到端未验证 |
 | M5 | 未开始 | 跨平台实机与休眠恢复未验证 |
@@ -28,7 +28,8 @@
 
 - 初始 `go test ./...` 在沙箱内被 Go 构建缓存权限阻止；同一命令沙箱外运行全通过。该问题不是源码测试失败。
 - M0：`go test -race ./...` 全通过（Task 177.372s）；`go vet ./...`、`go mod tidy -diff`、`git diff --check` 通过；`go build -trimpath -o /tmp/xcli-model-m0 .` 与 model help 通过。
+- M1：完整 `go test -race ./...`、Vet、构建通过；最终新增 CLI/Consent 变更经针对 model*/cmd 的 Race 契约复验通过。覆盖实时 HTTP SSE、取消传播、截断、401/403/429/5xx、并发、超时、请求预算、Token 轮换/撤销/并发写、私有凭据及 CLI 隔离。见 acceptance/M1.md。
 
 ## 下一步
 
-继续 M1：实现标准 OpenAI-compatible backend、文本/SSE、独立 App Token、并发/超时/取消。Worklog 源码只读复核已确认 provider_defaults 白名单仍缺 xcli、请求路径仍为 base_url/chat/completions；需要交付接入补丁/测试，真实 App 联调等待外部仓库写权限及付费请求授权。
+继续 M2：增加 PNG/JPEG/WebP 完整解码、Vision data URL、图片生成/编辑、mask/参考图门控。M1 外部 Gate 阻塞不依赖 M2 的实现，因此按用户要求继续；不可标记整体完成。Worklog 精确接入点见 integrations/worklog.md。
