@@ -50,6 +50,21 @@ func NewRegistry(descriptors []Descriptor) (*Registry, error) {
 			}
 			seen[cap] = true
 		}
+		if (seen[Text] || seen[Stream] || seen[Vision] || seen[Tools] || seen[JSONObject] || seen[JSONSchema]) && d.Metadata.Kind != "text" {
+			return nil, fmt.Errorf("text capabilities require text model kind")
+		}
+		if (seen[ImageGenerate] || seen[ImageEdit] || seen[ImageMask] || seen[ImageReference]) && d.Metadata.Kind != "image" {
+			return nil, fmt.Errorf("image capabilities require image model kind")
+		}
+		if seen[Embeddings] && d.Metadata.Kind != "embedding" {
+			return nil, fmt.Errorf("embeddings require embedding model kind")
+		}
+		if (seen[Stream] || seen[Vision] || seen[Tools] || seen[JSONObject] || seen[JSONSchema]) && !seen[Text] {
+			return nil, fmt.Errorf("text extension requires text.generate")
+		}
+		if (seen[ImageMask] || seen[ImageReference]) && !seen[ImageEdit] {
+			return nil, fmt.Errorf("mask and references require image.edit")
+		}
 		d.Metadata.Capabilities = slices.Clone(d.Metadata.Capabilities)
 		d.Metadata.SupportsStream = seen[Stream]
 		d.Object, d.OwnedBy = "model", "xcli"

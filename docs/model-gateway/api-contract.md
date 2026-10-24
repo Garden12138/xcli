@@ -24,3 +24,7 @@ SSE 使用 `data: <chat.completion.chunk JSON>\n\n`，结束 `data: [DONE]\n\n`�
 上游适配仅使用明确配置的 endpoint、API Key 引用；不继承环境 HTTP 代理，不跟随重定向。没有自动重试。JSON 请求 4 MiB，响应 32 MiB，SSE 单事件 1 MiB/全流 32 MiB，默认 3 并发/180 秒。每客户端默认 60 请求/分钟。超限明确失败。`/readyz` 仅报告本地配置而非实际上游额度/模型可用性。
 
 协议核对依据：[Chat Completions](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)、[Streaming events](https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events)。本地适配保留合法 usage/tool 参数，不推断未知计费用量。
+
+M2：Vision 单请求仍为 4 MiB JSON（base64 也计入预算），仅 text/image_url 内容部件；图片上传/结果单图 20 MiB、16,777,216 像素，总 multipart/图片结果 32 MiB，最多 4 张。先 DecodeConfig 再完整 Decode，支持 PNG/JPEG/WebP。编辑文件从 multipart 流有界读入内存，不用临时路径，客户端文件名不会落盘或转发。mask 必须是与第一张参考图等尺寸的 PNG；多图/mask 分别要求 image.multi_reference/image.mask，未经验证返回422。
+
+图片 size 接受正数 WxH 或 auto（同时受像素限制），n=1..4；实际输出数量与指定尺寸必须匹配。只接收 b64_json 或原生默认 base64；请求 response_format=url 返回422，上游仅URL返回502，均不发起下载。配置真实供应商时应选支持该返回方式的模型；上游不支持的参数会明确失败，不模拟或自动换模型。协议参考：[Image edit](https://developers.openai.com/api/reference/resources/images/methods/edit)。WebP 解码来自 [Go x/image](https://pkg.go.dev/golang.org/x/image/webp)。

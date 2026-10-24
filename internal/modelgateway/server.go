@@ -25,6 +25,7 @@ type Options struct {
 	MaxConcurrent int
 	Timeout       time.Duration
 	Chats         map[string]model.ChatBackend
+	Images        map[string]model.ImageBackend
 }
 
 type Server struct {
@@ -115,6 +116,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, map[string]any{"object": "list", "data": s.visibleModels(client)})
 	case r.Method == http.MethodPost && r.URL.Path == "/v1/chat/completions":
 		s.inference(w, r, client, s.chat)
+	case r.Method == http.MethodPost && r.URL.Path == "/v1/images/generations":
+		s.inference(w, r, client, s.generate)
+	case r.Method == http.MethodPost && r.URL.Path == "/v1/images/edits":
+		s.inference(w, r, client, s.edit)
 	default:
 		writeError(w, model.Failure(404, "not_found", "API route not found"))
 	}

@@ -10,8 +10,8 @@
 | --- | --- | --- |
 | M0 | 已实现 | 离线 Gate 通过，见 acceptance/M0.md |
 | M1 | 已实现，离线工程检查通过 | 真实 Worklog 调用未验证；外部写权限/计费授权待具备 |
-| M2 | 实现中 | 真实 Vision/生成/编辑未验证 |
-| M3 | 未开始 | Chat Insight 隐私修复与真实检索未验证 |
+| M2 | 已实现，离线工程检查通过 | 真实 Vision/生成/编辑未验证，未调用付费上游 |
+| M3 | 实现中 | Chat Insight 隐私修复与真实检索未验证 |
 | M4 | 未开始 | 四应用端到端未验证 |
 | M5 | 未开始 | 跨平台实机与休眠恢复未验证 |
 
@@ -29,7 +29,8 @@
 - 初始 `go test ./...` 在沙箱内被 Go 构建缓存权限阻止；同一命令沙箱外运行全通过。该问题不是源码测试失败。
 - M0：`go test -race ./...` 全通过（Task 177.372s）；`go vet ./...`、`go mod tidy -diff`、`git diff --check` 通过；`go build -trimpath -o /tmp/xcli-model-m0 .` 与 model help 通过。
 - M1：完整 `go test -race ./...`、Vet、构建通过；最终新增 CLI/Consent 变更经针对 model*/cmd 的 Race 契约复验通过。覆盖实时 HTTP SSE、取消传播、截断、401/403/429/5xx、并发、超时、请求预算、Token 轮换/撤销/并发写、私有凭据及 CLI 隔离。见 acceptance/M1.md。
+- M2：完整 Race、Vet、mod tidy -diff、构建、diff check通过；最后补充的Vision成功转发/多图/非法上传再经Race通过。新增固定Go官方x/image v0.47.0用于WebP，不使用外部图像进程或真实图片模型。见acceptance/M2.md。
 
 ## 下一步
 
-继续 M2：增加 PNG/JPEG/WebP 完整解码、Vision data URL、图片生成/编辑、mask/参考图门控。M1 外部 Gate 阻塞不依赖 M2 的实现，因此按用户要求继续；不可标记整体完成。Worklog 精确接入点见 integrations/worklog.md。
+继续 M3：Embedding严格透传、维度/版本元数据、云授权与未知位置拒绝测试、Chat Insight接入适配清单与可执行隐私策略。外部/真实Gate保持阻塞，独立实现继续；不可标记整体完成。

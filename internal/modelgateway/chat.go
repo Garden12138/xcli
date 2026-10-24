@@ -97,11 +97,22 @@ func validateChat(req model.Object) ([]model.Capability, int, error) {
 			return nil, 0, model.Failure(400, "invalid_request", "message content must be text or supported content parts")
 		}
 		for _, part := range parts {
-			if part.String("type") != "text" {
-				return nil, 0, model.Unsupported(model.Vision)
-			}
-			if json.Unmarshal(part["text"], &text) != nil {
-				return nil, 0, model.Failure(400, "invalid_request", "content part text must be a string")
+			switch part.String("type") {
+			case "text":
+				if json.Unmarshal(part["text"], &text) != nil {
+					return nil, 0, model.Failure(400, "invalid_request", "content part text must be a string")
+				}
+			case "image_url":
+				var imageURL model.Object
+				if json.Unmarshal(part["image_url"], &imageURL) != nil {
+					return nil, 0, model.Failure(422, "invalid_image", "invalid image_url content part")
+				}
+				if _, err := model.DecodeDataImage(imageURL.String("url")); err != nil {
+					return nil, 0, err
+				}
+				required = append(required, model.Vision)
+			default:
+				return nil, 0, model.Failure(422, "unsupported_capability", "unsupported message content part")
 			}
 		}
 	}
