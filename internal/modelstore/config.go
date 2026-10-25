@@ -43,6 +43,12 @@ type Model struct {
 	model.Metadata `yaml:",inline"`
 }
 
+func ConfigDigest(c Config) string {
+	data, _ := json.Marshal(c)
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}
+
 func DefaultPath() (string, error) {
 	p, err := config.DefaultPath()
 	if err != nil {

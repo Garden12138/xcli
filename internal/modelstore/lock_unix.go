@@ -24,7 +24,7 @@ func Lock(path string, wait bool) (*os.File, error) {
 	if err := syscall.Flock(int(f.Fd()), flags); err != nil {
 		f.Close()
 		if errors.Is(err, syscall.EWOULDBLOCK) {
-			return nil, errors.New("gateway state is locked by another process")
+			return nil, ErrLocked
 		}
 		return nil, err
 	}

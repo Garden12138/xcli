@@ -54,10 +54,7 @@ func New(root string) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err = os.MkdirAll(root, 0o700); err != nil {
-		return nil, err
-	}
-	if err = checkPrivate(root, true); err != nil {
+	if err = PrivateDirectory(root); err != nil {
 		return nil, err
 	}
 	return &Store{Root: root}, nil

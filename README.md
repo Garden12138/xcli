@@ -6,6 +6,8 @@ Give a Work or Project goal to native Agent CLIs, with bounded execution, explic
 
 The current source is **R3 / `0.5.0-r3-dev`**, an unpublished candidate. Published v0.4.0 packages do not contain Task. See the [R3 experiments and installation guide](docs/r3/README.md), [candidate evidence](docs/r3/results.zh-CN.md), [R2 lifecycle guide](docs/r2/README.zh-CN.md), and [migration notes](docs/r3/release-notes.md).
 
+The source also includes an isolated, local-only **Model Gateway development candidate**: `xcli model serve/start/status/stop`, authenticated Chat Completions/SSE, verified image APIs and embedding passthrough. See the [gateway setup and limits](docs/model-gateway/README.md) and [stage evidence/open acceptance gates](docs/model-gateway/PROGRESS.md). Real providers, desktop application integration and other-platform runtime acceptance remain unverified; native CLI subscription credentials are not gateway API credentials.
+
 ## Start a task
 
 Install and authenticate your preferred CLI using its native instructions. xcli reuses existing authentication and tool configuration; it does not require a model API account.

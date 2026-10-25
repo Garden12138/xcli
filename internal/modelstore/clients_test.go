@@ -80,7 +80,10 @@ func TestClientMutationsDoNotLoseConcurrentUpdates(t *testing.T) {
 }
 
 func TestSecretReferencesAreExplicitAndPrivate(t *testing.T) {
-	root := t.TempDir()
+	root := filepath.Join(t.TempDir(), "private")
+	if err := PrivateDirectory(root); err != nil {
+		t.Fatal(err)
+	}
 	path := filepath.Join(root, "key")
 	if err := os.WriteFile(path, []byte("fixture-secret\n"), 0o600); err != nil {
 		t.Fatal(err)

@@ -15,7 +15,7 @@ func TestVerifiedJSONAndToolCallsPassThrough(t *testing.T) {
 	var captured model.Object
 	b := &fake.Backend{CompleteFunc: func(_ context.Context, r model.Object) (model.Object, error) {
 		captured = r
-		return object(t, completionBody), nil
+		return object(t, strings.Replace(completionBody, `"测试"`, `"{\"ok\":true}"`, 1)), nil
 	}, StreamFunc: func(_ context.Context, r model.Object, send func(model.Object) error) error {
 		captured = r
 		for _, raw := range []string{

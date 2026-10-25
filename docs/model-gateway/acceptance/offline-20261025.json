@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-25",
+  "host": "darwin/arm64",
+  "go": "1.26.4",
+  "source_base": "c7b3f0b",
+  "engineering_status": "offline_gateway_checks_passed",
+  "overall_upgrade_acceptance": "incomplete",
+  "checks": {
+    "go_test_race_all": "passed",
+    "final_cmd_model_consumer_race": "passed",
+    "go_vet": "passed",
+    "go_mod_tidy_diff": "passed",
+    "gofmt_and_diff_check": "passed",
+    "python_privacy_tests": 4,
+    "python_http_consumer_profiles": 4,
+    "built_binary_lifecycle_check_groups": 6,
+    "r3_deterministic_tests": 25,
+    "r3_installation_checks": 12
+  },
+  "cross_builds": {
+    "darwin/arm64": "passed",
+    "darwin/amd64": "passed",
+    "linux/amd64": "passed",
+    "linux/arm64": "passed",
+    "windows/amd64": "passed"
+  },
+  "real_provider_requests": 0,
+  "user_credential_changes": 0,
+  "external_repository_writes": 0,
+  "external_publications": 0,
+  "unverified": [
+    "real_provider_text_json_schema_tools_vision_images_embeddings",
+    "worklog_gardenflow_chat_insight_contribution_os_application_e2e",
+    "chat_insight_privacy_patch_deployment_and_index_rebuild",
+    "contribution_os_controlled_container_bridge",
+    "other_os_native_execution_acl_process_behavior",
+    "os_sleep_resume_reboot_opt_in_autostart_upgrade_rollback",
+    "concurrent_peak_memory_and_latency_baselines"
+  ],
+  "unsupported": [
+    "windows_agent_background_tasks_and_jobs",
+    "native_cli_subscription_model_bridge",
+    "image_url_downloads",
+    "responses_audio_video_lan_multi_tenant_gateway"
+  ]
+}

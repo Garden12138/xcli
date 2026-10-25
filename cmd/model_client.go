@@ -59,7 +59,7 @@ func (a *app) newModelClientCommand(stateDir *string) *cobra.Command {
 				}
 			}
 			// Refuse an existing file or symlink. Its directory must be private.
-			if info, err := os.Stat(filepath.Dir(path)); err != nil || !info.IsDir() || info.Mode().Perm()&0o077 != 0 {
+			if err := modelstore.PrivateDirectory(filepath.Dir(path)); err != nil {
 				return errors.New("token file parent must be a private directory (0700)")
 			}
 			f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)

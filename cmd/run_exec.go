@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"runtime"
 	"sync"
 	"time"
 
@@ -95,6 +96,9 @@ func startDetachedWorkflow(store *runstore.Store, configPath string, record runs
 }
 
 func startDetachedJob(store *runstore.Store, configPath string, record runstore.Record, payload detachedJobPayload) (jobs.View, error) {
+	if runtime.GOOS == "windows" {
+		return jobs.View{}, errors.New("background Agent jobs require Darwin/Linux; use foreground run or Model Gateway start on Windows")
+	}
 	manager := jobs.Manager{Store: store}
 	files, err := manager.CreateFiles(record.ID)
 	if err != nil {

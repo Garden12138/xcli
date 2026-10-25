@@ -9,6 +9,11 @@ func ValidFinishReason(s string) bool {
 	return slices.Contains([]string{"stop", "length", "tool_calls", "content_filter", "function_call"}, s)
 }
 
+func ValidCreated(raw json.RawMessage) bool {
+	var value int64
+	return string(raw) != "null" && json.Unmarshal(raw, &value) == nil && value >= 0
+}
+
 // ChatStream validates termination per choice without buffering content or tool arguments.
 type ChatStream struct {
 	n        int
@@ -25,7 +30,7 @@ func (s *ChatStream) Observe(chunk Object) error {
 	fail := func() error {
 		return Failure(502, "invalid_upstream_stream", "upstream chunk is invalid or out of sequence")
 	}
-	if chunk.String("object") != "chat.completion.chunk" || chunk.String("id") == "" || chunk["created"] == nil {
+	if chunk.String("object") != "chat.completion.chunk" || chunk.String("id") == "" || !ValidCreated(chunk["created"]) {
 		return fail()
 	}
 	if s.id == "" {
@@ -48,6 +53,18 @@ func (s *ChatStream) Observe(chunk Object) error {
 			return fail()
 		}
 		s.seen[index] = true
+		if raw, ok := delta["content"]; ok && string(raw) != "null" {
+			var content string
+			if json.Unmarshal(raw, &content) != nil {
+				return fail()
+			}
+		}
+		if raw, ok := delta["role"]; ok {
+			var role string
+			if json.Unmarshal(raw, &role) != nil || role != "assistant" {
+				return fail()
+			}
+		}
 		if reason := choice.String("finish_reason"); reason != "" {
 			if !ValidFinishReason(reason) {
 				return fail()

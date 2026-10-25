@@ -15,6 +15,8 @@ func configureProcess(command *exec.Cmd, separate bool) {
 	}
 }
 
+func attachProcess(*exec.Cmd, bool) (func(), error) { return func() {}, nil }
+
 func terminateProcess(command *exec.Cmd, separate bool) {
 	if command.Process == nil {
 		return

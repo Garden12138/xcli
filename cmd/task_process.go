@@ -8,8 +8,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/Garden12138/xcli/internal/agent"
@@ -26,6 +26,9 @@ type taskWorkerPayload struct {
 }
 
 func startDetachedTask(r *task.Runner, id string, u task.Update) (task.Task, error) {
+	if runtime.GOOS == "windows" {
+		return task.Task{}, errors.New("background Agent Tasks require Darwin/Linux; use foreground Task or Model Gateway start on Windows")
+	}
 	lock, err := r.Store.Lock(id, "owner.lock", false)
 	if errors.Is(err, task.ErrOwned) {
 		return r.Continue(context.Background(), id, u)
@@ -95,8 +98,8 @@ func (a *app) newTaskWorkerCommand() *cobra.Command {
 		}
 		defer lock.Close()
 		defer input.Close()
-		syscall.CloseOnExec(int(lock.Fd()))
-		syscall.CloseOnExec(int(input.Fd()))
+		closeFileOnExec(lock)
+		closeFileOnExec(input)
 		var payload taskWorkerPayload
 		if err := json.NewDecoder(io.LimitReader(input, 4<<20)).Decode(&payload); err != nil {
 			return err
@@ -141,6 +144,11 @@ type taskAttemptMessage struct {
 // The supervisor owns the native child and watches a pipe owned only by the
 // Task controller. EOF (including SIGKILL of that controller) cancels the child.
 func supervisedAttempt(r *task.Runner) func(context.Context, string, string, string, workflow.Step, bool, func(agent.Event) error) workflow.StepResult {
+	// Windows foreground execution uses runtime Job Objects; Unix descriptor
+	// transfer remains unchanged. ExtraFiles is not supported by Windows exec.
+	if runtime.GOOS == "windows" {
+		return nil
+	}
 	return func(ctx context.Context, id, cwd, boundary string, step workflow.Step, raw bool, sink func(agent.Event) error) workflow.StepResult {
 		fail := func(err error) workflow.StepResult {
 			return workflow.StepResult{ID: step.ID, Status: "failed", ExitCode: 1, CLIExitCode: 1, ErrorKind: "supervisor_failed", Error: err.Error()}
@@ -249,9 +257,9 @@ func (a *app) newTaskAttemptCommand() *cobra.Command {
 		defer lease.Close()
 		defer live.Close()
 		defer input.Close()
-		syscall.CloseOnExec(int(lease.Fd()))
-		syscall.CloseOnExec(int(live.Fd()))
-		syscall.CloseOnExec(int(input.Fd()))
+		closeFileOnExec(lease)
+		closeFileOnExec(live)
+		closeFileOnExec(input)
 		var payload taskAttemptPayload
 		if err := json.NewDecoder(io.LimitReader(input, 4<<20)).Decode(&payload); err != nil {
 			return err

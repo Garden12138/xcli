@@ -87,6 +87,13 @@ func RunProcess(ctx context.Context, spec agent.CommandSpec, options ProcessOpti
 	if err := command.Start(); err != nil {
 		return ProcessResult{ExitCode: -1}, err
 	}
+	cleanup, err := attachProcess(command, options.SeparateProcess)
+	if err != nil {
+		_ = command.Process.Kill()
+		_ = command.Wait()
+		return ProcessResult{ExitCode: -1}, err
+	}
+	defer cleanup()
 
 	waited := make(chan error, 1)
 	go func() {

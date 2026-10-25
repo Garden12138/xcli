@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 )
 
@@ -18,10 +17,24 @@ func checkPrivate(path string, directory bool) error {
 	if info.Mode()&os.ModeSymlink != 0 || info.IsDir() != directory || (!directory && !info.Mode().IsRegular()) {
 		return fmt.Errorf("private state must be a regular file or directory, without symlinks")
 	}
-	if runtime.GOOS != "windows" && info.Mode().Perm()&0o077 != 0 {
-		return fmt.Errorf("private state permissions must exclude group and other users")
+	return checkPermissions(path, info)
+}
+
+func PrivateDirectory(path string) error {
+	_, err := os.Lstat(path)
+	fresh := os.IsNotExist(err)
+	if err != nil && !fresh {
+		return err
 	}
-	return nil
+	if err = os.MkdirAll(path, 0o700); err != nil {
+		return err
+	}
+	if fresh {
+		if err = secureNewDirectory(path); err != nil {
+			return err
+		}
+	}
+	return checkPrivate(path, true)
 }
 
 func ReadPrivate(path string, max int64) ([]byte, error) {

@@ -30,3 +30,5 @@ M2：Vision 单请求仍为 4 MiB JSON（base64 也计入预算），仅 text/im
 图片 size 接受正数 WxH 或 auto（同时受像素限制），n=1..4；实际输出数量与指定尺寸必须匹配。只接收 b64_json 或原生默认 base64；请求 response_format=url 返回422，上游仅URL返回502，均不发起下载。配置真实供应商时应选支持该返回方式的模型；上游不支持的参数会明确失败，不模拟或自动换模型。协议参考：[Image edit](https://developers.openai.com/api/reference/resources/images/methods/edit)。WebP 解码来自 [Go x/image](https://pkg.go.dev/golang.org/x/image/webp)。
 
 M3：Embedding支持字符串、字符串批量、token ID数组/批量（批次最多2048），float/base64结果严格透传，保留上游usage。模型必须配置`dimensions`与`index_version`；请求dimensions必须等于alias配置，另一维度使用独立alias。校验数量/index顺序/有限值/维度，拒绝空或伪造向量。目录与响应返回`index_fingerprint`，覆盖实际上游endpoint、模型名、维度和版本（不含密钥）；客户端检测变化并要求显式重建。推理位置是配置者的声明；loopback上游本身仍可能是云代理，配置为local前需独立核实。无法核实必须用unknown。
+
+结构化JSON：能力门控后原样转发response_format/json_schema/strict。非流式结果还校验JSON语法；严格schema语义由经验证上游与消费端共同验收，网关不声称独立实现完整JSON Schema引擎。SSE由客户端收齐后解析JSON，网关不在内存累积全部内容。Tool Calling只传递函数声明与结果，不执行工具。audio/modalities非text请求明确422。

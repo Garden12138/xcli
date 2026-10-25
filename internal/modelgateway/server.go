@@ -27,6 +27,7 @@ type Options struct {
 	Chats         map[string]model.ChatBackend
 	Images        map[string]model.ImageBackend
 	Embeddings    map[string]model.EmbeddingBackend
+	Audit         func(AuditRecord)
 }
 
 type Server struct {
@@ -66,8 +67,9 @@ func (s *Server) Serve(ctx context.Context, listener net.Listener) error {
 	}
 	h := &http.Server{Handler: s, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10, BaseContext: func(net.Listener) context.Context { return ctx }}
 	finished := make(chan struct{})
-	defer close(finished)
+	shutdownDone := make(chan struct{})
 	go func() {
+		defer close(shutdownDone)
 		select {
 		case <-ctx.Done():
 			shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -78,6 +80,8 @@ func (s *Server) Serve(ctx context.Context, listener net.Listener) error {
 		}
 	}()
 	err = h.Serve(listener)
+	close(finished)
+	<-shutdownDone
 	if errors.Is(err, http.ErrServerClosed) {
 		return nil
 	}
@@ -85,6 +89,9 @@ func (s *Server) Serve(ctx context.Context, listener net.Listener) error {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	observed, finish := s.audit(w, r)
+	defer finish()
+	w = observed
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Cache-Control", "no-store")
 	if !localHost(r.Host) || len(r.Header.Values("Origin")) > 0 {
@@ -105,6 +112,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeError(w, model.Failure(401, "invalid_api_key", "a valid local application token is required"))
 		return
 	}
+	observed.record.ClientID = client.ID
 	switch {
 	case r.Method == http.MethodGet && r.URL.Path == "/readyz":
 		visible := s.visibleModels(client)
@@ -230,6 +238,9 @@ func writeError(w http.ResponseWriter, err error) {
 	var e *model.Error
 	if !errors.As(err, &e) {
 		e = model.Failure(500, "internal_error", "model gateway request failed")
+	}
+	if observed, ok := w.(*auditWriter); ok {
+		observed.record.ErrorCode = e.Code
 	}
 	writeJSON(w, e.Status, map[string]any{"error": e})
 }

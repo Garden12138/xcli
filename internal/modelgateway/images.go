@@ -106,7 +106,7 @@ func validateImages(result model.Object, n int, size string) error {
 	bad := func() error {
 		return model.Failure(502, "invalid_upstream_image", "upstream did not return the requested number of valid inline images")
 	}
-	if json.Unmarshal(result["data"], &data) != nil || len(data) != n || result["created"] == nil {
+	if json.Unmarshal(result["data"], &data) != nil || len(data) != n || !model.ValidCreated(result["created"]) {
 		return bad()
 	}
 	total := 0

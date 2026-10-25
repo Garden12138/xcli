@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"github.com/Garden12138/xcli/internal/modelstore"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,7 +12,7 @@ import (
 func TestModelClientCLIAndConfigurationIsolation(t *testing.T) {
 	root := t.TempDir()
 	private := filepath.Join(root, "private")
-	if err := os.Mkdir(private, 0o700); err != nil {
+	if err := modelstore.PrivateDirectory(private); err != nil {
 		t.Fatal(err)
 	}
 	path := filepath.Join(root, "gateway.yaml")

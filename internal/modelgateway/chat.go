@@ -40,6 +40,15 @@ func readObject(w http.ResponseWriter, r *http.Request, limit int64) (model.Obje
 func validateChat(req model.Object) ([]model.Capability, int, error) {
 	required := []model.Capability{model.Text}
 	n := 1
+	if req["audio"] != nil {
+		return nil, 0, model.Failure(422, "unsupported_capability", "audio chat output is not supported")
+	}
+	if raw, ok := req["modalities"]; ok {
+		var modalities []string
+		if json.Unmarshal(raw, &modalities) != nil || len(modalities) != 1 || modalities[0] != "text" {
+			return nil, 0, model.Failure(422, "unsupported_capability", "only text chat output is supported")
+		}
+	}
 	if raw, ok := req["stream"]; ok {
 		var stream bool
 		if json.Unmarshal(raw, &stream) != nil || bytes.Equal(raw, []byte("null")) {
@@ -158,6 +167,10 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request, c Client) {
 			writeError(w, err)
 			return
 		}
+		if err = validateStructuredJSON(req, result); err != nil {
+			writeError(w, err)
+			return
+		}
 		writeJSON(w, 200, result.WithModel(id))
 		return
 	}
@@ -194,6 +207,9 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request, c Client) {
 			return
 		}
 		e := requestError(err)
+		if observed, ok := w.(*auditWriter); ok {
+			observed.record.ErrorCode = e.Code
+		}
 		data, _ := json.Marshal(map[string]any{"error": e})
 		_, _ = fmt.Fprintf(w, "data: %s\n\n", data)
 		_ = http.NewResponseController(w).Flush()
@@ -201,6 +217,31 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request, c Client) {
 	}
 	_, _ = io.WriteString(w, "data: [DONE]\n\n")
 	_ = http.NewResponseController(w).Flush()
+}
+
+func validateStructuredJSON(req, result model.Object) error {
+	if req["response_format"] == nil {
+		return nil
+	}
+	var format model.Object
+	_ = json.Unmarshal(req["response_format"], &format)
+	if format.String("type") != "json_object" && format.String("type") != "json_schema" {
+		return nil
+	}
+	var choices []model.Object
+	_ = json.Unmarshal(result["choices"], &choices)
+	for _, choice := range choices {
+		var message model.Object
+		_ = json.Unmarshal(choice["message"], &message)
+		if message.String("refusal") != "" || choice.String("finish_reason") == "tool_calls" {
+			continue
+		}
+		content := message.String("content")
+		if !json.Valid([]byte(content)) {
+			return model.Failure(502, "invalid_structured_output", "upstream did not return valid structured JSON")
+		}
+	}
+	return nil
 }
 
 func requestError(err error) *model.Error {
@@ -218,7 +259,7 @@ func requestError(err error) *model.Error {
 }
 
 func validateCompletion(out model.Object, n int) error {
-	if out.String("object") != "chat.completion" || out.String("id") == "" || out["created"] == nil {
+	if out.String("object") != "chat.completion" || out.String("id") == "" || !model.ValidCreated(out["created"]) {
 		return model.Failure(502, "invalid_upstream_response", "upstream completion envelope is invalid")
 	}
 	var choices []model.Object

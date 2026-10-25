@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"path/filepath"
@@ -53,10 +54,6 @@ func (a *app) newModelCommand() *cobra.Command {
 				embeddings[id] = backend
 			}
 		}
-		s, err := modelgateway.New(modelgateway.Options{Registry: registry, Authenticate: store.Authenticate, Chats: chats, Images: images, Embeddings: embeddings, MaxConcurrent: cfg.Server.MaxConcurrent, Timeout: time.Duration(cfg.Server.TimeoutSeconds) * time.Second})
-		if err != nil {
-			return err
-		}
 		listener, err := net.Listen("tcp", cfg.Address())
 		if err != nil {
 			return fmt.Errorf("listen on configured gateway address (port may be occupied): %w", err)
@@ -64,8 +61,47 @@ func (a *app) newModelCommand() *cobra.Command {
 		defer listener.Close()
 		ctx, cancel := signalContext(c.Context())
 		defer cancel()
+		service, err := store.AcquireService(listener.Addr().String(), modelstore.ConfigDigest(cfg), Version)
+		if err != nil {
+			return err
+		}
+		defer service.Close()
+		events, err := store.OpenLog("service.log", 2<<20)
+		if err != nil {
+			return err
+		}
+		defer events.Close()
+		serviceEvent := func(kind string) error {
+			return events.Append(struct {
+				Event        string    `json:"event"`
+				InstanceID   string    `json:"instance_id"`
+				ConfigDigest string    `json:"config_digest"`
+				Version      string    `json:"version"`
+				Time         time.Time `json:"time"`
+			}{kind, service.State.InstanceID, service.State.ConfigDigest, Version, time.Now().UTC()})
+		}
+		if err = serviceEvent("gateway_started"); err != nil {
+			return err
+		}
+		log, err := store.OpenLog("requests.jsonl", 2<<20)
+		if err != nil {
+			return err
+		}
+		defer log.Close()
+		s, err := modelgateway.New(modelgateway.Options{Registry: registry, Authenticate: store.Authenticate, Chats: chats, Images: images, Embeddings: embeddings, MaxConcurrent: cfg.Server.MaxConcurrent, Timeout: time.Duration(cfg.Server.TimeoutSeconds) * time.Second, Audit: func(record modelgateway.AuditRecord) {
+			if err := log.Append(record); err != nil {
+				cancel()
+			}
+		}})
+		if err != nil {
+			return err
+		}
+		watch := make(chan error, 1)
+		go func() { watch <- service.WatchStop(ctx, cancel) }()
 		fmt.Fprintf(c.ErrOrStderr(), "Model Gateway listening on %s\n", listener.Addr())
-		return s.Serve(ctx, listener)
+		err = s.Serve(ctx, listener)
+		cancel()
+		return errors.Join(err, <-watch, service.Close(), serviceEvent("gateway_stopped"))
 	}}
 	list := &cobra.Command{Use: "list", Short: "List configured models without contacting providers", Args: cobra.NoArgs, RunE: func(c *cobra.Command, _ []string) error {
 		cfg, _, err := modelstore.Load(a.configPath)
@@ -92,5 +128,6 @@ func (a *app) newModelCommand() *cobra.Command {
 	}}
 	doctor.Flags().Bool("no-billable-requests", true, "configuration-only diagnostics; never sends model requests")
 	group.AddCommand(serve, list, doctor, a.newModelClientCommand(&stateDir))
+	group.AddCommand(a.newModelServiceCommands(&stateDir)...)
 	return group
 }
