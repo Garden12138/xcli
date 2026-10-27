@@ -1,0 +1,15 @@
+{
+  "repository": "worklog",
+  "source_head": "861156e987f97ad52b59daae8cd7ec8b9f02fea1",
+  "patch_sha256": "af7ab3f0beba399b3e3b17c0dc23dc2a475e9ef74e206545704c556eecbadeab",
+  "preimages": {
+    "README.md": "bd42e2deceb36a2a921f154b7ac8201c36de1a7289c2d6772d0b27816ef15eeb",
+    "frontend/src/api.ts": "21da874242991e2884b021abdceeb7c8d805c5a4c12fed662672c7e9be222338",
+    "frontend/src/main.tsx": "32fb8de058c4d24d09a31bee3009afdd8c1cf35f4c94dad556890edc98062198",
+    "frontend/src/types.ts": "1183d0322c89c23cea8649a48b205402b00e7c615a282e879f187da8fc27f851",
+    "src-tauri/src/commands.rs": "948f7bb002879824dfe795b5394530a43efc45e2a5de653964df4f8ce4ee55b5",
+    "src-tauri/src/lib.rs": "0843f19d43399c6cddd1f2809666461bfbb82dfe97d6c18abd945e8a8950ac70",
+    "src-tauri/src/llm.rs": "abc3ad59b8840fdb3d222ce564440ad2783ef8de02724a5f72ac5d4807d87054",
+    "src-tauri/src/xcli.rs": null
+  }
+}

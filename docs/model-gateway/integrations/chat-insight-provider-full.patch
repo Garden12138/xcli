@@ -1,0 +1,1445 @@
+--- a/README.md
++++ b/README.md
+@@ -1,4 +1,12 @@
+ # Chat Insight
++
++## 使用 xcli Model Gateway
++
++在 AI 设置中选择 xcli，填写本机 `http://127.0.0.1:18743/v1`、独立客户端 Token、文本及向量模型别名。连接测试读取模型目录，并使用固定合成文本测试向量维度，不读取聊天数据库。
++
++本机网关地址不代表本地推理。应用在每次请求前读取所选模型的实际推理位置；远程或未知位置需要同时启用云端选项并确认本次发送，拒绝后不会上传聊天。xcli 模式关闭后台自动索引和自动扫描。
++
++首次使用或向量模型、维度、版本、指纹发生变化时，点击“重建索引”显式确认新索引。旧索引保留，新的索引使用独立命名空间；未确认前禁止发送待索引文本。切换供应商需要单独填写 Token，不会复用旧供应商密钥。
+ 
+ Chat Insight 是一个本地优先的微信聊天可视化桌面应用。它把微信本机数据解析成应用自己的
+ SQLite 快照，并提供消息趋势、活跃时段、聊天排行、消息类型、关键词和单聊天时间线。
+--- a/src-tauri/src/ai/client.rs
++++ b/src-tauri/src/ai/client.rs
+@@ -1,4 +1,5 @@
+-use super::settings::AiSettings;
++use super::gateway::{self, EmbeddingIdentity};
++use super::settings::{AiProvider, AiSettings};
+ use crate::error::{AppError, AppResult};
+ use serde::Serialize;
+ use serde_json::{json, Value};
+@@ -53,6 +54,10 @@
+     fn embed(&self, inputs: &[String]) -> AppResult<Vec<Vec<f32>>>;
+ 
+     fn embed_model(&self) -> &str;
++
++    fn validate_embed_model(&self) -> AppResult<()> {
++        Ok(())
++    }
+ }
+ 
+ pub fn cancelled() -> AppError {
+@@ -65,21 +70,145 @@
+     api_key: Option<String>,
+     chat_model: String,
+     embed_model: String,
++    provider: AiProvider,
++    allow_cloud: bool,
++    cloud_consent: bool,
++    index_model: String,
++    approved_identity: Option<EmbeddingIdentity>,
+ }
+ 
+ impl OpenAiCompatClient {
+     pub fn new(settings: &AiSettings, api_key: Option<String>) -> Self {
++        let mut builder = ureq::AgentBuilder::new()
++            .timeout_connect(Duration::from_secs(10))
++            .timeout_read(Duration::from_secs(300))
++            .timeout_write(Duration::from_secs(60));
++        if settings.provider == AiProvider::Xcli {
++            builder = builder.redirects(0).try_proxy_from_env(false);
++        }
+         Self {
+-            agent: ureq::AgentBuilder::new()
+-                .timeout_connect(Duration::from_secs(10))
+-                .timeout_read(Duration::from_secs(300))
+-                .timeout_write(Duration::from_secs(60))
+-                .build(),
++            agent: builder.build(),
+             base_url: settings.base_url.trim_end_matches('/').to_string(),
+             api_key,
+             chat_model: settings.chat_model.clone(),
+             embed_model: settings.embed_model.clone(),
+-        }
++            provider: settings.provider,
++            allow_cloud: settings.allow_cloud,
++            cloud_consent: false,
++            index_model: if settings.provider == AiProvider::Xcli {
++                format!("{}|xcli:unapproved", settings.embed_model)
++            } else {
++                settings.embed_model.clone()
++            },
++            approved_identity: None,
++        }
++    }
++
++    pub fn with_cloud_consent(mut self, consent: bool) -> Self {
++        self.cloud_consent = consent;
++        self
++    }
++
++    pub fn with_index_identity(mut self, identity: Option<EmbeddingIdentity>) -> Self {
++        if self.provider == AiProvider::Xcli {
++            if let Some(identity) = identity.filter(|identity| {
++                gateway::endpoint(&self.base_url).ok().as_ref() == Some(&identity.endpoint)
++                    && identity.alias == self.embed_model
++            }) {
++                self.index_model = identity.key();
++                self.approved_identity = Some(identity);
++            }
++        }
++        self
++    }
++
++    fn gateway_catalog(&self) -> AppResult<Value> {
++        gateway::endpoint(&self.base_url)?;
++        if self
++            .api_key
++            .as_deref()
++            .unwrap_or_default()
++            .trim()
++            .is_empty()
++        {
++            return Err(AppError::Ai(
++                "请填写 xcli 为 Chat Insight 签发的独立应用 Token".into(),
++            ));
++        }
++        let response = self
++            .request("GET", "/models")
++            .call()
++            .map_err(|error| self.map_error(error))?;
++        let mut body = String::new();
++        response
++            .into_reader()
++            .take(4 * 1024 * 1024 + 1)
++            .read_to_string(&mut body)?;
++        if body.len() > 4 * 1024 * 1024 {
++            return Err(AppError::Ai("xcli 模型目录超过大小限制".into()));
++        }
++        serde_json::from_str(&body)
++            .map_err(|_| AppError::Ai("xcli 模型目录无效；未发送聊天内容".into()))
++    }
++
++    fn gateway_model(&self, alias: &str, capability: &str) -> AppResult<Value> {
++        let catalog = self.gateway_catalog()?;
++        let selected = gateway::selected(&catalog, alias, capability)?;
++        gateway::ensure_consent(selected, self.allow_cloud, self.cloud_consent)?;
++        Ok(selected.clone())
++    }
++
++    fn current_embedding_identity(&self) -> AppResult<EmbeddingIdentity> {
++        let metadata = self.gateway_model(&self.embed_model, "embeddings")?;
++        EmbeddingIdentity::from_model(&self.base_url, &self.embed_model, &metadata)
++    }
++
++    pub fn prepare_index(&mut self, rebuild: bool) -> AppResult<Option<EmbeddingIdentity>> {
++        if self.provider != AiProvider::Xcli {
++            return Ok(None);
++        }
++        let identity = self.current_embedding_identity()?;
++        if !rebuild && self.approved_identity.as_ref() != Some(&identity) {
++            return Err(gateway::rebuild_required());
++        }
++        self.index_model = identity.key();
++        self.approved_identity = Some(identity.clone());
++        Ok(Some(identity))
++    }
++
++    /// This is only the fixed, non-private connection-test text, never a chat input.
++    pub fn test_embedding_dimension(&self) -> AppResult<usize> {
++        Ok(self
++            .embeddings(&["连接测试".into()], false)?
++            .first()
++            .map(Vec::len)
++            .unwrap_or(0))
++    }
++
++    pub fn gateway_privacy(&self) -> AppResult<Option<GatewayPrivacy>> {
++        if self.provider != AiProvider::Xcli {
++            return Ok(None);
++        }
++        let catalog = self.gateway_catalog()?;
++        let chat = gateway::selected(&catalog, &self.chat_model, "text.generate")?;
++        let embed = gateway::selected(&catalog, &self.embed_model, "embeddings")?;
++        let location = |model: &Value| {
++            match model
++                .pointer("/xcli/inference_location")
++                .and_then(Value::as_str)
++            {
++                Some("local") => "local",
++                Some("remote") => "remote",
++                _ => "unknown",
++            }
++            .to_string()
++        };
++        Ok(Some(GatewayPrivacy {
++            chat_cloud: gateway::effective_cloud(chat),
++            embedding_cloud: gateway::effective_cloud(embed),
++            chat_location: location(chat),
++            embedding_location: location(embed),
++        }))
+     }
+ 
+     fn request(&self, method: &str, path: &str) -> ureq::Request {
+@@ -94,12 +223,40 @@
+     }
+ 
+     fn post(&self, path: &str, body: &Value) -> AppResult<ureq::Response> {
+-        self.request("POST", path)
++        let mut request = self.request("POST", path);
++        if self.provider == AiProvider::Xcli {
++            let alias = body
++                .get("model")
++                .and_then(Value::as_str)
++                .ok_or_else(|| AppError::Ai("缺少 xcli 模型名称".into()))?;
++            let capability = match path {
++                "/embeddings" => "embeddings",
++                "/chat/completions" => "text.generate",
++                _ => return Err(AppError::Ai("不支持的 xcli 请求".into())),
++            };
++            let model = self.gateway_model(alias, capability)?;
++            if body.get("stream").and_then(Value::as_bool) == Some(true) {
++                let catalog = serde_json::json!({"object":"list","data":[model.clone()]});
++                gateway::selected(&catalog, alias, "text.stream")?;
++            }
++            if gateway::effective_cloud(&model) && self.cloud_consent {
++                request = request.set("X-Xcli-Remote-Consent", "allow");
++            }
++        }
++        request
+             .send_string(&body.to_string())
+             .map_err(|error| self.map_error(error))
+     }
+ 
+     fn map_error(&self, error: ureq::Error) -> AppError {
++        if self.provider == AiProvider::Xcli {
++            return AppError::Ai(match error {
++                ureq::Error::Status(code, _) => format!(
++                    "xcli 请求失败（HTTP {code}），请检查服务、应用 Token、模型能力及本次云端授权"
++                ),
++                _ => "无法连接 xcli 本机网关，请检查服务状态".into(),
++            });
++        }
+         match error {
+             ureq::Error::Status(code, response) => {
+                 let detail = response
+@@ -138,6 +295,19 @@
+     }
+ 
+     pub fn list_models(&self) -> AppResult<Vec<String>> {
++        if self.provider == AiProvider::Xcli {
++            let catalog = self.gateway_catalog()?;
++            let models = catalog
++                .get("data")
++                .and_then(Value::as_array)
++                .filter(|_| catalog.get("object").and_then(Value::as_str) == Some("list"))
++                .ok_or_else(|| AppError::Ai("xcli 模型目录无效".into()))?;
++            return Ok(models
++                .iter()
++                .filter_map(|item| item.get("id").and_then(Value::as_str))
++                .map(str::to_owned)
++                .collect());
++        }
+         let body = self
+             .request("GET", "/models")
+             .call()
+@@ -158,6 +328,15 @@
+     }
+ }
+ 
++#[derive(Debug, Clone, Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct GatewayPrivacy {
++    pub chat_cloud: bool,
++    pub embedding_cloud: bool,
++    pub chat_location: String,
++    pub embedding_location: String,
++}
++
+ impl OpenAiCompatClient {
+     fn complete(
+         &self,
+@@ -181,6 +360,11 @@
+         let mut filter = ThinkFilter::default();
+         let mut output = String::new();
+         if !is_event_stream {
++            if self.provider == AiProvider::Xcli {
++                return Err(AppError::Ai(
++                    "xcli 未返回流式响应，未降级为一次性成功结果".into(),
++                ));
++            }
+             let mut body = String::new();
+             response.into_reader().read_to_string(&mut body)?;
+             let value: Value = serde_json::from_str(&body)?;
+@@ -195,19 +379,28 @@
+             }
+             return Ok(output.trim().to_string());
+         }
+-        let reader = BufReader::new(response.into_reader());
++        let reader = BufReader::new(response.into_reader().take(32 * 1024 * 1024));
++        let mut done = false;
+         for line in reader.lines() {
+             let line = line?;
+             let Some(data) = line.strip_prefix("data:").map(str::trim) else {
+                 continue;
+             };
+             if data == "[DONE]" {
++                done = true;
+                 break;
+             }
+-            let Ok(value) = serde_json::from_str::<Value>(data) else {
+-                continue;
++            let value = match serde_json::from_str::<Value>(data) {
++                Ok(value) => value,
++                Err(_) if self.provider == AiProvider::Xcli => {
++                    return Err(AppError::Ai("xcli 返回了无效流事件，结果未完成".into()))
++                }
++                Err(_) => continue,
+             };
+             if let Some(message) = value.pointer("/error/message").and_then(Value::as_str) {
++                if self.provider == AiProvider::Xcli {
++                    return Err(AppError::Ai("xcli 流式请求失败，已保留未完成状态".into()));
++                }
+                 return Err(AppError::Ai(format!("模型服务返回错误：{message}")));
+             }
+             let delta = value
+@@ -220,10 +413,15 @@
+                 return Err(cancelled());
+             }
+         }
++        if self.provider == AiProvider::Xcli && !done {
++            return Err(AppError::Ai("xcli 响应意外中断，结果未完成".into()));
++        }
+         let rest = filter.finish();
+         if !rest.is_empty() {
+             output.push_str(&rest);
+-            on_delta(&rest);
++            if !on_delta(&rest) {
++                return Err(cancelled());
++            }
+         }
+         Ok(output.trim().to_string())
+     }
+@@ -248,58 +446,111 @@
+     }
+ 
+     fn embed(&self, inputs: &[String]) -> AppResult<Vec<Vec<f32>>> {
++        self.embeddings(inputs, true)
++    }
++
++    fn embed_model(&self) -> &str {
++        &self.index_model
++    }
++
++    fn validate_embed_model(&self) -> AppResult<()> {
++        if self.provider == AiProvider::Xcli
++            && self.approved_identity.as_ref() != Some(&self.current_embedding_identity()?)
++        {
++            return Err(gateway::rebuild_required());
++        }
++        Ok(())
++    }
++}
++
++impl OpenAiCompatClient {
++    fn embeddings(&self, inputs: &[String], require_index: bool) -> AppResult<Vec<Vec<f32>>> {
+         if inputs.is_empty() {
+             return Ok(Vec::new());
+         }
++        let identity = if self.provider == AiProvider::Xcli {
++            let identity = self.current_embedding_identity()?;
++            if require_index && self.approved_identity.as_ref() != Some(&identity) {
++                return Err(gateway::rebuild_required());
++            }
++            Some(identity)
++        } else {
++            None
++        };
+         let body = self
+             .post(
+                 "/embeddings",
+-                &json!({ "model": self.embed_model, "input": inputs }),
++                &json!({ "model": self.embed_model, "input": inputs, "encoding_format": "float" }),
+             )?
+             .into_string()?;
+         let value: Value = serde_json::from_str(&body)?;
++        if let Some(identity) = &identity {
++            identity.check_response(&value)?;
++        }
+         let mut rows: Vec<(usize, Vec<f32>)> = value
+             .get("data")
+             .and_then(Value::as_array)
+             .ok_or_else(|| AppError::Ai("向量模型返回了无法识别的结果".into()))?
+             .iter()
+             .enumerate()
+-            .map(|(position, item)| {
++            .map(|(position, item)| -> AppResult<(usize, Vec<f32>)> {
+                 let index = item
+                     .get("index")
+                     .and_then(Value::as_u64)
+                     .map(|index| index as usize)
+                     .unwrap_or(position);
+-                let vector = item
++                let vector: Vec<f32> = item
+                     .get("embedding")
+                     .and_then(Value::as_array)
+-                    .map(|values| {
+-                        values
+-                            .iter()
+-                            .filter_map(Value::as_f64)
+-                            .map(|value| value as f32)
+-                            .collect()
++                    .ok_or_else(|| AppError::Ai("向量模型返回了无效向量".into()))?
++                    .iter()
++                    .map(|value| {
++                        let value = value
++                            .as_f64()
++                            .ok_or_else(|| AppError::Ai("向量模型返回了非数值分量".into()))?;
++                        let component = value as f32;
++                        if !component.is_finite() {
++                            return Err(AppError::Ai("向量模型返回了非有限分量".into()));
++                        }
++                        Ok(component)
+                     })
+-                    .unwrap_or_default();
+-                (index, normalize(vector))
++                    .collect::<AppResult<Vec<_>>>()?;
++                if identity
++                    .as_ref()
++                    .is_some_and(|identity| identity.dimensions != vector.len())
++                {
++                    return Err(AppError::Ai("xcli 向量维度与模型身份不匹配".into()));
++                }
++                Ok((index, normalize(vector)))
+             })
+-            .collect();
++            .collect::<AppResult<Vec<_>>>()?;
+         rows.sort_by_key(|(index, _)| *index);
+-        if rows.len() != inputs.len() || rows.iter().any(|(_, vector)| vector.is_empty()) {
+-            return Err(AppError::Ai("向量模型返回的结果数量不完整".into()));
++        if rows.len() != inputs.len()
++            || rows
++                .iter()
++                .enumerate()
++                .any(|(i, (index, vector))| *index != i || vector.is_empty())
++        {
++            return Err(AppError::Ai("向量模型返回的结果数量或顺序不完整".into()));
++        }
++        let dimensions = rows.first().map(|(_, row)| row.len()).unwrap_or(0);
++        if rows.iter().any(|(_, row)| row.len() != dimensions) {
++            return Err(AppError::Ai("向量结果的维度不一致".into()));
+         }
+         Ok(rows.into_iter().map(|(_, vector)| vector).collect())
+     }
+-
+-    fn embed_model(&self) -> &str {
+-        &self.embed_model
+-    }
+ }
+ 
+ pub fn normalize(mut vector: Vec<f32>) -> Vec<f32> {
+-    let norm = vector.iter().map(|value| value * value).sum::<f32>().sqrt();
++    let norm = vector
++        .iter()
++        .map(|value| f64::from(*value).powi(2))
++        .sum::<f64>()
++        .sqrt();
+     if norm > 0.0 {
+-        vector.iter_mut().for_each(|value| *value /= norm);
++        vector
++            .iter_mut()
++            .for_each(|value| *value = (f64::from(*value) / norm) as f32);
+     }
+     vector
+ }
+@@ -426,6 +677,197 @@
+     use std::io::Write;
+     use std::net::TcpListener;
+     use std::sync::mpsc;
++
++    struct GatewayFixture {
++        url: String,
++        posts: std::sync::Arc<std::sync::atomic::AtomicUsize>,
++        consent_headers: std::sync::Arc<std::sync::atomic::AtomicUsize>,
++        fingerprint: std::sync::Arc<std::sync::Mutex<String>>,
++        stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
++        worker: Option<std::thread::JoinHandle<()>>,
++    }
++
++    impl Drop for GatewayFixture {
++        fn drop(&mut self) {
++            self.stop.store(true, std::sync::atomic::Ordering::SeqCst);
++            if let Some(worker) = self.worker.take() {
++                worker.join().unwrap();
++            }
++        }
++    }
++
++    fn gateway_fixture(location: &str, valid_catalog: bool) -> GatewayFixture {
++        use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
++        use std::sync::{Arc, Mutex};
++        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
++        let url = format!("http://{}/v1", listener.local_addr().unwrap());
++        listener.set_nonblocking(true).unwrap();
++        let posts = Arc::new(AtomicUsize::new(0));
++        let consent_headers = Arc::new(AtomicUsize::new(0));
++        let fingerprint = Arc::new(Mutex::new("a".repeat(64)));
++        let stop = Arc::new(AtomicBool::new(false));
++        let (thread_posts, thread_headers, thread_fingerprint, thread_stop) = (
++            posts.clone(),
++            consent_headers.clone(),
++            fingerprint.clone(),
++            stop.clone(),
++        );
++        let location = location.to_string();
++        let worker = std::thread::spawn(move || {
++            while !thread_stop.load(Ordering::SeqCst) {
++                let (mut stream, _) = match listener.accept() {
++                    Ok(pair) => pair,
++                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
++                        std::thread::sleep(Duration::from_millis(2));
++                        continue;
++                    }
++                    Err(error) => panic!("fixture accept: {error}"),
++                };
++                stream.set_nonblocking(false).unwrap();
++                stream
++                    .set_read_timeout(Some(Duration::from_secs(2)))
++                    .unwrap();
++                let mut reader = BufReader::new(stream.try_clone().unwrap());
++                let mut line = String::new();
++                reader.read_line(&mut line).unwrap();
++                let method = line.split_whitespace().next().unwrap().to_string();
++                let path = line.split_whitespace().nth(1).unwrap().to_string();
++                let mut length = 0usize;
++                let mut consent = false;
++                loop {
++                    line.clear();
++                    reader.read_line(&mut line).unwrap();
++                    if line == "\r\n" {
++                        break;
++                    }
++                    let lower = line.to_ascii_lowercase();
++                    if lower.starts_with("content-length:") {
++                        length = lower.split(':').nth(1).unwrap().trim().parse().unwrap();
++                    }
++                    if lower.starts_with("x-xcli-remote-consent:") {
++                        consent = lower.contains("allow");
++                    }
++                }
++                let mut request = vec![0; length];
++                reader.read_exact(&mut request).unwrap();
++                if method == "POST" {
++                    thread_posts.fetch_add(1, Ordering::SeqCst);
++                    if consent {
++                        thread_headers.fetch_add(1, Ordering::SeqCst);
++                    }
++                }
++                let fingerprint = thread_fingerprint.lock().unwrap().clone();
++                let body = if path == "/v1/models" && valid_catalog {
++                    json!({"object":"list","data":[
++                        {"id":"chat","xcli":{"capabilities":["text.generate","text.stream"],"inference_location":location}},
++                        {"id":"embed","xcli":{"capabilities":["embeddings"],"inference_location":location,"dimensions":3,"index_version":"fixture-v1","index_fingerprint":fingerprint}}
++                    ]}).to_string()
++                } else if path == "/v1/embeddings" {
++                    json!({"object":"list","data":[{"object":"embedding","index":0,"embedding":[3,4,0]}],"xcli":{"dimensions":3,"index_version":"fixture-v1","index_fingerprint":fingerprint}}).to_string()
++                } else if path == "/v1/chat/completions" {
++                    "data: {\"choices\":[{\"delta\":{\"content\":\"synthetic\"}}]}\n\ndata: [DONE]\n\n".into()
++                } else {
++                    "not a model catalog".into()
++                };
++                let typ = if path == "/v1/chat/completions" {
++                    "text/event-stream"
++                } else {
++                    "application/json"
++                };
++                write!(stream,"HTTP/1.1 200 OK\r\nContent-Type: {typ}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",body.len()).unwrap();
++            }
++        });
++        GatewayFixture {
++            url,
++            posts,
++            consent_headers,
++            fingerprint,
++            stop,
++            worker: Some(worker),
++        }
++    }
++
++    fn gateway_client(
++        fixture: &GatewayFixture,
++        allow_cloud: bool,
++        consent: bool,
++    ) -> OpenAiCompatClient {
++        OpenAiCompatClient::new(
++            &AiSettings {
++                provider: AiProvider::Xcli,
++                enabled: true,
++                base_url: fixture.url.clone(),
++                chat_model: "chat".into(),
++                embed_model: "embed".into(),
++                allow_cloud,
++                ..AiSettings::default()
++            },
++            Some("synthetic-app-token".into()),
++        )
++        .with_cloud_consent(consent)
++    }
++
++    #[test]
++    fn xcli_remote_unknown_or_invalid_catalog_never_receives_chat_without_consent() {
++        use std::sync::atomic::Ordering;
++        for (location, valid, allow, consent) in [
++            ("remote", true, true, false),
++            ("unknown", true, true, false),
++            ("remote", true, false, true),
++            ("local", false, true, true),
++        ] {
++            let fixture = gateway_fixture(location, valid);
++            let result = gateway_client(&fixture, allow, consent).chat(
++                &[ChatMessage::user("synthetic private canary")],
++                &mut |_| true,
++            );
++            assert!(result.is_err());
++            assert_eq!(fixture.posts.load(Ordering::SeqCst), 0);
++        }
++    }
++
++    #[test]
++    fn xcli_local_and_explicit_remote_consent_use_distinct_http_permissions() {
++        use std::sync::atomic::Ordering;
++        for (location, allow, consent, headers) in
++            [("local", false, false, 0), ("remote", true, true, 1)]
++        {
++            let fixture = gateway_fixture(location, true);
++            assert_eq!(
++                gateway_client(&fixture, allow, consent)
++                    .chat(&[ChatMessage::user("synthetic")], &mut |_| true)
++                    .unwrap(),
++                "synthetic"
++            );
++            assert_eq!(fixture.posts.load(Ordering::SeqCst), 1);
++            assert_eq!(fixture.consent_headers.load(Ordering::SeqCst), headers);
++        }
++    }
++
++    #[test]
++    fn xcli_model_changes_require_manual_rebuild_before_any_embedding_upload() {
++        use std::sync::atomic::Ordering;
++        let fixture = gateway_fixture("local", true);
++        let mut client = gateway_client(&fixture, false, false);
++        assert!(client.embed(&["synthetic".into()]).is_err());
++        assert_eq!(fixture.posts.load(Ordering::SeqCst), 0);
++        assert!(client.prepare_index(false).is_err());
++        let first = client.prepare_index(true).unwrap().unwrap();
++        assert_eq!(client.embed_model(), first.key());
++        assert_eq!(
++            client.embed(&["synthetic".into()]).unwrap(),
++            vec![vec![0.6, 0.8, 0.0]]
++        );
++        *fixture.fingerprint.lock().unwrap() = "b".repeat(64);
++        assert!(client.validate_embed_model().is_err());
++        assert!(client.embed(&["synthetic".into()]).is_err());
++        assert_eq!(fixture.posts.load(Ordering::SeqCst), 1);
++        assert!(client.prepare_index(false).is_err());
++        let second = client.prepare_index(true).unwrap().unwrap();
++        assert_ne!(first.key(), second.key());
++        assert!(client.embed(&["synthetic".into()]).is_ok());
++        assert_eq!(fixture.posts.load(Ordering::SeqCst), 2);
++    }
+ 
+     /// Answers a single HTTP request with `response` and reports the request body.
+     fn serve_once(response: String) -> (String, mpsc::Receiver<String>) {
+--- a/src-tauri/src/ai/commands.rs
++++ b/src-tauri/src/ai/commands.rs
+@@ -97,12 +97,22 @@
+     ai.settings.save(input).map_err(public_error)
+ }
+ 
++/// Read-only routing metadata for the consent UI; never sends chat text or invokes a model.
++#[tauri::command]
++pub async fn ai_xcli_privacy(
++    ai: State<'_, AiState>,
++) -> Result<Option<super::client::GatewayPrivacy>, String> {
++    let (_, client) = ai.client();
++    blocking(move || client.gateway_privacy()).await
++}
++
+ #[derive(Debug, Clone, Serialize)]
+ #[serde(rename_all = "camelCase")]
+ pub struct AiTestResult {
+     pub models: Vec<String>,
+     pub chat_model_found: bool,
+     pub embedding_dimension: usize,
++    pub gateway: Option<super::client::GatewayPrivacy>,
+ }
+ 
+ fn model_listed(models: &[String], wanted: &str) -> bool {
+@@ -116,22 +126,24 @@
+ #[tauri::command]
+ pub async fn ai_test_connection(ai: State<'_, AiState>) -> Result<AiTestResult, String> {
+     let (settings, client) = ai.client();
+-    if !settings.is_local() && !settings.allow_cloud {
++    let client = client.with_cloud_consent(settings.allow_cloud);
++    if settings.provider != super::settings::AiProvider::Xcli
++        && !settings.is_local()
++        && !settings.allow_cloud
++    {
+         return Err(
+             "模型服务地址不在本机。如需使用云端服务，请先勾选“允许使用云端模型服务”".into(),
+         );
+     }
+     blocking(move || {
++        let gateway = client.gateway_privacy()?;
+         let models = client.list_models().unwrap_or_default();
+-        let embedding_dimension = client
+-            .embed(&["连接测试".to_string()])?
+-            .first()
+-            .map(Vec::len)
+-            .unwrap_or(0);
++        let embedding_dimension = client.test_embedding_dimension()?;
+         Ok(AiTestResult {
+             chat_model_found: models.is_empty() || model_listed(&models, &settings.chat_model),
+             embedding_dimension,
+             models,
++            gateway,
+         })
+     })
+     .await
+@@ -152,10 +164,11 @@
+     ai: State<'_, AiState>,
+     account_id: String,
+ ) -> Result<AiIndexStatus, String> {
+-    let model = ai.settings.load().embed_model;
++    let (settings, client) = ai.client();
++    let model = settings.embed_model;
+     let counts = state
+         .database
+-        .ai_index_counts(&account_id, None, &model)
++        .ai_index_counts(&account_id, None, client.embed_model())
+         .map_err(public_error)?;
+     Ok(AiIndexStatus {
+         model,
+@@ -173,7 +186,7 @@
+     rebuild: bool,
+     cloud_consent: bool,
+ ) -> Result<IndexOutcome, String> {
+-    let (settings, client) = ai.client();
++    let (settings, mut client) = ai.client_with_consent(cloud_consent);
+     settings
+         .ensure_allowed(true, cloud_consent)
+         .map_err(public_error)?;
+@@ -181,11 +194,15 @@
+     ai.index_cancel.store(false, Ordering::SeqCst);
+     let cancel = Arc::clone(&ai.index_cancel);
+     let database = state.database.clone();
++    let settings_store = ai.settings.clone();
+     let emit = move |progress: IndexProgress| {
+         let _ = app.emit("ai-index-progress", progress);
+     };
+     blocking(move || {
+         let _lock = lock;
++        if let Some(identity) = client.prepare_index(rebuild)? {
++            settings_store.accept_embedding_identity(&identity)?;
++        }
+         if rebuild {
+             database.ai_clear_index(&account_id, client.embed_model())?;
+         }
+@@ -280,7 +297,7 @@
+     request_id: String,
+     cloud_consent: bool,
+ ) -> Result<AskResult, String> {
+-    let (settings, client) = ai.client();
++    let (settings, client) = ai.client_with_consent(cloud_consent);
+     settings
+         .ensure_allowed(true, cloud_consent)
+         .map_err(public_error)?;
+@@ -316,7 +333,7 @@
+     cloud_consent: bool,
+ ) -> Result<Option<SummaryResult>, String> {
+     let (read_cache, generate) = cache_mode(&mode).map_err(public_error)?;
+-    let (settings, client) = ai.client();
++    let (settings, client) = ai.client_with_consent(cloud_consent);
+     let key = CacheKey {
+         account_id: &account_id,
+         kind: "summary",
+@@ -380,8 +397,8 @@
+     cloud_consent: bool,
+ ) -> Result<Option<TopicsResult>, String> {
+     let (read_cache, generate) = cache_mode(&mode).map_err(public_error)?;
+-    let (settings, client) = ai.client();
+-    let model = format!("{}|{}", settings.chat_model, settings.embed_model);
++    let (settings, client) = ai.client_with_consent(cloud_consent);
++    let model = format!("{}|{}", settings.chat_model, client.embed_model());
+     let key = CacheKey {
+         account_id: &account_id,
+         kind: "topics",
+@@ -478,6 +495,7 @@
+ ) -> Result<Option<ReportResult>, String> {
+     let (read_cache, generate) = cache_mode(&mode).map_err(public_error)?;
+     let (settings, client) = ai.client();
++    let client = client.with_cloud_consent(settings.allow_cloud);
+     let range = DateRange {
+         from: Some(format!("{year}-01-01")),
+         to: Some(format!("{year}-12-31")),
+@@ -557,7 +575,7 @@
+     request_id: String,
+     cloud_consent: bool,
+ ) -> Result<ScanOutcome, String> {
+-    let (settings, client) = ai.client();
++    let (settings, client) = ai.client_with_consent(cloud_consent);
+     settings
+         .ensure_allowed(true, cloud_consent)
+         .map_err(public_error)?;
+@@ -607,7 +625,7 @@
+     request_id: String,
+     cloud_consent: bool,
+ ) -> Result<ScanOutcome, String> {
+-    let (settings, client) = ai.client();
++    let (settings, client) = ai.client_with_consent(cloud_consent);
+     settings
+         .ensure_allowed(true, cloud_consent)
+         .map_err(public_error)?;
+--- /dev/null
++++ b/src-tauri/src/ai/gateway.rs
+@@ -0,0 +1,193 @@
++//! Model Gateway metadata and index identities. A loopback transport is not proof
++//! that inference runs locally; unknown locations are treated as cloud inference.
++use crate::error::{AppError, AppResult};
++use serde::{Deserialize, Serialize};
++use serde_json::Value;
++use std::net::SocketAddr;
++
++pub fn endpoint(value: &str) -> AppResult<String> {
++    let bad = || AppError::Validation("xcli 需要明确的本机 IP、端口和 /v1 路径".into());
++    let rest = value.strip_prefix("http://").ok_or_else(bad)?;
++    let (authority, path) = rest.split_once('/').ok_or_else(bad)?;
++    let address: SocketAddr = authority.parse().map_err(|_| bad())?;
++    if !address.ip().is_loopback() || address.port() == 0 || path.trim_end_matches('/') != "v1" {
++        return Err(bad());
++    }
++    Ok(format!("http://{address}/v1"))
++}
++
++pub fn selected<'a>(catalog: &'a Value, alias: &str, capability: &str) -> AppResult<&'a Value> {
++    let models = catalog
++        .get("data")
++        .and_then(Value::as_array)
++        .filter(|_| catalog.get("object").and_then(Value::as_str) == Some("list"))
++        .ok_or_else(|| AppError::Ai("无法验证 xcli 模型目录；未发送聊天内容".into()))?;
++    let matches: Vec<_> = models
++        .iter()
++        .filter(|item| item.get("id").and_then(Value::as_str) == Some(alias))
++        .collect();
++    if matches.len() != 1
++        || !matches[0]
++            .pointer("/xcli/capabilities")
++            .and_then(Value::as_array)
++            .is_some_and(|caps| caps.iter().any(|cap| cap.as_str() == Some(capability)))
++    {
++        return Err(AppError::Ai(
++            "xcli 未提供所选模型或所需能力；未发送聊天内容".into(),
++        ));
++    }
++    Ok(matches[0])
++}
++
++pub fn effective_cloud(model: &Value) -> bool {
++    model
++        .pointer("/xcli/inference_location")
++        .and_then(Value::as_str)
++        != Some("local")
++}
++
++pub fn ensure_consent(model: &Value, allow_cloud: bool, consent: bool) -> AppResult<()> {
++    if effective_cloud(model) && (!allow_cloud || !consent) {
++        return Err(AppError::Ai(
++            "xcli 上游在云端或位置未知；请先允许云端服务并确认本次传输，聊天内容尚未发送".into(),
++        ));
++    }
++    Ok(())
++}
++
++#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
++pub struct EmbeddingIdentity {
++    pub endpoint: String,
++    pub alias: String,
++    pub dimensions: usize,
++    pub version: String,
++    pub fingerprint: String,
++}
++
++impl EmbeddingIdentity {
++    pub fn from_model(base_url: &str, alias: &str, model: &Value) -> AppResult<Self> {
++        let dimensions = model
++            .pointer("/xcli/dimensions")
++            .and_then(Value::as_u64)
++            .unwrap_or(0);
++        let version = model
++            .pointer("/xcli/index_version")
++            .and_then(Value::as_str)
++            .unwrap_or_default();
++        let fingerprint = model
++            .pointer("/xcli/index_fingerprint")
++            .and_then(Value::as_str)
++            .unwrap_or_default();
++        if !(1..=65536).contains(&dimensions)
++            || version.is_empty()
++            || version.len() > 128
++            || fingerprint.len() != 64
++            || !fingerprint.bytes().all(|b| b.is_ascii_hexdigit())
++        {
++            return Err(AppError::Ai(
++                "xcli 向量模型缺少可信维度或索引身份；未使用旧索引".into(),
++            ));
++        }
++        Ok(Self {
++            endpoint: endpoint(base_url)?,
++            alias: alias.into(),
++            dimensions: dimensions as usize,
++            version: version.into(),
++            fingerprint: fingerprint.into(),
++        })
++    }
++
++    pub fn key(&self) -> String {
++        format!(
++            "{}|xcli:{}:{}:{}",
++            self.alias, self.dimensions, self.version, self.fingerprint
++        )
++    }
++
++    pub fn check_response(&self, response: &Value) -> AppResult<()> {
++        if response
++            .pointer("/xcli/index_fingerprint")
++            .and_then(Value::as_str)
++            != Some(&self.fingerprint)
++            || response.pointer("/xcli/dimensions").and_then(Value::as_u64)
++                != Some(self.dimensions as u64)
++            || response
++                .pointer("/xcli/index_version")
++                .and_then(Value::as_str)
++                != Some(&self.version)
++        {
++            return Err(AppError::Ai(
++                "xcli 向量路由在请求中发生变化；结果已丢弃，请显式重建索引".into(),
++            ));
++        }
++        Ok(())
++    }
++}
++
++pub fn rebuild_required() -> AppError {
++    AppError::Ai(
++        "xcli 向量模型首次接入或身份已变化，请在 AI 设置中显式重建索引；旧索引保持不变".into(),
++    )
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use serde_json::json;
++
++    #[test]
++    fn unknown_routes_are_cloud_and_loopback_cannot_grant_consent() {
++        for location in ["remote", "unknown", "invalid"] {
++            let model = json!({"xcli":{"inference_location":location}});
++            assert!(effective_cloud(&model));
++            assert!(ensure_consent(&model, true, false).is_err());
++            assert!(ensure_consent(&model, false, true).is_err());
++            assert!(ensure_consent(&model, true, true).is_ok());
++        }
++        assert!(effective_cloud(&json!({})));
++        assert!(ensure_consent(
++            &json!({"xcli":{"inference_location":"local"}}),
++            false,
++            false
++        )
++        .is_ok());
++        for value in [
++            "http://localhost:18741/v1",
++            "http://127.0.0.1:18741/v1?token=canary",
++            "http://user@127.0.0.1:18741/v1",
++            "http://192.168.1.1:18741/v1",
++            "http://127.0.0.1:18741/v1/other",
++        ] {
++            assert!(endpoint(value).is_err());
++        }
++    }
++
++    #[test]
++    fn model_and_dimension_and_provider_changes_get_separate_index_namespaces() {
++        let meta = json!({"xcli":{"dimensions":3,"index_version":"v1","index_fingerprint":"a".repeat(64)}});
++        let old =
++            EmbeddingIdentity::from_model("http://127.0.0.1:18741/v1", "embed", &meta).unwrap();
++        let mut changed = meta.clone();
++        changed["xcli"]["dimensions"] = json!(4);
++        assert_ne!(
++            old.key(),
++            EmbeddingIdentity::from_model(&old.endpoint, "embed", &changed)
++                .unwrap()
++                .key()
++        );
++        changed["xcli"]["index_fingerprint"] = json!("b".repeat(64));
++        assert_ne!(
++            old.key(),
++            EmbeddingIdentity::from_model(&old.endpoint, "embed", &changed)
++                .unwrap()
++                .key()
++        );
++        assert_ne!(
++            old.key(),
++            EmbeddingIdentity::from_model(&old.endpoint, "other", &meta)
++                .unwrap()
++                .key()
++        );
++        assert!(old.check_response(&json!({"xcli":{"dimensions":4,"index_version":"v1","index_fingerprint":"a".repeat(64)}})).is_err());
++    }
++}
+--- a/src-tauri/src/ai/indexer.rs
++++ b/src-tauri/src/ai/indexer.rs
+@@ -141,6 +141,7 @@
+     cancel: &AtomicBool,
+     on_batch: &mut dyn FnMut(usize),
+ ) -> AppResult<usize> {
++    client.validate_embed_model()?;
+     let model = client.embed_model();
+     let cursor = db.ai_cursor(account_id, chat_id, model)?;
+     let messages = db.ai_text_messages(account_id, chat_id, &DateRange::default(), cursor)?;
+@@ -178,6 +179,7 @@
+     cancel: &AtomicBool,
+     progress: &mut dyn FnMut(IndexProgress),
+ ) -> AppResult<IndexOutcome> {
++    client.validate_embed_model()?;
+     let chats = db.ai_chats_to_index(account_id, client.embed_model())?;
+     let total = chats.len();
+     let mut chunks = 0usize;
+--- a/src-tauri/src/ai/mod.rs
++++ b/src-tauri/src/ai/mod.rs
+@@ -6,6 +6,7 @@
+ #[cfg(test)]
+ mod extraction_eval;
+ pub mod features;
++pub mod gateway;
+ pub mod indexer;
+ pub mod retrieval;
+ pub mod settings;
+@@ -118,8 +119,14 @@
+ 
+     pub fn client(&self) -> (AiSettings, OpenAiCompatClient) {
+         let settings = self.settings.load();
+-        let client = OpenAiCompatClient::new(&settings, self.settings.api_key());
++        let client = OpenAiCompatClient::new(&settings, self.settings.api_key())
++            .with_index_identity(self.settings.embedding_identity());
+         (settings, client)
++    }
++
++    pub fn client_with_consent(&self, consent: bool) -> (AiSettings, OpenAiCompatClient) {
++        let (settings, client) = self.client();
++        (settings, client.with_cloud_consent(consent))
+     }
+ 
+     pub fn stream(&self, app: &AppHandle, request_id: &str) -> StreamSink {
+--- a/src-tauri/src/ai/retrieval.rs
++++ b/src-tauri/src/ai/retrieval.rs
+@@ -166,6 +166,7 @@
+     range: &DateRange,
+     limit: usize,
+ ) -> AppResult<Vec<AskSource>> {
++    client.validate_embed_model()?;
+     let model = client.embed_model();
+     let mut keyword_keys = Vec::new();
+     for hit in keyword_candidates(db, account_id, question, chat_id, range)? {
+--- a/src-tauri/src/ai/settings.rs
++++ b/src-tauri/src/ai/settings.rs
+@@ -6,9 +6,18 @@
+ 
+ pub const DEFAULT_BASE_URL: &str = "http://127.0.0.1:11434/v1";
+ 
++#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
++#[serde(rename_all = "snake_case")]
++pub enum AiProvider {
++    #[default]
++    OpenaiCompatible,
++    Xcli,
++}
++
+ #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+ #[serde(rename_all = "camelCase", default)]
+ pub struct AiSettings {
++    pub provider: AiProvider,
+     pub enabled: bool,
+     pub base_url: String,
+     pub chat_model: String,
+@@ -22,6 +31,7 @@
+ impl Default for AiSettings {
+     fn default() -> Self {
+         Self {
++            provider: AiProvider::OpenaiCompatible,
+             enabled: false,
+             base_url: DEFAULT_BASE_URL.into(),
+             chat_model: "qwen3:8b".into(),
+@@ -34,7 +44,8 @@
+ 
+ impl AiSettings {
+     pub fn is_local(&self) -> bool {
+-        is_local_endpoint(&self.base_url)
++        // Gateway locality is decided from fresh per-model metadata at send time.
++        self.provider != AiProvider::Xcli && is_local_endpoint(&self.base_url)
+     }
+ 
+     /// Rejects requests the user has not allowed. `sends_content` marks requests that
+@@ -44,6 +55,9 @@
+             return Err(AppError::Ai(
+                 "AI 功能尚未开启，请先在“数据管理 → AI 设置”中开启".into(),
+             ));
++        }
++        if self.provider == AiProvider::Xcli {
++            return Ok(());
+         }
+         if self.is_local() {
+             return Ok(());
+@@ -113,6 +127,22 @@
+             .filter(|key| !key.is_empty())
+     }
+ 
++    pub fn embedding_identity(&self) -> Option<super::gateway::EmbeddingIdentity> {
++        fs::read(self.dir.join("xcli-embedding-identity.json"))
++            .ok()
++            .and_then(|bytes| serde_json::from_slice(&bytes).ok())
++    }
++
++    pub fn accept_embedding_identity(
++        &self,
++        identity: &super::gateway::EmbeddingIdentity,
++    ) -> AppResult<()> {
++        write_private_file(
++            &self.dir.join("xcli-embedding-identity.json"),
++            &serde_json::to_vec(identity)?,
++        )
++    }
++
+     pub fn view(&self) -> AiSettingsView {
+         let settings = self.load();
+         AiSettingsView {
+@@ -125,9 +155,22 @@
+ 
+     pub fn save(&self, input: AiSettingsInput) -> AppResult<AiSettingsView> {
+         let mut settings = input.settings;
++        let previous = self.load();
++        if settings.provider != previous.provider
++            && (settings.provider == AiProvider::Xcli || previous.provider == AiProvider::Xcli)
++            && input.api_key.is_none()
++            && self.api_key().is_some()
++        {
++            return Err(AppError::Validation(
++                "切换 xcli 供应商需要填写独立应用 Token，不能复用其他供应商凭据".into(),
++            ));
++        }
+         settings.base_url = settings.base_url.trim().trim_end_matches('/').to_string();
+         settings.chat_model = settings.chat_model.trim().to_string();
+         settings.embed_model = settings.embed_model.trim().to_string();
++        if settings.provider == AiProvider::Xcli {
++            settings.base_url = super::gateway::endpoint(&settings.base_url)?;
++        }
+         if !(settings.base_url.starts_with("http://") || settings.base_url.starts_with("https://"))
+             || endpoint_host(&settings.base_url).is_none()
+         {
+@@ -184,6 +227,56 @@
+     use tempfile::tempdir;
+ 
+     #[test]
++    fn xcli_settings_do_not_reuse_provider_keys_or_enable_background_cloud_upload() {
++        let temporary = tempdir().unwrap();
++        let store = SettingsStore::new(temporary.path().join("ai"));
++        store
++            .save(AiSettingsInput {
++                settings: AiSettings::default(),
++                api_key: Some("old-provider-canary".into()),
++            })
++            .unwrap();
++        let gateway = AiSettings {
++            provider: AiProvider::Xcli,
++            enabled: true,
++            base_url: "http://127.0.0.1:18741/v1".into(),
++            chat_model: "xcli/text-default".into(),
++            embed_model: "xcli/embed-default".into(),
++            auto_scan_commitments: true,
++            ..AiSettings::default()
++        };
++        assert!(store
++            .save(AiSettingsInput {
++                settings: gateway.clone(),
++                api_key: None
++            })
++            .is_err());
++        assert_eq!(store.load().provider, AiProvider::OpenaiCompatible);
++        assert_eq!(store.api_key().as_deref(), Some("old-provider-canary"));
++        let view = store
++            .save(AiSettingsInput {
++                settings: gateway,
++                api_key: Some("independent-gateway-token".into()),
++            })
++            .unwrap();
++        assert!(!view.is_local);
++        assert!(!view.settings.auto_scan_commitments);
++        assert!(!serde_json::to_string(&view)
++            .unwrap()
++            .contains("independent-gateway-token"));
++        let identity = super::super::gateway::EmbeddingIdentity {
++            endpoint: "http://127.0.0.1:18741/v1".into(),
++            alias: "xcli/embed-default".into(),
++            dimensions: 3,
++            version: "v1".into(),
++            fingerprint: "a".repeat(64),
++        };
++        assert!(store.embedding_identity().is_none());
++        store.accept_embedding_identity(&identity).unwrap();
++        assert_eq!(store.embedding_identity(), Some(identity));
++    }
++
++    #[test]
+     fn recognizes_loopback_endpoints_only() {
+         assert!(is_local_endpoint("http://127.0.0.1:11434/v1"));
+         assert!(is_local_endpoint("http://localhost:1234/v1"));
+--- a/src-tauri/src/lib.rs
++++ b/src-tauri/src/lib.rs
+@@ -330,6 +330,7 @@
+             ai::commands::ai_get_settings,
+             ai::commands::ai_save_settings,
+             ai::commands::ai_test_connection,
++            ai::commands::ai_xcli_privacy,
+             ai::commands::ai_index_status,
+             ai::commands::ai_build_index,
+             ai::commands::ai_cancel_index,
+--- a/src/aiDefaults.ts
++++ b/src/aiDefaults.ts
+@@ -1,6 +1,7 @@
+ import type { AiSettingsView } from "./types";
+ 
+ export const defaultAiSettings: AiSettingsView = {
++  provider: "openai_compatible",
+   enabled: false,
+   baseUrl: "http://127.0.0.1:11434/v1",
+   chatModel: "qwen3:8b",
+--- a/src/api.ts
++++ b/src/api.ts
+@@ -89,6 +89,7 @@
+   aiSettings: async () => (inTauri() ? call<AiSettingsView>("ai_get_settings") : defaultAiSettings),
+   saveAiSettings: (input: AiSettingsInput) => call<AiSettingsView>("ai_save_settings", { input }),
+   testAi: () => call<AiTestResult>("ai_test_connection"),
++  xcliPrivacy: () => call<import("./types").GatewayPrivacy | null>("ai_xcli_privacy"),
+   aiIndexStatus: (accountId: string) => call<AiIndexStatus>("ai_index_status", { accountId }),
+   buildAiIndex: (accountId: string, rebuild: boolean, cloudConsent: boolean) =>
+     call<AiIndexOutcome>("ai_build_index", { accountId, rebuild, cloudConsent }),
+--- a/src/components/Ai.test.tsx
++++ b/src/components/Ai.test.tsx
+@@ -14,6 +14,7 @@
+     aiSettings: vi.fn(),
+     saveAiSettings: vi.fn(),
+     testAi: vi.fn(),
++    xcliPrivacy: vi.fn(),
+     aiIndexStatus: vi.fn(),
+     onAiIndexProgress: vi.fn(),
+     chatTopics: vi.fn(),
+@@ -62,6 +63,34 @@
+ }
+ 
+ describe("cloud consent", () => {
++  it("treats a loopback xcli gateway as cloud until both selected model routes are verified local", async () => {
++    mocks.api.aiSettings.mockResolvedValue({ ...cloudSettings, provider: "xcli", baseUrl: "http://127.0.0.1:18741/v1", host: "127.0.0.1", isLocal: true });
++    mocks.api.xcliPrivacy.mockRejectedValue(new Error("catalog unavailable"));
++    render(<AiProvider><ConsentProbe /></AiProvider>);
++    await act(async () => {});
++    fireEvent.click(screen.getByRole("button", { name: "ask:pending" }));
++    expect(await screen.findByRole("alertdialog")).toHaveTextContent("xcli 配置的上游模型");
++    fireEvent.click(screen.getByRole("button", { name: "取消" }));
++    expect(await screen.findByRole("button", { name: "ask:null" })).toBeVisible();
++    mocks.api.xcliPrivacy.mockResolvedValue({ chatCloud: false, embeddingCloud: false, chatLocation: "local", embeddingLocation: "local" });
++    fireEvent.click(screen.getByRole("button", { name: "ask:null" }));
++    expect(await screen.findByRole("button", { name: "ask:false" })).toBeVisible();
++    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
++  });
++
++  it("does not infer local inference from malformed or partially remote gateway metadata", async () => {
++    mocks.api.aiSettings.mockResolvedValue({ ...cloudSettings, provider: "xcli", baseUrl: "http://127.0.0.1:18741/v1" });
++    mocks.api.xcliPrivacy.mockResolvedValue({});
++    render(<AiProvider><ConsentProbe /></AiProvider>);
++    await act(async () => {});
++    fireEvent.click(screen.getByRole("button", { name: "ask:pending" }));
++    expect(await screen.findByRole("alertdialog")).toBeVisible();
++    fireEvent.click(screen.getByRole("button", { name: "取消" }));
++    await screen.findByRole("button", { name: "ask:null" });
++    mocks.api.xcliPrivacy.mockResolvedValue({ chatCloud: false, embeddingCloud: true });
++    fireEvent.click(screen.getByRole("button", { name: "ask:null" }));
++    expect(await screen.findByRole("alertdialog")).toBeVisible();
++  });
+   it("resolves immediately for local models", async () => {
+     render(<AiProvider><ConsentProbe /></AiProvider>);
+     fireEvent.click(screen.getByRole("button", { name: "ask:pending" }));
+@@ -111,6 +140,18 @@
+ });
+ 
+ describe("AiSettings", () => {
++  it("selects xcli with independent aliases and never shows the loopback-only locality claim", async () => {
++    render(<AiProvider><AiSettings accountId="a" /></AiProvider>);
++    await act(async () => {});
++    fireEvent.click(screen.getByRole("radio", { name: "xcli Model Gateway" }));
++    expect(screen.getByLabelText("服务地址（OpenAI 兼容接口）")).toHaveValue("http://127.0.0.1:18741/v1");
++    expect(screen.getByLabelText("对话模型")).toHaveValue("xcli/text-default");
++    expect(screen.getByLabelText("向量模型")).toHaveValue("xcli/embed-default");
++    expect(screen.getByText("本机网关不等于本机推理")).toBeVisible();
++    expect(screen.queryByText(/所有计算都在这台电脑上完成/)).not.toBeInTheDocument();
++    expect(screen.queryByLabelText(/同步后自动找出新约定/)).not.toBeInTheDocument();
++    expect(mocks.api.testAi).not.toHaveBeenCalled();
++  });
+   it("requires opting in before testing a cloud endpoint", async () => {
+     render(<AiProvider><AiSettings accountId="a" /></AiProvider>);
+     await act(async () => {});
+--- a/src/components/AiProvider.tsx
++++ b/src/components/AiProvider.tsx
+@@ -27,12 +27,17 @@
+     return () => { active = false; cleanup(); };
+   }, [settings.enabled]);
+ 
+-  const confirmCloud = useCallback((request: ConsentRequest) => {
+-    if (settings.isLocal) return Promise.resolve(false);
++  const confirmCloud = useCallback(async (request: ConsentRequest) => {
++    if (settings.provider === "xcli") {
++      try {
++        const privacy = await api.xcliPrivacy();
++        if (privacy?.chatCloud === false && privacy.embeddingCloud === false) return false;
++      } catch { /* Unknown gateway routes still require explicit consent. */ }
++    } else if (settings.isLocal) return false;
+     return new Promise<boolean | null>((resolve) => {
+       setPending({ request, resolve: (accepted) => resolve(accepted ? true : null) });
+     });
+-  }, [settings.isLocal]);
++  }, [settings.isLocal, settings.provider]);
+ 
+   const decide = useCallback((accepted: boolean) => {
+     pending?.resolve(accepted);
+@@ -44,7 +49,7 @@
+   return (
+     <AiContext.Provider value={value}>
+       {children}
+-      {pending && <CloudConsent host={settings.host} request={pending.request} onDecide={decide} />}
++      {pending && <CloudConsent host={settings.provider === "xcli" ? "xcli 配置的上游模型（可能在云端）" : settings.host} request={pending.request} onDecide={decide} />}
+     </AiContext.Provider>
+   );
+ }
+--- a/src/components/AiSettings.tsx
++++ b/src/components/AiSettings.tsx
+@@ -9,7 +9,7 @@
+ type Feedback = { tone: "info" | "warning" | "error"; text: string };
+ 
+ function pick(view: AiSettingsView): AiSettingsValues {
+-  return { enabled: view.enabled, baseUrl: view.baseUrl, chatModel: view.chatModel, embedModel: view.embedModel, allowCloud: view.allowCloud, autoScanCommitments: view.autoScanCommitments };
++  return { provider: view.provider ?? "openai_compatible", enabled: view.enabled, baseUrl: view.baseUrl, chatModel: view.chatModel, embedModel: view.embedModel, allowCloud: view.allowCloud, autoScanCommitments: view.autoScanCommitments };
+ }
+ 
+ function isLocalUrl(value: string): boolean {
+@@ -45,8 +45,14 @@
+     if (progressRunning === false) refreshStatus();
+   }, [progressRunning, refreshStatus]);
+ 
+-  const local = isLocalUrl(form.baseUrl);
++  const gateway = form.provider === "xcli";
++  const local = !gateway && isLocalUrl(form.baseUrl);
+   const update = <K extends keyof AiSettingsValues>(key: K, value: AiSettingsValues[K]) => setForm((current) => ({ ...current, [key]: value }));
++
++  function chooseProvider(provider: "openai_compatible" | "xcli") {
++    setForm((current) => ({ ...current, provider, baseUrl: provider === "xcli" ? "http://127.0.0.1:18741/v1" : "http://127.0.0.1:11434/v1", chatModel: provider === "xcli" ? "xcli/text-default" : "qwen3:8b", embedModel: provider === "xcli" ? "xcli/embed-default" : "bge-m3", autoScanCommitments: false, allowCloud: false }));
++    setApiKey("");
++  }
+ 
+   async function save(event?: FormEvent): Promise<boolean> {
+     event?.preventDefault();
+@@ -80,7 +86,8 @@
+     try {
+       const result = await api.testAi();
+       const missing = result.chatModelFound ? "" : `；服务上没有找到对话模型 ${form.chatModel}${local ? `，可运行 ollama pull ${form.chatModel}` : ""}`;
+-      setFeedback({ tone: missing ? "warning" : "info", text: `连接成功，向量模型可用（${result.embeddingDimension} 维）${missing}` });
++      const locations = result.gateway ? `；对话推理：${result.gateway.chatLocation}，向量推理：${result.gateway.embeddingLocation}` : "";
++      setFeedback({ tone: missing ? "warning" : "info", text: `连接成功，向量模型可用（${result.embeddingDimension} 维）${locations}${missing}` });
+     } catch (reason) {
+       setFeedback({ tone: "error", text: errorMessage(reason) });
+     } finally {
+@@ -115,7 +122,7 @@
+       <div className="panel-heading">
+         <div><p className="eyebrow">AI ASSISTANT</p><h2>AI 设置</h2></div>
+         <span className={`ai-mode-badge ${!settings.enabled ? "off" : settings.isLocal ? "local" : "cloud"}`}>
+-          {!settings.enabled ? "未开启" : settings.isLocal ? "本机模型" : "云端模型"}
++          {!settings.enabled ? "未开启" : settings.provider === "xcli" ? "本机网关 · 上游位置以目录为准" : settings.isLocal ? "本机模型" : "云端模型"}
+         </span>
+       </div>
+       <form className="ai-settings-form" onSubmit={save}>
+@@ -124,6 +131,10 @@
+           <span><strong>开启 AI 功能</strong><small>用于搜索问答、找出约定、聊天摘要、常聊话题和年度回顾。默认关闭。</small></span>
+         </label>
+         <div className="field-grid">
++          <fieldset className="field wide"><legend>模型供应商</legend>
++            <label><input type="radio" name="ai-provider" checked={!gateway} onChange={() => chooseProvider("openai_compatible")} />OpenAI 兼容 / 本机 Ollama</label>
++            <label><input type="radio" name="ai-provider" checked={gateway} onChange={() => chooseProvider("xcli")} />xcli Model Gateway</label>
++          </fieldset>
+           <label className="field wide"><span>服务地址（OpenAI 兼容接口）</span><input value={form.baseUrl} onChange={(event) => update("baseUrl", event.target.value)} placeholder="http://127.0.0.1:11434/v1" spellCheck={false} /></label>
+           <label className="field"><span>对话模型</span><input value={form.chatModel} onChange={(event) => update("chatModel", event.target.value)} placeholder="qwen3:8b" spellCheck={false} /></label>
+           <label className="field"><span>向量模型</span><input value={form.embedModel} onChange={(event) => update("embedModel", event.target.value)} placeholder="bge-m3" spellCheck={false} /></label>
+@@ -145,14 +156,14 @@
+           </>
+         ) : (
+           <InlineNotice tone="warning">
+-            <strong>这个地址不在本机</strong>
+-            <p>使用云端模型时，聊天内容会发送到该服务。每次发送聊天内容前都会再次请你确认；年度回顾只发送统计数字。</p>
++            <strong>{gateway ? "本机网关不等于本机推理" : "这个地址不在本机"}</strong>
++            <p>{gateway ? "应用会在发送前读取 xcli 模型目录。远程或未知上游需要云端授权和本次确认；后台自动扫描关闭。请使用独立应用 Token。" : "使用云端模型时，聊天内容会发送到该服务。每次发送聊天内容前都会再次请你确认；年度回顾只发送统计数字。"}</p>
+             <label className="checkbox-label"><input type="checkbox" checked={form.allowCloud} onChange={(event) => update("allowCloud", event.target.checked)} />允许使用云端模型服务</label>
+           </InlineNotice>
+         )}
+         <div className="form-actions">
+           <button type="submit" className="primary-button" disabled={saving}>保存设置</button>
+-          <button type="button" className="secondary-button" disabled={saving || (!local && !form.allowCloud)} onClick={test}>保存并测试连接</button>
++          <button type="button" className="secondary-button" disabled={saving || (!gateway && !local && !form.allowCloud)} onClick={test}>保存并测试连接</button>
+         </div>
+         {feedback && <InlineNotice tone={feedback.tone}>{feedback.text}</InlineNotice>}
+       </form>
+@@ -168,8 +179,8 @@
+               {indexing
+                 ? <button type="button" className="secondary-button" onClick={() => api.cancelAiIndex()}><Icon name="stop" />暂停</button>
+                 : <>
+-                    <button type="button" className="primary-button" disabled={!status?.pendingMessages} onClick={() => buildIndex(false)}>{status?.indexedChunks ? "更新索引" : "建立索引"}</button>
+-                    {!!status?.indexedChunks && <button type="button" className="link-button" onClick={() => buildIndex(true)}>重建</button>}
++                    <button type="button" className="primary-button" disabled={!status?.pendingMessages} onClick={() => buildIndex(settings.provider === "xcli" && !status?.indexedChunks)}>{status?.indexedChunks ? "更新索引" : "建立索引"}</button>
++                    {(!!status?.indexedChunks || settings.provider === "xcli") && <button type="button" className="link-button" onClick={() => buildIndex(true)}>重建</button>}
+                   </>}
+             </div>
+           </div>
+--- a/src/types.ts
++++ b/src/types.ts
+@@ -143,6 +143,7 @@
+ }
+ 
+ export interface AiSettings {
++  provider?: "openai_compatible" | "xcli";
+   enabled: boolean;
+   baseUrl: string;
+   chatModel: string;
+@@ -167,6 +168,14 @@
+   models: string[];
+   chatModelFound: boolean;
+   embeddingDimension: number;
++  gateway?: GatewayPrivacy | null;
++}
++
++export interface GatewayPrivacy {
++  chatCloud: boolean;
++  embeddingCloud: boolean;
++  chatLocation: string;
++  embeddingLocation: string;
+ }
+ 
+ export interface AiIndexStatus {

@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
+import path from 'node:path';
+
+const root = process.env.XCLI_NATIVE_SOURCE;
+const baseURL = process.env.XCLI_NATIVE_BASE_URL;
+const apiKey = (await readFile(process.env.XCLI_NATIVE_TOKEN_FILE, 'utf8')).trim();
+const load = (name) => import(pathToFileURL(path.join(root, 'desktop/electron/core', name)));
+const { fetchModelsForAiSource } = await load('aiSourceService.ts');
+const { requireXcliCapabilities } = await load('xcliGateway.ts');
+const { getImageProviderAdapter } = await load('imageProviderAdapters.ts');
+const catalog = await fetchModelsForAiSource({ baseURL, apiKey, presetId: 'xcli' });
+requireXcliCapabilities(catalog.models, 'xcli/text-default', ['text.generate', 'text.stream', 'tool_calls']);
+requireXcliCapabilities(catalog.models, 'xcli/text-default', ['vision.analyze']);
+const adapter = getImageProviderAdapter('openai-images', 'xcli');
+const request = { endpoint: baseURL, apiKey, model: 'xcli/image-default', provider: 'xcli', providerTemplate: 'openai-images', prompt: 'Synthetic integration image', size: '1x1', count: 1 };
+const outputs = await adapter.generate(request);
+assert.equal(outputs.length, 1);
+assert.equal(outputs[0].mimeType, 'image/png');
+const referenceImages = ['data:image/png;base64,' + outputs[0].imageBuffer.toString('base64')];
+const edited = await adapter.generate({ ...request, generationMode: 'reference-guided', referenceImages });
+assert.equal(edited.length, 1);
+assert.deepEqual(edited[0].imageBuffer, outputs[0].imageBuffer);
+console.log(JSON.stringify({ native_client: 'garden-flow', catalog: true, image_generate: true, image_edit: true }));

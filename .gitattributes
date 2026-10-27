@@ -1,0 +1,2 @@
+# Patch checksums require exact bytes, including empty context-line spaces.
+docs/model-gateway/integrations/*.patch -text whitespace=-blank-at-eol

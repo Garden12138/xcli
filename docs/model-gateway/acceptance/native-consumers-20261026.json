@@ -1,0 +1,66 @@
+{
+  "evidence": "native-client-code-through-built-gateway",
+  "application_ui_e2e": "unverified",
+  "real_model_calls": 0,
+  "binary_sha256": "ec0c69098c8a8bbcb2c8f8e7439e12bd8bad32dc6b3accb2075495bc394677b0",
+  "checks": {
+    "worklog": {
+      "native_rust_probe": "passed",
+      "source_head": "861156e987f97ad52b59daae8cd7ec8b9f02fea1"
+    },
+    "chat-insight": {
+      "native_rust_probe": "passed",
+      "source_head": "b20ad1e276f3b5566585be50f96549171dbf107c"
+    },
+    "garden-flow": {
+      "native_client": "garden-flow",
+      "catalog": true,
+      "image_generate": true,
+      "image_edit": true
+    },
+    "contribution-os": {
+      "native_client": "contribution-os",
+      "frozen_profile": true,
+      "scoped_task_token": true,
+      "json_schema": true,
+      "tampered_profile_rejected": true,
+      "container_bridge": "unsupported"
+    }
+  },
+  "fixture_model_requests": 10,
+  "fixture_requests_by_route": [
+    {
+      "path": "/v1/chat/completions",
+      "model": "fixture-json",
+      "count": 1
+    },
+    {
+      "path": "/v1/chat/completions",
+      "model": "fixture-text",
+      "count": 5
+    },
+    {
+      "path": "/v1/chat/completions",
+      "model": "fixture-text-cloud",
+      "count": 1
+    },
+    {
+      "path": "/v1/embeddings",
+      "model": "fixture-embed",
+      "count": 1
+    },
+    {
+      "path": "/v1/images/edits",
+      "model": "fixture-image",
+      "count": 1
+    },
+    {
+      "path": "/v1/images/generations",
+      "model": "fixture-image",
+      "count": 1
+    }
+  ],
+  "unconsented_cloud_uploads": 0,
+  "unapproved_embedding_uploads": 0,
+  "token_audit_leaks": 0
+}

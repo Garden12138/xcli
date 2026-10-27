@@ -1,0 +1,47 @@
+{
+  "evidence": "offline-regression-with-latest-independent-source-delta",
+  "full_suite": {
+    "tests": 1506,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 46,
+    "passed": 1460,
+    "seconds": 771.689,
+    "source": {
+      "files": 204,
+      "sha256": "0bd202949bdfc0a046cea2ecb1113e888ff1a7a754aaa87f62d8d21cc5aa571c"
+    },
+    "scope": "Final bridge implementation before subsequent independent user proposal-recovery change"
+  },
+  "latest_source_delta": {
+    "tests": 163,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "passed": 162,
+    "seconds": 83.145,
+    "source": {
+      "files": 204,
+      "sha256": "c0209efe5c61c8c52d8cecbaa6b41112583e43929b0f7947efc36c9ac20a4947"
+    },
+    "preserved_user_changes": [
+      "app/proposal_recovery.py",
+      "tests/test_proposal_format_correction.py",
+      "docs/tasks.md"
+    ],
+    "scope": "All bridge, frozen model settings, scoped tokens, runtime integrity and proposal correction/recovery/validation tests"
+  },
+  "same_bridge_runtime_files_between_snapshots": true,
+  "compileall": true,
+  "javascript_syntax": true,
+  "internal_imports_complete": true,
+  "root_gateway_tools_unittest_passed": 9,
+  "real_model_calls": 0,
+  "production_enabled": false,
+  "unverified": [
+    "Physical Linux amd64 Docker bridge",
+    "Real Plan/Review models",
+    "Windows ACL support",
+    "Production certificate enrollment and deployment"
+  ]
+}

@@ -1,0 +1,560 @@
+--- a/README.md
++++ b/README.md
+@@ -1,4 +1,10 @@
+ # Worklog Desktop
++
++## xcli Model Gateway
++
++在 LLM 设置中选择 `xcli 本机网关`，填写已启动网关的 `/v1` 地址、模型别名和为 Worklog 单独签发的应用 Token。默认地址为 `http://127.0.0.1:18741/v1`，端口可修改；只允许明确的本机 IP，不使用原生 Agent CLI 会员凭据。
++
++保存后可点击“检查已保存网关（不调用模型）”，读取授权模型目录及实际上游推理位置，不发起生成请求。网关位于本机不代表推理位于本机；`remote/unknown` 路由需要该 Token 在网关侧具备相应权限。日报、周报与模板继续使用原有业务 Prompt；缺少模型、Token 失效、配额或连接错误会明确失败，不自动换供应商。其他服务商配置和无模型配置时的原有回退继续保留。
+ 
+ Worklog 2.0 是使用 Tauri 2、Rust、React 和 SQLite 构建的本地桌面工作记录与报告应用。安装后不需要 Python、Node.js 或后台 HTTP 服务。
+ 
+--- a/frontend/src/api.ts
++++ b/frontend/src/api.ts
+@@ -105,6 +105,7 @@
+ 
+   getLlmSetting: () => call<LlmSetting | null>("get_llm_setting"),
+   listLlmSettings: () => call<LlmSetting[]>("list_llm_settings"),
++  testXcliConnection: (id: number) => call<{ model: string; inference_location: "local" | "remote" | "unknown" }>("test_xcli_connection", { id }),
+   createLlmSetting: (payload: LlmSetting) =>
+     call<LlmSetting>("create_llm_setting", { payload }),
+   updateLlmSetting: (id: number, payload: LlmSetting) =>
+--- a/frontend/src/main.tsx
++++ b/frontend/src/main.tsx
+@@ -59,6 +59,7 @@
+ };
+ 
+ const providerLabels: Record<Provider, string> = {
++  xcli: "xcli 本机网关（推理位置取决于上游）",
+   openai: "OpenAI",
+   nvidia: "NVIDIA",
+   openrouter: "OpenRouter",
+@@ -67,6 +68,7 @@
+ };
+ 
+ const providerDefaults: Record<Provider, { base_url: string; model: string; timeout_seconds: number }> = {
++  xcli: { base_url: "http://127.0.0.1:18741/v1", model: "xcli/text-default", timeout_seconds: 180 },
+   openai: { base_url: "https://api.openai.com/v1", model: "gpt-4.1-mini", timeout_seconds: 60 },
+   nvidia: { base_url: "https://integrate.api.nvidia.com/v1", model: "meta/llama-3.1-70b-instruct", timeout_seconds: 180 },
+   openrouter: { base_url: "https://openrouter.ai/api/v1", model: "openai/gpt-4.1-mini", timeout_seconds: 60 },
+@@ -2488,6 +2490,8 @@
+   });
+   const [headersText, setHeadersText] = React.useState("{}");
+   const [headersError, setHeadersError] = React.useState("");
++  const [gatewayStatus, setGatewayStatus] = React.useState("");
++  const [gatewayChecking, setGatewayChecking] = React.useState(false);
+   const activeProviderLabel = props.setting ? providerLabels[props.setting.provider] : "未配置";
+   const formSetting = props.settings.find((item) => item.id === form.id);
+   const apiKeyPlaceholder = formSetting?.api_key
+@@ -2512,12 +2516,14 @@
+   ]);
+ 
+   function loadSavedSetting(setting: LlmSetting) {
++    setGatewayStatus("");
+     setForm({ ...setting, api_key: "" });
+     setHeadersText(JSON.stringify(setting.extra_headers ?? {}, null, 2));
+     setHeadersError("");
+   }
+ 
+   function setProvider(provider: Provider) {
++    setGatewayStatus("");
+     const extra_headers: Record<string, string> = {};
+     setForm((current) => ({
+       ...current,
+@@ -2568,6 +2574,21 @@
+     }
+     setHeadersError("");
+     await props.onSave({ ...form, extra_headers });
++  }
++
++  async function checkGateway() {
++    if (!form.id || gatewayChecking) return;
++    setGatewayChecking(true);
++    setGatewayStatus("");
++    try {
++      const result = await api.testXcliConnection(form.id);
++      const location = { local: "本机推理", remote: "转发云端", unknown: "推理位置未知，按云端处理" }[result.inference_location];
++      setGatewayStatus(`已保存配置可连接：${result.model}；${location}。未调用模型。`);
++    } catch (error) {
++      setGatewayStatus(typeof error === "string" ? error : error instanceof Error ? error.message : "网关检查失败");
++    } finally {
++      setGatewayChecking(false);
++    }
+   }
+ 
+   async function removeSavedSetting(setting: LlmSetting) {
+@@ -2689,6 +2710,7 @@
+               Provider
+               <select value={form.provider} onChange={(event) => setProvider(event.target.value as Provider)}>
+                 <option value="openai">OpenAI</option>
++                <option value="xcli">xcli 本机网关</option>
+                 <option value="nvidia">NVIDIA</option>
+                 <option value="openrouter">OpenRouter</option>
+                 <option value="minimax">MiniMax（国内）</option>
+@@ -2749,11 +2771,13 @@
+         </fieldset>
+ 
+         <div className="button-row settings-actions">
++          {form.provider === "xcli" && <button className="secondary" type="button" disabled={!form.id || gatewayChecking} onClick={() => void checkGateway()}>{gatewayChecking ? "正在检查…" : "检查已保存网关（不调用模型）"}</button>}
+           <button className="primary" type="submit">
+             <Save size={18} />
+             {form.id ? "保存并应用修改" : "保存并应用新配置"}
+           </button>
+         </div>
++        {form.provider === "xcli" && <p className="form-hint" role="status">{gatewayStatus || "填写 xcli 独立应用 Token。网关在本机，上游推理可能在云端；先保存配置再检查。"}</p>}
+       </form>
+       <DailyCapturePanel
+         sources={props.activitySources}
+--- a/frontend/src/types.ts
++++ b/frontend/src/types.ts
+@@ -1,6 +1,6 @@
+ export type ReportType = "weekly_report" | "monthly_report" | "performance_review";
+ export type Priority = "low" | "medium" | "high" | "urgent";
+-export type Provider = "openai" | "nvidia" | "openrouter" | "minimax" | "bailian";
++export type Provider = "xcli" | "openai" | "nvidia" | "openrouter" | "minimax" | "bailian";
+ export type ActivitySourceType = "git" | "codex" | "cursor";
+ export type EmailSecurity = "starttls" | "ssl";
+ export type EmailDeliveryStatus = "pending" | "sent" | "failed";
+--- a/src-tauri/src/commands.rs
++++ b/src-tauri/src/commands.rs
+@@ -552,6 +552,7 @@
+ 
+ fn provider_defaults(provider: &str) -> AppResult<(&'static str, &'static str, i64)> {
+     match provider {
++        "xcli" => Ok(("http://127.0.0.1:18741/v1", "xcli/text-default", 180)),
+         "openai" => Ok(("https://api.openai.com/v1", "gpt-4.1-mini", 60)),
+         "nvidia" => Ok((
+             "https://integrate.api.nvidia.com/v1",
+@@ -624,6 +625,21 @@
+ }
+ 
+ #[tauri::command]
++pub async fn test_xcli_connection(
++    state: State<'_, AppState>,
++    id: i64,
++) -> AppResult<crate::xcli::ConnectionInfo> {
++    let row = load_llm_row(&state, id).await?;
++    if row.provider != "xcli" {
++        return Err(AppError::validation(
++            "provider",
++            "Select a saved xcli configuration",
++        ));
++    }
++    crate::xcli::probe(&llm::config_from_row(row, &state.secrets)).await
++}
++
++#[tauri::command]
+ pub async fn create_llm_setting(
+     state: State<'_, AppState>,
+     payload: LlmSettingInput,
+@@ -633,6 +649,9 @@
+     let base_url = clean_optional(payload.base_url).unwrap_or(defaults.0.into());
+     url::Url::parse(&base_url)
+         .map_err(|_| AppError::validation("base_url", "A valid base URL is required"))?;
++    if provider == "xcli" {
++        crate::xcli::validate_endpoint(&base_url)?;
++    }
+     let model = require_text(
+         Some(clean_optional(payload.model).unwrap_or(defaults.1.into())),
+         "model",
+@@ -701,6 +720,18 @@
+     let base_url = clean_optional(payload.base_url).unwrap_or(defaults.0.into());
+     url::Url::parse(&base_url)
+         .map_err(|_| AppError::validation("base_url", "A valid base URL is required"))?;
++    if payload.provider == "xcli" {
++        crate::xcli::validate_endpoint(&base_url)?;
++    }
++    if current.provider != payload.provider
++        && (current.provider == "xcli" || payload.provider == "xcli")
++        && payload
++            .api_key
++            .as_deref()
++            .is_none_or(|key| key.trim().is_empty() || is_masked(key))
++    {
++        return Err(AppError::validation("api_key", "Switching to or from xcli requires an independent token; create a separate provider configuration"));
++    }
+     let model = require_text(
+         Some(clean_optional(payload.model).unwrap_or(defaults.1.into())),
+         "model",
+@@ -1391,5 +1422,9 @@
+             )
+         );
+         assert!(provider_defaults("unsupported").is_err());
+-    }
+-}
++        assert_eq!(
++            provider_defaults("xcli").unwrap(),
++            ("http://127.0.0.1:18741/v1", "xcli/text-default", 180)
++        );
++    }
++}
+--- a/src-tauri/src/lib.rs
++++ b/src-tauri/src/lib.rs
+@@ -10,6 +10,7 @@
+ mod scheduler;
+ mod secrets;
+ mod templates;
++mod xcli;
+ 
+ use db::Database;
+ use reports::ActiveGenerations;
+@@ -125,6 +126,7 @@
+             commands::send_report_email,
+             commands::get_llm_setting,
+             commands::list_llm_settings,
++            commands::test_xcli_connection,
+             commands::create_llm_setting,
+             commands::update_llm_setting,
+             commands::apply_llm_setting,
+--- a/src-tauri/src/llm.rs
++++ b/src-tauri/src/llm.rs
+@@ -38,6 +38,10 @@
+     let Some(row) = row else {
+         return Ok(None);
+     };
++    Ok(Some(config_from_row(row, secrets)))
++}
++
++pub fn config_from_row(row: LlmSettingRow, secrets: &SecretStore) -> LlmConfig {
+     let key = secrets
+         .get(&llm_secret_key(row.id))
+         .or(row.api_key)
+@@ -47,14 +51,14 @@
+         .as_deref()
+         .and_then(|value| serde_json::from_str(value).ok())
+         .unwrap_or_default();
+-    Ok(Some(LlmConfig {
++    LlmConfig {
+         provider: row.provider,
+         base_url: row.base_url,
+         model: row.model,
+         api_key: key,
+         extra_headers,
+         timeout_seconds: row.timeout_seconds,
+-    }))
++    }
+ }
+ 
+ pub async fn generate_report(
+@@ -344,19 +348,33 @@
+         payload["max_tokens"] = json!(4096);
+         payload["chat_template_kwargs"] = json!({"thinking": false});
+     }
+-    let client = Client::builder()
+-        .timeout(Duration::from_secs(
+-            config.timeout_seconds.clamp(5, 600) as u64
+-        ))
+-        .build()
+-        .map_err(|error| AppError::new("llm_error", error.to_string()))?;
++    let client = if config.provider == "xcli" {
++        crate::xcli::client(config.timeout_seconds)?
++    } else {
++        Client::builder()
++            .timeout(Duration::from_secs(
++                config.timeout_seconds.clamp(5, 600) as u64
++            ))
++            .build()
++            .map_err(|error| AppError::new("llm_error", error.to_string()))?
++    };
++    if config.provider == "xcli" {
++        crate::xcli::probe_with(&client, config).await?;
++    }
+     let request = build_chat_request(&client, config, &payload)?;
+     let response = client.execute(request).await.map_err(|error| {
++        if config.provider == "xcli" {
++            return crate::xcli::transport_error();
++        }
+         AppError::new(
+             "llm_unreachable",
+             format!("Unable to reach LLM provider: {error}"),
+         )
+     })?;
++    if config.provider == "xcli" {
++        let body = crate::xcli::json_response(response).await?;
++        return sanitize_chat_content(&extract_chat_content(&body)?);
++    }
+     let status = response.status();
+     let body: Value = response
+         .json()
+@@ -396,6 +414,9 @@
+     config: &LlmConfig,
+     payload: &Value,
+ ) -> AppResult<reqwest::Request> {
++    if config.provider == "xcli" {
++        crate::xcli::validate_config(config)?;
++    }
+     let url = format!("{}/chat/completions", config.base_url.trim_end_matches('/'));
+     let mut request = client
+         .post(url)
+@@ -697,7 +718,9 @@
+         let summary = parse_daily_summary(json_arr).unwrap();
+         assert_eq!(summary.task, "V3.20.2 5G消息模板（发送换号 + 真实验收）");
+         assert!(summary.progress.contains("1、文本预览带上正文"));
+-        assert!(summary.progress.contains("2、总状态结束时收掉运营商审核步骤"));
++        assert!(summary
++            .progress
++            .contains("2、总状态结束时收掉运营商审核步骤"));
+         assert_eq!(summary.result.as_deref(), Some("主链路在测试环境跑通"));
+         assert_eq!(summary.blockers, None);
+ 
+--- /dev/null
++++ b/src-tauri/src/xcli.rs
+@@ -0,0 +1,256 @@
++//! xcli local transport. Never reads native CLI logins or silently switches providers.
++use crate::error::{AppError, AppResult};
++use crate::llm::LlmConfig;
++use reqwest::{Client, Response};
++use serde::Serialize;
++use serde_json::Value;
++use std::time::Duration;
++
++#[derive(Debug, Serialize)]
++pub struct ConnectionInfo {
++    pub model: String,
++    pub inference_location: String,
++}
++
++pub fn validate_endpoint(value: &str) -> AppResult<String> {
++    let parsed = url::Url::parse(value).map_err(|_| invalid_endpoint())?;
++    let loopback = match parsed.host() {
++        Some(url::Host::Ipv4(ip)) => ip.is_loopback(),
++        Some(url::Host::Ipv6(ip)) => ip.is_loopback(),
++        _ => false,
++    };
++    if parsed.scheme() != "http"
++        || !loopback
++        || parsed.port().is_none()
++        || !parsed.username().is_empty()
++        || parsed.password().is_some()
++        || parsed.query().is_some()
++        || parsed.fragment().is_some()
++        || parsed.path().trim_end_matches('/') != "/v1"
++    {
++        return Err(invalid_endpoint());
++    }
++    Ok(value.trim_end_matches('/').into())
++}
++
++fn invalid_endpoint() -> AppError {
++    AppError::validation(
++        "base_url",
++        "xcli requires an explicit loopback IP, port and /v1 path",
++    )
++}
++
++pub fn validate_config(config: &LlmConfig) -> AppResult<()> {
++    validate_endpoint(&config.base_url)?;
++    if config.extra_headers.keys().any(|key| {
++        matches!(
++            key.to_ascii_lowercase().as_str(),
++            "authorization"
++                | "host"
++                | "origin"
++                | "cookie"
++                | "proxy-authorization"
++                | "x-xcli-remote-consent"
++        )
++    }) {
++        return Err(AppError::validation(
++            "extra_headers",
++            "xcli authentication and privacy headers cannot be overridden",
++        ));
++    }
++    Ok(())
++}
++
++pub fn client(timeout_seconds: i64) -> AppResult<Client> {
++    Client::builder()
++        .no_proxy()
++        .redirect(reqwest::redirect::Policy::none())
++        .timeout(Duration::from_secs(timeout_seconds.clamp(5, 600) as u64))
++        .build()
++        .map_err(|_| AppError::new("llm_error", "Unable to initialize the local gateway client"))
++}
++
++pub fn transport_error() -> AppError {
++    AppError::new(
++        "llm_unreachable",
++        "Unable to reach xcli; check that Model Gateway is running",
++    )
++}
++
++pub fn status_error(status: u16) -> AppError {
++    let message = match status {
++        401 => "xcli rejected the local application token; check issuance or revocation",
++        403 => "xcli denied this model scope or upstream data-location permission",
++        429 => "xcli or its upstream reached a rate or quota limit",
++        504 => "xcli model request timed out",
++        _ => "xcli returned an unsuccessful response",
++    };
++    AppError::new("llm_error", format!("{message} (HTTP {status})"))
++}
++
++pub async fn json_response(mut response: Response) -> AppResult<Value> {
++    if !response.status().is_success() {
++        return Err(status_error(response.status().as_u16()));
++    }
++    let mut bytes = Vec::new();
++    while let Some(chunk) = response.chunk().await.map_err(|_| transport_error())? {
++        if bytes.len() + chunk.len() > 4 * 1024 * 1024 {
++            return Err(AppError::new(
++                "llm_error",
++                "xcli response exceeds the Worklog limit",
++            ));
++        }
++        bytes.extend_from_slice(&chunk);
++    }
++    serde_json::from_slice(&bytes)
++        .map_err(|_| AppError::new("llm_error", "xcli returned invalid JSON"))
++}
++
++pub async fn probe_with(client: &Client, config: &LlmConfig) -> AppResult<ConnectionInfo> {
++    validate_config(config)?;
++    if config.api_key.trim().is_empty() {
++        return Err(AppError::new(
++            "llm_not_configured",
++            "An independent xcli application token is required",
++        ));
++    }
++    let response = client
++        .get(format!("{}/models", validate_endpoint(&config.base_url)?))
++        .bearer_auth(&config.api_key)
++        .send()
++        .await
++        .map_err(|_| transport_error())?;
++    let catalog = json_response(response).await?;
++    let models = catalog
++        .get("data")
++        .and_then(Value::as_array)
++        .filter(|_| catalog.get("object").and_then(Value::as_str) == Some("list"))
++        .ok_or_else(|| AppError::new("llm_error", "xcli model catalog is invalid"))?;
++    let selected: Vec<_> = models
++        .iter()
++        .filter(|model| model.get("id").and_then(Value::as_str) == Some(&config.model))
++        .collect();
++    if selected.len() != 1
++        || !selected[0]
++            .pointer("/xcli/capabilities")
++            .and_then(Value::as_array)
++            .is_some_and(|caps| caps.iter().any(|cap| cap.as_str() == Some("text.generate")))
++    {
++        return Err(AppError::new(
++            "llm_error",
++            "The configured xcli alias is missing or cannot generate text",
++        ));
++    }
++    let location = selected[0]
++        .pointer("/xcli/inference_location")
++        .and_then(Value::as_str)
++        .unwrap_or("unknown");
++    Ok(ConnectionInfo {
++        model: config.model.clone(),
++        inference_location: match location {
++            "local" | "remote" => location,
++            _ => "unknown",
++        }
++        .into(),
++    })
++}
++
++pub async fn probe(config: &LlmConfig) -> AppResult<ConnectionInfo> {
++    probe_with(&client(config.timeout_seconds)?, config).await
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use std::collections::BTreeMap;
++    use std::io::{BufRead, BufReader, Read, Write};
++    use std::net::TcpListener;
++
++    fn config(url: String) -> LlmConfig {
++        LlmConfig {
++            provider: "xcli".into(),
++            base_url: url,
++            model: "xcli/text-default".into(),
++            api_key: "synthetic-private-token".into(),
++            extra_headers: BTreeMap::new(),
++            timeout_seconds: 5,
++        }
++    }
++
++    #[test]
++    fn validates_local_transport_and_redacts_errors() {
++        assert!(validate_endpoint("http://127.0.0.1:18741/v1").is_ok());
++        assert!(validate_endpoint("http://[::1]:18741/v1/").is_ok());
++        for bad in [
++            "http://localhost:18741/v1",
++            "http://192.168.1.1:18741/v1",
++            "https://example.com/v1",
++            "http://user@127.0.0.1:18741/v1",
++            "http://127.0.0.1:18741/v1?token=secret",
++            "http://127.0.0.1:18741/other",
++        ] {
++            assert!(validate_endpoint(bad).is_err());
++        }
++        let mut settings = config("http://127.0.0.1:18741/v1".into());
++        settings
++            .extra_headers
++            .insert("Authorization".into(), "private-canary".into());
++        assert!(validate_config(&settings).is_err());
++        assert!(!format!("{:?}", status_error(401)).contains("synthetic-private-token"));
++    }
++
++    #[tokio::test]
++    async fn worklog_requests_catalog_then_chat_without_sending_prompts_to_models() {
++        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
++        let settings = config(format!("http://{}/v1", listener.local_addr().unwrap()));
++        let server = std::thread::spawn(move || {
++            for path in ["GET /v1/models", "POST /v1/chat/completions"] {
++                let (mut socket, _) = listener.accept().unwrap();
++                let mut reader = BufReader::new(socket.try_clone().unwrap());
++                let mut first = String::new();
++                reader.read_line(&mut first).unwrap();
++                assert!(first.starts_with(path));
++                let mut length = 0;
++                let mut auth = false;
++                loop {
++                    let mut line = String::new();
++                    reader.read_line(&mut line).unwrap();
++                    if line == "\r\n" {
++                        break;
++                    }
++                    let lower = line.to_ascii_lowercase();
++                    if lower.starts_with("content-length:") {
++                        length = line.split(':').nth(1).unwrap().trim().parse().unwrap();
++                    }
++                    if lower.starts_with("authorization:") {
++                        auth = line.contains("synthetic-private-token");
++                    }
++                }
++                assert!(auth);
++                let mut body = vec![0; length];
++                reader.read_exact(&mut body).unwrap();
++                let reply = if path.starts_with("GET") {
++                    assert!(body.is_empty());
++                    r#"{"object":"list","data":[{"id":"xcli/text-default","xcli":{"capabilities":["text.generate"],"inference_location":"remote"}}]}"#
++                } else {
++                    let value: Value = serde_json::from_slice(&body).unwrap();
++                    assert_eq!(value["model"], "xcli/text-default");
++                    r#"{"choices":[{"message":{"content":"synthetic report"}}]}"#
++                };
++                write!(socket, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{reply}", reply.len()).unwrap();
++            }
++        });
++        let result = crate::llm::generate_report(
++            Some(&settings),
++            "weekly_report",
++            "2026-10-19",
++            "2026-10-25",
++            &[],
++        )
++        .await
++        .unwrap();
++        assert!(result.used_llm);
++        assert_eq!(result.content, "synthetic report");
++        server.join().unwrap();
++    }
++}

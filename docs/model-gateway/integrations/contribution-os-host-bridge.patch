@@ -1,0 +1,1272 @@
+--- a/app/cli.py
++++ b/app/cli.py
+@@ -80,6 +80,9 @@
+     gateway.add_argument("--host", default="127.0.0.1")
+     gateway.add_argument("--port", type=int, default=8001)
+ 
++    bridge = subparsers.add_parser("xcli-host-bridge", help="Run the opt-in native mTLS xcli relay")
++    bridge.add_argument("--config", type=Path, required=True)
++
+     sandbox_worker = subparsers.add_parser(
+         "sandbox-worker",
+         help="Run Docker-only execution jobs without GitHub/model credentials",
+@@ -183,6 +186,12 @@
+             )
+         )
+         return 0 if report.ok else 1
++    if args.command == "xcli-host-bridge":
++        from app.providers.xcli_bridge_relay import run_relay
++        try:
++            return run_relay(args.config)
++        except (OSError, ValueError, TypeError):
++            parser.error("xcli bridge configuration or TLS files are invalid")
+     settings = Settings.from_env()
+     if args.command == "publisher-service":
+         from app.publisher_service import create_publisher_app
+--- a/app/model_settings.py
++++ b/app/model_settings.py
+@@ -9,7 +9,7 @@
+ import ipaddress
+ import re
+ 
+-from pydantic import BaseModel, ConfigDict, Field, model_validator
++from pydantic import BaseModel, ConfigDict, Field, model_serializer, model_validator
+ from sqlalchemy import select
+ from sqlalchemy.orm import Session
+ 
+@@ -87,7 +87,7 @@
+ class ConnectionInput(BaseModel):
+     model_config = ConfigDict(extra="forbid")
+     name: str = Field(min_length=1, max_length=80)
+-    provider: Literal["openai_compatible", "nvidia_nim", "minimax", "xcli_local"] = (
++    provider: Literal["openai_compatible", "nvidia_nim", "minimax", "xcli_local", "xcli_bridge"] = (
+         "openai_compatible"
+     )
+     base_url: str = Field(min_length=1, max_length=500)
+@@ -95,9 +95,31 @@
+         default=None, pattern=r"^(?:cred-[a-f0-9]{32}|env-nvidia)$"
+     )
+ 
++    bridge_instance: str | None = Field(default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]{7,79}$")
++
++    bridge_server_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
++
++    @model_serializer(mode="wrap")
++    def serialize_connection(self, handler):
++        value = handler(self)
++        if self.bridge_instance is None:
++            value.pop("bridge_instance", None)
++        if self.bridge_server_sha256 is None:
++            value.pop("bridge_server_sha256", None)
++        return value
++
+     @model_validator(mode="after")
+     def validate_connection(self):
+-        if self.provider == "xcli_local":
++        if self.provider == "xcli_bridge":
++            from app.providers.xcli_bridge import registration, registered_bridge
++            if self.bridge_instance is None:
++                self.bridge_instance = registration()["instance_id"]
++            if self.bridge_server_sha256 is None:
++                self.bridge_server_sha256 = registration()["server_sha256"]
++            self.base_url = registered_bridge(self.base_url, self.bridge_instance, self.bridge_server_sha256)
++            if not self.credential_ref or self.credential_ref == "env-nvidia":
++                raise ValueError("xcli bridge requires an independent application Token")
++        elif self.provider == "xcli_local":
+             from app.providers.xcli_local import registered_endpoint
+             self.base_url = registered_endpoint(self.base_url)
+             if not self.credential_ref or self.credential_ref == "env-nvidia":
+@@ -115,6 +137,8 @@
+             self.credential_ref is None or self.credential_ref == "env-nvidia"
+         ):
+             raise ValueError("MiniMax 国内连接必须使用独立保存的 MiniMax API Key")
++        if self.provider != "xcli_bridge" and (self.bridge_instance is not None or self.bridge_server_sha256 is not None):
++            raise ValueError("bridge instance is only valid for xcli_bridge")
+         ensure_no_sensitive_data(self.model_dump(), context="model connection")
+         return self
+ 
+--- a/app/model_settings_api.py
++++ b/app/model_settings_api.py
+@@ -35,6 +35,14 @@
+         return None
+ 
+ 
++def configured_xcli_bridge() -> dict[str, str] | None:
++    from app.providers.xcli_bridge import registration
++    try:
++        return registration()
++    except ValueError:
++        return None
++
++
+ class ModelVersionResponse(BaseModel):
+     id: str
+     scope: str
+@@ -51,6 +59,7 @@
+     presets: list[dict[str, Any]]
+     credential_management_available: bool
+     xcli_local_endpoint: str | None = None
++    xcli_bridge: dict[str, str] | None = None
+ 
+ 
+ class CredentialGrantResponse(BaseModel):
+@@ -153,6 +162,7 @@
+             "profiles": [serialize(r) for r in service.list_kind("profile")],
+             "presets": model_presets(),
+             "xcli_local_endpoint": configured_xcli_endpoint(),
++            "xcli_bridge": configured_xcli_bridge(),
+             "credential_management_available": bool(
+                 request.app.state.settings.model_gateway_management_key
+             ),
+--- a/app/providers/studio.py
++++ b/app/providers/studio.py
+@@ -358,7 +358,10 @@
+ class ProfileUpstream:
+     def __init__(self, profile, store, *, proxy_url=None, transport=None):
+         self.profile, self.store, self.proxy_url = profile, store, proxy_url
+-        if profile["connection"]["provider"] == "xcli_local":
++        if profile["connection"]["provider"] == "xcli_bridge":
++            from app.providers.xcli_bridge import XcliBridgeClient
++            self.transport = transport or XcliBridgeClient(profile["connection"].get("bridge_instance"), profile["connection"].get("bridge_server_sha256"))
++        elif profile["connection"]["provider"] == "xcli_local":
+             from app.providers.xcli_local import XcliLocalClient
+             self.transport = transport or XcliLocalClient()
+         else:
+@@ -374,10 +377,14 @@
+                 connection["base_url"], "/models", credential=key, timeout=30
+             )
+         provider = connection["provider"]
+-        if provider == "xcli_local":
++        if provider in {"xcli_local", "xcli_bridge"}:
+             from app.providers.xcli_local import registered_endpoint, require_model
+             try:
+-                registered_endpoint(connection["base_url"])
++                if provider == "xcli_bridge":
++                    from app.providers.xcli_bridge import registered_bridge
++                    registered_bridge(connection["base_url"], connection.get("bridge_instance"), connection.get("bridge_server_sha256"))
++                else:
++                    registered_endpoint(connection["base_url"])
+             except ValueError:
+                 raise ProviderRunError("xcli_registration_required", "xcli 本机实例未注册或地址已变化", retryable=False) from None
+             if request.get("model") != profile["model"]:
+@@ -460,6 +467,10 @@
+                     if k not in {"connection", "id", "record_hash"}
+                 }
+             )
++            if (profile["connection"].get("provider") == "xcli_bridge"
++                    and (not profile["connection"].get("bridge_instance")
++                         or not profile["connection"].get("bridge_server_sha256"))):
++                raise ValueError("Frozen bridge profile is missing its instance")
+             ConnectionInput.model_validate(
+                 {
+                     k: v
+--- /dev/null
++++ b/app/providers/xcli_bridge.py
+@@ -0,0 +1,176 @@
++"""Explicit, certificate-bound host bridge; never used by public HTTPS providers."""
++from __future__ import annotations
++
++import asyncio
++import hashlib
++import ipaddress
++import json
++import os
++from pathlib import Path
++import re
++import ssl
++import stat
++from urllib.parse import urlsplit
++
++from cryptography import x509
++from cryptography.hazmat.primitives import serialization
++import httpx
++
++from app.providers.contracts import ProviderRunError
++
++INSTANCE_HEADER = "X-Xcli-Bridge-Instance"
++MAX_REQUEST = 4 * 1024 * 1024
++INSTANCE_PATTERN = r"[A-Za-z0-9][A-Za-z0-9_.-]{7,79}"
++
++
++def bridge_endpoint(value: str) -> str:
++    try:
++        url = urlsplit(value)
++        host = url.hostname or ""
++        if host != "host.docker.internal":
++            address = ipaddress.ip_address(host)
++            if not address.is_loopback:
++                raise ValueError()
++            host = f"[{address}]" if address.version == 6 else str(address)
++        if (url.scheme != "https" or not url.port or url.username is not None
++                or url.password is not None or url.query or url.fragment
++                or url.path.rstrip("/") != "/v1" or "%" in value or "\\" in value
++                or any(ord(c) <= 32 or ord(c) == 127 for c in value)):
++            raise ValueError()
++        return f"https://{host}:{url.port}/v1"
++    except ValueError:
++        raise ValueError("xcli bridge requires registered HTTPS host, explicit port and /v1") from None
++
++
++def registration() -> dict[str, str]:
++    endpoint = bridge_endpoint(os.environ.get("CONTRIBOS_XCLI_BRIDGE_ENDPOINT", ""))
++    instance = os.environ.get("CONTRIBOS_XCLI_BRIDGE_INSTANCE", "")
++    if not re.fullmatch(INSTANCE_PATTERN, instance):
++        raise ValueError("xcli bridge instance is not registered")
++    fingerprint = os.environ.get("CONTRIBOS_XCLI_BRIDGE_SERVER_SHA256", "")
++    if not re.fullmatch(r"[a-f0-9]{64}", fingerprint):
++        raise ValueError("xcli bridge server fingerprint is not registered")
++    return {"endpoint": endpoint, "instance_id": instance, "server_sha256": fingerprint}
++
++
++def registered_bridge(value: str, instance: str | None, fingerprint: str | None) -> str:
++    registered = registration()
++    endpoint = bridge_endpoint(value)
++    if (endpoint != registered["endpoint"] or instance != registered["instance_id"]
++            or fingerprint != registered["server_sha256"]):
++        raise ValueError("xcli bridge registration changed; create a new connection version")
++    return endpoint
++
++
++def private_file(path: Path) -> bytes:
++    """Only operator-owned regular files in an owner-only directory (Unix)."""
++    if os.name != "posix" or path.is_symlink():
++        raise ValueError("xcli bridge requires private Unix files")
++    parent = path.parent.resolve()
++    directory = parent.stat()
++    if directory.st_uid != os.getuid() or stat.S_IMODE(directory.st_mode) & 0o077:
++        raise ValueError("xcli bridge directory must be owner-only")
++    fd = os.open(parent / path.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
++    try:
++        info = os.fstat(fd)
++        if (not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid()
++                or stat.S_IMODE(info.st_mode) & 0o077 or info.st_size > 65536):
++            raise ValueError("xcli bridge file must be private, regular and bounded")
++        with os.fdopen(fd, "rb", closefd=False) as stream:
++            data = stream.read(65537)
++        if len(data) > 65536:
++            raise ValueError("xcli bridge file exceeds limit")
++        return data
++    finally:
++        os.close(fd)
++
++
++def read_config(path: Path, expected: set[str]) -> dict:
++    value = json.loads(private_file(path))
++    if not isinstance(value, dict) or set(value) != expected or value.get("version") != 1:
++        raise ValueError("xcli bridge configuration schema is invalid")
++    if not isinstance(value.get("instance_id"), str) or not re.fullmatch(INSTANCE_PATTERN, value["instance_id"]):
++        raise ValueError("xcli bridge instance is invalid")
++    return value
++
++
++def certificate_path(config: Path, filename: str) -> Path:
++    if not isinstance(filename, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,79}", filename):
++        raise ValueError("xcli bridge requires a simple relative certificate filename")
++    path = config.parent / filename
++    private_file(path)
++    return path
++
++
++def certificate_fingerprint(data: bytes) -> str:
++    if data.count(b"-----BEGIN CERTIFICATE-----") != 1:
++        raise ValueError("xcli bridge requires one pinned leaf certificate")
++    certificate = x509.load_pem_x509_certificate(data)
++    if certificate.extensions.get_extension_for_class(x509.BasicConstraints).value.ca:
++        raise ValueError("xcli bridge server trust must pin a leaf, not a CA")
++    return hashlib.sha256(certificate.public_bytes(serialization.Encoding.DER)).hexdigest()
++
++
++def client_context(endpoint: str, instance: str, expected_fingerprint: str) -> ssl.SSLContext:
++    path = Path(os.environ.get("CONTRIBOS_XCLI_BRIDGE_CONFIG", ""))
++    config = read_config(path, {"version", "endpoint", "instance_id", "server_sha256",
++                                "server_certificate", "client_certificate", "client_key"})
++    if config["endpoint"] != endpoint or config["instance_id"] != instance:
++        raise ValueError("xcli bridge private configuration differs from registration")
++    server = certificate_path(path, config["server_certificate"])
++    fingerprint = certificate_fingerprint(private_file(server))
++    if config["server_sha256"] != fingerprint or fingerprint != expected_fingerprint:
++        raise ValueError("xcli bridge server fingerprint mismatch")
++    client = certificate_path(path, config["client_certificate"])
++    key = certificate_path(path, config["client_key"])
++    # Supplying cafile creates an exclusive trust store; system/public CAs are not loaded.
++    context = ssl.create_default_context(cafile=str(server))
++    context.minimum_version = ssl.TLSVersion.TLSv1_2
++    context.load_cert_chain(str(client), str(key))
++    return context
++
++
++class XcliBridgeClient:
++    """No environment proxy, redirect or retry; exact server leaf and frozen instance."""
++
++    def __init__(self, instance: str, fingerprint: str):
++        self.instance, self.fingerprint = instance, fingerprint
++
++    async def request(self, base_url: str, suffix: str, *, credential: str,
++                      payload: dict | None = None, timeout: int = 180) -> dict:
++        try:
++            endpoint = registered_bridge(base_url, self.instance, self.fingerprint)
++            context = client_context(endpoint, self.instance, self.fingerprint)
++        except (OSError, ValueError, TypeError, x509.ExtensionNotFound):
++            raise ProviderRunError("xcli_bridge_registration_required", "xcli 桥接登记或私有证书无效", retryable=False) from None
++        if (suffix not in {"/models", "/chat/completions"} or not credential
++                or len(credential) > 8192 or any(ord(c) < 33 or ord(c) > 126 for c in credential)
++                or (suffix == "/models") != (payload is None)):
++            raise ProviderRunError("xcli_request_invalid", "xcli 桥接请求无效", retryable=False)
++        try:
++            encoded = json.dumps(payload, allow_nan=False).encode() if payload is not None else None
++            if encoded is not None and len(encoded) > MAX_REQUEST:
++                raise ProviderRunError("xcli_request_too_large", "xcli 请求超过大小限制", retryable=False)
++            transport = httpx.AsyncHTTPTransport(verify=context, retries=0)
++            async with (asyncio.timeout(max(1, min(timeout, 180))),
++                        httpx.AsyncClient(transport=transport, trust_env=False, follow_redirects=False,
++                                          timeout=max(1, min(timeout, 180))) as client):
++                async with client.stream("POST" if encoded is not None else "GET", endpoint + suffix,
++                        headers={"Authorization": f"Bearer {credential}", "Content-Type": "application/json",
++                                 INSTANCE_HEADER: self.instance}, content=encoded) as response:
++                    if response.headers.get(INSTANCE_HEADER) != self.instance:
++                        raise ValueError()
++                    if not 200 <= response.status_code < 300:
++                        raise ProviderRunError("xcli_http_failed", f"xcli 桥接失败（HTTP {response.status_code}）", retryable=False)
++                    content = bytearray()
++                    limit = (4 if suffix == "/models" else 32) * 1024 * 1024
++                    async for chunk in response.aiter_bytes():
++                        content.extend(chunk)
++                        if len(content) > limit:
++                            raise ValueError()
++                    result = json.loads(content)
++                    if not isinstance(result, dict):
++                        raise ValueError()
++                    return result
++        except (httpx.HTTPError, OSError, ValueError, TypeError, UnicodeError):
++            raise ProviderRunError("xcli_transport_failed", "xcli 桥接不可达或响应无效；请求未自动重试", retryable=False) from None
+--- /dev/null
++++ b/app/providers/xcli_bridge_relay.py
+@@ -0,0 +1,242 @@
++"""Opt-in host-only mTLS relay to one fixed loopback xcli installation."""
++from __future__ import annotations
++
++from collections import deque
++import hashlib
++import http.client
++from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
++import ipaddress
++import json
++from pathlib import Path
++import re
++import socket
++import ssl
++import threading
++import time
++from urllib.parse import urlsplit
++
++from app.providers.xcli_bridge import (INSTANCE_HEADER, MAX_REQUEST, certificate_path,
++    certificate_fingerprint, private_file, read_config)
++from app.providers.xcli_local import local_endpoint, native_runtime
++
++FIELDS = {"version", "instance_id", "upstream_base_url", "listen_host", "listen_port",
++          "server_certificate", "server_key", "client_ca", "allowed_client_fingerprints",
++          "allowed_models", "max_concurrent", "max_requests_per_minute", "timeout_seconds"}
++
++
++class RelayServer(ThreadingHTTPServer):
++    daemon_threads = True
++    allow_reuse_address = False
++
++    def __init__(self, config_path: Path):
++        if not native_runtime():
++            raise ValueError("xcli relay must run natively on the host")
++        config = read_config(config_path, FIELDS)
++        self.config = config
++        address = ipaddress.ip_address(config["listen_host"])
++        if not address.is_loopback:
++            raise ValueError("xcli relay must listen on a literal loopback IP")
++        for field, low, high in [("listen_port", 0, 65535), ("max_concurrent", 1, 8),
++                                  ("max_requests_per_minute", 1, 60000), ("timeout_seconds", 1, 180)]:
++            if type(config[field]) is not int or not low <= config[field] <= high:
++                raise ValueError("xcli relay bounds are invalid")
++        for field, pattern, maximum in [("allowed_client_fingerprints", r"[a-f0-9]{64}", 8),
++                                         ("allowed_models", r"[A-Za-z0-9_.:@/-]{1,120}", 64)]:
++            values = config[field]
++            if (not isinstance(values, list) or not 1 <= len(values) <= maximum
++                    or any(not isinstance(v, str) or not re.fullmatch(pattern, v) for v in values)
++                    or len(set(values)) != len(values)):
++                raise ValueError("xcli relay allowlist is invalid")
++        self.upstream = urlsplit(local_endpoint(config["upstream_base_url"]))
++        server_cert = certificate_path(config_path, config["server_certificate"])
++        self.fingerprint = certificate_fingerprint(private_file(server_cert))
++        server_key = certificate_path(config_path, config["server_key"])
++        client_ca = certificate_path(config_path, config["client_ca"])
++        self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
++        self.context.minimum_version = ssl.TLSVersion.TLSv1_2
++        self.context.load_cert_chain(str(server_cert), str(server_key))
++        self.context.load_verify_locations(cafile=str(client_ca))
++        self.context.verify_mode = ssl.CERT_REQUIRED
++        self.slots = threading.BoundedSemaphore(config["max_concurrent"])
++        self.rate_lock = threading.Lock()
++        self.timestamps: deque[float] = deque()
++        if address.version == 6:
++            self.address_family = socket.AF_INET6
++        super().__init__((str(address), config["listen_port"]), RelayHandler)
++
++    def get_request(self):
++        connection, address = super().get_request()
++        connection.settimeout(5)
++        try:
++            connection = self.context.wrap_socket(connection, server_side=True)
++            fingerprint = hashlib.sha256(connection.getpeercert(binary_form=True)).hexdigest()
++            if fingerprint not in self.config["allowed_client_fingerprints"]:
++                raise ssl.SSLError("unregistered client certificate")
++            connection.settimeout(self.config["timeout_seconds"])
++            return connection, address
++        except Exception:
++            connection.close()
++            raise
++
++    def process_request(self, request, client_address):
++        if not self.slots.acquire(blocking=False):
++            self.shutdown_request(request)
++            return
++        try:
++            super().process_request(request, client_address)
++        except Exception:
++            self.slots.release()
++            raise
++
++    def process_request_thread(self, request, client_address):
++        try:
++            super().process_request_thread(request, client_address)
++        finally:
++            self.slots.release()
++
++    def handle_error(self, request, client_address):
++        pass  # Never print request bodies, auth headers or private configuration.
++
++    def consume_request(self) -> bool:
++        with self.rate_lock:
++            now = time.monotonic()
++            while self.timestamps and self.timestamps[0] <= now - 60:
++                self.timestamps.popleft()
++            if len(self.timestamps) >= self.config["max_requests_per_minute"]:
++                return False
++            self.timestamps.append(now)
++            return True
++
++
++class RelayHandler(BaseHTTPRequestHandler):
++    server: RelayServer
++    protocol_version = "HTTP/1.0"
++
++    def setup(self):
++        super().setup()
++        self.upstream_socket = None
++        self.expired = threading.Event()
++        self.deadline = threading.Timer(self.server.config["timeout_seconds"], self.expire)
++        self.deadline.daemon = True
++        self.deadline.start()
++
++    def expire(self):
++        self.expired.set()
++        for connection in (self.connection, self.upstream_socket):
++            if connection is not None:
++                try:
++                    connection.shutdown(socket.SHUT_RDWR)
++                except OSError:
++                    pass
++
++    def finish(self):
++        self.deadline.cancel()
++        super().finish()
++
++    def log_message(self, format, *args):
++        pass
++
++    def respond(self, status: int, body: bytes = b'{"error":"xcli_bridge_request_failed"}'):
++        self.close_connection = True
++        self.send_response(status)
++        self.send_header("Content-Type", "application/json")
++        self.send_header(INSTANCE_HEADER, self.server.config["instance_id"])
++        self.send_header("Content-Length", str(len(body)))
++        self.send_header("Connection", "close")
++        self.end_headers()
++        self.wfile.write(body)
++
++    def send_error(self, code, message=None, explain=None):
++        self.respond(code)
++
++    def do_GET(self):
++        self.forward()
++
++    def do_POST(self):
++        self.forward()
++
++    def forward(self):
++        if not self.server.consume_request():
++            self.respond(429)
++            return
++        if (self.headers.get_all("Origin") or self.headers.get_all("Transfer-Encoding")
++                or self.headers.get_all("Expect") or len(self.headers.get_all(INSTANCE_HEADER, [])) != 1
++                or self.headers.get(INSTANCE_HEADER) != self.server.config["instance_id"]
++                or len(self.headers.get_all("Authorization", [])) != 1):
++            self.respond(403)
++            return
++        auth = self.headers["Authorization"]
++        if not re.fullmatch(r"Bearer [\x21-\x7e]{1,8192}", auth):
++            self.respond(403)
++            return
++        lengths = self.headers.get_all("Content-Length", [])
++        if len(lengths) > 1 or (lengths and not re.fullmatch(r"[0-9]{1,8}", lengths[0])):
++            self.respond(400)
++            return
++        length = int(lengths[0]) if lengths else 0
++        payload = None
++        if self.command == "GET" and self.path == "/v1/models" and length == 0:
++            pass
++        elif self.command == "POST" and self.path == "/v1/chat/completions":
++            if not 0 < length <= MAX_REQUEST:
++                self.respond(413)
++                return
++            if (len(self.headers.get_all("Content-Type", [])) != 1
++                    or self.headers.get_content_type() != "application/json"):
++                self.respond(415)
++                return
++            try:
++                payload = self.rfile.read(length)
++                value = json.loads(payload)
++                if (len(payload) != length or not isinstance(value, dict)
++                        or value.get("model") not in self.server.config["allowed_models"]
++                        or value.get("stream") not in (None, False)):
++                    raise ValueError()
++            except (ValueError, UnicodeError, TypeError):
++                self.respond(400)
++                return
++        else:
++            self.respond(404)
++            return
++        connection = http.client.HTTPConnection(self.server.upstream.hostname, self.server.upstream.port,
++                                                timeout=self.server.config["timeout_seconds"])
++        try:
++            connection.request(self.command, self.path, body=payload,
++                               headers={"Authorization": auth, "Content-Type": "application/json",
++                                        "Accept-Encoding": "identity"})
++            self.upstream_socket = connection.sock
++            if self.expired.is_set():
++                raise TimeoutError()
++            response = connection.getresponse()
++            if not 200 <= response.status < 300:
++                self.respond(502)  # Do not expose upstream errors, redirects or their bodies.
++                return
++            limit = (4 if self.command == "GET" else 32) * 1024 * 1024
++            body = response.read(limit + 1)
++            if len(body) > limit:
++                raise ValueError()
++            value = json.loads(body)
++            if not isinstance(value, dict):
++                raise ValueError()
++            if self.command == "GET":
++                if value.get("object") != "list" or not isinstance(value.get("data"), list):
++                    raise ValueError()
++                value["data"] = [model for model in value["data"] if isinstance(model, dict)
++                                 and model.get("id") in self.server.config["allowed_models"]]
++                body = json.dumps(value, allow_nan=False).encode()
++            self.respond(200, body)
++        except (OSError, http.client.HTTPException, ValueError, UnicodeError):
++            self.respond(502)
++        finally:
++            connection.close()
++
++
++def run_relay(config_path: Path) -> int:
++    with RelayServer(config_path) as server:
++        print(json.dumps({"instance_id": server.config["instance_id"], "host": server.server_address[0],
++                          "port": server.server_address[1], "server_sha256": server.fingerprint}), flush=True)
++        try:
++            server.serve_forever()
++        except KeyboardInterrupt:
++            pass
++    return 0
+--- a/app/schemas.py
++++ b/app/schemas.py
+@@ -1225,15 +1225,15 @@
+     daily_pick_count: int
+     timezone: str
+     analysis_provider: Literal[
+-        "none", "fake", "nvidia_nim", "openai_compatible", "minimax"
++        "none", "fake", "nvidia_nim", "openai_compatible", "minimax", "xcli_local", "xcli_bridge"
+     ]
+     analysis_model: str
+     implementation_provider: Literal[
+-        "none", "fake", "nvidia_nim", "openai_compatible", "minimax"
++        "none", "fake", "nvidia_nim", "openai_compatible", "minimax", "xcli_local", "xcli_bridge"
+     ] = "none"
+     implementation_model: str
+     review_provider: Literal[
+-        "none", "fake", "nvidia_nim", "openai_compatible", "minimax"
++        "none", "fake", "nvidia_nim", "openai_compatible", "minimax", "xcli_local", "xcli_bridge"
+     ] = "none"
+     review_model: str
+     sandbox_stage_runtime: Literal["none", "fake", "docker"]
+--- a/app/static/app.js
++++ b/app/static/app.js
+@@ -113,10 +113,10 @@
+     taskHistoryGeneration: 0,
+ };
+ 
+-const REAL_MODEL_PROVIDERS = new Set(["nvidia_nim", "openai_compatible", "minimax", "xcli_local"]);
++const REAL_MODEL_PROVIDERS = new Set(["nvidia_nim", "openai_compatible", "minimax", "xcli_local", "xcli_bridge"]);
+ function isRealModelProvider(provider) { return REAL_MODEL_PROVIDERS.has(provider); }
+ function modelProviderLabel(provider) {
+-  if (provider === "xcli_local") return "xcli";
++  if (["xcli_local", "xcli_bridge"].includes(provider)) return "xcli";
+   if (provider === "minimax") return "MiniMax";
+   if (provider === "nvidia_nim") return "NVIDIA";
+   return "模型服务";
+--- a/app/static/model-settings.js
++++ b/app/static/model-settings.js
+@@ -59,13 +59,14 @@
+     const c=connectionEdit?.payload || {};
+     const scopeId=connectionEdit?.scope.split(":").slice(1).join(":") || crypto.randomUUID();
+     const name=field(form,"name","连接名称","text",c.name || ""); name.required=true; name.placeholder="例如：我的模型服务";
+-    const provider=selectField(form,"provider","接口类型",[["minimax","MiniMax 官方（国内）"],["openai_compatible","OpenAI 兼容 API"],["nvidia_nim","NVIDIA NIM"],...(data.xcli_local_endpoint || c.provider==="xcli_local" ? [["xcli_local","xcli 本机网关（上游可能在云端）"]] : [])],c.provider || "openai_compatible");
++    const provider=selectField(form,"provider","接口类型",[["minimax","MiniMax 官方（国内）"],["openai_compatible","OpenAI 兼容 API"],["nvidia_nim","NVIDIA NIM"],...(data.xcli_local_endpoint || c.provider==="xcli_local" ? [["xcli_local","xcli 本机网关（上游可能在云端）"]] : []),...(data.xcli_bridge || c.provider==="xcli_bridge" ? [["xcli_bridge","xcli 认证宿主桥接（上游可能在云端）"]] : [])],c.provider || "openai_compatible");
+     const url=field(form,"base_url","Base URL","url",c.base_url || ""); url.required=true; url.placeholder="https://api.example.com/v1";
+     const syncEndpoint=()=>{
+       if(provider.value==="nvidia_nim") url.value="https://integrate.api.nvidia.com/v1";
+       if(provider.value==="minimax") url.value="https://api.minimax.cn/v1";
+       if(provider.value==="xcli_local") url.value=data.xcli_local_endpoint || c.base_url || "";
+-      url.readOnly=["nvidia_nim","minimax","xcli_local"].includes(provider.value);
++      if(provider.value==="xcli_bridge") url.value=data.xcli_bridge?.endpoint || c.base_url || "";
++      url.readOnly=["nvidia_nim","minimax","xcli_local","xcli_bridge"].includes(provider.value);
+     };
+     provider.addEventListener("change",syncEndpoint);syncEndpoint();
+     const secret=field(form,"secret","API Key","password"); secret.autocomplete="new-password";
+@@ -77,7 +78,7 @@
+     let pendingEnvelope=null;
+     secret.addEventListener("input",()=>{pendingEnvelope=null;});
+     form.addEventListener("submit",event=>{event.preventDefault(); run(save,async()=>{
+-      if(c.provider!==provider.value && [c.provider,provider.value].includes("xcli_local") && !secret.value && !pendingEnvelope) throw new Error("切换 xcli 连接必须填写独立应用 Token。");
++      if(c.provider!==provider.value && [c.provider,provider.value].some(v=>["xcli_local","xcli_bridge"].includes(v)) && !secret.value && !pendingEnvelope) throw new Error("切换 xcli 连接必须填写独立应用 Token。");
+       let reference=c.credential_ref || null;
+       if(secret.value || pendingEnvelope) {
+         if(!pendingEnvelope) { const grant=await mutate("/api/v1/model-connections/credential-grants",{connection_id:scopeId}); pendingEnvelope=await sealCredential(secret.value.trim(),grant); secret.value=""; }
+@@ -85,7 +86,9 @@
+       }
+       if(!reference) throw new Error("请先填写并保存 API Key。");
+       await mutate("/api/v1/model-connections",{scope_id:scopeId,expected_hash:connectionEdit?.record_hash || null,
+-        connection:{name:name.value,provider:provider.value,base_url:url.value,credential_ref:reference}});
++        connection:{name:name.value,provider:provider.value,base_url:url.value,credential_ref:reference,
++          ...(provider.value==="xcli_bridge" ? {bridge_instance:data.xcli_bridge?.instance_id || c.bridge_instance,
++            bridge_server_sha256:data.xcli_bridge?.server_sha256 || c.bridge_server_sha256} : {})}});
+       connectionEdit=null;
+     });});
+ 
+--- /dev/null
++++ b/docs/deployment/xcli-host-bridge.md
+@@ -0,0 +1,143 @@
++# Opt-in authenticated xcli host bridge
++
++This transport is disabled unless the operator explicitly registers an endpoint,
++installation instance and server certificate fingerprint. The existing native
++`xcli_local` provider still refuses containers. Public providers continue to
++require public HTTPS and retain their existing DNS/SSRF checks.
++
++The relay runs natively on the host, listening only on a literal loopback IP.
++It uses mutual TLS and accepts only explicitly allowlisted client certificate
++fingerprints, even when other certificates were signed by the same client CA.
++The Model Gateway trusts one pinned, self-signed server leaf certificate with a
++matching SAN, not the public/system CA store. Certificate or instance rotation
++invalidates old frozen connections; create a new connection/profile version.
++Never mutate an existing frozen profile to make it usable again.
++
++Only the trusted Model Gateway holds the client private key and the independent
++xcli application Token. The API receives public registration metadata only.
++Sandbox Worker, Sandbox Runner and Publisher must receive none of these files,
++Tokens or bridge environment variables. This does not grant a sandbox access to
++the host, Docker socket or a model endpoint. Do not use host networking or a LAN
++listener to work around connectivity failures.
++
++## Private configuration
++
++Provision a separate Unix directory for each trust domain, owned by the process
++UID with mode `0700`; all configuration, certificate and key files must be regular
++files owned by that UID with mode `0600`. Symlinks and indirect filenames are
++rejected. The client bundle contains only `server.pem`, `client.pem`, `client.key`
++and `client.json`; never mount the host relay directory or client CA signing key
++into a container. Production certificate creation, trust enrollment and mounting
++require a separate reviewed deployment. Test certificates are not production
++credentials and expire after two days.
++
++Example host `relay.json` (replace every registration value):
++
++```json
++{
++  "version": 1,
++  "instance_id": "operator-installation-01",
++  "upstream_base_url": "http://127.0.0.1:18741/v1",
++  "listen_host": "127.0.0.1",
++  "listen_port": 18742,
++  "server_certificate": "server.pem",
++  "server_key": "server.key",
++  "client_ca": "client-ca.pem",
++  "allowed_client_fingerprints": ["<64 lowercase hex SHA256 of client certificate DER>"],
++  "allowed_models": ["xcli/text-default"],
++  "max_concurrent": 3,
++  "max_requests_per_minute": 60,
++  "timeout_seconds": 180
++}
++```
++
++Start the reviewed host relay with `contribos xcli-host-bridge --config
++/absolute/private/relay.json`. The command requires no GitHub, Publisher or
++application database configuration. Startup emits only public listener and
++certificate metadata; requests, bodies, Tokens and private file paths are not
++logged. The relay is a single-process service; its concurrency and rate budgets
++apply per process. No automatic startup/service installation is provided.
++
++The server certificate must be one self-signed leaf with `CA=false`, serverAuth,
++a current validity period and a SAN for `host.docker.internal` (and the literal
++loopback IP if native tests are needed). Use a distinct client CA and clientAuth
++leaf; pin its exact fingerprint in the relay. Do not reuse personal browser,
++native CLI login, SSH or provider account keys.
++
++Model Gateway `client.json`:
++
++```json
++{
++  "version": 1,
++  "endpoint": "https://host.docker.internal:18742/v1",
++  "instance_id": "operator-installation-01",
++  "server_sha256": "<64 lowercase hex SHA256 of server certificate DER>",
++  "server_certificate": "server.pem",
++  "client_certificate": "client.pem",
++  "client_key": "client.key"
++}
++```
++
++API and Model Gateway registration must agree exactly:
++
++```text
++CONTRIBOS_XCLI_BRIDGE_ENDPOINT=https://host.docker.internal:18742/v1
++CONTRIBOS_XCLI_BRIDGE_INSTANCE=operator-installation-01
++CONTRIBOS_XCLI_BRIDGE_SERVER_SHA256=<server certificate DER SHA256>
++```
++
++Only Model Gateway additionally receives
++`CONTRIBOS_XCLI_BRIDGE_CONFIG=/absolute/private/client.json`. In a container,
++provision the private directory for the Gateway's actual UID (normally 10001),
++not the host user's UID. The synthetic container probe deliberately runs under
++the temporary directory owner's UID; that is not a production permission recipe.
++Keep the private mount read-only. Do not relax directory/file permissions when
++UID mapping fails.
++
++The model-settings API exposes endpoint, instance and public fingerprint only.
++The settings UI offers `xcli_bridge` when it is registered. Save a separate xcli
++application Token through existing encrypted Gateway credential management.
++The connection freezes `bridge_instance` and `bridge_server_sha256`; profiles
++still use existing content hashes and short-lived scoped task authorizations.
++No SQL migration or rewrite of historical connection/profile records is needed.
++
++## Request limits and failure behavior
++
++- Exact routes: `GET /v1/models`, `POST /v1/chat/completions`, without queries.
++- One fixed HTTP loopback xcli upstream. No proxy environment, arbitrary URLs,
++  redirects, automatic retries or provider fallback.
++- Both mTLS and the independent xcli application Token are required. Browser
++  Origin requests and ambiguous/duplicate framing or authorization headers fail.
++- Explicit model allowlist; catalog results are filtered to it. Frozen model
++  capabilities are verified before sending prompt data. Streaming, embeddings
++  and images are outside this transport's supported operations.
++- Request body at most 4 MiB; catalog at most 4 MiB; completion at most 32 MiB.
++  Absolute request deadlines are at most 180 seconds. Concurrency is 1–8 and
++  requests/minute 1–60000, chosen by the operator. TLS handshake has a 5-second
++  deadline. These bound transport work; xcli task/model budgets remain required.
++- Upstream error bodies and redirects are discarded. Unavailable registration,
++  missing/expired/wrong certificates, certificate rotation, instance mismatch,
++  unsupported models and exhausted authorization all fail closed.
++
++## Acceptance and activation
++
++Run `tests/test_xcli_bridge.py` with temporary certificates and fake HTTP upstream.
++The xcli repository's `tests/model_gateway/host_bridge.py` additionally exercises
++this transport through a built xcli and real loopback mTLS, optionally from a
++resource-limited trusted probe container. No real model, provider key, native
++account login or business database is used.
++
++macOS/OrbStack success proves that environment only. Physical Linux amd64 Docker
++acceptance, Windows ACL support, production service supervision and real
++Plan/Review model acceptance remain open. Windows is rejected because private
++ACL verification is not implemented. Preserve the current Phase 5 physical
++acceptance gate in `docs/tasks.md`.
++
++Before activation, review exact image IDs/source inventory, endpoint/port,
++certificate fingerprints, installation ID, per-Gateway private mount/UID,
++model allowlist, budgets and a rollback to the currently repaired complete
++runtime. Obtain authorization for that concrete deployment. Do not reuse the
++old 200-file xcli integration rollout/rollback artifacts: ENV-R08 superseded
++that deployment by restoring all 202 baseline source files. Rollback removes
++bridge registration/mounts and leaves bridge profiles visibly unusable; it must
++not rewrite approvals, usage, historical profiles or business data.
+--- a/docs/tasks.md
++++ b/docs/tasks.md
+@@ -35,7 +35,7 @@
+ 
+ ## Optional xcli integration
+ 
+-- [ ] Native `xcli_local` transport and model-settings selection: source applied; native client HTTP acceptance passed, full offline regression 1403 passed/45 skipped, latest source-module regression 504 passed/28 skipped. After explicit user confirmation, image `xcli-integration-75d9cea7fbde` was deployed to all six services; API/Model Gateway/Publisher health checks passed, original volumes preserved, and 200 deployed source files matched that snapshot. ENV-R08 subsequently repaired the omitted runtime component and restored the complete 202-file runtime, retaining the xcli source unchanged. Docker Host Bridge and real Plan/Review remain unverified.
++- [ ] Native `xcli_local` transport and model-settings selection: source applied; native client HTTP acceptance passed, full offline regression 1403 passed/45 skipped, latest source-module regression 504 passed/28 skipped. After explicit user confirmation, image `xcli-integration-75d9cea7fbde` was deployed to all six services; API/Model Gateway/Publisher health checks passed, original volumes preserved, and 200 deployed source files matched that snapshot. ENV-R08 subsequently repaired the omitted runtime component and restored the complete 202-file runtime, retaining the xcli source unchanged. An opt-in authenticated `xcli_bridge` implementation is staged separately for review, with mutual TLS, frozen instance/certificate identity and synthetic-only acceptance; it is not activated in the deployment. Physical Linux Docker bridge and real Plan/Review remain unverified. See `docs/deployment/xcli-host-bridge.md` for the boundary and activation requirements.
+ - [ ] Authenticated container Host Bridge: unimplemented; native loopback transport rejects container execution. P5-G06 and the existing platform gates remain open.
+ 
+ ## Fixed end-to-end chain
+--- /dev/null
++++ b/tests/test_xcli_bridge.py
+@@ -0,0 +1,292 @@
++from __future__ import annotations
++
++import asyncio
++import json
++from pathlib import Path
++import os
++import ssl
++import socket
++import time
++
++import httpx
++import pytest
++
++from app.model_settings import ConnectionInput, validate_base_url
++from app.model_settings_api import configured_xcli_bridge
++from app.providers.contracts import ProviderRunError
++from app.providers.studio import ProfileUpstream
++from app.providers.xcli_bridge import (INSTANCE_HEADER, XcliBridgeClient, bridge_endpoint,
++    client_context, registration, registered_bridge)
++from app.providers.xcli_bridge_relay import RelayServer
++from app.provenance import content_hash
++from tests.xcli_bridge_fixtures import (ALIAS, INSTANCE, TOKEN, configure_client, credentials,
++    private_write, relay_config, running_relay, upstream_server)
++
++
++@pytest.fixture
++def bridge(tmp_path, monkeypatch):
++    fingerprint = credentials(tmp_path)
++    with upstream_server() as (upstream, state):
++        config = relay_config(tmp_path, upstream, fingerprint)
++        with running_relay(tmp_path, config) as (server, endpoint):
++            configure_client(tmp_path, endpoint, monkeypatch)
++            yield tmp_path, endpoint, state, server
++
++
++def request(endpoint, payload=None, *, instance=INSTANCE, suffix=None):
++    return asyncio.run(XcliBridgeClient(instance, os.environ["CONTRIBOS_XCLI_BRIDGE_SERVER_SHA256"]).request(endpoint,
++        suffix or ("/chat/completions" if payload is not None else "/models"),
++        credential=TOKEN, payload=payload, timeout=5))
++
++
++def test_real_mutual_tls_and_frozen_model_capabilities(bridge):
++    root, endpoint, state, server = bridge
++    connection = ConnectionInput(name="synthetic", provider="xcli_bridge", base_url=endpoint,
++                                 credential_ref="cred-"+"1"*32)
++    assert connection.bridge_instance == INSTANCE
++    profile = {"model": ALIAS, "max_tokens": 32, "timeout_seconds": 5, "connection": connection.model_dump()}
++    original = content_hash(profile)
++    class Store:
++        def read(self, reference):
++            return TOKEN
++    result = asyncio.run(ProfileUpstream(profile, Store()).create_response({
++        "model": ALIAS, "messages": [{"role": "user", "content": "synthetic input"}],
++        "response_format": {"type": "json_schema", "json_schema": {"name": "test", "schema": {"type": "object"}}},
++        "max_tokens": 100}))
++    assert result["choices"][0]["message"]["content"] == "synthetic-ok"
++    assert len(state["calls"]) == 2
++    assert state["calls"][1][1] == "Bearer "+TOKEN
++    assert state["calls"][1][2]["max_tokens"] == 32
++    assert original == content_hash(profile)
++    assert [m["id"] for m in request(endpoint)["data"]] == [ALIAS]
++    assert configured_xcli_bridge() == {"endpoint": endpoint, "instance_id": INSTANCE,
++        "server_sha256": os.environ["CONTRIBOS_XCLI_BRIDGE_SERVER_SHA256"]}
++    assert "client.key" not in json.dumps(configured_xcli_bridge())
++
++
++@pytest.mark.parametrize("client", ["alien-client", "unlisted-client"])
++def test_untrusted_and_same_ca_unregistered_clients_never_forward(bridge, monkeypatch, client):
++    root, endpoint, state, _ = bridge
++    configure_client(root, endpoint, monkeypatch, client=client)
++    with pytest.raises(ProviderRunError) as error:
++        request(endpoint)
++    assert error.value.code == "xcli_transport_failed"
++    assert not state["calls"]
++
++
++def test_missing_client_certificate_never_forwards(bridge):
++    root, endpoint, state, _ = bridge
++    context = ssl.create_default_context(cafile=str(root/"server.pem"))
++    with httpx.Client(verify=context, trust_env=False, timeout=2) as client:
++        with pytest.raises(httpx.TransportError):
++            client.get(endpoint+"/models", headers={INSTANCE_HEADER: INSTANCE, "Authorization": "Bearer "+TOKEN})
++    assert not state["calls"]
++
++
++def test_server_pin_mismatch_never_sends_credentials(bridge, monkeypatch):
++    root, endpoint, state, _ = bridge
++    configure_client(root, endpoint, monkeypatch, server="wrong-server")
++    with pytest.raises(ProviderRunError):
++        request(endpoint)
++    assert not state["calls"]
++
++
++def test_expired_server_is_rejected(tmp_path, monkeypatch):
++    fingerprint = credentials(tmp_path)
++    with upstream_server() as (upstream, state):
++        config = relay_config(tmp_path, upstream, fingerprint)
++        config.update(server_certificate="expired-server.pem", server_key="expired-server.key")
++        with running_relay(tmp_path, config) as (_, endpoint):
++            configure_client(tmp_path, endpoint, monkeypatch, server="expired-server")
++            with pytest.raises(ProviderRunError):
++                request(endpoint)
++            assert not state["calls"]
++
++
++def test_instance_rotation_invalidates_frozen_profiles_before_io(bridge, monkeypatch):
++    _, endpoint, state, _ = bridge
++    profile = {"model": ALIAS, "connection": {"provider": "xcli_bridge", "base_url": endpoint,
++               "credential_ref": "cred-"+"1"*32, "bridge_instance": INSTANCE}}
++    original = content_hash(profile)
++    monkeypatch.setenv("CONTRIBOS_XCLI_BRIDGE_INSTANCE", "synthetic-new-instance-02")
++    with pytest.raises(ProviderRunError):
++        request(endpoint)
++    with pytest.raises(ValueError):
++        ConnectionInput(name="old", **profile["connection"])
++    assert not state["calls"]
++    assert content_hash(profile) == original
++
++
++@pytest.mark.parametrize("suffix,payload,headers", [
++    ("/models", None, {INSTANCE_HEADER: "wrong-instance"}),
++    ("/models", None, {"Origin": "https://browser.invalid"}),
++    ("/models?url=http://other.invalid", None, {}),
++    ("/embeddings", {"model": ALIAS}, {}),
++    ("/chat/completions", {"model": "not-allowed"}, {}),
++    ("/chat/completions", {"model": ALIAS, "stream": True}, {}),
++])
++def test_relay_denies_instances_origins_paths_models_and_streaming(bridge, suffix, payload, headers):
++    root, endpoint, state, _ = bridge
++    context = client_context(endpoint, INSTANCE, os.environ["CONTRIBOS_XCLI_BRIDGE_SERVER_SHA256"])
++    values = {INSTANCE_HEADER: INSTANCE, "Authorization": "Bearer "+TOKEN, **headers}
++    with httpx.Client(verify=context, trust_env=False) as client:
++        response = client.request("POST" if payload else "GET", endpoint+suffix, headers=values,
++                                  json=payload if payload else None)
++    assert response.status_code >= 400
++    assert not state["calls"]
++
++
++@pytest.mark.parametrize("status", [302, 401, 429, 500])
++def test_no_redirect_retry_or_upstream_error_body_disclosure(bridge, status):
++    _, endpoint, state, _ = bridge
++    state.update(status=status, body={"error": TOKEN})
++    with pytest.raises(ProviderRunError) as error:
++        request(endpoint)
++    assert len(state["calls"]) == 1
++    assert TOKEN not in str(error.value)
++    assert error.value.retryable is False
++
++
++def test_private_permissions_symlinks_and_fingerprints_fail_closed(bridge):
++    root, endpoint, state, _ = bridge
++    key = root/"client.key"
++    key.chmod(0o644)
++    with pytest.raises(ProviderRunError):
++        request(endpoint)
++    key.chmod(0o600)
++    (root/"client-alias.key").symlink_to(key)
++    config = json.loads((root/"client.json").read_text())
++    config["client_key"] = "client-alias.key"
++    private_write(root/"client.json", config)
++    with pytest.raises(ProviderRunError):
++        request(endpoint)
++    config["client_key"] = "client.key"
++    config["server_sha256"] = "0"*64
++    private_write(root/"client.json", config)
++    with pytest.raises(ProviderRunError):
++        request(endpoint)
++    assert not state["calls"]
++
++
++def test_response_and_request_sizes_and_rate_are_bounded(bridge):
++    _, endpoint, state, server = bridge
++    with pytest.raises(ProviderRunError) as error:
++        request(endpoint, {"model": ALIAS, "messages": ["x"*(4*1024*1024)]})
++    assert error.value.code == "xcli_request_too_large"
++    assert not state["calls"]
++    state["body"] = b"x"*(4*1024*1024+1)
++    with pytest.raises(ProviderRunError):
++        request(endpoint)
++    assert len(state["calls"]) == 1
++    server.config["max_requests_per_minute"] = 1
++    with pytest.raises(ProviderRunError):
++        request(endpoint)
++    assert len(state["calls"]) == 1
++
++
++@pytest.mark.parametrize("endpoint", ["https://evil.invalid:443/v1", "https://192.168.1.2:443/v1",
++    "http://host.docker.internal:443/v1", "https://localhost:443/v1", "https://host.docker.internal/v1",
++    "https://user@host.docker.internal:1234/v1", "https://host.docker.internal:1234/v1?secret=x"])
++def test_registration_never_relaxes_public_url_validation(endpoint):
++    with pytest.raises(ValueError):
++        bridge_endpoint(endpoint)
++    if "evil.invalid:443" not in endpoint:
++        with pytest.raises(ValueError):
++            validate_base_url(endpoint)
++
++
++def test_bridge_disabled_without_explicit_registration(monkeypatch):
++    monkeypatch.delenv("CONTRIBOS_XCLI_BRIDGE_ENDPOINT", raising=False)
++    monkeypatch.delenv("CONTRIBOS_XCLI_BRIDGE_INSTANCE", raising=False)
++    assert configured_xcli_bridge() is None
++    with pytest.raises(ValueError):
++        registration()
++
++
++def test_relay_rejects_lan_bind_container_and_unbounded_config(tmp_path, monkeypatch):
++    fingerprint = credentials(tmp_path)
++    config = relay_config(tmp_path, "http://127.0.0.1:18741/v1", fingerprint)
++    config["listen_host"] = "0.0.0.0"
++    private_write(tmp_path/"relay.json", config)
++    with pytest.raises(ValueError):
++        RelayServer(tmp_path/"relay.json")
++    config["listen_host"] = "127.0.0.1"
++    config["max_concurrent"] = 100
++    private_write(tmp_path/"relay.json", config)
++    with pytest.raises(ValueError):
++        RelayServer(tmp_path/"relay.json")
++    monkeypatch.setattr("app.providers.xcli_bridge_relay.native_runtime", lambda: False)
++    with pytest.raises(ValueError):
++        RelayServer(tmp_path/"relay.json")
++
++
++@pytest.mark.parametrize("relay_deadline", [False, True])
++def test_absolute_deadline_stops_trickled_responses(bridge, relay_deadline):
++    _, endpoint, state, server = bridge
++    state["trickle"] = 0.1
++    server.config["timeout_seconds"] = 1 if relay_deadline else 5
++    started = time.monotonic()
++    with pytest.raises(ProviderRunError):
++        asyncio.run(XcliBridgeClient(INSTANCE, os.environ["CONTRIBOS_XCLI_BRIDGE_SERVER_SHA256"]).request(endpoint, "/models", credential=TOKEN,
++                                                      timeout=5 if relay_deadline else 1))
++    assert time.monotonic() - started < 3
++    assert len(state["calls"]) == 1
++
++
++def test_existing_connection_serialization_remains_compatible():
++    value = {"name": "existing public", "provider": "openai_compatible",
++             "base_url": "https://models.example.com/v1", "credential_ref": "cred-"+"1"*32}
++    assert ConnectionInput.model_validate(value).model_dump() == value
++    with pytest.raises(ValueError):
++        ConnectionInput.model_validate({**value, "bridge_instance": INSTANCE})
++
++
++def test_certificate_rotation_invalidates_existing_frozen_connections(bridge, monkeypatch):
++    _, endpoint, state, _ = bridge
++    connection = ConnectionInput(name="frozen", provider="xcli_bridge", base_url=endpoint,
++                                 credential_ref="cred-"+"1"*32).model_dump()
++    old_fingerprint = connection["bridge_server_sha256"]
++    original = content_hash(connection)
++    monkeypatch.setenv("CONTRIBOS_XCLI_BRIDGE_SERVER_SHA256", "0"*64)
++    with pytest.raises(ValueError):
++        ConnectionInput.model_validate(connection)
++    with pytest.raises(ProviderRunError):
++        asyncio.run(XcliBridgeClient(INSTANCE, old_fingerprint).request(endpoint, "/models", credential=TOKEN))
++    assert not state["calls"]
++    assert original == content_hash(connection)
++
++
++def test_expired_allowlisted_client_is_rejected(tmp_path, monkeypatch):
++    from cryptography import x509
++    from cryptography.hazmat.primitives import hashes
++    credentials(tmp_path)
++    expired = x509.load_pem_x509_certificate((tmp_path/"expired-client.pem").read_bytes())
++    with upstream_server() as (upstream, state):
++        config = relay_config(tmp_path, upstream, expired.fingerprint(hashes.SHA256()).hex())
++        with running_relay(tmp_path, config) as (_, endpoint):
++            configure_client(tmp_path, endpoint, monkeypatch, client="expired-client")
++            with pytest.raises(ProviderRunError):
++                request(endpoint)
++            assert not state["calls"]
++
++
++def test_concurrency_bound_and_slot_release(tmp_path, monkeypatch):
++    fingerprint = credentials(tmp_path)
++    with upstream_server() as (upstream, state):
++        config = relay_config(tmp_path, upstream, fingerprint)
++        config["max_concurrent"] = 1
++        with running_relay(tmp_path, config) as (_, endpoint):
++            configure_client(tmp_path, endpoint, monkeypatch)
++            context = client_context(endpoint, INSTANCE, os.environ["CONTRIBOS_XCLI_BRIDGE_SERVER_SHA256"])
++            from urllib.parse import urlsplit
++            port = urlsplit(endpoint).port
++            with context.wrap_socket(socket.create_connection(("127.0.0.1", port), timeout=2),
++                                     server_hostname="127.0.0.1") as held:
++                held.sendall(b"GET /v1/models HTTP/1.1\r\n")  # Occupy the only slot, without completing headers.
++                time.sleep(0.05)
++                with pytest.raises(ProviderRunError):
++                    request(endpoint)
++                assert not state["calls"]
++            time.sleep(0.05)
++            assert request(endpoint)["object"] == "list"
++            assert len(state["calls"]) == 1
+--- /dev/null
++++ b/tests/xcli_bridge_fixtures.py
+@@ -0,0 +1,156 @@
++"""Synthetic certificates and loopback services; never touches operator credentials."""
++from contextlib import contextmanager
++from datetime import datetime, timedelta, timezone
++import hashlib
++from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
++import ipaddress
++import json
++from pathlib import Path
++import threading
++import time
++
++from cryptography import x509
++from cryptography.hazmat.primitives import hashes, serialization
++from cryptography.hazmat.primitives.asymmetric import ec
++from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
++
++from app.providers.xcli_bridge import certificate_fingerprint
++
++ALIAS = "xcli/text-default"
++INSTANCE = "synthetic-bridge-instance-01"
++TOKEN = "synthetic-application-token-canary"
++
++
++def private_write(path, value):
++    path.write_bytes(value if isinstance(value, bytes) else json.dumps(value).encode())
++    path.chmod(0o600)
++
++
++def certificate(name, *, issuer=None, ca=False, expired=False, server=False):
++    key = ec.generate_private_key(ec.SECP256R1())
++    subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, name)])
++    now = datetime.now(timezone.utc)
++    issuer_cert, issuer_key = issuer if issuer else (None, key)
++    cert = (x509.CertificateBuilder().subject_name(subject)
++        .issuer_name(issuer_cert.subject if issuer_cert else subject).public_key(key.public_key())
++        .serial_number(x509.random_serial_number()).not_valid_before(now-timedelta(days=2))
++        .not_valid_after(now-timedelta(days=1) if expired else now+timedelta(days=2))
++        .add_extension(x509.BasicConstraints(ca=ca, path_length=0 if ca else None), critical=True)
++        .add_extension(x509.SubjectKeyIdentifier.from_public_key(key.public_key()), critical=False)
++        .add_extension(x509.AuthorityKeyIdentifier.from_issuer_public_key(issuer_key.public_key()), critical=False)
++        .add_extension(x509.KeyUsage(digital_signature=True, content_commitment=False,
++            key_encipherment=not ca, data_encipherment=False, key_agreement=False,
++            key_cert_sign=ca, crl_sign=ca, encipher_only=False, decipher_only=False), critical=True))
++    if not ca:
++        cert = cert.add_extension(x509.ExtendedKeyUsage([ExtendedKeyUsageOID.SERVER_AUTH if server
++                                                        else ExtendedKeyUsageOID.CLIENT_AUTH]), critical=False)
++    if server:
++        cert = cert.add_extension(x509.SubjectAlternativeName([
++            x509.IPAddress(ipaddress.ip_address("127.0.0.1")), x509.DNSName("host.docker.internal")]), critical=False)
++    return cert.sign(issuer_key, hashes.SHA256()), key
++
++
++def write_pair(root, name, pair):
++    cert, key = pair
++    private_write(root/f"{name}.pem", cert.public_bytes(serialization.Encoding.PEM))
++    private_write(root/f"{name}.key", key.private_bytes(serialization.Encoding.PEM,
++                  serialization.PrivateFormat.PKCS8, serialization.NoEncryption()))
++    return hashlib.sha256(cert.public_bytes(serialization.Encoding.DER)).hexdigest()
++
++
++def credentials(root: Path):
++    root.mkdir(mode=0o700, parents=True, exist_ok=True)
++    root.chmod(0o700)
++    ca = certificate("synthetic-client-ca", ca=True)
++    write_pair(root, "client-ca", ca)
++    client = certificate("synthetic-client", issuer=ca)
++    client_fingerprint = write_pair(root, "client", client)
++    write_pair(root, "expired-client", certificate("synthetic-expired-client", issuer=ca, expired=True))
++    write_pair(root, "unlisted-client", certificate("synthetic-unlisted", issuer=ca))
++    write_pair(root, "alien-client", certificate("synthetic-alien"))
++    server = certificate("synthetic-server", server=True)
++    write_pair(root, "server", server)
++    write_pair(root, "wrong-server", certificate("synthetic-other-server", server=True))
++    write_pair(root, "expired-server", certificate("synthetic-expired-server", server=True, expired=True))
++    return client_fingerprint
++
++
++def catalog():
++    return {"object": "list", "data": [{"id": ALIAS, "xcli": {
++        "capabilities": ["text.generate", "tool_calls", "json_schema"], "validated": True,
++        "inference_location": "remote"}}, {"id": "not-allowed"}]}
++
++
++@contextmanager
++def upstream_server():
++    state = {"calls": [], "status": 200, "body": None}
++    class Handler(BaseHTTPRequestHandler):
++        def log_message(self, *args):
++            pass
++        def do_GET(self):
++            self.respond(None)
++        def do_POST(self):
++            self.respond(json.loads(self.rfile.read(int(self.headers["Content-Length"]))))
++        def respond(self, body):
++            state["calls"].append((self.path, self.headers.get("Authorization"), body))
++            value = state["body"] or (catalog() if body is None else {"choices": [{"message": {"content": "synthetic-ok"}}]})
++            encoded = value if isinstance(value, bytes) else json.dumps(value).encode()
++            self.send_response(state["status"])
++            self.send_header("Content-Length", str(len(encoded)))
++            self.end_headers()
++            try:
++                if state.get("trickle"):
++                    for byte in encoded:
++                        self.wfile.write(bytes([byte]))
++                        self.wfile.flush()
++                        time.sleep(state["trickle"])
++                else:
++                    self.wfile.write(encoded)
++            except (BrokenPipeError, ConnectionResetError):
++                pass
++    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
++    thread = threading.Thread(target=server.serve_forever, daemon=True)
++    thread.start()
++    try:
++        yield f"http://127.0.0.1:{server.server_port}/v1", state
++    finally:
++        server.shutdown()
++        server.server_close()
++        thread.join(2)
++
++
++def relay_config(root, upstream, fingerprint):
++    return {"version": 1, "instance_id": INSTANCE, "upstream_base_url": upstream,
++        "listen_host": "127.0.0.1", "listen_port": 0, "server_certificate": "server.pem",
++        "server_key": "server.key", "client_ca": "client-ca.pem",
++        "allowed_client_fingerprints": [fingerprint], "allowed_models": [ALIAS],
++        "max_concurrent": 3, "max_requests_per_minute": 1000, "timeout_seconds": 5}
++
++
++@contextmanager
++def running_relay(root, config):
++    from app.providers.xcli_bridge_relay import RelayServer
++    private_write(root/"relay.json", config)
++    server = RelayServer(root/"relay.json")
++    thread = threading.Thread(target=server.serve_forever, daemon=True)
++    thread.start()
++    endpoint = f"https://127.0.0.1:{server.server_port}/v1"
++    try:
++        yield server, endpoint
++    finally:
++        server.shutdown()
++        server.server_close()
++        thread.join(2)
++
++
++def configure_client(root, endpoint, monkeypatch, *, server="server", client="client"):
++    value = {"version": 1, "endpoint": endpoint, "instance_id": INSTANCE,
++        "server_sha256": certificate_fingerprint((root/f"{server}.pem").read_bytes()),
++        "server_certificate": f"{server}.pem", "client_certificate": f"{client}.pem",
++        "client_key": f"{client}.key"}
++    private_write(root/"client.json", value)
++    monkeypatch.setenv("CONTRIBOS_XCLI_BRIDGE_ENDPOINT", endpoint)
++    monkeypatch.setenv("CONTRIBOS_XCLI_BRIDGE_INSTANCE", INSTANCE)
++    monkeypatch.setenv("CONTRIBOS_XCLI_BRIDGE_CONFIG", str(root/"client.json"))
++    monkeypatch.setenv("CONTRIBOS_XCLI_BRIDGE_SERVER_SHA256", value["server_sha256"])
++    return value

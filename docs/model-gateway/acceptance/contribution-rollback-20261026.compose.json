@@ -1,0 +1,26 @@
+{
+  "x-historical-only": {
+    "superseded_by": "Contribution OS ENV-R08 complete 202-file runtime repair",
+    "do_not_execute": true
+  },
+  "services": {
+    "api": {
+      "image": "sha256:8161aec93c93a3edc8e65e32c8bcc9edfa2f8e8fea4620c71c127a60d713b8c7"
+    },
+    "worker": {
+      "image": "sha256:8161aec93c93a3edc8e65e32c8bcc9edfa2f8e8fea4620c71c127a60d713b8c7"
+    },
+    "provider-worker": {
+      "image": "sha256:8161aec93c93a3edc8e65e32c8bcc9edfa2f8e8fea4620c71c127a60d713b8c7"
+    },
+    "model-gateway": {
+      "image": "sha256:8161aec93c93a3edc8e65e32c8bcc9edfa2f8e8fea4620c71c127a60d713b8c7"
+    },
+    "publisher": {
+      "image": "sha256:4665f0685b1e93d0f247140f0ae6ceae6c73da876e4ab2653aac0d22db586243"
+    },
+    "sandbox-worker": {
+      "image": "sha256:a187a3cf402d0266a99979d7a1be05cbabe59948a2ea3acf360bc5e5694ea6c2"
+    }
+  }
+}

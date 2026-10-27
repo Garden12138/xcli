@@ -1,0 +1,402 @@
+--- a/app/model_settings.py
++++ b/app/model_settings.py
+@@ -87,7 +87,7 @@
+ class ConnectionInput(BaseModel):
+     model_config = ConfigDict(extra="forbid")
+     name: str = Field(min_length=1, max_length=80)
+-    provider: Literal["openai_compatible", "nvidia_nim", "minimax"] = (
++    provider: Literal["openai_compatible", "nvidia_nim", "minimax", "xcli_local"] = (
+         "openai_compatible"
+     )
+     base_url: str = Field(min_length=1, max_length=500)
+@@ -97,7 +97,13 @@
+ 
+     @model_validator(mode="after")
+     def validate_connection(self):
+-        self.base_url = validate_base_url(self.base_url)
++        if self.provider == "xcli_local":
++            from app.providers.xcli_local import registered_endpoint
++            self.base_url = registered_endpoint(self.base_url)
++            if not self.credential_ref or self.credential_ref == "env-nvidia":
++                raise ValueError("xcli must use an independently stored application Token")
++        else:
++            self.base_url = validate_base_url(self.base_url)
+         if (
+             self.provider == "nvidia_nim"
+             and self.base_url != "https://integrate.api.nvidia.com/v1"
+--- a/app/model_settings_api.py
++++ b/app/model_settings_api.py
+@@ -25,6 +25,16 @@
+ from app.models import ModelConfigVersion
+ 
+ 
++def configured_xcli_endpoint() -> str | None:
++    import os
++    from app.providers.xcli_local import registered_endpoint, native_runtime
++    value = os.environ.get("CONTRIBOS_XCLI_LOCAL_ENDPOINT", "")
++    try:
++        return registered_endpoint(value) if value and native_runtime() else None
++    except ValueError:
++        return None
++
++
+ class ModelVersionResponse(BaseModel):
+     id: str
+     scope: str
+@@ -40,6 +50,7 @@
+     profiles: list[ModelVersionResponse]
+     presets: list[dict[str, Any]]
+     credential_management_available: bool
++    xcli_local_endpoint: str | None = None
+ 
+ 
+ class CredentialGrantResponse(BaseModel):
+@@ -141,6 +152,7 @@
+             "connections": [serialize(r) for r in service.list_kind("connection")],
+             "profiles": [serialize(r) for r in service.list_kind("profile")],
+             "presets": model_presets(),
++            "xcli_local_endpoint": configured_xcli_endpoint(),
+             "credential_management_available": bool(
+                 request.app.state.settings.model_gateway_management_key
+             ),
+--- a/app/providers/studio.py
++++ b/app/providers/studio.py
+@@ -358,7 +358,11 @@
+ class ProfileUpstream:
+     def __init__(self, profile, store, *, proxy_url=None, transport=None):
+         self.profile, self.store, self.proxy_url = profile, store, proxy_url
+-        self.transport = transport or PublicHTTPSClient()
++        if profile["connection"]["provider"] == "xcli_local":
++            from app.providers.xcli_local import XcliLocalClient
++            self.transport = transport or XcliLocalClient()
++        else:
++            self.transport = transport or PublicHTTPSClient()
+ 
+     async def create_response(self, payload):
+         profile = self.profile
+@@ -370,6 +374,16 @@
+                 connection["base_url"], "/models", credential=key, timeout=30
+             )
+         provider = connection["provider"]
++        if provider == "xcli_local":
++            from app.providers.xcli_local import registered_endpoint, require_model
++            try:
++                registered_endpoint(connection["base_url"])
++            except ValueError:
++                raise ProviderRunError("xcli_registration_required", "xcli 本机实例未注册或地址已变化", retryable=False) from None
++            if request.get("model") != profile["model"]:
++                raise ProviderRunError("xcli_frozen_model_mismatch", "xcli 模型与冻结 Profile 不符", retryable=False)
++            catalog = await self.transport.request(connection["base_url"], "/models", credential=key, timeout=30)
++            require_model(catalog, profile["model"], request)
+         requested_limit = request.pop("max_tokens", profile["max_tokens"])
+         if type(requested_limit) is not int or requested_limit < 1:
+             raise ProviderRunError("model_output_budget_invalid", "模型输出额度无效", retryable=False)
+--- /dev/null
++++ b/app/providers/xcli_local.py
+@@ -0,0 +1,110 @@
++"""Operator-registered native xcli transport, separate from public HTTPS routing.
++
++Only the API and model gateway operator may register the same loopback endpoint
++with CONTRIBOS_XCLI_LOCAL_ENDPOINT. Container/host bridging remains unsupported.
++No sandbox or Publisher credentials are consumed by this transport.
++"""
++from __future__ import annotations
++
++import ipaddress
++import json
++import os
++from pathlib import Path
++from urllib.parse import urlsplit
++
++import httpx
++
++from app.providers.contracts import ProviderRunError
++
++
++def local_endpoint(value: str) -> str:
++    """Accept only canonical literal loopback addresses and an explicit port."""
++    try:
++        url = urlsplit(value)
++        address = ipaddress.ip_address(url.hostname or "")
++        if (url.scheme != "http" or not address.is_loopback or not url.port
++                or url.username is not None or url.password is not None
++                or url.query or url.fragment or url.path.rstrip("/") != "/v1"
++                or any(ord(char) <= 32 or ord(char) == 127 for char in value)
++                or "%" in value or "\\" in value):
++            raise ValueError()
++        authority = f"[{address}]:{url.port}" if address.version == 6 else f"{address}:{url.port}"
++        return f"http://{authority}/v1"
++    except ValueError:
++        raise ValueError("xcli requires a loopback IP, explicit port and /v1 path") from None
++
++
++def registered_endpoint(value: str) -> str:
++    endpoint = local_endpoint(value)
++    registered = os.environ.get("CONTRIBOS_XCLI_LOCAL_ENDPOINT", "")
++    if not registered or endpoint != local_endpoint(registered):
++        raise ValueError("xcli endpoint must first be registered by the native gateway operator")
++    return endpoint
++
++
++def native_runtime() -> bool:
++    return not (Path("/.dockerenv").exists() or Path("/run/.containerenv").exists()
++                or os.environ.get("container"))
++
++
++class XcliLocalClient:
++    """Single-attempt bounded transport with no proxy or redirect inheritance."""
++
++    def __init__(self, *, transport: httpx.AsyncBaseTransport | None = None):
++        self._transport = transport
++
++    async def request(self, base_url: str, suffix: str, *, credential: str,
++                      payload: dict | None = None, timeout: int = 180) -> dict:
++        try:
++            endpoint = registered_endpoint(base_url)
++        except ValueError:
++            raise ProviderRunError("xcli_registration_required", "xcli 本机实例未注册或地址已变化", retryable=False) from None
++        if not native_runtime():
++            raise ProviderRunError("xcli_container_bridge_unsupported", "容器到宿主的 xcli Bridge 尚未实现", retryable=False)
++        if suffix not in {"/models", "/chat/completions"} or not credential:
++            raise ProviderRunError("xcli_request_invalid", "xcli 请求或独立应用 Token 无效", retryable=False)
++        encoded = json.dumps(payload, allow_nan=False).encode() if payload is not None else None
++        if encoded is not None and len(encoded) > 4 * 1024 * 1024:
++            raise ProviderRunError("xcli_request_too_large", "xcli 请求超过大小限制", retryable=False)
++        try:
++            async with httpx.AsyncClient(trust_env=False, follow_redirects=False, timeout=timeout,
++                                         transport=self._transport) as client:
++                async with client.stream("POST" if encoded is not None else "GET", endpoint + suffix,
++                                         headers={"Authorization": f"Bearer {credential}", "Content-Type": "application/json"},
++                                         content=encoded) as response:
++                    if not 200 <= response.status_code < 300:
++                        raise ProviderRunError("xcli_http_failed", f"xcli 请求失败（HTTP {response.status_code}）", retryable=False)
++                    limit = (4 if suffix == "/models" else 32) * 1024 * 1024
++                    content = bytearray()
++                    async for chunk in response.aiter_bytes():
++                        content.extend(chunk)
++                        if len(content) > limit:
++                            raise ValueError()
++                    value = json.loads(content)
++                    if not isinstance(value, dict):
++                        raise ValueError()
++                    return value
++        except (httpx.TransportError, ValueError, UnicodeError):
++            raise ProviderRunError("xcli_transport_failed", "xcli 服务不可达或响应无效；请求未自动重试", retryable=False) from None
++
++
++def require_model(catalog: dict, alias: str, request: dict) -> None:
++    models = catalog.get("data")
++    if catalog.get("object") != "list" or not isinstance(models, list):
++        raise ProviderRunError("xcli_catalog_invalid", "无法验证 xcli 模型目录", retryable=False)
++    selected = [model for model in models if isinstance(model, dict) and model.get("id") == alias]
++    metadata = selected[0].get("xcli") if len(selected) == 1 else None
++    if not isinstance(metadata, dict):
++        raise ProviderRunError("xcli_model_missing", "xcli 未提供冻结的模型别名", retryable=False)
++    required = {"text.generate"}
++    if request.get("tools"):
++        required.add("tool_calls")
++    response_format = request.get("response_format")
++    if isinstance(response_format, dict) and response_format.get("type") in {"json_schema", "json_object"}:
++        required.add(response_format["type"])
++    caps = metadata.get("capabilities")
++    if (not isinstance(caps, list) or not all(isinstance(cap, str) for cap in caps)
++            or not required.issubset(caps)
++            or (len(required) > 1 and metadata.get("validated") is not True)
++            or request.get("stream") is True):
++        raise ProviderRunError("xcli_capability_missing", "xcli 模型缺少经验证的所需能力", retryable=False)
+--- a/app/static/app.js
++++ b/app/static/app.js
+@@ -113,9 +113,10 @@
+     taskHistoryGeneration: 0,
+ };
+ 
+-const REAL_MODEL_PROVIDERS = new Set(["nvidia_nim", "openai_compatible", "minimax"]);
++const REAL_MODEL_PROVIDERS = new Set(["nvidia_nim", "openai_compatible", "minimax", "xcli_local"]);
+ function isRealModelProvider(provider) { return REAL_MODEL_PROVIDERS.has(provider); }
+ function modelProviderLabel(provider) {
++  if (provider === "xcli_local") return "xcli";
+   if (provider === "minimax") return "MiniMax";
+   if (provider === "nvidia_nim") return "NVIDIA";
+   return "模型服务";
+--- a/app/static/model-settings.js
++++ b/app/static/model-settings.js
+@@ -59,12 +59,13 @@
+     const c=connectionEdit?.payload || {};
+     const scopeId=connectionEdit?.scope.split(":").slice(1).join(":") || crypto.randomUUID();
+     const name=field(form,"name","连接名称","text",c.name || ""); name.required=true; name.placeholder="例如：我的模型服务";
+-    const provider=selectField(form,"provider","接口类型",[["minimax","MiniMax 官方（国内）"],["openai_compatible","OpenAI 兼容 API"],["nvidia_nim","NVIDIA NIM"]],c.provider || "openai_compatible");
++    const provider=selectField(form,"provider","接口类型",[["minimax","MiniMax 官方（国内）"],["openai_compatible","OpenAI 兼容 API"],["nvidia_nim","NVIDIA NIM"],...(data.xcli_local_endpoint || c.provider==="xcli_local" ? [["xcli_local","xcli 本机网关（上游可能在云端）"]] : [])],c.provider || "openai_compatible");
+     const url=field(form,"base_url","Base URL","url",c.base_url || ""); url.required=true; url.placeholder="https://api.example.com/v1";
+     const syncEndpoint=()=>{
+       if(provider.value==="nvidia_nim") url.value="https://integrate.api.nvidia.com/v1";
+       if(provider.value==="minimax") url.value="https://api.minimax.cn/v1";
+-      url.readOnly=["nvidia_nim","minimax"].includes(provider.value);
++      if(provider.value==="xcli_local") url.value=data.xcli_local_endpoint || c.base_url || "";
++      url.readOnly=["nvidia_nim","minimax","xcli_local"].includes(provider.value);
+     };
+     provider.addEventListener("change",syncEndpoint);syncEndpoint();
+     const secret=field(form,"secret","API Key","password"); secret.autocomplete="new-password";
+@@ -76,6 +77,7 @@
+     let pendingEnvelope=null;
+     secret.addEventListener("input",()=>{pendingEnvelope=null;});
+     form.addEventListener("submit",event=>{event.preventDefault(); run(save,async()=>{
++      if(c.provider!==provider.value && [c.provider,provider.value].includes("xcli_local") && !secret.value && !pendingEnvelope) throw new Error("切换 xcli 连接必须填写独立应用 Token。");
+       let reference=c.credential_ref || null;
+       if(secret.value || pendingEnvelope) {
+         if(!pendingEnvelope) { const grant=await mutate("/api/v1/model-connections/credential-grants",{connection_id:scopeId}); pendingEnvelope=await sealCredential(secret.value.trim(),grant); secret.value=""; }
+--- /dev/null
++++ b/docs/deployment/xcli-local.md
+@@ -0,0 +1,13 @@
++# Native xcli Model Gateway connection
++
++This optional transport runs only when the API and model gateway share a native host network namespace. Set `CONTRIBOS_XCLI_LOCAL_ENDPOINT` explicitly in both processes to the installed gateway's loopback IP, actual port and `/v1` path. There is no default registration. For example, a local test installation can use `http://127.0.0.1:18741/v1`; use the port reported by its installation.
++
++The model settings page then offers `xcli 本机网关`. Its endpoint is fixed to the operator registration. Save a separately issued Contribution OS application Token through the existing sealed credential workflow, then create a model Profile with an explicit xcli alias, output budget and structured-output mode. Existing providers retain public HTTPS validation; changing their type cannot make an arbitrary private URL acceptable.
++
++The model gateway verifies the existing short-lived task Token and frozen Profile. Before sending task text, it reads the authenticated xcli catalog and checks the frozen alias plus verified Tools/JSON Schema capabilities. Local calls have bounded request/response sizes, no environment proxy, no redirects, and no automatic transport retry. Error messages exclude remote bodies and credentials. The original encrypted credential store, task-scope authorization and audit chain continue to apply.
++
++An xcli gateway may forward to remote or unknown upstreams. Choose the application Token's allowed models and remote permission explicitly; the loopback address does not establish local inference. This client does not supply a per-request remote-consent header, so Tokens requiring that header reject remote inference.
++
++Containers are explicitly rejected. Do not set this variable in the Docker Compose deployment, bind xcli to a LAN address, or expose it to Sandbox Worker networks. A fixed-purpose, authenticated Host Bridge requires a separate design and acceptance run. This transport does not implement that bridge.
++
++Offline checks use synthetic inputs: `python -m pytest tests/test_xcli_local.py tests/test_model_settings.py tests/test_provider_gateway.py tests/test_task_model_selection.py`. Real Plan/Review, provider quality, container Bridge and cross-platform deployment gates remain open. Do not switch an active deployment or issue a real credential as part of offline checks.
+--- a/docs/tasks.md
++++ b/docs/tasks.md
+@@ -32,6 +32,11 @@
+ | First current task | P5-G06 — native Linux amd64/Docker Engine acceptance |
+ | Last roadmap audit | 2026-09-02 |
+ | Feature note | MiniMax-M3 domestic direct access is the settings-page four-stage default after explicit encrypted-key activation; NVIDIA/OpenAI-compatible Profiles remain manual alternatives. Live MiniMax, real Draft PR and Linux platform gates stay unchecked. |
++
++## Optional xcli integration
++
++- [ ] Native `xcli_local` transport and model-settings selection: source applied; native client HTTP acceptance passed, full offline regression 1403 passed/45 skipped, latest source-module regression 504 passed/28 skipped. After explicit user confirmation, image `xcli-integration-75d9cea7fbde` was deployed to all six services; API/Model Gateway/Publisher health checks passed, all services running with zero restart count, original volumes preserved, and 200 deployed source files matched the verified snapshot. Docker Host Bridge and real Plan/Review remain unverified.
++- [ ] Authenticated container Host Bridge: unimplemented; native loopback transport rejects container execution. P5-G06 and the existing platform gates remain open.
+ 
+ ## Fixed end-to-end chain
+ 
+--- /dev/null
++++ b/tests/test_xcli_local.py
+@@ -0,0 +1,123 @@
++from __future__ import annotations
++
++import asyncio
++import json
++
++import httpx
++import pytest
++
++from app.model_settings import ConnectionInput, validate_base_url
++from app.providers.contracts import ProviderRunError
++from app.providers.studio import ProfileUpstream
++from app.providers.xcli_local import XcliLocalClient, local_endpoint, registered_endpoint, require_model
++
++
++ENDPOINT = "http://127.0.0.1:18741/v1"
++TOKEN = "synthetic-xcli-token-canary"
++ALIAS = "xcli/text-default"
++
++
++def catalog(*capabilities, validated=True):
++    return {"object": "list", "data": [{"id": ALIAS, "xcli": {
++        "capabilities": list(capabilities), "validated": validated, "inference_location": "remote",
++    }}]}
++
++
++@pytest.fixture
++def registered(monkeypatch):
++    monkeypatch.setenv("CONTRIBOS_XCLI_LOCAL_ENDPOINT", ENDPOINT)
++    monkeypatch.setattr("app.providers.xcli_local.native_runtime", lambda: True)
++
++
++def test_local_urls_do_not_relax_existing_public_https_validation(registered):
++    assert registered_endpoint(ENDPOINT) == ENDPOINT
++    for invalid in ["http://localhost:18741/v1", "http://192.168.1.1:18741/v1",
++                    "http://user@127.0.0.1:18741/v1", ENDPOINT + "?secret=canary",
++                    ENDPOINT + "/other", "http://127.0.0.1:18742/v1"]:
++        with pytest.raises(ValueError):
++            registered_endpoint(invalid)
++    with pytest.raises(ValueError):
++        validate_base_url(ENDPOINT)
++    with pytest.raises(ValueError):
++        ConnectionInput(name="untrusted", provider="openai_compatible", base_url=ENDPOINT)
++    with pytest.raises(ValueError):
++        ConnectionInput(name="xcli", provider="xcli_local", base_url=ENDPOINT, credential_ref="env-nvidia")
++    value = ConnectionInput(name="xcli", provider="xcli_local", base_url=ENDPOINT, credential_ref="cred-" + "1" * 32)
++    assert value.base_url == ENDPOINT
++    assert local_endpoint("http://[::1]:18741/v1/") == "http://[::1]:18741/v1"
++
++
++def test_missing_registration_is_not_inferred_from_loopback(monkeypatch):
++    monkeypatch.delenv("CONTRIBOS_XCLI_LOCAL_ENDPOINT", raising=False)
++    with pytest.raises(ValueError, match="registered"):
++        registered_endpoint(ENDPOINT)
++
++
++@pytest.mark.parametrize("status", [301, 401, 403, 429, 500, 502, 504])
++def test_http_failure_is_single_attempt_without_redirect_or_private_body_leak(registered, status):
++    calls = []
++    def handler(request):
++        calls.append(request)
++        assert request.headers["authorization"] == "Bearer " + TOKEN
++        return httpx.Response(status, text=TOKEN, headers={"location": "http://169.254.169.254/private"})
++    client = XcliLocalClient(transport=httpx.MockTransport(handler))
++    with pytest.raises(ProviderRunError) as error:
++        asyncio.run(client.request(ENDPOINT, "/models", credential=TOKEN))
++    assert len(calls) == 1
++    assert TOKEN not in str(error.value)
++    assert not error.value.retryable
++
++
++def test_container_namespace_does_not_enable_a_host_bridge(registered, monkeypatch):
++    monkeypatch.setattr("app.providers.xcli_local.native_runtime", lambda: False)
++    calls = []
++    client = XcliLocalClient(transport=httpx.MockTransport(lambda request: calls.append(request)))
++    with pytest.raises(ProviderRunError) as error:
++        asyncio.run(client.request(ENDPOINT, "/models", credential=TOKEN))
++    assert error.value.code == "xcli_container_bridge_unsupported"
++    assert calls == []
++
++
++def test_catalog_requires_verified_tools_and_schema_before_private_upload():
++    for response in [{}, {"object": "list", "data": [{}]}, catalog("text.generate", "tool_calls", validated=False), catalog("text.generate")]:
++        with pytest.raises(ProviderRunError):
++            require_model(response, ALIAS, {"tools": [{"type": "function"}]})
++    require_model(catalog("text.generate", "json_schema"), ALIAS, {"response_format": {"type": "json_schema"}})
++    with pytest.raises(ProviderRunError):
++        require_model(catalog("text.generate"), ALIAS, {"response_format": {"type": "json_schema"}})
++    with pytest.raises(ProviderRunError):
++        require_model(catalog("text.generate"), ALIAS, {"response_format": {"type": "json_object"}})
++    require_model(catalog("text.generate", "json_object"), ALIAS, {"response_format": {"type": "json_object"}})
++
++
++def test_frozen_profile_keeps_model_output_budget_and_catalog_preflight(registered):
++    calls = []
++    class Store:
++        def read(self, reference):
++            assert reference == "cred-" + "1" * 32
++            return TOKEN
++    def handler(request):
++        calls.append(request)
++        if request.url.path == "/v1/models":
++            assert request.content == b""
++            return httpx.Response(200, json=catalog("text.generate", "json_schema"))
++        body = json.loads(request.content)
++        assert body["model"] == ALIAS
++        assert body["max_tokens"] == 32
++        assert body["response_format"]["type"] == "json_schema"
++        assert "_contribos_profile" not in body
++        return httpx.Response(200, json={"choices": [{"message": {"content": '{"ok":true}'}}]})
++    profile = {"model": ALIAS, "max_tokens": 32, "timeout_seconds": 5, "connection": {
++        "provider": "xcli_local", "base_url": ENDPOINT, "credential_ref": "cred-" + "1" * 32,
++    }}
++    transport = XcliLocalClient(transport=httpx.MockTransport(handler))
++    upstream = ProfileUpstream(profile, Store(), transport=transport)
++    payload = {"model": ALIAS, "messages": [{"role": "user", "content": "synthetic input"}],
++               "max_tokens": 99, "response_format": {"type": "json_schema"}, "_contribos_profile": profile}
++    result = asyncio.run(upstream.create_response(payload))
++    assert result["choices"]
++    assert [request.url.path for request in calls] == ["/v1/models", "/v1/chat/completions"]
++    with pytest.raises(ProviderRunError) as error:
++        asyncio.run(upstream.create_response({**payload, "model": "different-alias"}))
++    assert error.value.code == "xcli_frozen_model_mismatch"
++    assert len(calls) == 2

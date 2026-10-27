@@ -1,0 +1,17 @@
+{
+  "patch_sha256": "383666517a0c2e2c8957396a42dc193352b1ed08da6c2621ab9105e47b528b72",
+  "changed_files": 13,
+  "preimage_drift": [],
+  "git_apply_check": true,
+  "isolated_guarded_apply": true,
+  "isolated_postimages_match": 13,
+  "runtime_imports_complete": true,
+  "source_head": "73e6341d8aebb72cc7ba4d35150ef301b2185223",
+  "bridge_applied_to_original": false,
+  "production_enabled": false,
+  "preserved_latest_user_changes": [
+    "app/proposal_recovery.py",
+    "tests/test_proposal_format_correction.py",
+    "docs/tasks.md"
+  ]
+}

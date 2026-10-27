@@ -1,34 +1,32 @@
-# Model Gateway 升级交付总结
+# Model Gateway升级交付总结
 
-M0→M5本仓库实现与离线工程验收已完成；**整体升级仍未通过真实验收**，不作为正式发布或四App已集成的声明。进度/恢复见PROGRESS.md，使用见README.md，API见api-contract.md，逐阶段证据在acceptance/。
+2026-10-26：本仓库M0–M5工程实现与四消费端接入源码均已交付；四应用实际原生客户端代码的离线HTTP联通通过。**整体真实验收仍未完成**，不能作为正式发布、模型效果或实际应用UI验收声明。恢复入口为[PROGRESS.md](PROGRESS.md)，最新证据为[closeout-20261026.md](acceptance/closeout-20261026.md)。
+
+2026-10-27：用户接手后续真实验收。[操作步骤与通过标准](REAL_ACCEPTANCE.md)、[验收记录模板](acceptance/real-acceptance-record.template.md)已整理；本仓库实现、接入补丁和证据按用户授权集中提交推送。实际应用安装、桥接启用和真实调用不在本次提交操作中执行。
 
 ## 已实现
 
-- 独立model注册中心、能力/证据/位置/向量身份元数据、固定alias路由与最小App权限；不启动Task、无隐式fallback。
-- 受认证本机HTTP：healthz、readyz、models、Chat Completions/SSE、Vision内联图像、图片生成/编辑、Embedding透传。Tools/JSONSchema按能力透传，不执行客户端工具。
-- PNG/JPEG/WebP完整解码与像素/字节预算；mask/多图门控；错误输出/尺寸不符/不支持能力明确失败；不伪造图像或向量。
-- 256-bit独立客户端Token、私有摘要存储/撤销/轮换、模型/位置/逐请求云同意、Origin/Host边界、并发/速率/超时/取消与脱敏诊断。
-- start/serve/status/stop/logs、文件锁单实例、端口0发现/冲突、实例绑定停止、配置摘要审计、配置版本拒绝自动迁移、跨平台构建和部署说明。
-- 默认全离线Fake Backend；CLI会员桥接关闭，原生CLI登录未读取/导出；既有Task/Run/Use/Resume通过回归。
+独立Model Gateway，不启动Agent/Task或继承执行工具权限。支持本机受认证的Chat/SSE、经能力门控的JSON/Tools、Vision内联图像、图片生成/编辑及Embedding透传；固定alias路由、无隐式fallback、无自动收费重试。具有独立App Token、模型/位置权限、Chat Insight逐请求云同意、边界检查、图片/向量校验、预算/取消/脱敏审计、跨平台编译与本机生命周期管理。CLI会员桥接、图片URL下载、Responses/音视频和容器Host Bridge不作为已支持能力。
 
-## 验证与消费端
+## 消费端交付与检查
 
-Go完整Race/Vet/格式/依赖/构建通过；Darwin arm64/amd64、Linux arm64/amd64、Windows amd64均可编译。当前macOS arm64实际二进制通过6类临时服务生命周期检查；R3确定性25项、安装兼容12项通过。4类Python HTTP消费画像、4项隐私策略与图像/工具/流/向量契约通过。没有真实模型额度消耗。
-
-| 应用 | 本轮交付 | 仍阻断的真实验收 |
+| 应用 | 源码与离线验收 | 尚未完成 |
 | --- | --- | --- |
-| Worklog | 精确改点、可应用provider补丁（git apply --check通过）、非流/JSON画像 | 外部补丁应用、Rust/前端原生测试、日报/周报/模板/异常/Keyring真实流程 |
-| GardenFlow | 双Source/能力UI/Pi/图像严格分支清单，SSE/图像/编辑画像 | 禁用原重试/删参/edit回退与敏感日志，实际Vision/封面入库/编辑/Pi工具流 |
-| Chat Insight | 显式推理位置/授权/索引身份参考适配器、拒绝上传/批量向量/流测试 | 旧is_local仍需应用内修复；真实连接/索引/问答/确认UI/后台权限；未修复前不启用正式云路由 |
-| Contribution OS | xcli_local受控Provider/冻结Profile/短期Token/URL边界清单，JSON/Tools画像 | 原安全套件/Plan/Review/Token/沙箱测试；容器Host Bridge未实现且不能开放LAN替代 |
+| Worklog | 8文件已在原仓库；Rust40项、前端/可执行构建；原生报告/模板/日报JSON经xcli联通 | 实际UI、Keyring操作与真实模型流程 |
+| Chat Insight | 15文件已写回；Rust96项/React56项/build/lint/可执行构建；原生SSE/取消/向量/云确认与索引门禁联通 | 桌面修复安装与真实UI/索引检索；未部署前不启用正式云路由 |
+| GardenFlow | 14文件已写回并保留用户改版；780项、两类类型检查、生产构建；原生目录/生成/编辑联通 | 实际Vision/媒体入库/Pi工具流与模型效果；暂无mask控件 |
+| Contribution OS | 9文件已写回；冻结Profile/短期Token/JSON Schema原生联通；全套1403通过/45跳过，更新模块504通过/28跳过 | 六服务已部署且健康；认证桥接已在隔离副本合成验收，尚未写回/启用；真实Plan/Review仍待验收 |
 
-外部仓库只读，没有修改其源文件、用户数据库、密钥或线上资源。协议画像不等于App端到端成功。
+四应用原生联通共10次假上游模型请求，未经确认的云上传/未批准的向量上传均0次，日志Token泄露0项；没有真实模型请求，没有安装或启动用户桌面程序。旧Python协议画像继续保留为另一层证据。
 
-## 剩余限制与恢复条件
+macOS arm64本机生命周期、独立Linux arm64禁网容器六类生命周期、延迟/RSS基线通过。假上游小文本单客户端p95为3.915ms、三客户端8.003ms；合成PNG负载采样峰值RSS约102.5MiB。这不是实际模型性能或目标物理机保证。Go完整Race/Vet/跨平台构建沿用M0–M5历史记录，本轮没有Go实现变更。
 
-1. 真实API账号/模型和合成请求预算未提供/授权。文本、JSONSchema、Tools、Vision、生成/编辑/mask与Embedding均需独立真实验收；配置者的validated声明不能替代真实证据。
-2. 外部四仓库写权限及其原生回归仍需具备。先检查Git状态/最新源码，再应用清单/补丁；不复制真实聊天数据库。
-3. Windows/Linux/macOS x64实机、Windows ACL/进程、OS休眠/重启/启动项、真实升级/回退与性能基线未验证。Windows Agent后台Task/jobs明确不支持；Gateway后台独立，Windows也仅构建。
-4. 图像仅验证base64输出；URL下载、Responses/音视频、容器Bridge和CLI会员登录桥接没有发布为已支持能力。完整JSON Schema语义仍由真实上游及消费端校验。
+## 部署历史与待验项
 
-上述Gate全部补齐后才能将整体状态改为完成。当前没有Push、tag或Release；每阶段保留本地Git检查点。下一步从PROGRESS.md末尾的真实/外部验收项恢复，无需重建网关实现。
+用户明确批准后，Contribution OS旧镜像`xcli-integration-75d9cea7fbde`曾部署至六服务，当时的健康、200文件摘要和原数据卷检查通过。该快照后来发现遗漏运行依赖，应用仓库ENV-R08已恢复完整202文件运行时。旧镜像及其rollout/rollback只作历史记录，不能作为当前部署或回退方案。
+
+认证Host Bridge已在隔离副本实现并通过本机/OrbStack合成验收，4次假推理、0次真实调用；生产证书/挂载与启用仍待独立审查。另待真实上游/模型/密钥引用与预算，以及Windows/Linux x64/macOS x64目标实机。Docker内native接入继续明确拒绝，未放宽公共HTTPS、LAN或Sandbox Worker边界。实际UI/模型、异机、OS休眠/重启与真实升级回退Gate保持开放。
+
+本次由用户授权提交推送xcli交付材料；外部四仓库未代为提交/推送，没有tag或Release。此前未提取真实凭据或原生CLI登录、未读取聊天/工作日志数据库内容；使用既有Compose完成过经授权的服务切换，未引入新数据库迁移。
+
+后续ENV-R08已修复上述200文件部署遗漏，恢复完整202文件运行时；旧镜像及其rollout/rollback记录不得作为当前回退方案。桥接补丁基于完整源码，见[桥接实现与验收](integrations/contribution-os-host-bridge.md)。

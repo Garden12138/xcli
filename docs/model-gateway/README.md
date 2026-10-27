@@ -4,6 +4,8 @@ Model Gateway 与 Agent Runtime 同时存在：`task/run/use/resume` 保持原�
 
 **当前仅离线工程验收完成。真实模型、四个桌面应用与异平台实机Gate仍开放，不能作为已正式发布/完整集成的版本。** 状态见[PROGRESS.md](PROGRESS.md)，合同见[api-contract.md](api-contract.md)，每阶段证据见acceptance目录。
 
+后续实际操作从[真实应用与实机验收交接](REAL_ACCEPTANCE.md)开始，覆盖四应用UI、真实上游、Docker桥接、目标实机和升级回退；使用[验收记录模板](acceptance/real-acceptance-record.template.md)记录结果。提交/推送不代表这些待验项完成。
+
 ## 构建和配置
 
 Go 1.26：`go build -trimpath -o xcli .`（Windows使用`xcli.exe`）。复制 `examples/model-gateway.yaml` 为用户自己的私有 `model-gateway.yaml`，填写实际endpoint、model和显式API Key引用。示例.invalid不可访问；不要把密钥写到YAML或argv。上游支持兼容协议并不等于其所有模型都支持全部功能。
@@ -77,6 +79,22 @@ go build -o /tmp/xcli-gateway .
 python3 tests/model_gateway/lifecycle.py --binary /tmp/xcli-gateway
 ```
 
-测试使用Fake/合成材料，依赖Python3执行消费画像。真实Provider smoke入口`examples/model-gateway/smoke.py`默认只读catalog；--execute与--max-model-requests N才发请求，可能计费，必须先获授权。四应用的外部接入清单/Worklog补丁见[integration-matrix.md](integration-matrix.md)。
+测试使用Fake/合成材料，依赖Python3执行消费画像。真实Provider smoke入口`examples/model-gateway/smoke.py`默认只读catalog；--execute与--max-model-requests N才发请求，可能计费，必须先获授权。四应用的接入源码均已写回；原生客户端离线联通、构建及剩余部署/真实验收见[integration-matrix.md](integration-matrix.md)。
 
 Windows构建不代表完整Agent Runtime支持：foreground进程实现使用Job Objects，实际CLI/取消语义未验收；原有基于Unix描述符传递的Agent后台Task/jobs在Windows明确拒绝，Model Gateway后台管理独立可编译但尚未实机验证。macOS/Linux原有运行路径保持回归。CLI会员文本桥接、URL图片下载、Responses/音视频和容器Host Bridge均没有作为已支持能力发布。
+
+
+四个原生客户端的离线HTTP联通（先复制源码，Rust探针仅注入临时副本）：
+
+```bash
+python3 tests/model_gateway/native_consumers.py \
+  --binary /tmp/xcli-gateway --sources-root /path/to/checkouts \
+  --contribution-python /path/to/contribution-os/.venv/bin/python \
+  --worklog-target /tmp/xcli-worklog-target --chat-insight-target /tmp/xcli-chat-target \
+  --output /tmp/native-consumers.json
+python3 tests/model_gateway/performance.py --binary /tmp/xcli-gateway --output /tmp/gateway-performance.json
+```
+
+这些入口只启动临时loopback网关和假上游，使用合成文本、PNG、向量及临时Token；不读取应用数据库、真实Keyring或原生CLI登录。需要已安装的Rust/Node/Python依赖，Rust使用offline模式。性能结果包含本机客户端/假服务开销和采样误差，不能推断真实模型速度或其他机器表现。
+
+Contribution OS另有默认关闭的认证宿主桥接隔离实现，真实mTLS本机/OrbStack合成链路通过，尚未写回或启用生产配置；见[桥接补丁与验收](integrations/contribution-os-host-bridge.md)。这不改变原生transport拒绝容器的行为或公共HTTPS边界。

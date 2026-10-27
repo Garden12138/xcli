@@ -1,0 +1,591 @@
+--- a/Docs/AI_PROVIDERS.md
++++ b/Docs/AI_PROVIDERS.md
+@@ -53,3 +53,14 @@
+ 6. 用设置页连接检查或供应商官方最小请求验证。
+ 
+ 不要在 Issue、截图或诊断附件中粘贴 Key。GardenFlow 导出诊断时会自动脱敏，但提交前仍需人工检查。
++
++
++## xcli Model Gateway
++
++在设置中新增 `xcli Model Gateway` 供应商，填写已启动网关的本机 IP、实际端口和 `/v1` 路径，以及为 GardenFlow 签发的独立应用 Token。默认示例为 `http://127.0.0.1:18741/v1`，可更改端口。点击“检查模型目录”仅读取授权目录，不发起模型推理。显示的 local/remote/unknown 是网关配置声明；本机传输不代表本机推理。
++
++为对话与图片分别选择模型别名，例如 `xcli/text-default` 与 `xcli/image-default`。图片路由使用 `openai-images`。xcli 分支核验能力后只提交一次请求，保留尺寸、数量和所有参考图；不删除参数、不调整尺寸、不在编辑失败后转为文生图。只接收 base64 图片，不下载返回 URL。单图最多 20 MiB、16,777,216 像素，总请求最多 32 MiB，最多四张参考图和四个结果。暂未提供 mask 控件。
++
++Pi Agent 在发送上下文前要求目录中已验证的 Tool Calling 和流式文本能力。文本模型没有图片输入能力时，不能因为别名未知而自动启用 Vision。使用独立 Token 的模型权限与云端授权控制可调用上游；如网关要求额外逐请求同意，本客户端尚未提供该确认头，会收到明确拒绝。
++
++生成结果继续通过媒体库保存。真实模型效果、Vision、参考图编辑、封面入库和 Pi 工具流仍须在选定上游后执行应用验收。可先使用本机假上游运行离线测试：`pnpm --dir desktop test`，类型检查：`pnpm --dir desktop check:types`。
+--- a/desktop/electron/core/aiModelRouteResolver.ts
++++ b/desktop/electron/core/aiModelRouteResolver.ts
+@@ -1,3 +1,4 @@
++import { xcliEndpoint } from './xcliGateway.ts';
+ import { parseAiModelRoutesValue } from '../../src/features/settings/modelRouteValue.ts';
+ import {
+   getModelInputCapabilities,
+@@ -118,6 +119,11 @@
+   settings: Record<string, unknown>,
+   connection: LlmConnection,
+ ): ModelInputCapability[] {
++  const source = findConnectionSource(settings, connection);
++  if (source?.presetId === 'xcli') {
++    const model = Array.isArray(source.modelsMeta) ? source.modelsMeta.find((item: any) => item?.id === connection.modelName) as any : null;
++    return model?.xcli?.validated === true && model.xcli.capabilities?.includes('vision.analyze') ? ['image'] : [];
++  }
+   const explicit = explicitModelInputCapabilities(
+     findConnectionSource(settings, connection),
+     connection.modelName,
+@@ -183,6 +189,10 @@
+       scope === 'chat' ? 'default' : scope,
+       text(settings.model_name || settings.openaiModel) || 'gpt-4o',
+     );
++  if (source.presetId === 'xcli') {
++    xcliEndpoint(text(source.baseURL || source.baseUrl));
++    if (!apiKey || apiKey === 'local') throw new Error('xcli requires an independent application Token');
++  }
+   let resolvedApiKey = apiKey;
+   try {
+     const hostname = new URL(baseURL).hostname.toLowerCase();
+@@ -224,3 +234,19 @@
+   // capability error and let the user choose a visual model explicitly.
+   return null;
+ }
++
++export function isXcliConnection(settings: Record<string, unknown>, baseURL: string): boolean {
++  return parseAiSources(settings).some((source) => source.presetId === 'xcli'
++    && normalizeApiBaseUrl(text(source.baseURL || source.baseUrl), '') === baseURL);
++}
++
++export function resolveXcliImageRoute(settings: Record<string, unknown>): { endpoint: string; apiKey: string; model: string } | null {
++  const route = parseAiModelRoutesValue(settings.ai_model_routes_json).image as Record<string, unknown> | undefined;
++  if (!route || route.mode === 'disabled') return null;
++  const source = findSource(parseAiSources(settings), text(route.sourceId));
++  if (source?.presetId !== 'xcli') return null;
++  const apiKey = text(source.apiKey);
++  const model = text(route.model || source.model);
++  if (!apiKey || apiKey === 'local' || !model) throw new Error('Configure an xcli image alias and independent Token');
++  return { endpoint: xcliEndpoint(text(source.baseURL)), apiKey, model };
++}
+--- a/desktop/electron/core/aiSourceService.ts
++++ b/desktop/electron/core/aiSourceService.ts
+@@ -1,9 +1,10 @@
+-import { normalizeApiBaseUrl, safeUrlJoin } from './urlUtils';
++import { xcliModels } from './xcliGateway.ts';
++import { normalizeApiBaseUrl, safeUrlJoin } from './urlUtils.ts';
+ import {
+   hasModelCapability,
+   inferModelCapabilities,
+   type ModelCapability,
+-} from '../../shared/modelCapabilities';
++} from '../../shared/modelCapabilities.ts';
+ 
+ export type AiProtocol = 'openai' | 'anthropic' | 'gemini';
+ 
+@@ -18,6 +19,8 @@
+ export interface AiModelInfo {
+   id: string;
+   capabilities?: ModelCapability[];
++  inputCapabilities?: string[];
++  xcli?: import('./xcliGateway.ts').XcliModel['xcli'];
+ }
+ 
+ export interface AiConnectionTestResult {
+@@ -338,6 +341,18 @@
+ };
+ 
+ export async function fetchModelsForAiSource(input: AiSourceConnectionInput): Promise<{ protocol: AiProtocol; models: AiModelInfo[] }> {
++  if (input.presetId === 'xcli') {
++    const models = await xcliModels(input.baseURL, input.apiKey);
++    return { protocol: 'openai', models: models.map((model) => ({
++      id: model.id, xcli: model.xcli,
++      capabilities: [
++        ...(model.xcli.capabilities.includes('text.generate') ? ['chat' as const] : []),
++        ...(model.xcli.validated && model.xcli.capabilities.includes('image.generate') ? ['image' as const] : []),
++        ...(model.xcli.validated && model.xcli.capabilities.includes('embeddings') ? ['embedding' as const] : []),
++      ],
++      inputCapabilities: model.xcli.validated && model.xcli.capabilities.includes('vision.analyze') ? ['image'] : [],
++    })).filter((model) => input.purpose !== 'image' || model.capabilities.includes('image')) };
++  }
+   const protocol = detectAiProtocol(input);
+   const baseURL = normalizeApiBaseUrl(input.baseURL);
+   const apiKey = String(input.apiKey || '').trim();
+--- a/desktop/electron/core/imageGenerationService.ts
++++ b/desktop/electron/core/imageGenerationService.ts
+@@ -1,3 +1,4 @@
++import { resolveXcliImageRoute } from './aiModelRouteResolver';
+ import { assertImagePromptBudget } from '../../shared/imagePromptBudget';
+ import { getSettings } from '../db';
+ import { createGeneratedMediaAsset, type MediaAsset } from './mediaLibraryStore';
+@@ -96,6 +97,8 @@
+     }
+ 
+     const settings = (getSettings() || {}) as Record<string, unknown>;
++    const route = !input.provider && !input.endpoint ? resolveXcliImageRoute(settings) : null;
++    if (route) input = { ...input, ...route, provider: 'xcli', providerTemplate: 'openai-images' };
+     const provider = String(input.provider || settings.image_provider || 'openai-compatible').trim();
+     const providerTemplate = normalizeImageProviderTemplate(
+         String(input.providerTemplate || settings.image_provider_template || '').trim(),
+@@ -114,12 +117,12 @@
+             ''
+         ).trim()
+     );
+-    const apiKey = String(input.apiKey || settings.image_api_key || settings.api_key || '').trim();
++    const apiKey = String(input.apiKey || settings.image_api_key || (provider !== 'xcli' ? settings.api_key : '') || '').trim();
+     const model = String(input.model || settings.image_model || resolveDefaultImageModel(providerTemplate)).trim();
+-    const size = normalizeImageSize(String(input.size || settings.image_size || '').trim());
++    const size = provider === 'xcli' ? String(input.size || settings.image_size || 'auto').trim() : normalizeImageSize(String(input.size || settings.image_size || '').trim());
+     const quality = String(input.quality || settings.image_quality || 'standard').trim();
+     const rawReferenceImages = Array.isArray(input.referenceImages)
+-        ? input.referenceImages.map((item) => String(item || '').trim()).filter(Boolean).slice(0, input.privacyScope === 'project' ? undefined : 4)
++        ? input.referenceImages.map((item) => String(item || '').trim()).filter(Boolean).slice(0, provider === 'xcli' || input.privacyScope === 'project' ? undefined : 4)
+         : [];
+     const requestedGenerationMode = (
+         input.generationMode === 'image-to-image' ||
+@@ -131,7 +134,8 @@
+     const aspectRatio = normalizeImageAspectRatio(
+         String(input.aspectRatio || settings.image_aspect_ratio || '').trim()
+     );
+-    const count = Math.max(1, Math.min(4, Number(input.count) || 1));
++    const count = provider === 'xcli' ? Number(input.count ?? 1) : Math.max(1, Math.min(4, Number(input.count) || 1));
++    if (provider === 'xcli' && (providerTemplate !== 'openai-images' || rawReferenceImages.length > 4 || (requestedGenerationMode !== 'text-to-image' && !rawReferenceImages.length))) throw new Error('xcli requires openai-images and complete reference inputs (at most four)');
+ 
+     if (!endpoint) {
+         throw new Error('Image endpoint is missing. Please configure it in Settings.');
+--- a/desktop/electron/core/imageProviderAdapters.ts
++++ b/desktop/electron/core/imageProviderAdapters.ts
+@@ -1,3 +1,4 @@
++import { xcliModels, requireXcliCapabilities, xcliRequest, xcliJson } from './xcliGateway.ts';
+ import { promises as fs } from 'node:fs';
+ import { extname, isAbsolute, normalize } from 'node:path';
+ import { resolveAssetSourceToPath } from './localAssetManager.ts';
+@@ -1590,10 +1591,69 @@
+     },
+ };
+ 
++async function generateXcliImages(request: ImageGenerationRequest): Promise<GeneratedImageOutput[]> {
++    const count = request.count ?? 1;
++    const mode = request.generationMode || 'text-to-image';
++    const refs = request.referenceImages || [];
++    if (!Number.isInteger(count) || count < 1 || count > 4 || refs.length > 4
++        || !['text-to-image', 'image-to-image', 'reference-guided'].includes(mode)
++        || (mode === 'text-to-image' && refs.length > 0)
++        || (mode !== 'text-to-image' && refs.length === 0)) {
++        throw new Error('xcli image count, generation mode or reference inputs are invalid');
++    }
++    const size = request.size || 'auto';
++    const dimensions = /^(\d+)x(\d+)$/.exec(size);
++    if (size !== 'auto' && (!dimensions || Number(dimensions[1]) < 1 || Number(dimensions[2]) < 1
++        || Number(dimensions[1]) * Number(dimensions[2]) > 16_777_216)) throw new Error('xcli image size is invalid');
++    const required = [mode === 'text-to-image' ? 'image.generate' : 'image.edit', ...(refs.length > 1 ? ['image.multi_reference'] : [])];
++    requireXcliCapabilities(await xcliModels(request.endpoint, request.apiKey), request.model, required);
++    const fields: Record<string, string> = { model: request.model, prompt: request.prompt, n: String(count), size, response_format: 'b64_json' };
++    if (request.quality) fields.quality = request.quality;
++    let body: string | FormData;
++    if (refs.length) {
++        const form = new FormData();
++        for (const [key, value] of Object.entries(fields)) form.append(key, value);
++        let total = Buffer.byteLength(request.prompt);
++        for (const ref of refs) {
++            if (!ref.startsWith('data:')) {
++                const path = isLocalFileLikeReference(ref) ? resolveLocalReferencePath(ref) : null;
++                if (!path || (await fs.stat(path)).size > 20 * 1024 * 1024) throw new Error('xcli requires a local reference image within 20 MiB');
++            }
++            const decoded = decodeDataUrl(await normalizeReferenceImageInput(ref));
++            if (!decoded || !['image/png', 'image/jpeg', 'image/webp'].includes(decoded.mimeType)
++                || decoded.base64.length > 28 * 1024 * 1024) throw new Error('xcli reference image is invalid');
++            const bytes = Buffer.from(decoded.base64, 'base64');
++            total += bytes.length;
++            if (!bytes.length || bytes.toString('base64') !== decoded.base64 || bytes.length > 20 * 1024 * 1024
++                || total > 32 * 1024 * 1024 - 65536) throw new Error('xcli reference images exceed the size limit');
++            form.append('image[]', new Blob([bytes], { type: decoded.mimeType }), 'reference.' + (decoded.mimeType === 'image/jpeg' ? 'jpg' : decoded.mimeType.split('/')[1]));
++        }
++        body = form;
++    } else {
++        body = JSON.stringify({ ...fields, n: count });
++        if (Buffer.byteLength(body) > 4 * 1024 * 1024) throw new Error('xcli request exceeds 4 MiB');
++    }
++    const result = await xcliJson(await xcliRequest(request.endpoint, request.apiKey, refs.length ? '/images/edits' : '/images/generations', body));
++    if (!Array.isArray(result?.data) || result.data.length !== count) throw new Error('xcli image output count does not match the request');
++    return result.data.map((item: any) => {
++        if (typeof item?.b64_json !== 'string' || item.url || item.b64_json.length > 28 * 1024 * 1024) throw new Error('xcli returned an invalid image result');
++        const imageBuffer = Buffer.from(item.b64_json, 'base64');
++        const signature = imageBuffer.subarray(0, 12);
++        if (!imageBuffer.length || imageBuffer.length > 20 * 1024 * 1024 || imageBuffer.toString('base64') !== item.b64_json
++            || !(signature.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))
++                || signature.subarray(0, 3).equals(Buffer.from('ffd8ff', 'hex'))
++                || (signature.toString('ascii', 0, 4) === 'RIFF' && signature.toString('ascii', 8, 12) === 'WEBP'))) {
++            throw new Error('xcli returned an invalid image result');
++        }
++        return { imageBuffer, mimeType: inferImageMimeType(imageBuffer) };
++    });
++}
++
+ const openAiAdapter: ImageProviderAdapter = {
+     template: 'openai-images',
+     supportsMultiCount: true,
+     async generate(request) {
++        if (request.provider === 'xcli') return generateXcliImages(request);
+         const mode = resolveGenerationModeForTemplate('openai-images', request.generationMode);
+         const refs = await normalizeReferenceImagesForTransport(
+             pickReferenceImages(request, IMAGE_PROVIDER_CAPABILITIES['openai-images'].maxReferenceImages)
+--- /dev/null
++++ b/desktop/electron/core/xcliGateway.ts
+@@ -0,0 +1,86 @@
++import { isIP } from 'node:net';
++
++export interface XcliModel {
++    id: string;
++    xcli: {
++        capabilities: string[];
++        validated: boolean;
++        inference_location: 'local' | 'remote' | 'unknown';
++    };
++}
++
++export function xcliEndpoint(value: string): string {
++    let url: URL;
++    try { url = new URL(value); } catch { throw new Error('xcli endpoint is invalid'); }
++    const host = url.hostname.replace(/^\[|\]$/g, '');
++    if (url.protocol !== 'http:' || !isIP(host) || !(host === '::1' || host.startsWith('127.'))
++        || !url.port || url.username || url.password || url.search || url.hash
++        || url.pathname.replace(/\/+$/, '') !== '/v1') {
++        throw new Error('xcli requires a loopback IP, explicit port and /v1 path');
++    }
++    return url.toString().replace(/\/+$/, '');
++}
++
++export async function xcliRequest(baseURL: string, token: string, suffix: string, body?: BodyInit): Promise<Response> {
++    const endpoint = xcliEndpoint(baseURL);
++    if (!token.trim() || token === 'local') throw new Error('xcli requires an independent application Token');
++    if (!['/models', '/images/generations', '/images/edits'].includes(suffix)) throw new Error('Unsupported xcli route');
++    let response: Response;
++    try {
++        response = await fetch(endpoint + suffix, {
++            method: body === undefined ? 'GET' : 'POST',
++            headers: { Authorization: `Bearer ${token}`, ...(typeof body === 'string' ? { 'Content-Type': 'application/json' } : {}) },
++            body, redirect: 'error', signal: AbortSignal.timeout(180_000),
++        });
++    } catch { throw new Error('Unable to reach xcli Model Gateway'); }
++    if (!response.ok) {
++        await response.body?.cancel();
++        throw new Error(`xcli request failed (HTTP ${response.status}); check Token, model capability and permissions`);
++    }
++    return response;
++}
++
++export async function xcliJson(response: Response, limit = 32 * 1024 * 1024): Promise<any> {
++    const reader = response.body?.getReader();
++    if (!reader) throw new Error('xcli returned an empty response');
++    const chunks: Uint8Array[] = [];
++    let size = 0;
++    try {
++        for (;;) {
++            const next = await reader.read();
++            if (next.done) break;
++            size += next.value.byteLength;
++            if (size > limit) throw new Error('xcli response exceeds the size limit');
++            chunks.push(next.value);
++        }
++        return JSON.parse(Buffer.concat(chunks).toString('utf8'));
++    } catch { throw new Error('xcli response is invalid or exceeds the size limit'); }
++    finally { await reader.cancel().catch(() => {}); }
++}
++
++export async function xcliModels(baseURL: string, token: string): Promise<XcliModel[]> {
++    const catalog = await xcliJson(await xcliRequest(baseURL, token, '/models'), 4 * 1024 * 1024);
++    if (catalog?.object !== 'list' || !Array.isArray(catalog.data)) throw new Error('xcli model catalog is invalid');
++    const seen = new Set<string>();
++    return catalog.data.map((model: any) => {
++        if (typeof model?.id !== 'string' || !model.id || seen.has(model.id)
++            || !Array.isArray(model.xcli?.capabilities) || !model.xcli.capabilities.every((cap: unknown) => typeof cap === 'string')) {
++            throw new Error('xcli model catalog is invalid');
++        }
++        seen.add(model.id);
++        return { id: model.id, xcli: {
++            capabilities: model.xcli.capabilities,
++            validated: model.xcli.validated === true,
++            inference_location: ['local', 'remote'].includes(model.xcli.inference_location) ? model.xcli.inference_location : 'unknown',
++        } };
++    });
++}
++
++export function requireXcliCapabilities(models: XcliModel[], alias: string, capabilities: string[]): XcliModel {
++    const model = models.find((item) => item.id === alias);
++    if (!model || capabilities.some((cap) => !model.xcli.capabilities.includes(cap)
++        || (!['text.generate', 'text.stream'].includes(cap) && !model.xcli.validated))) {
++        throw new Error('Selected xcli model lacks the required verified capability');
++    }
++    return model;
++}
+--- a/desktop/electron/pi/PiChatService.ts
++++ b/desktop/electron/pi/PiChatService.ts
+@@ -54,7 +54,8 @@
+   type GardenFlowProfilePromptBundle,
+ } from '../core/gardenflowProfileStore';
+ import { resolveChatMaxTokens } from '../core/chatTokenConfig';
+-import { resolveSettingsLlm } from '../core/aiModelRouteResolver';
++import { resolveSettingsLlm, isXcliConnection } from '../core/aiModelRouteResolver';
++import { xcliModels, requireXcliCapabilities } from '../core/xcliGateway';
+ import { resolveModelScopeFromContextType, resolveScopedModelName } from '../core/modelScopeSettings';
+ import { normalizeApiBaseUrl, safeUrlJoin } from '../core/urlUtils';
+ import { logDebugEvent } from '../core/debugLogger';
+@@ -1487,6 +1488,10 @@
+       || resolveScopedModelName(settings, modelScope, (settings.openaiModel as string) || 'gpt-4o'),
+     ).trim();
+ 
++    if (isXcliConnection(settings, baseURL)) {
++      requireXcliCapabilities(await xcliModels(baseURL, apiKey), modelName, ['text.generate', 'text.stream', 'tool_calls']);
++    }
++
+     const interactivePublication = allowInteractiveOnboarding && runtimeMode === 'gardenflow'
+       && !metadata.headless && !metadata.isBackgroundSession && !runtimeMetadata?.scheduledTaskId && !metadata.builtinTaskId;
+     const publicationContext = interactivePublication ? getXhsPublisherService().getConversationContext(
+--- a/desktop/electron/pi/agent.ts
++++ b/desktop/electron/pi/agent.ts
+@@ -9,6 +9,8 @@
+ import { getSettings } from '../db';
+ import { resolveChatMaxTokens } from '../core/chatTokenConfig';
+ import { normalizeApiBaseUrl } from '../core/urlUtils';
++import { isXcliConnection } from '../core/aiModelRouteResolver';
++import { xcliModels, requireXcliCapabilities } from '../core/xcliGateway';
+ 
+ // ========== 类型定义 ==========
+ 
+@@ -156,7 +158,10 @@
+         thinkingLevel: 'low',
+       },
+       convertToLlm: (messages) => this.convertMessages(messages),
+-      transformContext: async (messages) => messages,
++      transformContext: async (messages) => {
++        if (isXcliConnection(settings, baseURL)) requireXcliCapabilities(await xcliModels(baseURL, apiKey), modelName, ['text.generate', 'text.stream', ...(tools.length ? ['tool_calls'] : [])]);
++        return messages;
++      },
+       getApiKey: async () => apiKey,
+     });
+ 
+--- a/desktop/src/config/aiSources.ts
++++ b/desktop/src/config/aiSources.ts
+@@ -18,6 +18,7 @@
+     id: string;
+     capabilities?: string[];
+     inputCapabilities?: string[];
++    xcli?: { capabilities: string[]; validated: boolean; inference_location: string };
+   }>;
+   model: string;
+   protocol?: 'openai' | 'anthropic' | 'gemini';
+@@ -27,6 +28,7 @@
+ 
+ // Presets aligned with common OpenAI-compatible providers (referencing AionUi design).
+ export const AI_SOURCE_PRESETS: AiSourcePreset[] = [
++  { id: 'xcli', label: 'xcli Model Gateway', baseURL: 'http://127.0.0.1:18741/v1', protocol: 'openai' },
+   { id: 'openai', label: 'OpenAI', baseURL: 'https://api.openai.com/v1', protocol: 'openai' },
+   { id: 'anthropic', label: 'Anthropic', baseURL: 'https://api.anthropic.com/v1', protocol: 'anthropic' },
+   { id: 'gemini', label: 'Gemini', baseURL: 'https://generativelanguage.googleapis.com/v1beta', protocol: 'gemini' },
+--- a/desktop/src/features/media-generation/audioOptions.ts
++++ b/desktop/src/features/media-generation/audioOptions.ts
+@@ -1,3 +1,4 @@
++import { normalizeModelCapabilities, normalizeModelInputCapabilities } from '../../../shared/modelCapabilities';
+ import { findAiPresetById, inferPresetIdByEndpoint, type AiSourceConfig } from '../../config/aiSources';
+ import { filterAiModelsByCapability, normalizeAiModelDescriptors, parseAiSources } from '../../pages/settings/shared';
+ import { parseAiModelRoutesValue } from '../settings/modelRouteValue';
+@@ -115,6 +116,7 @@
+ }
+ 
+ export function getAiSourceModelDescriptors(source: AiSourceConfig) {
++    if (source.presetId === 'xcli') return (source.modelsMeta || []).map((model) => ({ id: model.id, capabilities: normalizeModelCapabilities(model.capabilities || []), inputCapabilities: normalizeModelInputCapabilities(model.inputCapabilities) }));
+     return normalizeAiModelDescriptors([
+         ...(source.modelsMeta || []),
+         ...(source.models || []).map((id) => ({ id })),
+@@ -233,6 +235,7 @@
+ 
+ function imageRoutingForSource(source: AiSourceConfig): Pick<ModelRouteOverride, 'provider' | 'providerTemplate'> {
+     const presetId = String(source.presetId || inferPresetIdByEndpoint(source.baseURL || '') || '').trim().toLowerCase();
++    if (presetId === 'xcli') return { provider: 'xcli', providerTemplate: 'openai-images' };
+     if (presetId.includes('dashscope') || presetId.includes('qwen') || presetId === 'buts') {
+         return { provider: 'dashscope', providerTemplate: 'dashscope-wan-native' };
+     }
+--- a/desktop/src/pages/Settings.tsx
++++ b/desktop/src/pages/Settings.tsx
+@@ -95,7 +95,7 @@
+ }
+ 
+ function sourceReady(source: AiSourceConfig): boolean {
+-  return Boolean(source.baseURL.trim() && source.model.trim() && (source.apiKey.trim() || isLocalEndpoint(source.baseURL)));
++  return Boolean(source.baseURL.trim() && source.model.trim() && (source.apiKey.trim() || (source.presetId !== 'xcli' && isLocalEndpoint(source.baseURL))));
+ }
+ 
+ function SectionCard({ title, description, children }: {
+@@ -426,6 +426,16 @@
+                           </div>
+                           <button type="button" onClick={() => deleteSource(source.id)} className="rounded-lg p-2 text-text-tertiary hover:bg-red-500/10 hover:text-red-500" aria-label="删除供应商"><Trash2 className="h-4 w-4" /></button>
+                         </div>
++                        {source.presetId === 'xcli' && <div className="mb-3 text-xs text-text-secondary">
++                          本机网关不等于本机推理；上游位置与能力以 xcli 目录为准。文本和图片请分别选择模型别名。
++                          <button type="button" className="ml-2 underline" onClick={async () => {
++                            try {
++                              const models = await window.ipcRenderer.fetchModels({ ...source, purpose: 'chat' });
++                              updateSource(source.id, { models: models.map((model) => model.id), modelsMeta: models });
++                              setMessage('xcli 目录已读取（未调用模型）：' + models.map((model: any) => `${model.id} / ${model.xcli?.inference_location || 'unknown'}`).join('；'));
++                            } catch { setMessage('无法读取 xcli 目录，请检查服务、独立 Token 与端口'); }
++                          }}>检查模型目录</button>
++                        </div>}
+                         <div className="grid gap-3 md:grid-cols-2">
+                           <label><span className={labelClass}>预设</span>
+                             <select
+@@ -434,7 +444,7 @@
+                               onChange={(event) => {
+                                 const preset = findAiPresetById(event.target.value);
+                                 if (!preset) return;
+-                                updateSource(source.id, { presetId: preset.id, name: preset.label, baseURL: preset.baseURL, protocol: preset.protocol });
++                                updateSource(source.id, { presetId: preset.id, name: preset.label, baseURL: preset.baseURL, protocol: preset.protocol, apiKey: '', models: [], modelsMeta: [], model: preset.id === 'xcli' ? 'xcli/text-default' : '' });
+                               }}
+                             >
+                               {AI_SOURCE_PRESETS.map((preset) => <option key={preset.id} value={preset.id}>{preset.label}</option>)}
+@@ -442,7 +452,7 @@
+                           </label>
+                           <label><span className={labelClass}>名称</span><input className={inputClass} value={source.name} onChange={(event) => updateSource(source.id, { name: event.target.value })} /></label>
+                           <label className="md:col-span-2"><span className={labelClass}>Endpoint</span><input className={inputClass} value={source.baseURL} onChange={(event) => updateSource(source.id, { baseURL: event.target.value })} placeholder="https://api.example.com/v1" /></label>
+-                          <label><span className={labelClass}>API Key {isLocalEndpoint(source.baseURL) ? '（本地可留空）' : ''}</span><input type="password" className={inputClass} value={source.apiKey} onChange={(event) => updateSource(source.id, { apiKey: event.target.value })} /></label>
++                          <label><span className={labelClass}>API Key {source.presetId === 'xcli' ? '（独立应用 Token，必填）' : isLocalEndpoint(source.baseURL) ? '（本地可留空）' : ''}</span><input type="password" className={inputClass} value={source.apiKey} onChange={(event) => updateSource(source.id, { apiKey: event.target.value })} /></label>
+                           <label><span className={labelClass}>默认模型</span><input className={inputClass} value={source.model} onChange={(event) => updateSource(source.id, { model: event.target.value })} placeholder="例如 gpt-5-mini" /></label>
+                         </div>
+                       </div>
+--- a/desktop/src/pages/settings/shared.tsx
++++ b/desktop/src/pages/settings/shared.tsx
+@@ -1065,7 +1065,11 @@
+         const model = String(item.model || item.modelName || '');
+         const rawId = String(item.id || '');
+         const name = String(item.name || findAiPresetById(presetId)?.label || '供应商');
+-        const modelsMeta = normalizeAiModelDescriptors(
++        const modelsMeta = presetId === 'xcli' ? (Array.isArray(item.modelsMeta) ? item.modelsMeta : []).filter((value: any) => typeof value?.id === 'string' && Array.isArray(value.xcli?.capabilities)).map((value: any) => {
++          const caps = value.xcli.capabilities;
++          const validated = value.xcli.validated === true;
++          return { id: value.id, capabilities: [...(caps.includes('text.generate') ? ['chat'] : []), ...(validated && caps.includes('image.generate') ? ['image'] : []), ...(validated && caps.includes('embeddings') ? ['embedding'] : [])], inputCapabilities: validated && caps.includes('vision.analyze') ? ['image'] : [], xcli: { capabilities: caps.filter((cap: unknown) => typeof cap === 'string'), validated, inference_location: ['local', 'remote'].includes(value.xcli.inference_location) ? value.xcli.inference_location : 'unknown' } };
++        }) : normalizeAiModelDescriptors(
+           Array.isArray(item.modelsMeta)
+             ? item.modelsMeta.map((value) => (value && typeof value === 'object' ? value as {
+                 id?: string;
+--- /dev/null
++++ b/desktop/tests/xcliGateway.test.ts
+@@ -0,0 +1,112 @@
++import assert from 'node:assert/strict';
++import test from 'node:test';
++import { getImageProviderAdapter } from '../electron/core/imageProviderAdapters.ts';
++import { xcliEndpoint, xcliModels, requireXcliCapabilities } from '../electron/core/xcliGateway.ts';
++import { fetchModelsForAiSource } from '../electron/core/aiSourceService.ts';
++import { resolveSettingsLlm, resolveXcliImageRoute, resolveLlmInputCapabilities } from '../electron/core/aiModelRouteResolver.ts';
++
++const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
++const endpoint = 'http://127.0.0.1:18741/v1';
++const token = 'synthetic-gardenflow-token';
++const descriptor = (caps: string[], validated = true) => ({ id: 'xcli/image-default', xcli: { capabilities: caps, validated, inference_location: 'remote' } });
++const catalog = (caps: string[], validated = true) => ({ object: 'list', data: [descriptor(caps, validated)] });
++const input = { prompt: 'synthetic private canary', model: 'xcli/image-default', endpoint, apiKey: token, provider: 'xcli', providerTemplate: 'openai-images' as const, size: '1x1', count: 1 };
++
++test('xcli never treats a loopback endpoint as unauthenticated or infers vision from an alias', () => {
++    for (const bad of ['https://example.com/v1', 'http://localhost:18741/v1', endpoint + '?token=private', 'http://user@127.0.0.1:18741/v1', 'http://192.168.1.1:18741/v1']) assert.throws(() => xcliEndpoint(bad));
++    const source = { id: 'gateway', presetId: 'xcli', baseURL: endpoint, model: 'xcli/text-default', apiKey: '' };
++    const settings = { ai_sources_json: [source], ai_model_routes_json: { chat: { sourceId: source.id, model: source.model } } };
++    assert.throws(() => resolveSettingsLlm(settings), /Token/);
++    source.apiKey = token;
++    assert.equal(resolveSettingsLlm(settings)?.modelName, source.model);
++    assert.deepEqual(resolveLlmInputCapabilities(settings, { baseURL: endpoint, apiKey: token, modelName: source.model, sourceId: source.id }), []);
++    assert.equal(resolveXcliImageRoute({ ...settings, ai_model_routes_json: { image: { sourceId: source.id, model: 'image-alias' } } })?.model, 'image-alias');
++});
++
++test('xcli reads capability and location metadata without sending any prompt', async () => {
++    const original = globalThis.fetch;
++    let requests = 0;
++    globalThis.fetch = async (url, init) => {
++        requests++;
++        assert.equal(String(url), endpoint + '/models');
++        assert.equal(init?.body, undefined);
++        assert.equal(init?.redirect, 'error');
++        assert.equal((init?.headers as any).Authorization, 'Bearer ' + token);
++        return Response.json(catalog(['image.generate']));
++    };
++    try {
++        const listed = await fetchModelsForAiSource({ apiKey: token, baseURL: endpoint, presetId: 'xcli', purpose: 'image' });
++        assert.deepEqual(listed.models[0].capabilities, ['image']);
++        assert.equal(listed.models[0].xcli?.inference_location, 'remote');
++        assert.deepEqual(listed.models[0].inputCapabilities, []);
++        assert.throws(() => requireXcliCapabilities([descriptor(['tool_calls'], false) as any], input.model, ['tool_calls']));
++        assert.equal(requests, 1);
++    } finally { globalThis.fetch = original; }
++});
++
++test('xcli sends exactly one generation request and preserves parameters on upstream failure', async () => {
++    const original = globalThis.fetch;
++    const urls: string[] = [];
++    let fail = false;
++    globalThis.fetch = async (url, init) => {
++        urls.push(String(url));
++        if (String(url).endsWith('/models')) return Response.json(catalog(['image.generate']));
++        assert.equal(String(url), endpoint + '/images/generations');
++        const body = JSON.parse(String(init?.body));
++        assert.equal(body.size, '1x1'); assert.equal(body.n, 1); assert.equal(body.prompt, input.prompt);
++        assert.equal(body.response_format, 'b64_json');
++        return fail ? new Response('PRIVATE_CANARY unsupported parameter size', { status: 400 }) : Response.json({ data: [{ b64_json: png }] });
++    };
++    try {
++        const adapter = getImageProviderAdapter('openai-images', 'xcli');
++        assert.equal((await adapter.generate(input))[0].mimeType, 'image/png');
++        fail = true; urls.length = 0;
++        await assert.rejects(() => adapter.generate(input), error => String(error).includes('HTTP 400') && !String(error).includes('PRIVATE_CANARY'));
++        assert.deepEqual(urls, [endpoint + '/models', endpoint + '/images/generations']);
++    } finally { globalThis.fetch = original; }
++});
++
++test('xcli multi-reference edits require verified capabilities and never fall back to generation', async () => {
++    const original = globalThis.fetch;
++    const urls: string[] = [];
++    let verified = false;
++    globalThis.fetch = async (url, init) => {
++        urls.push(String(url));
++        if (String(url).endsWith('/models')) return Response.json(catalog(['image.edit', 'image.multi_reference'], verified));
++        assert.equal(String(url), endpoint + '/images/edits');
++        assert.ok(init?.body instanceof FormData);
++        assert.equal(init.body.getAll('image[]').length, 2);
++        assert.equal(init.body.get('size'), '1x1');
++        return new Response('private body canary', { status: 502 });
++    };
++    try {
++        const adapter = getImageProviderAdapter('openai-images', 'xcli');
++        const edit = { ...input, generationMode: 'reference-guided' as const, referenceImages: Array(2).fill('data:image/png;base64,' + png) };
++        await assert.rejects(() => adapter.generate(edit), /verified capability/);
++        assert.equal(urls.length, 1);
++        verified = true; urls.length = 0;
++        await assert.rejects(() => adapter.generate(edit), /HTTP 502/);
++        assert.deepEqual(urls, [endpoint + '/models', endpoint + '/images/edits']);
++        urls.length = 0;
++        await assert.rejects(() => adapter.generate({ ...edit, referenceImages: [] }));
++        await assert.rejects(() => adapter.generate({ ...edit, referenceImages: Array(5).fill(edit.referenceImages[0]) }));
++        assert.equal(urls.length, 0);
++    } finally { globalThis.fetch = original; }
++});
++
++test('xcli never downloads image URLs and malformed catalogs cannot authorize requests', async () => {
++    const original = globalThis.fetch;
++    const urls: string[] = [];
++    let badCatalog = false;
++    globalThis.fetch = async (url) => {
++        urls.push(String(url));
++        if (String(url).endsWith('/models')) return Response.json(badCatalog ? { object: 'list', data: [{}] } : catalog(['image.generate']));
++        return Response.json({ data: [{ url: 'http://169.254.169.254/private', b64_json: png }] });
++    };
++    try {
++        await assert.rejects(() => getImageProviderAdapter('openai-images', 'xcli').generate(input), /invalid image/);
++        assert.equal(urls.length, 2);
++        badCatalog = true;
++        await assert.rejects(() => xcliModels(endpoint, token), /catalog is invalid/);
++    } finally { globalThis.fetch = original; }
++});
+--- a/desktop/tests/xhsPublicationIntegration.test.ts
++++ b/desktop/tests/xhsPublicationIntegration.test.ts
+@@ -247,6 +247,7 @@
+             module: entryModule, exports: entryModule.exports, console, process,
+             __getFixtureMetadata: () => ({ contextType:'gardenflow',activeXhsNotePath:first.projectPath }),
+             getSettings: () => ({}), getWorkspacePaths: () => state.paths,
++            isXcliConnection: () => false,
+             resolveModelScopeFromContextType: () => 'gardenflow',
+             normalizeApiBaseUrl: (url: string) => url, Instance: { init: () => {} },
+             loadGardenFlowProfilePromptBundle: async () => null,

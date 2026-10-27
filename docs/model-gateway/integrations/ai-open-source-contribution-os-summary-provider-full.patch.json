@@ -1,0 +1,16 @@
+{
+  "repository": "ai-open-source-contribution-os-summary",
+  "source_head": "73e6341d8aebb72cc7ba4d35150ef301b2185223",
+  "patch_sha256": "51d32e629a21a75c937fbe806ec945d79c316e9e415ae0860eaa0f1ab38253f6",
+  "preimages": {
+    "app/model_settings.py": "2e7a35967f0da3b8364d28a51ed0a4c85b24080e18e172347c664b1ed8e2b81a",
+    "app/model_settings_api.py": "441bc29aed057464efb7b1494863cbdcf52e25f8f648511d7f0e58b643aab8ae",
+    "app/providers/studio.py": "6acb902a43bbc4b8289f6a16a56df7cd998538910ef867527f2dec16b9b0097a",
+    "app/providers/xcli_local.py": null,
+    "app/static/app.js": "46012bdd010e20b89a13dd39edc950b17dc92e1b2cacf39fbadf4039bb51e81b",
+    "app/static/model-settings.js": "bcdc851c6d17db1f17998ffbe9fe76f4c4a3131511c74a4242f731a8cf000e55",
+    "docs/deployment/xcli-local.md": null,
+    "docs/tasks.md": "934e1442d7e8422a5eea4270a9556a2f9aaf4c665aea37650d7295a331315e69",
+    "tests/test_xcli_local.py": null
+  }
+}

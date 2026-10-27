@@ -1,14 +1,13 @@
-# Contribution OS 接入修改清单（未联调）
+# Contribution OS接入状态
 
-只读复核 `app/model_settings.py`、`app/providers/{studio,gateway_http}.py`。PublicHTTPSClient和validate_base_url当前仍拒绝本机/私网；StudioGateway仍验证冻结Profile和短期作用域Token。**保持这些约束**。
+完整补丁`ai-open-source-contribution-os-summary-provider-full.patch`及JSON侧车共9文件。源码已受保护写回，保留用户修改和未跟踪依赖；未提交或推送。全套1403项通过/45项跳过，测试后更新的四个用户模块另经27个测试模块504项通过/28项跳过。
 
-获写权限后的实现清单：
+注册的native xcli_local只接受管理端登记的loopback IP/端口及/v1，设置页固定地址；普通供应商继续公共HTTPS校验。独立加密应用Token引用、冻结Profile、短期任务Token及审计保留。目录核验所需JSON/Tools能力后才发正文；无环境代理、重定向或自动重试。远程权限由应用Token显式授予，要求逐请求同意头的Token会明确拒绝。
 
-1. 独立`xcli_local` connection类型，管理端显式选择受信任安装实例。普通openai_compatible仍使用原有公共HTTPS校验。xcli_local端点只能取管理端注册的loopback IP/端口和/v1；禁止hostname、userinfo、query、redirect和任意路径；密钥来自独立credential_ref，不写入冻结快照。
-2. `ProfileUpstream`仅在provider=xcli_local时选择受控本地transport，其余仍PublicHTTPSClient。目录/请求遵守冻结model alias、max_tokens、JSONSchema/Tools能力验证和超时。保留StudioGateway Token验签、任务/配置绑定、限次、失效检查、审计与模型输出验证。
-3. Worker在容器时127.0.0.1不等于宿主；禁止为兼容而把xcli绑定LAN或对sandbox开放网络。需另行获批、固定目的地址并验证身份的UDS/Host Bridge。当前没有实现或验证容器Bridge，容器端接入阻断。
-4. 参考`examples/model-gateway/client.py::local_base_url`和smoke的Contribution OS画像；只证明Provider HTTP面，不替代原项目签名Token/Profile冻结/沙箱网络测试。
+原生Python客户端结合实际StudioGateway，经临时xcli和假HTTP上游完成JSON Schema联通；短期Token/冻结Profile正常，篡改Profile返回403，不发生legacy fallback。真实模型0次。
 
-可执行离线协议：`go test -race ./tests/model_gateway -run TestDesktopConsumerProfiles/contribution-os -count=1`。严格JSON参数、工具schema/id/arguments和finish_reason由Fake Backend验证。`TestProviderSwitchRequiresExplicitAliasAndNoFailureFallback`验证不在失败后自动换供应商。
+用户明确批准后，镜像xcli-integration-75d9cea7fbde已通过正常权限审核部署到六个现有服务。六服务均运行、重启计数0，API/Model Gateway/Publisher健康；实际HTTP健康和设置接口通过，200个部署源码文件与验收快照一致。原数据卷及127.0.0.1:8000绑定不变，Sandbox Worker网络仍为none，42个数据库结构源码一致。最新回退镜像ID已保存，docs/tasks.md已同步；之前缺少授权的审核拒绝已解决。
 
-原仓库验收待执行：Plan/Review结构化输出、冻结Profile/历史记录兼容、短期Token过期/重复/越权、故障回滚、日志脱敏、非受信任localhost/私网URL仍拒绝、沙箱无法接触xcli、Host Bridge目的地址固定。没有修改线上资源、发布、迁移数据库或替换原有Gateway。
+上述200文件部署后来发现遗漏运行依赖，应用仓库ENV-R08已恢复完整202文件并增加构建导入检查；旧部署覆盖与回退文件只作历史记录，不能覆盖修复。
+
+Docker内native transport继续拒绝；新的独立`xcli_bridge`已在隔离副本实现并通过本机/OrbStack双向TLS合成验收，尚未写回或启用。[桥接补丁与验收](contribution-os-host-bridge.md)、[早前接入验收](../acceptance/closeout-20261026.md)。生产桥接、真实Plan/Review与异平台Gate保持开放。

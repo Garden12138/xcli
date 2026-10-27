@@ -1,0 +1,74 @@
+{
+  "evidence": "localhost-fixture-performance-baseline",
+  "real_model_calls": 0,
+  "platform": "Darwin",
+  "architecture": "arm64",
+  "binary_sha256": "ec0c69098c8a8bbcb2c8f8e7439e12bd8bad32dc6b3accb2075495bc394677b0",
+  "rss_sampling_interval_ms": 50,
+  "cases": {
+    "direct_fixture_small_text": {
+      "requests": 60,
+      "p50_ms": 0.433,
+      "p95_ms": 2.007,
+      "max_ms": 3.333,
+      "concurrency": 1,
+      "request_bytes": 104,
+      "elapsed_seconds": 0.044,
+      "sampled_rss_kib_after": 14256
+    },
+    "gateway_small_text": {
+      "requests": 60,
+      "p50_ms": 2.588,
+      "p95_ms": 3.915,
+      "max_ms": 4.631,
+      "concurrency": 1,
+      "request_bytes": 109,
+      "elapsed_seconds": 0.156,
+      "sampled_rss_kib_after": 18320
+    },
+    "gateway_three_clients": {
+      "requests": 90,
+      "p50_ms": 6.202,
+      "p95_ms": 8.003,
+      "max_ms": 8.965,
+      "concurrency": 3,
+      "request_bytes": 109,
+      "elapsed_seconds": 0.186,
+      "sampled_rss_kib_after": 20272
+    },
+    "gateway_large_text_three_clients": {
+      "requests": 12,
+      "p50_ms": 15.565,
+      "p95_ms": 17.097,
+      "max_ms": 17.097,
+      "concurrency": 3,
+      "request_bytes": 524365,
+      "elapsed_seconds": 0.064,
+      "sampled_rss_kib_after": 29248
+    },
+    "gateway_images_three_clients": {
+      "requests": 6,
+      "p50_ms": 95.147,
+      "p95_ms": 117.38,
+      "max_ms": 117.38,
+      "concurrency": 3,
+      "request_bytes": 129,
+      "elapsed_seconds": 0.215,
+      "sampled_rss_kib_after": 104992
+    }
+  },
+  "idle_rss_kib": 14256,
+  "sampled_peak_rss_kib": 104992,
+  "rss_samples": 13,
+  "image_fixture_bytes": 4196671,
+  "image_fixture_dimensions": "1024x1024",
+  "fixture_requests": {
+    "/v1/chat/completions": 222,
+    "/v1/images/generations": 6
+  },
+  "limitations": [
+    "loopback fixture includes Python client/server overhead",
+    "sampled RSS can miss short peaks",
+    "does not measure real model latency, suspend/resume, or other physical hosts"
+  ]
+}

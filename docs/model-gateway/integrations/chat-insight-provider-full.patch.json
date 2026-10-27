@@ -1,0 +1,22 @@
+{
+  "repository": "chat-insight",
+  "source_head": "b20ad1e276f3b5566585be50f96549171dbf107c",
+  "patch_sha256": "dd66dc0455834257506342b555bdbab5ab54076a4b4c91cc8d68758a08ece603",
+  "preimages": {
+    "README.md": "2286fad8d935c9cc92c0b61c6f0c7fd51135e98b65f7d679eb4d59ccb57e7284",
+    "src-tauri/src/ai/client.rs": "0c43e483b1e49f0bfc76f79a9a7d18061aed4d01ed23525dd8f7c4bc1ee718bc",
+    "src-tauri/src/ai/commands.rs": "f67c624a2a102d8e61b8ef97625357673000f0151af890241ad6465320b1c2f0",
+    "src-tauri/src/ai/gateway.rs": null,
+    "src-tauri/src/ai/indexer.rs": "af5a9f7f74c9d7cdc6211de7276c53c58a51ee90f9fae31284e243193f6ef082",
+    "src-tauri/src/ai/mod.rs": "9f4865905f52437b24dcbcd8b7c203d0922b9feb912dd2c9d349174f3ede6bd3",
+    "src-tauri/src/ai/retrieval.rs": "06d767f0166b577df5db321f33a9abdf0e9c0ade9da1882522e94ba80d22ce42",
+    "src-tauri/src/ai/settings.rs": "70e619d7dafe6e8c7e392a8d0f5574ab706eb740efa9261809ef7c91d0290648",
+    "src-tauri/src/lib.rs": "cac07d2de1fd8dc895c12dd497686c76c2e96a7405e07615b90613569fae3a5d",
+    "src/aiDefaults.ts": "963b453f1a4f4dfbef974eb0eb07931f1e59844ea810b844a27d22f520a03291",
+    "src/api.ts": "f6816c0d138aaaff581dabf6647bc5a18e78be14873bdfb0bbf7623b5e8e6bf5",
+    "src/components/Ai.test.tsx": "53d616520560925953717368fa706bd89bf2a1ee5eeb22bf84ae282855031894",
+    "src/components/AiProvider.tsx": "b1407458deac0ab39964cc358b4f8a1c68d5a71c468a76b7f1349fa31d0cfb27",
+    "src/components/AiSettings.tsx": "54f365e9aec4f8d1be8662b5d2359c92bc69fd8093e9229e370e64a457c398d2",
+    "src/types.ts": "f523c4d059e990e4c88ec24af5845d9100a9e301a7766e87d4f1fd6813870235"
+  }
+}

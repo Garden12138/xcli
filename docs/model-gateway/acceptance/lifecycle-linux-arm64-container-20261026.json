@@ -1,0 +1,18 @@
+{
+  "evidence": "offline-built-binary",
+  "application_e2e": "unverified",
+  "checks": [
+    "concurrent start is a single healthy instance; port 0 discovered",
+    "real HTTP model request with private token; safe audit",
+    "token rotation and live revocation",
+    "changed routes require an explicit stop/restart",
+    "stop/idempotent stop/restart/stale stop isolation",
+    "foreign port conflict is explicit; no new active instance"
+  ],
+  "upstream_fixture_calls": 1,
+  "platform": "Linux",
+  "architecture": "arm64",
+  "environment": "isolated Docker container on macOS OrbStack",
+  "physical_target_machine_acceptance": false,
+  "network": "none"
+}

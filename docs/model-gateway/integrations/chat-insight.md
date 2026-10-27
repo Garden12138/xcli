@@ -1,17 +1,13 @@
-# Chat Insight 接入修改清单（发布阻断仍在）
+# Chat Insight 接入状态
 
-只读复核 `src-tauri/src/ai/client.rs` 与 `ai/settings.rs`：现有 `is_local()` 仍只看URL、`auto_scan_commitments` 仍按本地endpoint启用；本轮没有写入应用、读取聊天数据库或调用真实模型。
+完整补丁：[chat-insight-provider-full.patch](chat-insight-provider-full.patch)及同名JSON侧车，共15文件。Rust/React实现已在隔离副本验证，随后经权限审核通过并受保护写回15个文件，逐字节核对与测试副本一致。隔离副本可执行文件已构建，但未替换安装或重启用户桌面程序，正式云路由仍需在实际修复部署后启用。
 
-接入顺序与精确修改点：
+已移植xcli provider、严格本机端点和独立Token切换检查。每次发送前授权读取/models，分别核对聊天/向量模型的真实推理位置；remote/unknown/缺失或非法目录不能绕过云端授权及本次确认，已确认请求才携带网关同意头。xcli关闭后台自动扫描，UI不以loopback声称本机推理。保留原SSE/取消及直连provider，xcli截断流不报成功。
 
-1. `ai/settings.rs::AiSettings` 增加 provider=`xcli` 和受信任端口配置；Keyring存独立Token，不使用用户任意局域网地址。`is_local` 继续表示传输地址，新增每模型`effective_cloud`表示推理位置；两者不能混用。
-2. `ai/client.rs::OpenAiCompatClient` 授权读取 `/models`，分别解析当前chat/embedding模型的`xcli.inference_location`。metadata缺失、目录失败、模型缺失或位置unknown均默认cloud；在此之前不创建任何携带聊天正文的请求。
-3. `settings.rs` 的allow_cloud检查、敏感原文确认与后台扫描判断，全部改用effective_cloud。切换模型/路由需重新检查，禁止沿用endpoint的旧判断；不要自动勾选云授权。仅用户已同意该请求时附`X-Xcli-Remote-Consent: allow`。为`chat-insight`签发的网关Token强制逐请求同意，网关remote/unknown路由无头即拒绝，且拒绝发生在上游调用前。
-4. embedding索引保存model alias、dimensions、index_version、index_fingerprint；任一变化要求显式重建，不自动迁移/覆盖旧索引。网关响应的xcli标识与目录不一致时丢弃结果，处理请求间配置变化。
-5. 保留现有SSE消费/取消和原有直连provider。embedding缺失503要明确提示；不能生成替代向量。不要以本机网关URL让后台聊天数据绕过确认。
+Embedding身份包括endpoint、alias、dimensions、index_version和index_fingerprint。首次接入或身份变化要求显式重建，旧索引不会自动迁移；响应身份不符丢弃结果。敏感配置沿用Chat Insight原有私有文件存储，没有改读其他应用Keyring或登录信息。
 
-可执行参考：`examples/model-gateway/client.py` 包含严格loopback端点、目录授权、有效推理位置、索引身份、非流/SSE/Embedding适配；是独立参考，**尚未移植到Chat Insight Rust/React流程**。
+Rust96项通过、2项真实模型评估忽略；React56项、build、lint通过。测试覆盖拒绝授权不上传正文、目录失败、显式同意、索引身份切换及UI。真实连接、批量索引、检索/问答、确认/拒绝和后台流程仍需部署后验收。
 
-离线验收：`python3 -m unittest discover -s tests/model_gateway -v` 与 `go test -race ./internal/modelgateway -run 'TestEmbedding'`。覆盖拒绝授权/未知位置不调用上游、批量顺序/维度、base64向量、旧索引身份变化、缺少向量服务。只使用合成文本。
+操作步骤见[补丁入口](README.md)，证据见[续轮验收](../acceptance/integrations-20261025.md)。
 
-真实Gate未执行：应用连接、真实索引/知识检索/SSE取消、敏感确认/拒绝与后台扫描、实际模型维度切换。需要对应仓库写权限并完成应用回归后才可正式接入云端xcli；本轮不宣称修复已部署。
+2026-10-26：Rust原生客户端经已构建xcli和假上游完成SSE、取消、向量身份及云同意门禁联通。真实模型请求0次，应用UI/真实索引仍未验收；见[最新记录](../acceptance/closeout-20261026.md)。

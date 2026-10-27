@@ -1,0 +1,189 @@
+{
+  "source_digest": "75d9cea7fbde198e59543738a7f4090b396ff40453b89d7e4bd294cf88120d24",
+  "images": {
+    "api": "contribos-local:xcli-integration-75d9cea7fbde",
+    "worker": "contribos-local:xcli-integration-75d9cea7fbde",
+    "provider-worker": "contribos-local:xcli-integration-75d9cea7fbde",
+    "model-gateway": "contribos-local:xcli-integration-75d9cea7fbde",
+    "publisher": "contribos-publisher:xcli-integration-75d9cea7fbde",
+    "sandbox-worker": "contribos-sandbox-worker:xcli-integration-75d9cea7fbde"
+  },
+  "state": "deployed-and-healthy",
+  "real_model_requests_created": 0,
+  "schema_code_files_checked": 42,
+  "schema_code_unchanged": true,
+  "candidate_built": true,
+  "candidate_startup_health": "passed",
+  "candidate_settings_schema": "passed",
+  "container_bridge_blocked": true,
+  "latest_related_tests": {
+    "passed": 504,
+    "skipped": 28
+  },
+  "deployment": "completed-after-explicit-user-approval",
+  "previous_images_at_approved_deployment": [
+    "\"/contribos-local-api-1\" \"sha256:8161aec93c93a3edc8e65e32c8bcc9edfa2f8e8fea4620c71c127a60d713b8c7\" \"contribos-local:0.1.0\" \"running\"",
+    "\"/contribos-local-worker-1\" \"sha256:8161aec93c93a3edc8e65e32c8bcc9edfa2f8e8fea4620c71c127a60d713b8c7\" \"contribos-local:0.1.0\" \"running\"",
+    "\"/contribos-local-provider-worker-1\" \"sha256:8161aec93c93a3edc8e65e32c8bcc9edfa2f8e8fea4620c71c127a60d713b8c7\" \"contribos-local:0.1.0\" \"running\"",
+    "\"/contribos-model-gateway\" \"sha256:8161aec93c93a3edc8e65e32c8bcc9edfa2f8e8fea4620c71c127a60d713b8c7\" \"contribos-local:0.1.0\" \"running\"",
+    "\"/contribos-local-publisher-1\" \"sha256:4665f0685b1e93d0f247140f0ae6ceae6c73da876e4ab2653aac0d22db586243\" \"contribos-publisher:0.1.0\" \"running\"",
+    "\"/contribos-local-sandbox-worker-1\" \"sha256:a187a3cf402d0266a99979d7a1be05cbabe59948a2ea3acf360bc5e5694ea6c2\" \"contribos-sandbox-worker:0.1.0\" \"running\""
+  ],
+  "approved_candidate_images": [
+    "[contribos-local:xcli-integration-75d9cea7fbde] sha256:12b883807bca8ca74da460143bbf87d63cc53ea23aeaac4917e573ca2cb392be linux/arm64",
+    "[contribos-publisher:xcli-integration-75d9cea7fbde] sha256:b108e155a2e535565a751dc40b21fe9080f7973ef680eb5ebf939651fce8c722 linux/arm64",
+    "[contribos-sandbox-worker:xcli-integration-75d9cea7fbde] sha256:95a47a6cdc29a2829b9c545d2eb5ce7038dbc9b749e4eecfa819fe7cdfa656ff linux/arm64"
+  ],
+  "rollout_authorization": "user explicitly confirmed: \u786e\u8ba4\uff0c\u7ee7\u7eed",
+  "schema_code_files_checked_at_rollout": 42,
+  "deployment_performed": true,
+  "deployed_at": "2026-10-26T02:18:18.753220+00:00",
+  "services": {
+    "api": {
+      "image": "sha256:12b883807bca8ca74da460143bbf87d63cc53ea23aeaac4917e573ca2cb392be",
+      "running": true,
+      "restarting": false,
+      "restart_count": 0,
+      "health": "healthy"
+    },
+    "worker": {
+      "image": "sha256:12b883807bca8ca74da460143bbf87d63cc53ea23aeaac4917e573ca2cb392be",
+      "running": true,
+      "restarting": false,
+      "restart_count": 0,
+      "health": "none"
+    },
+    "provider-worker": {
+      "image": "sha256:12b883807bca8ca74da460143bbf87d63cc53ea23aeaac4917e573ca2cb392be",
+      "running": true,
+      "restarting": false,
+      "restart_count": 0,
+      "health": "none"
+    },
+    "model-gateway": {
+      "image": "sha256:12b883807bca8ca74da460143bbf87d63cc53ea23aeaac4917e573ca2cb392be",
+      "running": true,
+      "restarting": false,
+      "restart_count": 0,
+      "health": "healthy"
+    },
+    "publisher": {
+      "image": "sha256:b108e155a2e535565a751dc40b21fe9080f7973ef680eb5ebf939651fce8c722",
+      "running": true,
+      "restarting": false,
+      "restart_count": 0,
+      "health": "healthy"
+    },
+    "sandbox-worker": {
+      "image": "sha256:95a47a6cdc29a2829b9c545d2eb5ce7038dbc9b749e4eecfa819fe7cdfa656ff",
+      "running": true,
+      "restarting": false,
+      "restart_count": 0,
+      "health": "none"
+    }
+  },
+  "volumes_unchanged": true,
+  "api_health": {
+    "status": "ok",
+    "database": "ok"
+  },
+  "settings_schema": "passed",
+  "deployed_source_files_verified": 200,
+  "api_binding": "127.0.0.1:8000",
+  "sandbox_network": "none",
+  "approval_review_history": {
+    "initial_rejection_reason": "replacement/restart of six existing services and shared deployment state requires explicit user authorization",
+    "resolution": "explicit user confirmation followed by normal permission review",
+    "current_status": "approved-and-executed"
+  },
+  "rollback_images_at_deployment": {
+    "api": {
+      "image_id": "sha256:8161aec93c93a3edc8e65e32c8bcc9edfa2f8e8fea4620c71c127a60d713b8c7",
+      "previous_reference": "contribos-local:0.1.0"
+    },
+    "worker": {
+      "image_id": "sha256:8161aec93c93a3edc8e65e32c8bcc9edfa2f8e8fea4620c71c127a60d713b8c7",
+      "previous_reference": "contribos-local:0.1.0"
+    },
+    "provider-worker": {
+      "image_id": "sha256:8161aec93c93a3edc8e65e32c8bcc9edfa2f8e8fea4620c71c127a60d713b8c7",
+      "previous_reference": "contribos-local:0.1.0"
+    },
+    "model-gateway": {
+      "image_id": "sha256:8161aec93c93a3edc8e65e32c8bcc9edfa2f8e8fea4620c71c127a60d713b8c7",
+      "previous_reference": "contribos-local:0.1.0"
+    },
+    "publisher": {
+      "image_id": "sha256:4665f0685b1e93d0f247140f0ae6ceae6c73da876e4ab2653aac0d22db586243",
+      "previous_reference": "contribos-publisher:0.1.0"
+    },
+    "sandbox-worker": {
+      "image_id": "sha256:a187a3cf402d0266a99979d7a1be05cbabe59948a2ea3acf360bc5e5694ea6c2",
+      "previous_reference": "contribos-sandbox-worker:0.1.0"
+    }
+  },
+  "durable_rollout_override": "docs/model-gateway/acceptance/contribution-rollout-20261026.compose.json",
+  "durable_rollback_override": "docs/model-gateway/acceptance/contribution-rollback-20261026.compose.json",
+  "previous_images_at_initial_preparation": [
+    "/contribos-local-api-1 sha256:7b7f009e2dc9c73168881aae99dc2a83a3191a99ae81968d038ad231b8307fab contribos-local:0.1.0",
+    "/contribos-local-worker-1 sha256:7b7f009e2dc9c73168881aae99dc2a83a3191a99ae81968d038ad231b8307fab contribos-local:0.1.0",
+    "/contribos-local-provider-worker-1 sha256:7b7f009e2dc9c73168881aae99dc2a83a3191a99ae81968d038ad231b8307fab contribos-local:0.1.0",
+    "/contribos-model-gateway sha256:7b7f009e2dc9c73168881aae99dc2a83a3191a99ae81968d038ad231b8307fab contribos-local:0.1.0",
+    "/contribos-local-publisher-1 sha256:ce70462327ba734f1f6d26f44ab181508b839a209f72529e7fd080ed72d6077b contribos-publisher:0.1.0",
+    "/contribos-local-sandbox-worker-1 sha256:9ee661d474778917845f4d0dfaa0a5e75fc45db426c117898d7c54c6fc2b09d5 contribos-sandbox-worker:0.1.0"
+  ],
+  "last_observed_at": "2026-10-26T06:02:53.876514+00:00",
+  "last_observed_services": {
+    "api": {
+      "image": "sha256:12b883807bca8ca74da460143bbf87d63cc53ea23aeaac4917e573ca2cb392be",
+      "running": true,
+      "restarting": false,
+      "restart_count": 0,
+      "health": "healthy"
+    },
+    "worker": {
+      "image": "sha256:12b883807bca8ca74da460143bbf87d63cc53ea23aeaac4917e573ca2cb392be",
+      "running": true,
+      "restarting": false,
+      "restart_count": 0,
+      "health": "none"
+    },
+    "provider-worker": {
+      "image": "sha256:12b883807bca8ca74da460143bbf87d63cc53ea23aeaac4917e573ca2cb392be",
+      "running": true,
+      "restarting": false,
+      "restart_count": 0,
+      "health": "none"
+    },
+    "model-gateway": {
+      "image": "sha256:12b883807bca8ca74da460143bbf87d63cc53ea23aeaac4917e573ca2cb392be",
+      "running": true,
+      "restarting": false,
+      "restart_count": 0,
+      "health": "healthy"
+    },
+    "publisher": {
+      "image": "sha256:b108e155a2e535565a751dc40b21fe9080f7973ef680eb5ebf939651fce8c722",
+      "running": true,
+      "restarting": false,
+      "restart_count": 0,
+      "health": "healthy"
+    },
+    "sandbox-worker": {
+      "image": "sha256:95a47a6cdc29a2829b9c545d2eb5ce7038dbc9b749e4eecfa819fe7cdfa656ff",
+      "running": true,
+      "restarting": false,
+      "restart_count": 0,
+      "health": "none"
+    }
+  },
+  "image_drift_since_deployment": [],
+  "stable_verified_at": "2026-10-26T06:02:53.876514+00:00",
+  "stable_observation_seconds": 13475,
+  "superseded_by": {
+    "record": "Contribution OS docs/tasks.md ENV-R08",
+    "reason": "The 200-file deployment snapshot omitted an internal runtime dependency; subsequent repair restored the complete 202-file runtime and build-time import checking.",
+    "historical_only": true,
+    "rollback_requires_preserving_repair": true
+  }
+}

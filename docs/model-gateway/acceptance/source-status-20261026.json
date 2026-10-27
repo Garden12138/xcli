@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-26",
+  "real_model_requests_created": 0,
+  "deployment_performed": true,
+  "applications": {
+    "worklog": {
+      "source_state": "applied",
+      "current_head": "861156e987f97ad52b59daae8cd7ec8b9f02fea1",
+      "patch_source_head": "861156e987f97ad52b59daae8cd7ec8b9f02fea1",
+      "modified_files": 8,
+      "patch_sha256": "af7ab3f0beba399b3e3b17c0dc23dc2a475e9ef74e206545704c556eecbadeab",
+      "modified_file_drift": [],
+      "reverse_apply_check": true
+    },
+    "chat-insight": {
+      "source_state": "applied",
+      "current_head": "b20ad1e276f3b5566585be50f96549171dbf107c",
+      "patch_source_head": "b20ad1e276f3b5566585be50f96549171dbf107c",
+      "modified_files": 15,
+      "patch_sha256": "dd66dc0455834257506342b555bdbab5ab54076a4b4c91cc8d68758a08ece603",
+      "modified_file_drift": [],
+      "reverse_apply_check": true
+    },
+    "garden-flow": {
+      "source_state": "applied",
+      "current_head": "7539d51856a286b1292d04ea70bc887101b42adf",
+      "patch_source_head": "907ba9734a7af74033153f01d00579ddbb4ebd44",
+      "modified_files": 14,
+      "patch_sha256": "baae751d1946de02f36b82b5d973cfd7eecd3daeb85bd509cd9faea8fb30634a",
+      "modified_file_drift": [],
+      "reverse_apply_check": true
+    },
+    "ai-open-source-contribution-os-summary": {
+      "source_state": "applied",
+      "current_head": "73e6341d8aebb72cc7ba4d35150ef301b2185223",
+      "patch_source_head": "73e6341d8aebb72cc7ba4d35150ef301b2185223",
+      "modified_files": 9,
+      "patch_sha256": "51d32e629a21a75c937fbe806ec945d79c316e9e415ae0860eaa0f1ab38253f6",
+      "modified_file_drift": [],
+      "reverse_apply_check": true
+    }
+  },
+  "contribution_deployment": "completed-after-explicit-user-approval"
+}

@@ -1,6 +1,6 @@
 # xcli
 
-源码新增独立的 **Model Gateway 开发候选**：`xcli model serve/start/status/stop`，提供本机鉴权的文本/SSE、能力门控图片和Embedding转发。见[配置与部署](docs/model-gateway/README.md)和[阶段记录/未完成验收](docs/model-gateway/PROGRESS.md)。真实模型、四应用正式联调和异平台实机Gate仍开放；不复用原生CLI会员登录为模型API。
+源码新增独立的 **Model Gateway 开发候选**：`xcli model serve/start/status/stop`，提供本机鉴权的文本/SSE、能力门控图片和Embedding转发。见[配置与部署](docs/model-gateway/README.md)、[阶段记录/未完成验收](docs/model-gateway/PROGRESS.md)及[真实应用与实机验收交接](docs/model-gateway/REAL_ACCEPTANCE.md)。真实模型、四应用正式联调和异平台实机Gate仍开放；不复用原生CLI会员登录为模型API。
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 

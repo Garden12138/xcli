@@ -1,0 +1,54 @@
+{
+  "evidence": "synthetic-mtls-host-bridge",
+  "production_enabled": false,
+  "real_model_calls": 0,
+  "host": {
+    "system": "Darwin",
+    "machine": "arm64"
+  },
+  "binary_sha256": "c18958f28e39f641def067e0c62203ef96e5bd4758860f1a45adce23f408c30b",
+  "checks": {
+    "native": {
+      "frozen_profile": true,
+      "mutual_tls": true,
+      "json_schema": true,
+      "instance_bound": true,
+      "tampered_profile_rejected": true,
+      "task_token_replay_rejected": true,
+      "expired_task_token_rejected": true,
+      "rotation_invalidates_old_profile": true,
+      "certificate_rotation_invalidates_old_profile": true,
+      "independent_application_token_enforced": true
+    },
+    "docker": {
+      "frozen_profile": true,
+      "mutual_tls": true,
+      "json_schema": true,
+      "instance_bound": true,
+      "tampered_profile_rejected": true,
+      "task_token_replay_rejected": true,
+      "expired_task_token_rejected": true,
+      "rotation_invalidates_old_profile": true,
+      "certificate_rotation_invalidates_old_profile": true,
+      "independent_application_token_enforced": true
+    },
+    "docker_unlisted_client": {
+      "unlisted_client_rejected": true
+    },
+    "no_unapproved_calls": true,
+    "no_audit_token_leak": true
+  },
+  "source": {
+    "files": 204,
+    "sha256": "0bd202949bdfc0a046cea2ecb1113e888ff1a7a754aaa87f62d8d21cc5aa571c",
+    "internal_imports_complete": true
+  },
+  "docker_image": "sha256:92de97fa19f25ed054beb842381aa1465950a4b1b4c948e2bc241a82d7de047f",
+  "docker_environment": "linux aarch64 OrbStack",
+  "synthetic_inference_calls": 4,
+  "limitations": [
+    "No production certificates installed or bridge activated",
+    "No real model calls",
+    "Linux amd64 physical Docker and other OS acceptance remain unverified"
+  ]
+}

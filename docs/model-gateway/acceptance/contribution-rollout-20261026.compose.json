@@ -1,0 +1,26 @@
+{
+  "x-historical-only": {
+    "superseded_by": "Contribution OS ENV-R08 complete 202-file runtime repair",
+    "do_not_execute": true
+  },
+  "services": {
+    "api": {
+      "image": "contribos-local:xcli-integration-75d9cea7fbde"
+    },
+    "worker": {
+      "image": "contribos-local:xcli-integration-75d9cea7fbde"
+    },
+    "provider-worker": {
+      "image": "contribos-local:xcli-integration-75d9cea7fbde"
+    },
+    "model-gateway": {
+      "image": "contribos-local:xcli-integration-75d9cea7fbde"
+    },
+    "publisher": {
+      "image": "contribos-publisher:xcli-integration-75d9cea7fbde"
+    },
+    "sandbox-worker": {
+      "image": "contribos-sandbox-worker:xcli-integration-75d9cea7fbde"
+    }
+  }
+}

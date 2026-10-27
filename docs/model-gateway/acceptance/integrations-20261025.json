@@ -1,0 +1,72 @@
+{
+  "date": "2026-10-25",
+  "real_model_calls": 0,
+  "deployment_performed": false,
+  "repositories": {
+    "worklog": {
+      "source_head": "861156e987f97ad52b59daae8cd7ec8b9f02fea1",
+      "patch_sha256": "af7ab3f0beba399b3e3b17c0dc23dc2a475e9ef74e206545704c556eecbadeab",
+      "files": 8,
+      "source_state": "applied",
+      "applied_this_round": false,
+      "source_drift": [],
+      "git_apply_check": true
+    },
+    "chat-insight": {
+      "source_head": "b20ad1e276f3b5566585be50f96549171dbf107c",
+      "patch_sha256": "dd66dc0455834257506342b555bdbab5ab54076a4b4c91cc8d68758a08ece603",
+      "files": 15,
+      "source_state": "applied",
+      "applied_this_round": true,
+      "source_drift": [],
+      "git_apply_check": true
+    },
+    "garden-flow": {
+      "source_head": "907ba9734a7af74033153f01d00579ddbb4ebd44",
+      "patch_sha256": "00cfce6da90ed999d5dfd34897b450b05fbaccf3d2667f0510d911eb9a9dbcff",
+      "files": 14,
+      "source_state": "prepared",
+      "applied_this_round": false,
+      "source_drift": [
+        "desktop/src/pages/Settings.tsx"
+      ],
+      "git_apply_check": true
+    },
+    "ai-open-source-contribution-os-summary": {
+      "source_head": "73e6341d8aebb72cc7ba4d35150ef301b2185223",
+      "patch_sha256": "2b559026fb0aa00a9ecc53e9c7b2527ab749d5fb14a2103193d61b854a4fa8db",
+      "files": 9,
+      "source_state": "prepared",
+      "applied_this_round": false,
+      "source_drift": [],
+      "git_apply_check": true
+    }
+  },
+  "checks": {
+    "worklog": {
+      "rust_passed": 40,
+      "frontend_build": "passed"
+    },
+    "chat-insight": {
+      "rust_passed": 96,
+      "real_model_evaluations_ignored": 2,
+      "react_passed": 56,
+      "build": "passed",
+      "lint": "passed"
+    },
+    "garden-flow": {
+      "previous_snapshot_passed": 763,
+      "refreshed_snapshot_passed": 762,
+      "refreshed_snapshot_failed": 1,
+      "xcli_related_passed": 26,
+      "typechecks": "baseline_failures_reproduced_without_integration"
+    },
+    "contribution-os": {
+      "passed": 56,
+      "real_docker_acceptance_skipped": 1
+    },
+    "workspace_and_reference_client": {
+      "passed": 8
+    }
+  }
+}

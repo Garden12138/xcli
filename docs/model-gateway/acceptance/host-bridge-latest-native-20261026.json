@@ -1,0 +1,37 @@
+{
+  "evidence": "synthetic-mtls-host-bridge",
+  "production_enabled": false,
+  "real_model_calls": 0,
+  "host": {
+    "system": "Darwin",
+    "machine": "arm64"
+  },
+  "binary_sha256": "c18958f28e39f641def067e0c62203ef96e5bd4758860f1a45adce23f408c30b",
+  "checks": {
+    "native": {
+      "frozen_profile": true,
+      "mutual_tls": true,
+      "json_schema": true,
+      "instance_bound": true,
+      "tampered_profile_rejected": true,
+      "task_token_replay_rejected": true,
+      "expired_task_token_rejected": true,
+      "rotation_invalidates_old_profile": true,
+      "certificate_rotation_invalidates_old_profile": true,
+      "independent_application_token_enforced": true
+    },
+    "no_unapproved_calls": true,
+    "no_audit_token_leak": true
+  },
+  "source": {
+    "files": 204,
+    "sha256": "c0209efe5c61c8c52d8cecbaa6b41112583e43929b0f7947efc36c9ac20a4947",
+    "internal_imports_complete": true
+  },
+  "synthetic_inference_calls": 2,
+  "limitations": [
+    "No production certificates installed or bridge activated",
+    "No real model calls",
+    "Linux amd64 physical Docker and other OS acceptance remain unverified"
+  ]
+}

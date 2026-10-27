@@ -1,0 +1,21 @@
+{
+  "repository": "garden-flow",
+  "source_head": "907ba9734a7af74033153f01d00579ddbb4ebd44",
+  "patch_sha256": "baae751d1946de02f36b82b5d973cfd7eecd3daeb85bd509cd9faea8fb30634a",
+  "preimages": {
+    "Docs/AI_PROVIDERS.md": "5e138af9cd739ac5891f992e224d1fd5f75dbe8cf952fd6aa1c51eb8ce9f9c3d",
+    "desktop/electron/core/aiModelRouteResolver.ts": "7e49ec023acf3ab3661fc5fd959b32567d37a7f014a718e21a9026514ead9f15",
+    "desktop/electron/core/aiSourceService.ts": "7e9ebfea655703221068f59cc90b28ba48cd2ef8d99ffb3f9f250d4afc77f045",
+    "desktop/electron/core/imageGenerationService.ts": "9ac762187c63fb211377aeeeb044ac87cddda25c47633b2430283ae2c07f5f9c",
+    "desktop/electron/core/imageProviderAdapters.ts": "816ff78b1f932798dd528ed108e5a7a518e3e890ff7be6ea89d9e66b1ec8ffcf",
+    "desktop/electron/core/xcliGateway.ts": null,
+    "desktop/electron/pi/PiChatService.ts": "8f269a8c583d1d182ce22de9fe3085d53545b6d52b82854a37a65ff4ed8911bd",
+    "desktop/electron/pi/agent.ts": "741bb30570ff6e59552975325459ed7667ed3e077d89f1d747c0ef5a5531475f",
+    "desktop/src/config/aiSources.ts": "febee7d0801af293211895c8008c09d502a1ed632dd78bdb5f9b51f8da5f9542",
+    "desktop/src/features/media-generation/audioOptions.ts": "61b4fdb87e90d2ef66f93bf42070ac1428ee86b00892aa67478eb2a437c90fd0",
+    "desktop/src/pages/Settings.tsx": "8a9e36cd92f55bbb5ae48d8b8fc4b0649b2252c14ca10dc436986054bbe81650",
+    "desktop/src/pages/settings/shared.tsx": "d4a495685927b1e68637e801872c2783ae6a1be0625df776230917d101637e76",
+    "desktop/tests/xcliGateway.test.ts": null,
+    "desktop/tests/xhsPublicationIntegration.test.ts": "4d66f6b0999f87ba17dfdc3933253448b9f8cdebf260a8d41325b70eb271e635"
+  }
+}
