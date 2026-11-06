@@ -1,0 +1,20 @@
+{
+  "repository": "ai-open-source-contribution-os-summary",
+  "source_head": "4328e4a02cd1b4ecff2492b4b4fc15ef238087f1",
+  "patch_sha256": "dab47066b7c0a9938e6306629b927dfa1559d29762cea899107aaab232acd8ca",
+  "preimages": {
+    "app/cli.py": "aebb52f61238b1b6d85635840afe269a8581a3d45b45c56ab8d04ce079684df3",
+    "app/model_settings.py": "01dee7640d6834b2d9104a5a3d8539586e6a709c89f59a528ee1e79d6cc66534",
+    "app/model_settings_api.py": "78cf155c707406a0921fcea99fa09e03c6b39cafcd1e14bcb8457d79b65686c2",
+    "app/providers/studio.py": "40c19b0f98ed3eb332a3c4ab6dc27636ee9be2cc32cfeb2334d80c4982c926fe",
+    "app/providers/xcli_bridge.py": null,
+    "app/providers/xcli_bridge_relay.py": null,
+    "app/schemas.py": "13c3aad0f60aab1cebe47b9bf0b46a9c3c065f9bc75a4053f00b126e443a8ca5",
+    "app/static/app.js": "604a71a1705c10c56e1f4ee38847ffd09f338b3aee41263d3489cd1356e3eecb",
+    "app/static/model-settings.js": "4c5e475e4d44d418146a47bc9fd652bb87eefe9fe1957b5f0fcbb97e5ee07161",
+    "docs/deployment/xcli-host-bridge.md": null,
+    "docs/tasks.md": "0839602c2e3e73ed8450096ae563b2e0d44fa9d7f9193ec3a1374a81fce76ff7",
+    "tests/test_xcli_bridge.py": null,
+    "tests/xcli_bridge_fixtures.py": null
+  }
+}

@@ -66,3 +66,11 @@
 可复验入口：`tests/model_gateway/native_consumers.py`、`performance.py`、`lifecycle.py`；完整命令与证据边界见acceptance/closeout-20261026.md。全部真实Gate满足后才可改为整体完成。CLI会员登录桥接、图片URL下载、Responses/音视频、任意LAN访问均不在当前支持声明中。
 
 2026-10-26桥接续轮：新增`host_bridge.py`和冻结配置探针，204个应用文件的内部导入完整；根仓库Python工具9项通过。最新完整回归结果见`acceptance/host-bridge-regression-20261026.json`。
+
+## 2026-10-30 中断恢复与当前源码复核
+
+- xcli恢复点为`6dfb4f3`，恢复时工作区干净；四应用基础provider补丁均已交付，禁止重复应用。
+- Contribution OS已从早期`73e6341`推进到`fc7ee29`，当前工作区干净，包含Agent Runtime V2与环境引擎改动。旧桥接补丁的HEAD/前置摘要不能直接用于写回。
+- 重新创建只含源码的隔离快照`/tmp/xcli-gateway-integration-contribution-os-20261030`，内部Python导入完整；不复制真实凭据、数据库或`.env`，不变更现有部署。
+- 10月28日隔离回归104项因沙箱禁止loopback监听而出现21个setup错误和3项失败，不记为通过；沙箱外复跑请求在服务重启时中断。下一步在10月30日最新源码合并桥接，运行离线回归，更新13文件补丁与防漂移清单；需要loopback权限时再次申请精确测试命令。
+- 整体真实验收、生产证书登记/部署和目标物理机Gate保持开放。没有真实计费调用、生产信任启用或外部发布。
