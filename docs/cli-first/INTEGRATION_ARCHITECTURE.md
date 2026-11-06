@@ -2,6 +2,8 @@
 
 **本文是设计，不是已实现接口。** 当前 xcli 没有本文中的 HTTP Agent 路由、NativeAgentBackend、媒体 Artifact 服务或原生 CLI 模型 alias。Gate B BLOCKED，四应用不能把现有 Model Gateway endpoint 当作 CLI 能力入口。依据见[报告](ACCEPTANCE_REPORT.md)和[官方资料](OFFICIAL_SOURCES.md)。
 
+2026-11-06 后续已形成[Native Agent Gateway V1 完整 SPEC](../native-agent-gateway/README.md)。本文保留为验收阶段架构草案；路由、字段、状态及续接细节以新 SPEC 为准，尤其改为逻辑 Session 创建与新 Task 续接。新 SPEC 仍只设计，Gate B 保持 BLOCKED。
+
 ## 本轮真实结果对设计的约束
 
 本轮实际 9 次原生 CLI 启动：Codex、Antigravity 的文本、同 Session、生成和参考编辑通过；Cursor 首次文本因临时项目 trust BLOCKED，未重试。详见[验收报告](ACCEPTANCE_REPORT.md)。这些结果只证明现有 Agent Runtime 的本地任务路径，没有 HTTP→CLI 链路、应用接入或 Embedding 证据。

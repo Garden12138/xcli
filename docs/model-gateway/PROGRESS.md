@@ -1,5 +1,7 @@
 # Model Gateway 开发进度
 
+2026-11-06 设计交接：[Native Agent Gateway V1 SPEC](../native-agent-gateway/README.md)基于本轮真实 CLI 验收与当前源码完成，验收证据/Smoke 修复独立提交 `864a6b1`。新 Agent 服务尚未实现，不增加 Native CLI Model Backend；原 Gate B 继续 BLOCKED，四应用原生接入仍 Planned/BLOCKED。本阶段无新模型调用、四应用写入、部署、发布或 Push；下文授权/部署/测试均保留各自历史范围。
+
 基线：`8833d241c03c4a5040297f06cfa88540511dcce6`；2026-10-24；macOS arm64，Go 1.26.4。初始工作区干净。完整阅读 UPGRADE_PLAN.md；审查 README、R0–R3、配置、命令、Agent/Task/Runtime、MCP 与现有测试。仓库及父目录无 AGENTS.md。
 
 ## 状态与恢复入口
