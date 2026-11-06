@@ -1,0 +1,207 @@
+xcli CLI-first phase1: 2026-11-06T08:04:02Z
+repo: $REPO
+evidence directory: $TMP/private (private, not automatically uploaded)
+HEAD: f529e04
+Git modified/tracked status count: 1
+Go version: go version go1.26.4 darwin/arm64
+--- Native CLI installation discovery (no model requests) ---
+codex: installed
+PASS codex --version
+agy: installed
+PASS agy --version
+cursor-agent: installed
+PASS cursor-agent --version
+agent: installed
+PASS agent --version
+--- go test ./... ---
+?   	github.com/Garden12138/xcli	[no test files]
+ok  	github.com/Garden12138/xcli/cmd	(cached)
+ok  	github.com/Garden12138/xcli/internal/agent	(cached)
+ok  	github.com/Garden12138/xcli/internal/config	(cached)
+ok  	github.com/Garden12138/xcli/internal/jobs	(cached)
+ok  	github.com/Garden12138/xcli/internal/mcp	(cached)
+ok  	github.com/Garden12138/xcli/internal/model	(cached)
+ok  	github.com/Garden12138/xcli/internal/modelbackend	0.167s
+?   	github.com/Garden12138/xcli/internal/modelbackend/fake	[no test files]
+ok  	github.com/Garden12138/xcli/internal/modelgateway	0.337s
+ok  	github.com/Garden12138/xcli/internal/modelstore	(cached)
+ok  	github.com/Garden12138/xcli/internal/runstore	(cached)
+ok  	github.com/Garden12138/xcli/internal/runtime	(cached)
+ok  	github.com/Garden12138/xcli/internal/task	59.753s
+ok  	github.com/Garden12138/xcli/internal/workflow	(cached)
+ok  	github.com/Garden12138/xcli/internal/worktree	(cached)
+ok  	github.com/Garden12138/xcli/tests/model_gateway	0.991s
+ok  	github.com/Garden12138/xcli/tests/phase0	(cached)
+PASS go test ./...
+--- go vet ./... ---
+PASS go vet ./...
+--- go build ---
+PASS go build
+--- go test -race ./... ---
+?   	github.com/Garden12138/xcli	[no test files]
+ok  	github.com/Garden12138/xcli/cmd	48.998s
+ok  	github.com/Garden12138/xcli/internal/agent	(cached)
+ok  	github.com/Garden12138/xcli/internal/config	(cached)
+ok  	github.com/Garden12138/xcli/internal/jobs	(cached)
+ok  	github.com/Garden12138/xcli/internal/mcp	(cached)
+ok  	github.com/Garden12138/xcli/internal/model	(cached)
+ok  	github.com/Garden12138/xcli/internal/modelbackend	1.884s
+?   	github.com/Garden12138/xcli/internal/modelbackend/fake	[no test files]
+ok  	github.com/Garden12138/xcli/internal/modelgateway	1.433s
+ok  	github.com/Garden12138/xcli/internal/modelstore	(cached)
+ok  	github.com/Garden12138/xcli/internal/runstore	(cached)
+ok  	github.com/Garden12138/xcli/internal/runtime	(cached)
+ok  	github.com/Garden12138/xcli/internal/task	165.147s
+ok  	github.com/Garden12138/xcli/internal/workflow	(cached)
+ok  	github.com/Garden12138/xcli/internal/worktree	(cached)
+ok  	github.com/Garden12138/xcli/tests/model_gateway	1.821s
+ok  	github.com/Garden12138/xcli/tests/phase0	(cached)
+PASS go test -race ./...
+--- xcli --version ---
+xcli version 0.5.0-r3-dev
+PASS xcli --version
+--- xcli agents --json ---
+[
+  {
+    "name": "antigravity",
+    "adapter": "antigravity",
+    "command": "agy",
+    "installed": true,
+    "path": "$HOME/.local/bin/agy",
+    "version": "1.5.2",
+    "capabilities": {
+      "cancel": {
+        "supported": true,
+        "source": "runtime"
+      },
+      "continuous_input": {
+        "supported": false,
+        "source": "unknown"
+      },
+      "cwd": {
+        "supported": true,
+        "source": "runtime"
+      },
+      "headless": {
+        "supported": true,
+        "source": "declared"
+      },
+      "read_only": {
+        "supported": false,
+        "source": "unknown"
+      },
+      "resume": {
+        "supported": true,
+        "source": "declared"
+      },
+      "structured_output": {
+        "supported": true,
+        "source": "declared"
+      }
+    }
+  },
+  {
+    "name": "claude",
+    "adapter": "claude",
+    "command": "claude",
+    "installed": false
+  },
+  {
+    "name": "codex",
+    "adapter": "codex",
+    "command": "codex",
+    "installed": true,
+    "path": "$HOME/.local/bin/codex",
+    "version": "codex-cli 0.167.0",
+    "capabilities": {
+      "cancel": {
+        "supported": true,
+        "source": "runtime"
+      },
+      "continuous_input": {
+        "supported": false,
+        "source": "unknown"
+      },
+      "cwd": {
+        "supported": true,
+        "source": "runtime"
+      },
+      "headless": {
+        "supported": true,
+        "source": "declared"
+      },
+      "read_only": {
+        "supported": false,
+        "source": "unknown"
+      },
+      "resume": {
+        "supported": true,
+        "source": "declared"
+      },
+      "structured_output": {
+        "supported": true,
+        "source": "declared"
+      }
+    }
+  },
+  {
+    "name": "cursor",
+    "adapter": "cursor",
+    "command": "cursor-agent",
+    "installed": true,
+    "path": "$HOME/.local/bin/cursor-agent",
+    "version": "2026.10.22-27dcf5f",
+    "capabilities": {
+      "cancel": {
+        "supported": true,
+        "source": "runtime"
+      },
+      "continuous_input": {
+        "supported": false,
+        "source": "unknown"
+      },
+      "cwd": {
+        "supported": true,
+        "source": "runtime"
+      },
+      "headless": {
+        "supported": true,
+        "source": "declared"
+      },
+      "read_only": {
+        "supported": false,
+        "source": "unknown"
+      },
+      "resume": {
+        "supported": true,
+        "source": "declared"
+      },
+      "structured_output": {
+        "supported": true,
+        "source": "declared"
+      }
+    }
+  },
+  {
+    "name": "gemini",
+    "adapter": "gemini",
+    "command": "gemini",
+    "installed": false
+  },
+  {
+    "name": "opencode",
+    "adapter": "opencode",
+    "command": "opencode",
+    "installed": false
+  }
+]
+PASS xcli agents --json
+PASS doctor codex
+PASS doctor cursor
+PASS doctor antigravity
+--- Gateway lifecycle (fake upstream only) ---
+{"evidence": "offline-built-binary", "application_e2e": "unverified", "checks": ["concurrent start is a single healthy instance; port 0 discovered", "real HTTP model request with private token; safe audit", "token rotation and live revocation", "changed routes require an explicit stop/restart", "stop/idempotent stop/restart/stale stop isolation", "foreign port conflict is explicit; no new active instance"], "upstream_fixture_calls": 1}
+PASS Gateway lifecycle (fake upstream only)
+NOT_TESTED Real native CLI execution (use --native-smoke only after approving quota).
+GATE_B_BLOCKED: Current Model Gateway config explicitly disables native CLI backend. CLI run success does NOT prove /v1 model API bridge.
+END report: $TMP/private

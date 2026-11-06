@@ -1,0 +1,57 @@
+[
+  {
+    "repository": "worklog",
+    "head": "e38f2a4901d871777989ffee6684e836370e70aa",
+    "status_count": 0,
+    "porcelain_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "access": "read-only selected source files and git metadata; no writes by this task",
+    "selected_source_sha256": {
+      "src-tauri/src/llm.rs": "6679a65fb876ee8bea638dc3dfa8221c1b4984fa9ede839335d04c82d01b7222",
+      "src-tauri/src/xcli.rs": "a12930792b2eba07be8534b897b3c7a377b6dc0db7d2dd71f4fd4cde60a8d8c6",
+      "src-tauri/src/commands.rs": "e61aa51dcbc9b52a95bda0fd3e9c7b5aafb1bc1d865061604a899aacfde968fa",
+      "src-tauri/src/secrets.rs": "215b9ec66cfbaca208bbf8e11904bcb6cdccd5aa2f85e0e832670d8c2ca0c176"
+    }
+  },
+  {
+    "repository": "garden-flow",
+    "head": "33b59295888f5cd34abab902182c08cf6f5442b7",
+    "status_count": 0,
+    "porcelain_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "access": "read-only selected source files and git metadata; no writes by this task",
+    "selected_source_sha256": {
+      "desktop/electron/core/aiModelRouteResolver.ts": "ba887cd6c00736ca007ca26d4a72832f77c7784241fab90f219db9d0b9f0c087",
+      "desktop/electron/core/xcliGateway.ts": "662a9809b43e4f8045a7971bf873f47ace125d0bd1886c51f26ca1ef8c9c62e5",
+      "desktop/electron/core/imageProviderAdapters.ts": "459c095112c98fdfcb53e13a8ac6adf323d283f83f500685cedbc7388ddd25d5",
+      "desktop/electron/core/imageGenerationService.ts": "cf16bffc7fd18d76d3fc70837826a85d9fbe910a7dd39f2e07b7b0265deb4da2",
+      "desktop/electron/pi/agent.ts": "5816f8d8c1bdcd95bbb5a2a19bb8977fa3d44cc2cc0d7c55c8cc2f16015cfb85"
+    }
+  },
+  {
+    "repository": "chat-insight",
+    "head": "920c900a2c8685cc92e9ba4b065cc77216e1b99d",
+    "status_count": 11,
+    "porcelain_sha256": "bde0e47ad594f4d7abdf6f71207c50a576799221e8dc09cf77b9e66e5cbbbf56",
+    "access": "read-only selected source files and git metadata; no writes by this task",
+    "selected_source_sha256": {
+      "src-tauri/src/ai/client.rs": "682f3e4a105e0920956d2029ea625c83ab08d21c0dfae207dc2036b92d4abe70",
+      "src-tauri/src/ai/gateway.rs": "f971610de0f58c3d100daa67ea6257ee7e45c1ca29f0f09095037b7066a92202",
+      "src-tauri/src/ai/settings.rs": "08fac62a2be6ed631231a98009784af975d5c16cd38a7c3581c0f09ccc66bc9b",
+      "src-tauri/src/ai/indexer.rs": "0a7d9f9d12e32a4aa715dd951694276890e3d6a48d65842933377f875339ea22",
+      "src-tauri/src/ai/retrieval.rs": "0be038f980e43067885a0672b51a4a13da490c2a183f5222764c3aa7517d7e2c",
+      "src/ai.ts": "4805d8c0b04cc6376b98076dd1f2731f295ee02ce3fb2a708e87056d4a2e7c85"
+    }
+  },
+  {
+    "repository": "ai-open-source-contribution-os-summary",
+    "head": "8aa905151329f03e32397c3d1e057bf2a0ac2950",
+    "status_count": 7,
+    "porcelain_sha256": "60b48ff3a798ff460a519ee138fb002870956514d04a91c8a48c10da17c0d88e",
+    "access": "read-only selected source files and git metadata; no writes by this task",
+    "selected_source_sha256": {
+      "app/model_settings.py": "01dee7640d6834b2d9104a5a3d8539586e6a709c89f59a528ee1e79d6cc66534",
+      "app/providers/xcli_local.py": "1e99d3ec0da6a8e0ad222feb89485e6703fb3dfa6b83b8be5501af7b981045a5",
+      "app/providers/codex_cli.py": "26922d1d515bb13398e68b70e0b360530049a8f8d9a2c19bc63118545dbcbee5",
+      "app/providers/contracts.py": "fbcd72c63b26a53648dbfc1633b2980050d27f500d46e5cc347c2cf574ee6a35"
+    }
+  }
+]

@@ -1,0 +1,30 @@
+{
+  "recorded_at": "2026-11-06T08:21:45Z",
+  "status": "PENDING_EXPLICIT_MODEL_BUDGET",
+  "authorization_source": "xcli-cli-first-acceptance/CODEX_PROMPT.md requires explicit current-round native and additional media budget",
+  "requested": {
+    "text_task_process_starts": 6,
+    "media_task_process_starts": 6,
+    "per_cli_text": [
+      "headless_once",
+      "resume_once"
+    ],
+    "per_cli_media": [
+      "generate_once",
+      "reference_edit_once"
+    ],
+    "automatic_retries": 0
+  },
+  "authorized_text_task_process_starts": null,
+  "authorized_media_task_process_starts": null,
+  "observed": {
+    "real_text_task_attempts": 0,
+    "real_media_task_attempts": 0,
+    "external_model_api_requests": 0,
+    "ollama_requests": 0
+  },
+  "non_model_probes": "Versions, help, doctor and existing-login status only; these processes are excluded from model-task budget counts.",
+  "execution_permission_scope": "Host permission granted for offline loopback tests and read-only status probes; this is not model budget authorization.",
+  "internal_model_turns_and_cost": "not observable from a process-count budget; no zero-cost or six-model-request guarantee",
+  "cancel_timeout_concurrency_schema_vision": "NOT_TESTED; extra live scenarios must not borrow missing CLI slots or exceed approved budget"
+}

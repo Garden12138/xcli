@@ -1,0 +1,355 @@
+xcli CLI-first phase1: 2026-11-06T08:03:05Z
+repo: $REPO
+evidence directory: $TMP/private (private, not automatically uploaded)
+HEAD: f529e04
+Git modified/tracked status count: 1
+Go version: go version go1.26.4 darwin/arm64
+--- Native CLI installation discovery (no model requests) ---
+codex: installed
+PASS codex --version
+agy: installed
+PASS agy --version
+cursor-agent: installed
+PASS cursor-agent --version
+agent: installed
+PASS agent --version
+--- go test ./... ---
+?   	github.com/Garden12138/xcli	[no test files]
+ok  	github.com/Garden12138/xcli/cmd	23.990s
+ok  	github.com/Garden12138/xcli/internal/agent	4.826s
+ok  	github.com/Garden12138/xcli/internal/config	2.319s
+ok  	github.com/Garden12138/xcli/internal/jobs	0.842s
+ok  	github.com/Garden12138/xcli/internal/mcp	1.907s
+ok  	github.com/Garden12138/xcli/internal/model	1.206s
+--- FAIL: TestUpstreamErrorClassificationAndRedaction (0.00s)
+    --- FAIL: TestUpstreamErrorClassificationAndRedaction/401 (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 37 [running]:
+testing.tRunner.func1.2({0x102f9dac0, 0x4f7c1fa03a0})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:1974 +0x1a0
+testing.tRunner.func1()
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:1977 +0x318
+panic({0x102f9dac0?, 0x4f7c1fa03a0?})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:72 +0xd4
+net/http/httptest.NewUnstartedServer(...)
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x10302d6c0, 0x4f7c1fac228})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:107 +0x28
+github.com/Garden12138/xcli/internal/modelbackend.TestUpstreamErrorClassificationAndRedaction.func1(0x4f7c1fe66c8)
+	$REPO/internal/modelbackend/openai_compatible_test.go:19 +0x84
+testing.tRunner(0x4f7c1fe66c8, 0x4f7c1f8e1d0)
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:2036 +0xc4
+created by testing.(*T).Run in goroutine 36
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:2101 +0x3a8
+FAIL	github.com/Garden12138/xcli/internal/modelbackend	0.375s
+?   	github.com/Garden12138/xcli/internal/modelbackend/fake	[no test files]
+--- FAIL: TestRealSSEForwardingBeforeCompletionAndCancellation (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 13 [running]:
+testing.tRunner.func1.2({0x102a2bc80, 0x6fa89215c80})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:1974 +0x1a0
+testing.tRunner.func1()
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:1977 +0x318
+panic({0x102a2bc80?, 0x6fa89215c80?})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:72 +0xd4
+net/http/httptest.NewUnstartedServer(...)
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x102ac0f00, 0x6fa89215c40})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:107 +0x28
+github.com/Garden12138/xcli/internal/modelgateway.TestRealSSEForwardingBeforeCompletionAndCancellation(0x6fa8932ad88)
+	$REPO/internal/modelgateway/chat_test.go:136 +0x98
+testing.tRunner(0x6fa8932ad88, 0x102abc860)
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:2036 +0xc4
+created by testing.(*T).Run in goroutine 1
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:2101 +0x3a8
+FAIL	github.com/Garden12138/xcli/internal/modelgateway	2.648s
+ok  	github.com/Garden12138/xcli/internal/modelstore	2.642s
+ok  	github.com/Garden12138/xcli/internal/runstore	1.096s
+ok  	github.com/Garden12138/xcli/internal/runtime	2.144s
+ok  	github.com/Garden12138/xcli/internal/task	57.054s
+ok  	github.com/Garden12138/xcli/internal/workflow	8.828s
+ok  	github.com/Garden12138/xcli/internal/worktree	3.281s
+--- FAIL: TestDesktopConsumerProfiles (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 36 [running]:
+testing.tRunner.func1.2({0x104fabb20, 0x301c56020530})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:1974 +0x1a0
+testing.tRunner.func1()
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:1977 +0x318
+panic({0x104fabb20?, 0x301c56020530?})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:72 +0xd4
+net/http/httptest.NewUnstartedServer(...)
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x10503f620, 0x301c560302a0})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:107 +0x28
+github.com/Garden12138/xcli/tests/model_gateway_test.TestDesktopConsumerProfiles(0x301c56066488)
+	$REPO/tests/model_gateway/contracts_test.go:87 +0xb14
+testing.tRunner(0x301c56066488, 0x10503b218)
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:2036 +0xc4
+created by testing.(*T).Run in goroutine 1
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:2101 +0x3a8
+FAIL	github.com/Garden12138/xcli/tests/model_gateway	2.262s
+ok  	github.com/Garden12138/xcli/tests/phase0	2.503s
+FAIL
+FAIL go test ./...
+--- go vet ./... ---
+PASS go vet ./...
+--- go build ---
+go: writing stat cache: open $HOME/go/pkg/mod/cache/download/github.com/!garden12138/xcli/@v/v0.4.1-0.20261106074403-f529e047ca03.info272370575.tmp: operation not permitted
+PASS go build
+--- go test -race ./... ---
+?   	github.com/Garden12138/xcli	[no test files]
+ok  	github.com/Garden12138/xcli/cmd	49.831s
+ok  	github.com/Garden12138/xcli/internal/agent	6.832s
+ok  	github.com/Garden12138/xcli/internal/config	3.888s
+ok  	github.com/Garden12138/xcli/internal/jobs	3.562s
+ok  	github.com/Garden12138/xcli/internal/mcp	3.136s
+ok  	github.com/Garden12138/xcli/internal/model	2.393s
+--- FAIL: TestUpstreamErrorClassificationAndRedaction (0.00s)
+    --- FAIL: TestUpstreamErrorClassificationAndRedaction/401 (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 21 [running]:
+testing.tRunner.func1.2({0x102e4af20, 0xc00011e3a0})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:1974 +0x2b8
+testing.tRunner.func1()
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:1977 +0x460
+panic({0x102e4af20?, 0xc00011e3a0?})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:72 +0x13c
+net/http/httptest.NewUnstartedServer(...)
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x102ee0300, 0xc00012a228})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:107 +0x30
+github.com/Garden12138/xcli/internal/modelbackend.TestUpstreamErrorClassificationAndRedaction.func1(0xc0001686c8)
+	$REPO/internal/modelbackend/openai_compatible_test.go:19 +0xb4
+testing.tRunner(0xc0001686c8, 0xc000116350)
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:2036 +0x168
+created by testing.(*T).Run in goroutine 20
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:2101 +0x7c0
+FAIL	github.com/Garden12138/xcli/internal/modelbackend	1.780s
+?   	github.com/Garden12138/xcli/internal/modelbackend/fake	[no test files]
+--- FAIL: TestRealSSEForwardingBeforeCompletionAndCancellation (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 18 [running]:
+testing.tRunner.func1.2({0x104b5d120, 0xc00011e5f0})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:1974 +0x2b8
+testing.tRunner.func1()
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:1977 +0x460
+panic({0x104b5d120?, 0xc00011e5f0?})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:72 +0x13c
+net/http/httptest.NewUnstartedServer(...)
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x104bf7c20, 0xc00011e5b0})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:107 +0x30
+github.com/Garden12138/xcli/internal/modelgateway.TestRealSSEForwardingBeforeCompletionAndCancellation(0xc000154008)
+	$REPO/internal/modelgateway/chat_test.go:136 +0xa8
+testing.tRunner(0xc000154008, 0x104bf2f00)
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:2036 +0x168
+created by testing.(*T).Run in goroutine 1
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:2101 +0x7c0
+FAIL	github.com/Garden12138/xcli/internal/modelgateway	1.034s
+ok  	github.com/Garden12138/xcli/internal/modelstore	2.005s
+ok  	github.com/Garden12138/xcli/internal/runstore	4.613s
+ok  	github.com/Garden12138/xcli/internal/runtime	8.962s
+ok  	github.com/Garden12138/xcli/internal/task	175.774s
+ok  	github.com/Garden12138/xcli/internal/workflow	10.508s
+ok  	github.com/Garden12138/xcli/internal/worktree	5.116s
+--- FAIL: TestDesktopConsumerProfiles (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 20 [running]:
+testing.tRunner.func1.2({0x104ca4f60, 0xc00011e530})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:1974 +0x2b8
+testing.tRunner.func1()
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:1977 +0x460
+panic({0x104ca4f60?, 0xc00011e530?})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:72 +0x13c
+net/http/httptest.NewUnstartedServer(...)
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x104d3e020, 0xc000110300})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:107 +0x30
+github.com/Garden12138/xcli/tests/model_gateway_test.TestDesktopConsumerProfiles(0xc000168488)
+	$REPO/tests/model_gateway/contracts_test.go:87 +0x1130
+testing.tRunner(0xc000168488, 0x104d39598)
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:2036 +0x168
+created by testing.(*T).Run in goroutine 1
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:2101 +0x7c0
+FAIL	github.com/Garden12138/xcli/tests/model_gateway	3.087s
+ok  	github.com/Garden12138/xcli/tests/phase0	4.102s
+FAIL
+FAIL go test -race ./...
+--- xcli --version ---
+xcli version 0.5.0-r3-dev
+PASS xcli --version
+--- xcli agents --json ---
+[
+  {
+    "name": "antigravity",
+    "adapter": "antigravity",
+    "command": "agy",
+    "installed": true,
+    "path": "$HOME/.local/bin/agy",
+    "version": "1.5.2",
+    "capabilities": {
+      "cancel": {
+        "supported": true,
+        "source": "runtime"
+      },
+      "continuous_input": {
+        "supported": false,
+        "source": "unknown"
+      },
+      "cwd": {
+        "supported": true,
+        "source": "runtime"
+      },
+      "headless": {
+        "supported": true,
+        "source": "declared"
+      },
+      "read_only": {
+        "supported": false,
+        "source": "unknown"
+      },
+      "resume": {
+        "supported": true,
+        "source": "declared"
+      },
+      "structured_output": {
+        "supported": true,
+        "source": "declared"
+      }
+    }
+  },
+  {
+    "name": "claude",
+    "adapter": "claude",
+    "command": "claude",
+    "installed": false
+  },
+  {
+    "name": "codex",
+    "adapter": "codex",
+    "command": "codex",
+    "installed": true,
+    "path": "$HOME/.local/bin/codex",
+    "version": "codex-cli 0.167.0",
+    "capabilities": {
+      "cancel": {
+        "supported": true,
+        "source": "runtime"
+      },
+      "continuous_input": {
+        "supported": false,
+        "source": "unknown"
+      },
+      "cwd": {
+        "supported": true,
+        "source": "runtime"
+      },
+      "headless": {
+        "supported": true,
+        "source": "declared"
+      },
+      "read_only": {
+        "supported": false,
+        "source": "unknown"
+      },
+      "resume": {
+        "supported": true,
+        "source": "declared"
+      },
+      "structured_output": {
+        "supported": true,
+        "source": "declared"
+      }
+    }
+  },
+  {
+    "name": "cursor",
+    "adapter": "cursor",
+    "command": "cursor-agent",
+    "installed": true,
+    "path": "$HOME/.local/bin/cursor-agent",
+    "version": "2026.10.22-27dcf5f",
+    "capabilities": {
+      "cancel": {
+        "supported": true,
+        "source": "runtime"
+      },
+      "continuous_input": {
+        "supported": false,
+        "source": "unknown"
+      },
+      "cwd": {
+        "supported": true,
+        "source": "runtime"
+      },
+      "headless": {
+        "supported": true,
+        "source": "declared"
+      },
+      "read_only": {
+        "supported": false,
+        "source": "unknown"
+      },
+      "resume": {
+        "supported": true,
+        "source": "declared"
+      },
+      "structured_output": {
+        "supported": true,
+        "source": "declared"
+      }
+    }
+  },
+  {
+    "name": "gemini",
+    "adapter": "gemini",
+    "command": "gemini",
+    "installed": false
+  },
+  {
+    "name": "opencode",
+    "adapter": "opencode",
+    "command": "opencode",
+    "installed": false
+  }
+]
+PASS xcli agents --json
+PASS doctor codex
+PASS doctor cursor
+PASS doctor antigravity
+--- Gateway lifecycle (fake upstream only) ---
+Traceback (most recent call last):
+  File "$REPO/tests/model_gateway/lifecycle.py", line 140, in <module>
+    print(json.dumps(run(parser.parse_args().binary.resolve()), ensure_ascii=False))
+  File "$REPO/tests/model_gateway/lifecycle.py", line 40, in run
+    upstream = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Backend)
+  File "/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/socketserver.py", line 452, in __init__
+    self.server_bind()
+  File "/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/http/server.py", line 137, in server_bind
+    socketserver.TCPServer.server_bind(self)
+  File "/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/socketserver.py", line 466, in server_bind
+    self.socket.bind(self.server_address)
+PermissionError: [Errno 1] Operation not permitted
+FAIL Gateway lifecycle (fake upstream only)
+NOT_TESTED Real native CLI execution (use --native-smoke only after approving quota).
+GATE_B_BLOCKED: Current Model Gateway config explicitly disables native CLI backend. CLI run success does NOT prove /v1 model API bridge.
+END report: $TMP/private

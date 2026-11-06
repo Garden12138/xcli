@@ -1,0 +1,9 @@
+test_absent_clis_never_pass_or_launch (test_smoke.SmokeHarnessTests) ... ok
+test_nonzero_exit_with_marker_fails_without_retry (test_smoke.SmokeHarnessTests) ... ok
+test_one_passing_cli_does_not_pass_three_cli_acceptance (test_smoke.SmokeHarnessTests) ... ok
+test_three_pairs_use_exactly_six_launches (test_smoke.SmokeHarnessTests) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.013s
+
+OK

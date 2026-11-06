@@ -1,0 +1,123 @@
+xcli CLI-first phase1: 2026-11-06T08:01:59Z
+repo: $REPO
+evidence directory: $TMP/private (private, not automatically uploaded)
+HEAD: f529e04
+Git modified/tracked status count: 1
+Go version: go version go1.26.4 darwin/arm64
+--- Native CLI installation discovery (no model requests) ---
+codex: installed
+PASS codex --version
+agy: installed
+PASS agy --version
+cursor-agent: installed
+PASS cursor-agent --version
+agent: installed
+PASS agent --version
+--- go test ./... ---
+# github.com/Garden12138/xcli
+open $HOME/Library/Caches/go-build/f1/f145fa8bc7af194be8ea479ca7ac3cad3f58f8fa821c976d77e2861cd520f3d4-a: operation not permitted
+FAIL	github.com/Garden12138/xcli [setup failed]
+# ./...
+pattern ./...: open $HOME/Library/Caches/go-build/dc/dc39bff8c1d05e774c45ae161973f76b9fc3d67389417ae72c63ee5157a40c60-a: operation not permitted
+FAIL	./... [setup failed]
+ok  	github.com/Garden12138/xcli/cmd	27.110s
+ok  	github.com/Garden12138/xcli/internal/agent	(cached)
+ok  	github.com/Garden12138/xcli/internal/config	2.098s
+ok  	github.com/Garden12138/xcli/internal/jobs	(cached)
+ok  	github.com/Garden12138/xcli/internal/mcp	(cached)
+ok  	github.com/Garden12138/xcli/internal/model	0.380s
+--- FAIL: TestUpstreamErrorClassificationAndRedaction (0.00s)
+    --- FAIL: TestUpstreamErrorClassificationAndRedaction/401 (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 23 [running]:
+testing.tRunner.func1.2({0x100f25ac0, 0x1ed9e8c903a0})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:1974 +0x1a0
+testing.tRunner.func1()
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:1977 +0x318
+panic({0x100f25ac0?, 0x1ed9e8c903a0?})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:72 +0xd4
+net/http/httptest.NewUnstartedServer(...)
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x100fb56c0, 0x1ed9e8c9c228})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:107 +0x28
+github.com/Garden12138/xcli/internal/modelbackend.TestUpstreamErrorClassificationAndRedaction.func1(0x1ed9e8cdc6c8)
+	$REPO/internal/modelbackend/openai_compatible_test.go:19 +0x84
+testing.tRunner(0x1ed9e8cdc6c8, 0x1ed9e8cb21b0)
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:2036 +0xc4
+created by testing.(*T).Run in goroutine 22
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:2101 +0x3a8
+FAIL	github.com/Garden12138/xcli/internal/modelbackend	3.225s
+?   	github.com/Garden12138/xcli/internal/modelbackend/fake	[no test files]
+--- FAIL: TestRealSSEForwardingBeforeCompletionAndCancellation (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 41 [running]:
+testing.tRunner.func1.2({0x1030a3c80, 0x4527066afc40})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:1974 +0x1a0
+testing.tRunner.func1()
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:1977 +0x318
+panic({0x1030a3c80?, 0x4527066afc40?})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:72 +0xd4
+net/http/httptest.NewUnstartedServer(...)
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x103138f00, 0x4527066afc00})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:107 +0x28
+github.com/Garden12138/xcli/internal/modelgateway.TestRealSSEForwardingBeforeCompletionAndCancellation(0x4527066f2d88)
+	$REPO/internal/modelgateway/chat_test.go:136 +0x98
+testing.tRunner(0x4527066f2d88, 0x103134860)
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:2036 +0xc4
+created by testing.(*T).Run in goroutine 1
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:2101 +0x3a8
+FAIL	github.com/Garden12138/xcli/internal/modelgateway	2.854s
+ok  	github.com/Garden12138/xcli/internal/modelstore	2.850s
+ok  	github.com/Garden12138/xcli/internal/runstore	(cached)
+ok  	github.com/Garden12138/xcli/internal/runtime	1.456s
+ok  	github.com/Garden12138/xcli/internal/task	50.005s
+ok  	github.com/Garden12138/xcli/internal/workflow	11.897s
+ok  	github.com/Garden12138/xcli/internal/worktree	4.996s
+ok  	github.com/Garden12138/xcli/tests/phase0	(cached)
+FAIL
+FAIL go test ./...
+--- go vet ./... ---
+open $HOME/Library/Caches/go-build/f1/f145fa8bc7af194be8ea479ca7ac3cad3f58f8fa821c976d77e2861cd520f3d4-a: operation not permitted
+pattern ./...: open $HOME/Library/Caches/go-build/dc/dc39bff8c1d05e774c45ae161973f76b9fc3d67389417ae72c63ee5157a40c60-a: operation not permitted
+FAIL go vet ./...
+--- go build ---
+open $HOME/Library/Caches/go-build/f1/f145fa8bc7af194be8ea479ca7ac3cad3f58f8fa821c976d77e2861cd520f3d4-a: operation not permitted
+FAIL go build
+--- go test -race ./... ---
+# github.com/Garden12138/xcli
+open $HOME/Library/Caches/go-build/f1/f145fa8bc7af194be8ea479ca7ac3cad3f58f8fa821c976d77e2861cd520f3d4-a: operation not permitted
+FAIL	github.com/Garden12138/xcli [setup failed]
+# ./...
+pattern ./...: open $HOME/Library/Caches/go-build/dc/dc39bff8c1d05e774c45ae161973f76b9fc3d67389417ae72c63ee5157a40c60-a: operation not permitted
+FAIL	./... [setup failed]
+ok  	github.com/Garden12138/xcli/cmd	46.459s
+ok  	github.com/Garden12138/xcli/internal/agent	(cached)
+ok  	github.com/Garden12138/xcli/internal/config	(cached)
+ok  	github.com/Garden12138/xcli/internal/jobs	(cached)
+ok  	github.com/Garden12138/xcli/internal/mcp	(cached)
+ok  	github.com/Garden12138/xcli/internal/model	(cached)
+ok  	github.com/Garden12138/xcli/internal/modelbackend	(cached)
+?   	github.com/Garden12138/xcli/internal/modelbackend/fake	[no test files]
+ok  	github.com/Garden12138/xcli/internal/modelgateway	(cached)
+ok  	github.com/Garden12138/xcli/internal/modelstore	(cached)
+ok  	github.com/Garden12138/xcli/internal/runstore	(cached)
+ok  	github.com/Garden12138/xcli/internal/runtime	5.476s
+--- FAIL: TestWaitingTaskAcceptsVerification (11.66s)
+    lifecycle_test.go:75: {StopBaseline:0 OwnerToken:owner-20261106T080324Z-d0fc48b2 UsageIncomplete:false Options:{Goal:write required result including literal {{ untouched }} Agent:first Project:$TMP/private Inputs:[] Output: Verify:[[go test -count=1 ./...]] Timeout:30s CallTimeout:2m0s MaxCalls:6} Checkpoint:0xc0003aa8c0 Pending:[] OriginalGoal:write required result including literal {{ untouched }} Updates:[{Sequence:1 Time:2026-11-06 08:03:24.598765 +0000 UTC Message: Verify:[[go test -count=1 ./...]] Timeout:0s CallTimeout:0s MaxCalls:0 Reconcile:false FreshSession:false}] Bindings:map[first:d84d071cf0ded90b6c8c3f9c215e6fb8f20ba34f637c2ddbe10e7453bcf66874] Elapsed:11.141258959s ActiveAt:0001-01-01 00:00:00 +0000 UTC PID:94229 Background:false OwnerActive:false Version:2 ID:task-20261106T080319Z-ab6d70d6 Goal:write required result including literal {{ untouched }} Kind:project Mode:single Agent:first Coordinator:first Candidates:[first] Inputs:[] Output:/private$TMP/private Cwd:/private$TMP/private Workspace:0xc0000eaaf0 Status:completed Reason:Current artifacts, validation and review satisfy the declared acceptance; user acceptance is separate. ExitCode:0 StartedAt:2026-11-06 08:03:19.809307 +0000 UTC EndedAt:2026-11-06 08:03:31.338925 +0000 UTC Deadline:2026-11-06 08:03:50.210830666 +0000 UTC MaxCalls:6 Calls:6 Repairs:1 Plans:[{CollaborationRequired:false Version:1 Reason:fixture choices Acceptance:[{Path:calc.go Contains:[return 1] Sources:[]}] Actions:[{Type:delegate Role:worker Agent:first Objective:write result Argv:[] Cwd:} {Type:delegate Role:reviewer Agent:first Objective:check output against handoff Argv:[] Cwd:} {Type:complete Role: Agent: Objective: Argv:[] Cwd:}]}] Attempts:[{CopySnapshot: RetryNotices:0 RunID:run-20261106T080320Z-84f9b619 Role:coordinator Agent:first Cwd:/private$TMP/private Inputs:[/private$TMP/private /private$TMP/private /private$TMP/private Snapshot:7071d3cdd02271738a9736c7b94a1ecbff04f991639d6e4162d774e2ca81a84e} {CopySnapshot: RetryNotices:0 RunID:run-20261106T080321Z-a0df3bbc Role:worker Agent:first Cwd:/private$TMP/private Inputs:[/private$TMP/private /private$TMP/private /private$TMP/private Snapshot:7071d3cdd02271738a9736c7b94a1ecbff04f991639d6e4162d774e2ca81a84e} {CopySnapshot:fc9e55a8cc97ed9302dcd46c9df3b2b4c4219860d1d0eeeb971e6b9c2b843be0 RetryNotices:0 RunID:run-20261106T080323Z-4c7b35d9 Role:reviewer Agent:first Cwd:/private$TMP/private Inputs:[run-20261106T080321Z-a0df3bbc /private$TMP/private /private$TMP/private /private$TMP/private Snapshot:4a29834b32fcf0c8f7ec90dfbc71cfde0a9015985a3c09ab9077c5a432fdd127} {CopySnapshot: RetryNotices:0 RunID:run-20261106T080324Z-0f5abff5 Role:verifier Agent: Cwd:/private$TMP/private Inputs:[] Snapshot:4a29834b32fcf0c8f7ec90dfbc71cfde0a9015985a3c09ab9077c5a432fdd127} {CopySnapshot:ec6dd5b7d9ca715082915122fcf3e1930b3e02983455d8d1e835cdecefb5425d RetryNotices:0 RunID:run-20261106T080325Z-e3b6c833 Role:reviewer Agent:first Cwd:/private$TMP/private Inputs:[run-20261106T080321Z-a0df3bbc /private$TMP/private /private$TMP/private /private$TMP/private Snapshot:4a29834b32fcf0c8f7ec90dfbc71cfde0a9015985a3c09ab9077c5a432fdd127} {CopySnapshot: RetryNotices:0 RunID:run-20261106T080326Z-39e74cfa Role:repair Agent:first Cwd:/private$TMP/private Inputs:[run-20261106T080321Z-a0df3bbc /private$TMP/private /private$TMP/private /private$TMP/private Snapshot:4a29834b32fcf0c8f7ec90dfbc71cfde0a9015985a3c09ab9077c5a432fdd127} {CopySnapshot: RetryNotices:0 RunID:run-20261106T080328Z-9ad6edce Role:verifier Agent: Cwd:/private$TMP/private Inputs:[] Snapshot:4a29834b32fcf0c8f7ec90dfbc71cfde0a9015985a3c09ab9077c5a432fdd127} {CopySnapshot:ae01be8ed35a437b151aafa3b1d0ab1ccd5848238d91575ad9c8e757a28b35b5 RetryNotices:0 RunID:run-20261106T080330Z-fe5edaf7 Role:reviewer Agent:first Cwd:/private$TMP/private Inputs:[run-20261106T080321Z-a0df3bbc run-20261106T080326Z-39e74cfa /private$TMP/private /private$TMP/private /private$TMP/private Snapshot:4a29834b32fcf0c8f7ec90dfbc71cfde0a9015985a3c09ab9077c5a432fdd127}] Handoffs:[{RunID:run-20261106T080321Z-a0df3bbc Summary:worker handoff Facts:[input examined] Decisions:[bounded edit] Sources:[/private$TMP/private Unresolved:[]} {RunID:run-20261106T080326Z-39e74cfa Summary:worker handoff Facts:[input examined] Decisions:[bounded edit] Sources:[/private$TMP/private Unresolved:[]}] Artifacts:[{Mode:384 Path:/private$TMP/private SHA256:ecec5e74c3b4c783bd276601d31fed30ea64250b29935a1cd1f9b1e30f6a5665 Producer:run-20261106T080321Z-a0df3bbc Consumers:[run-20261106T080323Z-4c7b35d9 run-20261106T080325Z-e3b6c833 run-20261106T080326Z-39e74cfa run-20261106T080330Z-fe5edaf7]} {Mode:384 Path:/private$TMP/private SHA256:a8d3862226855e8c3eac00d120a90ac0431a82f1b0c9426ff43bed94908c8409 Producer: Consumers:[run-20261106T080320Z-84f9b619 run-20261106T080321Z-a0df3bbc run-20261106T080323Z-4c7b35d9 run-20261106T080325Z-e3b6c833 run-20261106T080326Z-39e74cfa run-20261106T080330Z-fe5edaf7]} {Mode:384 Path:/private$TMP/private SHA256:8f4299856167bfb7e872dbe803a3a6de1891e2d0c3445b4b783ae663a622da01 Producer: Consumers:[run-20261106T080320Z-84f9b619 run-20261106T080321Z-a0df3bbc run-20261106T080323Z-4c7b35d9 run-20261106T080325Z-e3b6c833 run-20261106T080326Z-39e74cfa run-20261106T080330Z-fe5edaf7]}] Checks:[{RunID: Kind:artifact Argv:[] Cwd:/private$TMP/private Snapshot:4a29834b32fcf0c8f7ec90dfbc71cfde0a9015985a3c09ab9077c5a432fdd127 Status:passed ExitCode:0 Detail:calc.go LogFile:} {RunID: Kind:artifact Argv:[] Cwd:/private$TMP/private Snapshot:4a29834b32fcf0c8f7ec90dfbc71cfde0a9015985a3c09ab9077c5a432fdd127 Status:passed ExitCode:0 Detail:calc.go LogFile:} {RunID:run-20261106T080324Z-0f5abff5 Kind:command Argv:[go test -count=1 ./...] Cwd:/private$TMP/private Snapshot:4a29834b32fcf0c8f7ec90dfbc71cfde0a9015985a3c09ab9077c5a432fdd127 Status:failed ExitCode:1 Detail:native process exited with code 1 LogFile:$TMP/private {RunID: Kind:artifact Argv:[] Cwd:/private$TMP/private Snapshot:4a29834b32fcf0c8f7ec90dfbc71cfde0a9015985a3c09ab9077c5a432fdd127 Status:passed ExitCode:0 Detail:calc.go LogFile:} {RunID:run-20261106T080328Z-9ad6edce Kind:command Argv:[go test -count=1 ./...] Cwd:/private$TMP/private Snapshot:4a29834b32fcf0c8f7ec90dfbc71cfde0a9015985a3c09ab9077c5a432fdd127 Status:passed ExitCode:0 Detail: LogFile:$TMP/private Reviews:[{RunID:run-20261106T080323Z-4c7b35d9 Kind:self_check Snapshot:4a29834b32fcf0c8f7ec90dfbc71cfde0a9015985a3c09ab9077c5a432fdd127 Passed:0xc000296b8f Findings:[] Coverage:[required output and input facts checked] Sources:[calc.go]} {RunID:run-20261106T080325Z-e3b6c833 Kind:self_check Snapshot:4a29834b32fcf0c8f7ec90dfbc71cfde0a9015985a3c09ab9077c5a432fdd127 Passed:0xc00035278f Findings:[] Coverage:[required output and input facts checked] Sources:[calc.go]} {RunID:run-20261106T080330Z-fe5edaf7 Kind:self_check Snapshot:4a29834b32fcf0c8f7ec90dfbc71cfde0a9015985a3c09ab9077c5a432fdd127 Passed:0xc0000125ef Findings:[] Coverage:[required output and input facts checked] Sources:[calc.go]}] Snapshot:4a29834b32fcf0c8f7ec90dfbc71cfde0a9015985a3c09ab9077c5a432fdd127 DiffFile:$TMP/private Usage:0xc0003ab340 Sequence:42} <nil>
+FAIL
+FAIL	github.com/Garden12138/xcli/internal/task	187.055s
+ok  	github.com/Garden12138/xcli/internal/workflow	6.617s
+ok  	github.com/Garden12138/xcli/internal/worktree	3.345s
+ok  	github.com/Garden12138/xcli/tests/phase0	(cached)
+FAIL
+FAIL go test -race ./...
+NOT_TESTED Real native CLI execution (use --native-smoke only after approving quota).
+GATE_B_BLOCKED: Current Model Gateway config explicitly disables native CLI backend. CLI run success does NOT prove /v1 model API bridge.
+END report: $TMP/private

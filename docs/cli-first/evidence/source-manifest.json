@@ -1,0 +1,21 @@
+{
+  "git_sha": "f529e047ca03ef749e3ac49abe146f2ef4b46eab",
+  "binary_sha256": "4c646f8c71f07b7376388db767b4bc8d613054947281eb01c5ecd2c55359225e",
+  "files": {
+    "tests/r0/smoke.py": "f1ed4ce13f87d226b219d2ff9b311378da1ea8c5c46a7089b476ff1329e6d175",
+    "tests/r0/test_smoke.py": "7e6509b741874e2594589505ac4d0f12ac75195e0c08e6cb19da2684e88cfbe7",
+    "xcli-cli-first-acceptance/verify-phase1.sh": "01113b16c58dc3ad4e69498f19650f5aa5295ed0e847436b1241d53219d44572"
+  },
+  "evidence_files": {
+    "evidence/consumer-baselines.json": "aa9a997b40909e47fa3fb07b53a7cc6fc2ad36d6476c32df89872496ec9d372b",
+    "evidence/gate-b.json": "2bdedd701800c2b8b765981c6c5d9ae80cbf5024a47baaf4fbcdb0fd928e04fd",
+    "evidence/native-budget.json": "e9f050a0242fb53f8c6ffa832a33f726df125d776638d36878bcb7ecdc65faf3",
+    "evidence/phase1-offline.log": "bba68cef0340c2a3941501ca65fada943eb03ef6cfe8666264182250fd926a4f",
+    "evidence/phase1-sandbox-cache.log": "1eb6bef1c211905736b7f327822043542ecf755f76c3901a7c24c21c3e11068d",
+    "evidence/phase1-sandbox-initial.log": "257c6b7559c72363f945e4421ff805e567fb6b5e0618389a11c3e38ec38770ab",
+    "evidence/preflight.json": "65481c2a07ebd4a0687b657155f0d22614d83d33322807a5932f804ca00e4527",
+    "evidence/smoke-harness-tests.log": "3f78ffffa97e86621b10e781288bc26f6e93579209b27b3aa5332bf4ecc3fc49"
+  },
+  "model_task_launches": 0,
+  "go_product_source_modified": false
+}

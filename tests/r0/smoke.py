@@ -128,7 +128,6 @@ def main():
                     write_report()
                     print(json.dumps({key: entry[key] for key in ["agent", "kind", "status", "duration_seconds"]}), flush=True)
 
-            successful = []
             for tool, command in [("codex", "codex"), ("antigravity", "agy"), ("cursor", "cursor-agent")]:
                 metadata = {"agent": tool, "installed": bool(shutil.which(command)), "authentication": "unknown"}
                 report["tools"].append(metadata)
@@ -152,7 +151,13 @@ def main():
                     metadata["status"] = "unverified_login"
                     continue
                 prompt = "Read only r0-context.txt in the current directory. Remember its exact marker for the next turn and reply with that marker only. Do not modify files or call other AI CLIs."
-                result = call(tool, "headless", ["run", "--agent", tool, "--cwd", str(work), "--json", prompt], marker)
+                # Per-process restrictions only: never persist trust or change
+                # native global settings. run/resume otherwise inherit policy.
+                policy = {"codex": ["--sandbox", "read-only", "-c", 'approval_policy="never"'],
+                          "cursor": ["--mode", "ask", "--sandbox", "enabled"],
+                          "antigravity": ["--mode", "plan", "--sandbox"]}[tool]
+                result = call(tool, "headless", ["run", "--agent", tool, "--cwd", str(work), "--json", prompt,
+                                                 "--"] + policy, marker)
                 if result is None:
                     metadata["status"] = "failed_headless"
                     continue
@@ -161,17 +166,12 @@ def main():
                     metadata["status"] = "unverified_resume_no_session"
                     continue
                 resumed = call(tool, "resume", ["resume", session, "--agent", tool, "--cwd", str(work), "--json",
-                                               "Without reading any file or using tools, repeat the exact marker you remembered from the preceding turn. Reply with the marker only."], marker)
+                                               "Without reading any file or using tools, repeat the exact marker you remembered from the preceding turn. Reply with the marker only.",
+                                               "--"] + policy, marker)
                 metadata["status"] = "passed" if resumed is not None else "failed_resume"
-                if resumed is not None:
-                    successful.append(tool)
-            for tool in successful:
-                if report["invocations"] >= 6:
-                    break
-                call(tool, "cancel", ["run", "--agent", tool, "--cwd", str(work), "--json",
-                                      "Read r0-context.txt, then explain its content in detail. Do not modify any file or call other AI CLIs."])
-            report["unverified"] = ["Claude/Gemini/OpenCode native compatibility", "non-macOS native behavior"]
-            report["status"] = "passed_with_unverified" if any(t.get("status") == "passed" for t in report["tools"]) and all(c["status"] in ("success", "passed") for c in report["calls"]) else "partial_or_failed"
+            # A failed/missing CLI must not donate its slots to unrelated calls.
+            report["unverified"] = ["real native timeout/cancellation", "Claude/Gemini/OpenCode native compatibility", "non-macOS native behavior"]
+            report["status"] = "passed_with_unverified" if all(t.get("status") == "passed" for t in report["tools"]) and all(c["status"] in ("success", "passed") for c in report["calls"]) else "partial_or_failed"
     finally:
         report["ended_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         write_report()

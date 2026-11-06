@@ -1,0 +1,105 @@
+{
+  "checked_at": "2026-11-06T08:09:05Z",
+  "platform": "macOS-26.5.1-arm64-arm-64bit",
+  "machine": "arm64",
+  "go_version": "go version go1.26.4 darwin/arm64",
+  "native_model_launches": 0,
+  "cli": {
+    "codex": {
+      "version": "codex-cli 0.167.0",
+      "version_exit_code": 0,
+      "help": [
+        {
+          "argv": [
+            "codex",
+            "exec",
+            "--help"
+          ],
+          "exit_code": 0,
+          "duration_seconds": 0.011,
+          "present_flags": [
+            "--json",
+            "--output-schema",
+            "--image",
+            "--sandbox"
+          ]
+        },
+        {
+          "argv": [
+            "codex",
+            "exec",
+            "resume",
+            "--help"
+          ],
+          "exit_code": 0,
+          "duration_seconds": 0.01,
+          "present_flags": [
+            "--json",
+            "--output-schema",
+            "--image"
+          ]
+        }
+      ],
+      "authentication": {
+        "command": "codex login status",
+        "exit_code": 0,
+        "logged_in": true,
+        "chatgpt_login_reported": true
+      }
+    },
+    "cursor": {
+      "version": "2026.10.22-27dcf5f",
+      "version_exit_code": 0,
+      "help": [
+        {
+          "argv": [
+            "cursor-agent",
+            "--help"
+          ],
+          "exit_code": 0,
+          "duration_seconds": 0.392,
+          "present_flags": [
+            "--output-format",
+            "--resume",
+            "--sandbox",
+            "--mode",
+            "--stream-partial-output"
+          ]
+        }
+      ],
+      "authentication": {
+        "command": "cursor-agent status --format json",
+        "exit_code": 0,
+        "logged_in": true
+      }
+    },
+    "antigravity": {
+      "version": "1.5.2",
+      "version_exit_code": 0,
+      "help": [
+        {
+          "argv": [
+            "agy",
+            "--help"
+          ],
+          "exit_code": 0,
+          "duration_seconds": 0.055,
+          "present_flags": [
+            "--output-format",
+            "--json-schema",
+            "--conversation",
+            "--input-format",
+            "--sandbox",
+            "--mode",
+            "--print-timeout"
+          ]
+        }
+      ],
+      "authentication": {
+        "status": "NOT_TESTED",
+        "reason": "no model turn or login flow started"
+      }
+    }
+  },
+  "flag_check": "exact flag boundaries in current help; flags do not prove runtime behavior"
+}

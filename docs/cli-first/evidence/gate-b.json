@@ -1,0 +1,9 @@
+{
+  "kind": "offline-configuration-rejection",
+  "command": "$BINARY --config $TMP/native-cli.yaml model list",
+  "configuration": "version: 1\nbackends:\n  native:\n    type: native-cli\nmodels: {}\n",
+  "exit_code": 1,
+  "stderr": "Error: unsupported backend type (native CLI bridge is disabled)",
+  "gate_b": "BLOCKED",
+  "native_cli_launches": 0
+}
