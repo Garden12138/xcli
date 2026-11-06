@@ -16,7 +16,7 @@ spec.loader.exec_module(smoke)
 
 
 class SmokeHarnessTests(unittest.TestCase):
-    def run_fixture(self, installed, failed=None):
+    def run_fixture(self, installed, failed=None, reuse_preflight=False):
         launches = []
 
         def probe(argv, **kwargs):
@@ -52,6 +52,14 @@ class SmokeHarnessTests(unittest.TestCase):
             binary.write_bytes(b"offline fixture")
             out = root / "report.json"
             argv = ["smoke.py", "--binary", str(binary), "--out", str(out), "--execute"]
+            if reuse_preflight:
+                preflight = root / "preflight.json"
+                preflight.write_text(json.dumps({"cli": {tool: {"version": "fixture-version"} for tool in ["codex", "cursor", "antigravity"]}}))
+                argv += ["--preflight", str(preflight)]
+                def no_probe(argv, **kwargs):
+                    self.assertEqual(argv[0], "git", "reuse mode must not launch version/auth probes")
+                    return subprocess.CompletedProcess(argv, 0, "", "")
+                probe = no_probe
             with patch.object(sys, "argv", argv), \
                  patch.object(smoke.shutil, "which", side_effect=lambda command: command if command in installed else None), \
                  patch.object(smoke.subprocess, "run", side_effect=probe), \
@@ -89,6 +97,18 @@ class SmokeHarnessTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertEqual(report["invocations"], 0)
         self.assertEqual(launches, [])
+
+    def test_reuse_metadata_starts_only_six_model_tasks(self):
+        code, report, launches = self.run_fixture({"codex", "agy", "cursor-agent"}, reuse_preflight=True)
+        self.assertEqual(code, 0)
+        self.assertEqual(len(launches), 6)
+        self.assertTrue(all(call["acceptance_status"] == "PASS" for call in report["calls"]))
+        self.assertTrue(all(call["session_matches"] for call in report["calls"] if call["kind"] == "resume"))
+
+    def test_native_environment_excludes_api_keys_without_changing_account_root(self):
+        result = smoke.native_environment({"OPENAI_API_KEY": "fixture", "CURSOR_API_KEY": "fixture",
+                                           "CODEX_HOME": "/fixture/account", "PATH": "/fixture/bin"})
+        self.assertEqual(result, {"CODEX_HOME": "/fixture/account", "PATH": "/fixture/bin"})
 
 
 if __name__ == "__main__":

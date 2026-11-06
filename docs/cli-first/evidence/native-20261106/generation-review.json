@@ -1,0 +1,24 @@
+{
+  "scope": "offline review of the two existing generations; zero new model calls",
+  "observer_limitation": "exec/stream-json can omit nested media tool identity; absence alone is not a failed generation",
+  "generations": [
+    {
+      "agent": "codex",
+      "operation": "generate",
+      "status": "PASS",
+      "evidence_file": "codex-generate.png",
+      "sha256": "cf2638ab84bd063c83805ac5ff03d593ae5f6e81c31e7c36da511b39db969436",
+      "visual_review": "green plant, terracotta pot, cream background, no text; correct synthetic scene",
+      "provenance": "own-session tool call image_gen__imagegen verified without retaining arguments/chat"
+    },
+    {
+      "agent": "antigravity",
+      "operation": "generate",
+      "status": "PASS",
+      "evidence_file": "antigravity-generate.jpg",
+      "sha256": "a7ea7e3ae25038643d8b8f2e11fd1498242b58943dccc7e1d92dca3ebc81694e",
+      "visual_review": "green plant, terracotta pot, cream background, no text; correct synthetic scene",
+      "provenance": "native parent invoke_subagent observed; valid newly created JPEG from the authorized native task; child internal tool/request count opaque"
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 # CLI-first 验收与接入交付
 
-核查日期：2026-11-06。基线：`f529e047ca03ef749e3ac49abe146f2ef4b46eab`。
+核查日期：2026-11-06。离线基线：`f529e04`；本轮真实验收基线：`7e57c6774b4bcfd4735f0d4c35c7c7a3a58d2ac4`。
 
-**当前结论：离线门禁 PASS；原生真实文本/图片 NOT_TESTED（调用额度待明确授权）；CLI → Model Gateway 为 BLOCKED（未实现）。四应用只完成接入设计，不能启用 CLI 模型配置。**
+**当前结论：离线门禁 PASS；Codex、Antigravity 原生文本/同 Session/图片生成与编辑 PASS；Cursor 因工作区 trust BLOCKED（未重试）；CLI → Model Gateway 为 BLOCKED（未实现）。四应用只完成接入设计，不能启用 CLI 模型配置。**
 
 | 文档 | 用途 |
 | --- | --- |
@@ -16,4 +16,4 @@
 | [Chat Insight](integrations/CHAT_INSIGHT.md) | 对话、云同意与独立 Embedding |
 | [Contribution OS](integrations/CONTRIBUTION_OS.md) | 冻结 Profile、Run/Plan/Review 与容器边界 |
 
-[证据清单](evidence/source-manifest.json)、[离线门禁](evidence/phase1-offline.log)、[预检查](evidence/preflight.json)、[Gate B 拒绝复现](evidence/gate-b.json)、[预算记录](evidence/native-budget.json)。所有证据仅保留脱敏检查结果；没有复制原生凭据或聊天记录。
+[证据清单](evidence/source-manifest.json)、[离线门禁](evidence/phase1-offline.log)、[预检查](evidence/preflight.json)、[Gate B 拒绝复现](evidence/gate-b.json)、[预算记录](evidence/native-budget.json)。本轮真实启动 9/12 次（文本 5、媒体 4），剩余 3 次未使用；见[真实结果](evidence/native-20261106/media.json)。证据只保留合成图片、脱敏元数据和摘要，没有复制原生凭据或原始聊天。

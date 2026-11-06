@@ -1,0 +1,162 @@
+{
+  "kind": "real",
+  "started_at": "2026-11-06T12:37:52Z",
+  "binary_sha256": "0c431b9b6dd6ecd764fa5fb7f157dd58f9afa26605456c8e23f29b669ba1de35",
+  "max_invocations": 6,
+  "timeout_seconds": 120,
+  "invocations": 5,
+  "tools": [
+    {
+      "agent": "codex",
+      "installed": true,
+      "authentication": "unverified_this_round",
+      "version": "codex-cli 0.167.0",
+      "version_source": "earlier non-model preflight",
+      "version_checked_at": "2026-11-06T08:09:05Z",
+      "status": "passed"
+    },
+    {
+      "agent": "antigravity",
+      "installed": true,
+      "authentication": "unverified_this_round",
+      "version": "1.5.2",
+      "version_source": "earlier non-model preflight",
+      "version_checked_at": "2026-11-06T08:09:05Z",
+      "status": "passed"
+    },
+    {
+      "agent": "cursor",
+      "installed": true,
+      "authentication": "unverified_this_round",
+      "version": "2026.10.22-27dcf5f",
+      "version_source": "earlier non-model preflight",
+      "version_checked_at": "2026-11-06T08:09:05Z",
+      "status": "failed_headless"
+    }
+  ],
+  "calls": [
+    {
+      "agent": "codex",
+      "version": "codex-cli 0.167.0",
+      "kind": "headless",
+      "status": "success",
+      "cli_exit_code": 0,
+      "exit_code": 0,
+      "parse_status": "complete",
+      "usage": {
+        "input_tokens": 9031,
+        "cache_read_tokens": 24576,
+        "cache_write_tokens": 0,
+        "output_tokens": 73,
+        "reasoning_tokens": 0,
+        "total_tokens": 33680
+      },
+      "model_output_status": "success",
+      "output_sha256": "9e60f55fe097a652f64c3ac9844fb827f23fff7a2e639907d73e108cc2fd99b9",
+      "output_characters": 19,
+      "session_present": true,
+      "expected_marker_present": true,
+      "acceptance_status": "PASS",
+      "duration_seconds": 10.6
+    },
+    {
+      "agent": "codex",
+      "version": "codex-cli 0.167.0",
+      "kind": "resume",
+      "status": "success",
+      "cli_exit_code": 0,
+      "exit_code": 0,
+      "parse_status": "complete",
+      "usage": {
+        "input_tokens": 9288,
+        "cache_read_tokens": 41216,
+        "cache_write_tokens": 0,
+        "output_tokens": 89,
+        "reasoning_tokens": 0,
+        "total_tokens": 50593
+      },
+      "model_output_status": "success",
+      "output_sha256": "9e60f55fe097a652f64c3ac9844fb827f23fff7a2e639907d73e108cc2fd99b9",
+      "output_characters": 19,
+      "session_present": true,
+      "expected_marker_present": true,
+      "acceptance_status": "PASS",
+      "duration_seconds": 5.747,
+      "session_matches": true
+    },
+    {
+      "agent": "antigravity",
+      "version": "1.5.2",
+      "kind": "headless",
+      "status": "success",
+      "cli_exit_code": 0,
+      "exit_code": 0,
+      "parse_status": "complete",
+      "usage": {
+        "input_tokens": 17726,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0,
+        "output_tokens": 1337,
+        "reasoning_tokens": 1246,
+        "total_tokens": 19063
+      },
+      "model_output_status": "success",
+      "output_sha256": "9e60f55fe097a652f64c3ac9844fb827f23fff7a2e639907d73e108cc2fd99b9",
+      "output_characters": 19,
+      "session_present": true,
+      "expected_marker_present": true,
+      "acceptance_status": "PASS",
+      "duration_seconds": 57.725
+    },
+    {
+      "agent": "antigravity",
+      "version": "1.5.2",
+      "kind": "resume",
+      "status": "success",
+      "cli_exit_code": 0,
+      "exit_code": 0,
+      "parse_status": "complete",
+      "usage": {
+        "input_tokens": 28949,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0,
+        "output_tokens": 1422,
+        "reasoning_tokens": 1314,
+        "total_tokens": 30371
+      },
+      "model_output_status": "success",
+      "output_sha256": "9e60f55fe097a652f64c3ac9844fb827f23fff7a2e639907d73e108cc2fd99b9",
+      "output_characters": 19,
+      "session_present": true,
+      "expected_marker_present": true,
+      "acceptance_status": "PASS",
+      "duration_seconds": 66.153,
+      "session_matches": true
+    },
+    {
+      "agent": "cursor",
+      "version": "2026.10.22-27dcf5f",
+      "kind": "headless",
+      "status": "failed",
+      "diagnostic_category": "workspace_trust",
+      "cli_exit_code": 1,
+      "exit_code": 1,
+      "parse_status": "parse_error",
+      "error_kind": "process_failed",
+      "model_output_status": "failed",
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_characters": 0,
+      "session_present": false,
+      "expected_marker_present": false,
+      "acceptance_status": "BLOCKED",
+      "duration_seconds": 0.623
+    }
+  ],
+  "unverified": [
+    "real native timeout/cancellation",
+    "Claude/Gemini/OpenCode native compatibility",
+    "non-macOS native behavior"
+  ],
+  "status": "partial_or_failed",
+  "ended_at": "2026-11-06T12:40:13Z"
+}

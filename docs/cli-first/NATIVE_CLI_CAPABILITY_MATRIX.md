@@ -2,7 +2,9 @@
 
 2026-11-06；[本轮证据](evidence/preflight.json)、[预算记录](evidence/native-budget.json)、[报告](ACCEPTANCE_REPORT.md)。官方资料只说明可集成形态，见[来源与边界](OFFICIAL_SOURCES.md)。
 
-**本轮真实模型启动 0 次。文本和媒体均未获明确数额回复，以下 NOT_TESTED 不表示产品不支持。** PASS/FAIL/BLOCKED/NOT_TESTED 的含义见报告；`declared/help` 不等于 runtime。
+**本轮获批 12 次，实际启动 9 次：文本 5、媒体 4。Codex、Antigravity 各四项通过；Cursor 一次文本启动因 workspace trust BLOCKED，其余三项未执行。失败未重试，剩余 3 次不再使用。**
+
+[文本证据](evidence/native-20261106/text.json)、[媒体与视觉复核](evidence/native-20261106/media.json)。 PASS/FAIL/BLOCKED/NOT_SUPPORTED/NOT_TESTED 的含义见报告；`declared/help` 不等于 runtime。
 
 ## 本轮
 
@@ -11,15 +13,15 @@
 | 已安装版本 | PASS：0.167.0 | PASS：2026.10.22-27dcf5f | PASS：1.5.2 |
 | xcli doctor | PASS：帮助探测 | PASS：帮助探测 | PASS：帮助探测 |
 | 原有登录状态只读检查 | PASS：报告 ChatGPT 登录 | PASS：宿主 status 已认证 | NOT_TESTED |
-| 原有登录能实际推理 | NOT_TESTED | NOT_TESTED | NOT_TESTED |
-| headless 文本/独立标记 | NOT_TESTED | NOT_TESTED | NOT_TESTED |
-| 会话恢复/上下文标记 | NOT_TESTED | NOT_TESTED | NOT_TESTED |
-| 原生结构化事件与终止结果 | NOT_TESTED | NOT_TESTED | NOT_TESTED |
+| 原有登录能实际推理 | PASS | BLOCKED：trust 前置，非账号失效证明 | PASS |
+| headless 文本/独立标记 | PASS：10.600s | BLOCKED：0.623s，exit 1 | PASS：57.725s |
+| 会话恢复/上下文标记 | PASS：5.747s，同 ID | NOT_TESTED：前置 BLOCKED | PASS：66.153s，同 ID |
+| 原生结构化事件与终止结果 | PASS：JSONL/terminal | BLOCKED：未获得结果 | PASS：init/step_update/result |
 | 图片输入理解（Vision） | NOT_TESTED | NOT_TESTED | NOT_TESTED |
-| 真正文生图、有效字节 | NOT_TESTED | NOT_TESTED | NOT_TESTED |
-| 参考图编辑、原图未覆盖/视觉变化 | NOT_TESTED | NOT_TESTED | NOT_TESTED |
+| 真正文生图、有效字节 | PASS：PNG 1254×1254 | BLOCKED：未启动，trust 前置 | PASS：JPEG 1024×1024 |
+| 参考图编辑、原图未覆盖/视觉变化 | PASS：原图未变，花盆改蓝 | BLOCKED：未启动，trust 前置 | PASS：原图未变，花盆改蓝 |
 | 原生文本增量/首 token 延迟 | NOT_TESTED | NOT_TESTED | NOT_TESTED |
-| 工具实际调用及权限执行 | NOT_TESTED | NOT_TESTED | NOT_TESTED |
+| 工具实际调用及权限执行 | PASS：本次文件读取/媒体工具；非完整权限审计 | BLOCKED | PASS：本次读取/媒体子代理；内部不透明 |
 | JSON 对象内容 | NOT_TESTED | NOT_TESTED | NOT_TESTED |
 | 严格 JSON Schema 约束 | NOT_TESTED | NOT_TESTED | NOT_TESTED |
 | 原生运行中取消/超时 | NOT_TESTED | NOT_TESTED | NOT_TESTED |
@@ -44,7 +46,9 @@
 
 JSONL/stream-json 是事件信封；生成的文本是否符合业务 Schema 是另一项检查。CLI 自己执行的工具也不等于可交给消费应用执行的 Chat `tool_calls`。不能从工具清单推导可调用、从帮助参数推导权限生效，或从模型目录推导账号额度可用。
 
-本轮记录的帮助调用耗时见 preflight（约 0.01–0.4 秒量级），仅是帮助启动，不包含认证、网络、推理、媒体工具或交付，不能宣传为原生模型启动性能。
+先前帮助耗时仅是帮助启动。本轮媒体观察器的 first_stdout_seconds 是首个协议事件（Codex 约 0.06–0.08s，Antigravity 约 3.0–3.3s），不是首 token；实际任务耗时含模型/工具/交付开销，样本不足以进行性能排名。
+
+Codex 外层事件未直接暴露嵌套 image_gen 工具，已用本次隔离会话的工具标识补证；Antigravity 只观察到父级 invoke_subagent，不宣称内部调用次数。最初观察器误判记录和离线复核均保留；没有重新生成图片。图片输入仅在本次参考编辑中用到，独立 Vision 语义能力仍 NOT_TESTED。
 
 ## 历史证据（不计入本轮）
 
@@ -58,4 +62,4 @@ JSONL/stream-json 是事件信封；生成的文本是否符合业务 Schema 是
 
 历史 Antigravity 视频/音乐模型生成缺接口并被用户暂缓，FFmpeg 基础编辑不能替代模型能力；本轮不扩大这两项范围。历史 Task/Run 与应用假上游记录也只适用于原报告边界。
 
-补测顺序：批准的文本新会话/恢复 → 额外批准的图片生成/参考编辑 → 按实际缺口另申请 Vision/Schema/取消/并发预算。每一类分别更新证据、模型/版本、时间及状态，不批量把未知项提升为 PASS。
+下一步：先由本人决定 Cursor 临时项目的最小 trust 授权，并另立新预算；再按需求单独批准 Vision/Schema/取消/并发。当前不自动重试任何已失败场景。每一类分别更新证据、模型/版本、时间及状态，不批量把未知项提升为 PASS。

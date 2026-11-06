@@ -1,127 +1,108 @@
-# CLI-first 验收报告
+# CLI-first 真实验收报告
 
-日期：2026-11-06（Asia/Shanghai）。**整体 BLOCKED，未完成真实能力验收，不能宣称三个 CLI 或四应用整体通过。**
+日期：2026-11-06。**整体 BLOCKED；Codex、Antigravity 的本轮原生 Agent 能力部分 PASS；Cursor 被 workspace trust 阻断。Gate B 始终 BLOCKED，未新增 CLI → HTTP backend。**
 
-## 基线与工作区
+## 基线和预算
 
-| 项目 | 本轮事实 |
-| --- | --- |
-| xcli HEAD | `f529e047ca03ef749e3ac49abe146f2ef4b46eab` |
-| 机器 | macOS 26.5.1 / arm64 |
-| Go | 1.26.4，模块要求 1.26.0 |
-| 本轮源码构建 | `xcli version 0.5.0-r3-dev`，不是仓库已有二进制或发布版的验收 |
-| 初始 Git 状态 | 仅 `?? xcli-cli-first-acceptance/`；该用户提供目录保留原样 |
-| 范围 | 本仓库验收脚本修复、证据与文档；四消费仓库仅只读核对 |
+- 本轮 HEAD：`7e57c6774b4bcfd4735f0d4c35c7c7a3a58d2ac4`，开始时工作区干净。新构建 `0.5.0-r3-dev`；二进制 SHA-256：`0c431b9b6dd6ecd764fa5fb7f157dd58f9afa26605456c8e23f29b669ba1de35`。
+- macOS 26.5.1 / arm64，Go 1.26.4，Python 3 与 Pillow 12.2.0。
+- 用户明确批准文本最多 6、媒体额外最多 6 次原生 CLI 启动，失败不重试、不扩大原生权限、不改长期 trust、不 Push。
+- **实际 9 次：文本 5、媒体 4；8 个场景 PASS，1 个已启动场景 BLOCKED。剩余文本 1、媒体 2，共 3 次未使用，不转给其他场景。**
+- 本轮没有额外启动 native `--version`/登录状态探测；版本沿用当日先前的[只读预检查](evidence/preflight.json)，另记录[当前可执行文件摘要](evidence/native-20261106/bounded-preflight.json)。Codex 本轮会话元数据再次确认 0.167.0；Cursor 2026.10.22-27dcf5f、Antigravity 1.5.2 的版本来源如实保留为先前探测。
 
-已核对 README.zh-CN、`internal/agent` 的适配、探测、解码、用量及相关测试、`cmd/model*.go`、`internal/modelbackend`、`internal/modelstore/config.go`、历史媒体报告、Model Gateway 文档及 R0 smoke。历史计划中的“尚无 HTTP 网关”已不适用于当前源码；当前已有 HTTP 上游网关，但仍无原生 CLI 后端。
+每个进程可能有多轮推理、工具或子代理请求。报告保留原生上报的 usage，但它可能含缓存或累计统计，**不能当精确请求次数或账单**。没有观察到显式额外支付提示，没有购买/启用付费额度；不能据此保证实际 credits/费用为零。常见 API Key/ADC 环境变量在测试子进程中屏蔽，保留已有原生账号根；未读取或复制登录凭据、登录/注销/切换账号。
+
+[最终账本](evidence/native-budget.json)、[文本原始脱敏结果](evidence/native-20261106/text.json)、[媒体复核结果](evidence/native-20261106/media.json)、[阶段转换记录](evidence/native-20261106/phase-transition.json)。
 
 ## Gates
 
-| Gate | 状态 | 能证明的范围 |
+| Gate | 状态 | 证据范围 |
 | --- | --- | --- |
-| Phase 1 离线门禁 | PASS | 源码 test/race/vet/build、安装与 doctor、假上游生命周期 |
-| A：原生 CLI → xcli run/resume 文本 | NOT_TESTED | 预算确认仍待回复，真实推理启动 0 次 |
-| A：原生图片输入/生成/编辑 | NOT_TESTED | 额外媒体预算待确认，真实媒体启动 0 次 |
-| B：CLI → `/v1/*` | BLOCKED | 配置明确拒绝 native CLI backend，命令构建只创建 HTTP backend |
-| C：四应用使用 CLI 能力 | BLOCKED | 依赖尚未实现的 Agent 接口；本轮仅设计 |
-| 四应用 UI、部署、异机、Mac 真实重启 | NOT_TESTED | 本轮没有运行或授权这些操作 |
+| 第一阶段离线门禁 | PASS（前一阶段） | test/race/vet/build、doctor、假上游生命周期；不是真实 CLI 模型 API |
+| A：Codex 文本/同 Session/生成/编辑 | PASS | 本轮 4 次，独立标记、真实图片及参考编辑 |
+| A：Antigravity 同上 | PASS | 本轮 4 次；子代理内部请求数不完整可观测 |
+| A：Cursor | BLOCKED | 唯一一次启动被工作区 trust 拒绝；没有改 trust 或重试 |
+| B：原生 CLI → `/v1/*` | **BLOCKED** | 尚无 Native CLI Backend；没有实现或运行此链路 |
+| C：四应用消费原生能力 | BLOCKED / Planned | 仅更新设计，未改业务代码或运行 UI |
+| Schema、独立 Vision、并发、真实取消/超时、异机/重启 | NOT_TESTED | 未用剩余额度填补这些未授权场景 |
 
-PASS 表示在注明环境真实执行且满足检查；FAIL 表示执行后不满足；BLOCKED 表示缺实现或前置条件；NOT_TESTED 表示未执行。登录状态、帮助标志及历史记录不提升为本轮推理 PASS。
+PASS 是本次具体场景通过；FAIL 是实际未满足验收；BLOCKED 是权限/网络/额度/实现等前置受阻；NOT_SUPPORTED 只用于明确不支持的能力；NOT_TESTED 是未执行。本轮未观察到可断言 NOT_SUPPORTED 的真实场景，不能把 Cursor trust 误写成“不支持文本/图片”。
 
-## 实际执行与证据
+## 逐次结果
 
-先运行原始要求的命令：
+退出码按“xcli/原生”列示；媒体原生退出还由透明观察器记录。顺序先完整结束文本组，再开始媒体；媒体生成两次后离线复核，再各编辑一次，没有重复任何生成或失败文本调用。
+
+| CLI | 调用类型 | 最终状态 | 秒 | 退出码 | 判定 |
+| --- | --- | --- | --- | --- | --- |
+| codex | headless | PASS | 10.600 | 0/0 | 独立标记正确 |
+| codex | resume | PASS | 5.747 | 0/0 | 独立标记正确；同 Session |
+| antigravity | headless | PASS | 57.725 | 0/0 | 独立标记正确 |
+| antigravity | resume | PASS | 66.153 | 0/0 | 独立标记正确；同 Session |
+| cursor | headless | BLOCKED | 0.623 | 1/1 | workspace_trust |
+| codex | image generate | PASS | 44.176 | 0/0 | PNG 1254×1254；文件/视觉核验 |
+| antigravity | image generate | PASS | 58.094 | 0/0 | JPEG 1024×1024；文件/视觉核验 |
+| codex | image edit | PASS | 49.039 | 0/0 | PNG 1254×1254；文件/视觉核验 |
+| antigravity | image edit | PASS | 80.473 | 0/0 | JPEG 1024×1024；文件/视觉核验 |
+
+Cursor 的 continue、generate、edit 均未启动：执行状态 NOT_TESTED，前置 Gate BLOCKED（workspace_trust）。首次失败 native=1、无输出/Session，xcli 归一化为 process_failed/parse_error；这不等于模型返回了坏 JSON。没有用另一个 CLI 替代 Cursor 的通过。最小调用形态如下（已经执行过，本轮不要重跑）：
 
 ```bash
-bash xcli-cli-first-acceptance/verify-phase1.sh --race
+"$BINARY" --config "$CONFIG" run --agent cursor --cwd "$ISOLATED_PROJECT" --json \
+  'Read only r0-context.txt and reply with its exact marker.' \
+  -- --mode ask --sandbox enabled
 ```
 
-第一次退出 1，受默认 Go 缓存权限限制；改用临时 `GOCACHE` 后仍退出 1，HTTP 测试夹具因沙箱禁止监听 loopback 而失败。分别保留[初始日志](evidence/phase1-sandbox-initial.log)与[临时缓存日志](evidence/phase1-sandbox-cache.log)，没有把它们计为通过。
+文本每次只读临时 Git 项目中的随机合成标记；继续调用不提供该标记、不允许读文件，标记相同且 Session ID 一致。原始输出不保存，仅留摘要和判定。Codex 使用 read-only/approval_policy=never，Cursor ask+sandbox，Antigravity plan+sandbox。为访问已有 Keychain/会话存储使用经审批的宿主执行环境；没有放松 CLI 自身沙箱或改变全局授权。
 
-获得执行环境的精确命令权限后，在宿主权限下运行：
+## 媒体字节与视觉
 
-```bash
-env GOCACHE=/tmp/xcli-cli-first-go-cache GOPROXY=off GOSUMDB=off \
-  bash xcli-cli-first-acceptance/verify-phase1.sh --race
-```
+| 文件 | MIME | 尺寸 | 字节 | SHA-256 |
+| --- | --- | --- | --- | --- |
+| [codex-generate.png](evidence/native-20261106/artifacts/codex-generate.png) | image/png | 1254×1254 | 1959177 | `cf2638ab84bd063c83805ac5ff03d593ae5f6e81c31e7c36da511b39db969436` |
+| [antigravity-generate.jpg](evidence/native-20261106/artifacts/antigravity-generate.jpg) | image/jpeg | 1024×1024 | 470653 | `a7ea7e3ae25038643d8b8f2e11fd1498242b58943dccc7e1d92dca3ebc81694e` |
+| [codex-edit.png](evidence/native-20261106/artifacts/codex-edit.png) | image/png | 1254×1254 | 2073699 | `ea5568fa8213b14a75f21f05c34581252ae1290ea640c992de19cebb66515285` |
+| [antigravity-edit.jpg](evidence/native-20261106/artifacts/antigravity-edit.jpg) | image/jpeg | 1024×1024 | 541008 | `9e852c568ed988cea9ee050a8c0d7d871aa07133ec568c6c5575e8c56a55fb41` |
 
-退出 0，[完整脱敏日志](evidence/phase1-offline.log)。`GOPROXY=off/GOSUMDB=off` 使用本机已有依赖；不发模型请求。
+完整解码与真实格式均通过，未强制转码或只改后缀。两次编辑的工作区参考文件哈希与证据原图均保持不变；Codex 全图归一化像素差约 0.070025，Antigravity 约 0.025542。人工视觉核对确认花盆变为鲜蓝色，植物、米白背景和主体构图保留；像素差不是单独的语义成功依据。
 
-| 检查 | 状态 | 限定 |
+| CLI | 原图 | 编辑后 |
 | --- | --- | --- |
-| `go test ./...` | PASS | 包含确定性原生协议/进程夹具；部分包使用 Go 测试缓存 |
-| `go vet ./...` | PASS | 静态检查 |
-| `go build -trimpath -o "$BINARY" .` | PASS | 临时新二进制，未覆盖仓库 `./xcli` |
-| `go test -race ./...` | PASS | 全包命令；Task 包 165.147 秒，其余部分缓存 |
-| `xcli --version`、`agents --json` | PASS | 发现安装与声明能力，不验证推理 |
-| `doctor codex/cursor/antigravity --json` | PASS | 帮助探测，不验证额度/权限执行 |
-| `tests/model_gateway/lifecycle.py` | PASS | 1 次本机假上游 HTTP 请求，0 次原生 CLI 推理 |
-| 修复后的 smoke 离线回归 | PASS | 4 项，子进程/探测均为测试替身，0 次模型调用 |
-| `--native-smoke` | NOT_TESTED | 未收到明确的本轮调用额度回复，尚未执行 |
+| Codex | ![原图](evidence/native-20261106/artifacts/codex-generate.png) | ![编辑](evidence/native-20261106/artifacts/codex-edit.png) |
+| Antigravity | ![原图](evidence/native-20261106/artifacts/antigravity-generate.jpg) | ![编辑](evidence/native-20261106/artifacts/antigravity-edit.jpg) |
 
-生命周期覆盖并发 start 单实例、端口 0、真实本机 HTTP、独立 Token 轮换/撤销、改配置须重启、stop/重复 stop/restart/陈旧停止隔离与端口冲突。其 HTTP 服务会自动清理，没有安装常驻服务。
+### 工具来源与观察器修正
 
-[预检查](evidence/preflight.json)确认 Codex 0.167.0、Cursor 2026.10.22-27dcf5f、Antigravity 1.5.2。Codex `login status` 报告已有 ChatGPT 登录；Cursor 在沙箱内报告未认证，宿主权限下 `status --format json` 为已认证，因此不能将沙箱结果写成账号失效。没有调用登录、注销、切换账号，也没有打开凭据文件。Antigravity 登录有效性未验证。
+`native_audit.py` 只调用真实原生可执行文件，逐字节转发 stdout，不替换、制造或修饰模型回答；仅保存事件种类/工具标识/退出码/时间/输出摘要。离线测试验证转发字节完全一致且不保留聊天内容。
 
-帮助调用耗时仅记录本地启动与帮助解析；不作为模型首 token、冷启动延迟或速度比较。
+初版观察器把“未在外层 JSONL 中出现 image 工具名”当作生成失败；两张图其实已生成且有效。保留[最初观察记录](evidence/native-20261106/media-initial-observer.json)，在**零新增生成调用**下纠正了观察器判定：[生成复核](evidence/native-20261106/generation-review.json)。这不是把失败模型重试成功。
 
-## Gate B 最小复现
+Codex 外层只显示 command_execution 等事件；在严格匹配本次隔离 cwd 的新会话记录中，仅提取工具标识，确认 generate/edit 都调用了 `image_gen__imagegen`，编辑还调用 `view_image`。[脱敏来源证据](evidence/native-20261106/codex-native-provenance.json)不含参数、输出、原始聊天或凭据。Antigravity 外层确认 invoke_subagent；新产生的 JPEG、提示目标及视觉结果一致，但子代理内部工具/模型调用数不透明，不声称精确 generate_image 次数。
 
-`internal/modelstore/config.go` 只允许 `openai-compatible`、`openai-images`、`openai-compatible-embeddings`。`cmd/model.go` 只实例化 `modelbackend.NewOpenAI`；没有调用 Agent Runtime。`internal/modelbackend/fake` 只是测试夹具。
+两次编辑各仅一次，使用已复核生成图的精确字节副本，未覆盖原图。[编辑观察记录](evidence/native-20261106/media-edit-observer.json)与最终复核并列保存；最终 PASS 包含文件和人工视觉检查，不是单看 success/exit 0。
 
-```yaml
-# 保存到临时 native-cli.yaml，离线即可复现
-version: 1
-backends:
-  native:
-    type: native-cli
-models: {}
-```
+## 命令与复现边界
+
+本轮新构建使用 `GOCACHE=/tmp/xcli-cli-first-go-cache GOPROXY=off GOSUMDB=off go build -trimpath -o "$BINARY" .`，退出 0。实际文本入口：
 
 ```bash
-"$BINARY" --config "$TMPDIR/native-cli.yaml" model list
+python3 tests/r0/smoke.py --binary "$BINARY" --execute \
+  --preflight docs/cli-first/evidence/preflight.json --out "$PRIVATE/text.json"
 ```
 
-实际退出 1：`unsupported backend type (native CLI bridge is disabled)`。见[机器可读证据](evidence/gate-b.json)。这是配置拒绝测试成功，不是原生模型 API 成功。将 endpoint 改为 OpenAI/Ollama 或把 `upstream_model` 命名为 codex 都不能补上这一缺口。
+先前离线门禁已完成，所以直接使用等效的原生 smoke，不重复执行包含假上游的整个 shell 包。媒体入口为 `tests/r0/native_media.py --execute`，固定最多各一次生成/编辑；观察器需要离线复核时使用 `--edit-only --verified-generations ... --prior-media-report ...`，只消费此前未使用的编辑槽，不重新生图。完整参数合同见脚本帮助与[手册](XCLI_USER_MANUAL.md)。**这些命令再次运行会消耗新额度，本轮已停止，不自动重跑。**
 
-## 已复现并修复的最小缺陷
+本轮在真实 Run 的私有 XDG 数据目录验证 `runs list --json`、`runs show ID` 均退出 0，原始 output_file 未保存；见[运行记录检查](evidence/native-20261106/run-inspection.json)。全部前台 CLI 已自然退出，未安装后台服务。没有强制取消/超时测试，不能宣称 Ctrl-C、后台 stop 或云端媒体撤销已真实验收。
 
-原 `tests/r0/smoke.py` 的整体判断使用 `any(tool passed)`。离线回归复现：仅 Codex 安装并成功时，即使另外两种缺失，脚本仍返回 0。现改为三种都通过才返回成功；缺失/未登录/失败保留 partial。
+## 离线门禁与修复回归
 
-同时固定每个 CLI 仅 headless/resume 各一次，不再把失败 CLI 剩余额度借给其他 CLI 的 cancel 探查。合计最多 6 次，失败不重试。以每进程只读/plan/ask 与 sandbox 参数约束文本测试，不修改全局配置或 trust。
+前一阶段基线 `f529e04` 的 `bash xcli-cli-first-acceptance/verify-phase1.sh --race` 最初受 Go 缓存/loopback 沙箱限制而失败；在临时缓存及获批宿主测试权限下退出 0。[通过日志](evidence/phase1-offline.log)、[缓存限制](evidence/phase1-sandbox-initial.log)、[loopback 限制](evidence/phase1-sandbox-cache.log)均保留。生命周期只产生 1 次假上游 HTTP 调用，不是 CLI 模型成功。
 
-回归命令：
+本轮没有改 Go 产品代码，因此不把旧 Go test/race 说成本轮重新运行。新构建通过；验收脚本离线回归 11/11 通过：[日志](evidence/native-20261106/harness-tests.log)。覆盖原有部分通过误判、无探测启动预算、API Key 屏蔽、同 Session 判定、透明转发、真实格式/symlink 拒绝，以及嵌套工具不可见时需复核而非虚假失败、有效图片不能盖过额外付费或权限阻断信号。
 
-```bash
-env PYTHONDONTWRITEBYTECODE=1 \
-  python3 -m unittest discover -s tests/r0 -p 'test_smoke.py' -v
-```
+## Gate B 与四应用
 
-修复前 4 项中 1 项失败；修复后 4/4 通过。[日志](evidence/smoke-harness-tests.log)。覆盖缺 CLI 不通过、完整三对最多六次、带正确标记但非零退出不通过且不重试、全部缺失不启动。未修改 xcli 产品业务代码或新增桥接框架。
+`internal/modelstore/config.go` 仍只允许 `openai-compatible`、`openai-images`、`openai-compatible-embeddings`，`cmd/model.go` 仍仅创建 HTTP backend。此前离线复现 `type: native-cli` 被拒：`unsupported backend type (native CLI bridge is disabled)`，见[证据](evidence/gate-b.json)。这轮 Agent 成功没有改变此事实，也没有调用 `/v1/chat/completions` 或 `/v1/images/*` 验收原生 CLI。
 
-## 调用预算与后续执行
+四应用现有 HTTP provider 与未来 Agent 模式分开设计：[Worklog](integrations/WORKLOG.md)、[GardenFlow](integrations/GARDEN_FLOW.md)、[Chat Insight](integrations/CHAT_INSIGHT.md)、[Contribution OS](integrations/CONTRIBUTION_OS.md)。已有消费源码基线仅作只读参考，本轮没有修改四仓库、读取真实业务数据库或运行 UI，没有 Push、发布、生产部署或付费开通。[最终只读比较](evidence/native-20261106/consumer-preservation.json)中，前三仓库与先前基线一致；Contribution OS 的 HEAD/工作区元数据已变化，但所选接入源码摘要未变，本轮未写入或覆盖其独立改动。
 
-已提出一次明确授权请求：[预算账本](evidence/native-budget.json)。待选额度为文本最多 6 次进程启动、媒体额外最多 6 次（各 CLI 生图/编辑各 1 次）；进程内部模型轮数和费用并不完全可观测。权限扩大只批准了离线门禁和只读认证探测，不等于批准模型额度。
-
-收到文本授权后，执行 `bash xcli-cli-first-acceptance/verify-phase1.sh --native-smoke`，每次最长 120 秒，不重试、不自动 trust。原生工作区审批若阻止临时项目运行，记 BLOCKED，不追加全权限参数。成功路径六次已用尽；真实超时/取消需要另列预算，不能偷偷追加启动。
-
-收到媒体授权后，各 CLI 在独立临时合成项目中最多生成一次、参考编辑一次。优先编辑本轮生成图；生成失败时只能使用明确标记的合成参考夹具，不能把夹具算作生图成功。保留原生 PNG/JPEG/WebP 字节，核对魔数、MIME、完整解码、尺寸、SHA-256、输入未覆盖及视觉差异；确认实际使用原生图片工具，禁止改用代码绘图、普通 API、Ollama 或助手的图片工具补成功。没有合法工具、图片读取/交付被拒或无有效字节时如实 BLOCKED/FAIL，并停止该场景。
-
-## 消费仓库只读基线
-
-| 仓库 | HEAD | 初始脏项数量 |
-| --- | --- | --- |
-| Worklog | `e38f2a4901d871777989ffee6684e836370e70aa` | 0 |
-| GardenFlow | `33b59295888f5cd34abab902182c08cf6f5442b7` | 0 |
-| Chat Insight | `920c900a2c8685cc92e9ba4b065cc77216e1b99d` | 11 |
-| Contribution OS | `8aa905151329f03e32397c3d1e057bf2a0ac2950` | 7 |
-
-仅核对源码路径和现有接入边界，不读取业务数据库、聊天内容或 secrets。后两者已有用户改动，后续工程必须重新核对 HEAD/diff，不能重放旧补丁覆盖。本轮不修改四仓库、不运行 UI、不部署、不 push/release。
-
-下一步先补获授权的 A 真实证据，再按[接入架构](INTEGRATION_ARCHITECTURE.md)单独确认最小 Agent API 工程范围。即使 A 全通过，B 和 C 也保持 BLOCKED，直到实现与各自真实验收完成。
-
-## 交付检查
-
-10 份 Markdown 文档的 42 处本地链接、5 份 JSON、两个 Python 文件语法、证据/源码摘要和四应用所选源码/工作区状态核对通过；未发现未脱敏 home/email 标记。`bash -n xcli-cli-first-acceptance/verify-phase1.sh` 与 `git diff --check` 通过。检查的是本地链接存在性；官方资料已在当日实际打开核对，不据此保证网页今后不变。
-
-最终工作区仅新增本组文档/证据、离线回归测试，修改 `tests/r0/smoke.py`；用户原有验收目录保留。无提交、push、release、服务安装或消费应用写入。
+下一步：若继续 Cursor，需要本人审查隔离项目并决定最小 trust 授权，再另立新的验收预算；本轮不自动处理。Native Agent Gateway 仍是[下一阶段方案](INTEGRATION_ARCHITECTURE.md)，需单独确认工程范围，先做认证/审批/预算/取消/Artifact 合同，再验收 HTTP→CLI；Embedding、严格 Schema、原生增量和应用 UI 分别保留独立门禁。

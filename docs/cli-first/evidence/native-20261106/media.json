@@ -1,0 +1,259 @@
+{
+  "kind": "real-native-media-reviewed",
+  "invocations": 4,
+  "max_invocations": 6,
+  "automatic_retries": 0,
+  "calls": [
+    {
+      "agent": "codex",
+      "version": "codex-cli 0.167.0",
+      "kind": "generate",
+      "status": "PASS",
+      "timeout_seconds": 180,
+      "native_timeout_seconds": null,
+      "xcli_exit_code": 0,
+      "exit_code": 0,
+      "parse_status": "complete",
+      "usage": {
+        "input_tokens": 16676,
+        "cache_read_tokens": 46336,
+        "cache_write_tokens": 0,
+        "output_tokens": 308,
+        "reasoning_tokens": 236,
+        "total_tokens": 63556
+      },
+      "model_output_status": "success",
+      "output_sha256": "b75320101ba025c690b0f768864e7178f268ce86b460c86a5a9333f8a2856f45",
+      "diagnostic_category": "unclassified",
+      "artifact": {
+        "format": "PNG",
+        "mime": "image/png",
+        "width": 1254,
+        "height": 1254,
+        "byte_length": 1959177,
+        "sha256": "cf2638ab84bd063c83805ac5ff03d593ae5f6e81c31e7c36da511b39db969436",
+        "evidence_file": "codex-generate.png",
+        "native_origin_path_redacted": true
+      },
+      "native_audit": {
+        "native_started": true,
+        "stdout_sha256": "077634a0c00745eb80c25a78fd243100f22df9c5b02fc92f121e161512c00930",
+        "event_types": {
+          "thread.started": 1,
+          "turn.started": 1,
+          "item.completed": 3,
+          "item.started": 1,
+          "turn.completed": 1
+        },
+        "observed_tool_names": [
+          "command_execution"
+        ],
+        "image_tool_events": 0,
+        "parse_errors": 0,
+        "first_stdout_seconds": 0.061,
+        "native_exit_code": 0,
+        "duration_seconds": 44.101
+      },
+      "duration_seconds": 44.176,
+      "observer_status": "FAIL",
+      "reviewed_at": "2026-11-06T12:49:36Z",
+      "visual_review": "green plant, terracotta pot, cream background, no text; correct synthetic scene",
+      "provenance": "own-session tool call image_gen__imagegen verified without retaining arguments/chat"
+    },
+    {
+      "agent": "antigravity",
+      "version": "1.5.2",
+      "kind": "generate",
+      "status": "PASS",
+      "timeout_seconds": 180,
+      "native_timeout_seconds": 120,
+      "xcli_exit_code": 0,
+      "exit_code": 0,
+      "parse_status": "complete",
+      "usage": {
+        "input_tokens": 26225,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0,
+        "output_tokens": 1399,
+        "reasoning_tokens": 1210,
+        "total_tokens": 27624
+      },
+      "model_output_status": "success",
+      "output_sha256": "881bcf7f46de895e83fb5c86ce558ac05dc4608a82b08690e7fbe51979d48f1c",
+      "diagnostic_category": "unclassified",
+      "artifact": {
+        "format": "JPEG",
+        "mime": "image/jpeg",
+        "width": 1024,
+        "height": 1024,
+        "byte_length": 470653,
+        "sha256": "a7ea7e3ae25038643d8b8f2e11fd1498242b58943dccc7e1d92dca3ebc81694e",
+        "evidence_file": "antigravity-generate.jpg",
+        "native_origin_path_redacted": true
+      },
+      "native_audit": {
+        "native_started": true,
+        "stdout_sha256": "e9b1525530d59604cefdf113d6e1d4f1a6ade19761937615c0279e2f45d13383",
+        "event_types": {
+          "init": 1,
+          "step_update": 16,
+          "result": 1
+        },
+        "observed_tool_names": [
+          "invoke_subagent",
+          "subagent",
+          "subagent_info"
+        ],
+        "image_tool_events": 0,
+        "parse_errors": 0,
+        "first_stdout_seconds": 3.017,
+        "native_exit_code": 0,
+        "duration_seconds": 58.047
+      },
+      "duration_seconds": 58.094,
+      "observer_status": "FAIL",
+      "reviewed_at": "2026-11-06T12:49:36Z",
+      "visual_review": "green plant, terracotta pot, cream background, no text; correct synthetic scene",
+      "provenance": "native parent invoke_subagent observed; valid newly created JPEG from the authorized native task; child internal tool/request count opaque"
+    },
+    {
+      "agent": "codex",
+      "version": "codex-cli 0.167.0",
+      "kind": "edit",
+      "status": "PASS",
+      "timeout_seconds": 180,
+      "native_timeout_seconds": null,
+      "xcli_exit_code": 0,
+      "exit_code": 0,
+      "parse_status": "complete",
+      "usage": {
+        "input_tokens": 18976,
+        "cache_read_tokens": 87296,
+        "cache_write_tokens": 0,
+        "output_tokens": 481,
+        "reasoning_tokens": 56,
+        "total_tokens": 106809
+      },
+      "model_output_status": "success",
+      "output_sha256": "dc93a466dd8386b6d20ef698362d7cf957d3fd34c8a9fff20a4c05f8b9421114",
+      "diagnostic_category": "unclassified",
+      "artifact": {
+        "format": "PNG",
+        "mime": "image/png",
+        "width": 1254,
+        "height": 1254,
+        "byte_length": 2073699,
+        "sha256": "ea5568fa8213b14a75f21f05c34581252ae1290ea640c992de19cebb66515285",
+        "evidence_file": "codex-edit.png",
+        "native_origin_path_redacted": true
+      },
+      "native_audit": {
+        "native_started": true,
+        "stdout_sha256": "fe625b36d330a0fc9e9e30784b0cff1bdf5ce099c0828dca86b5bc1a284b8724",
+        "event_types": {
+          "thread.started": 1,
+          "turn.started": 1,
+          "item.completed": 3,
+          "item.started": 1,
+          "turn.completed": 1
+        },
+        "observed_tool_names": [
+          "command_execution"
+        ],
+        "image_tool_events": 0,
+        "parse_errors": 0,
+        "first_stdout_seconds": 0.08,
+        "native_exit_code": 0,
+        "duration_seconds": 48.889
+      },
+      "original_unchanged": true,
+      "normalized_mean_pixel_difference": 0.070025,
+      "duration_seconds": 49.039,
+      "observer_status": "PASS_BYTES_PENDING_REVIEW",
+      "reviewed_at": "2026-11-06T12:49:36Z",
+      "visual_review": "pot changed to vivid blue; plant, background and composition preserved; actual reference retained",
+      "provenance": "own-session image_gen__imagegen and view_image confirmed",
+      "evidence_original_unchanged": true
+    },
+    {
+      "agent": "antigravity",
+      "version": "1.5.2",
+      "kind": "edit",
+      "status": "PASS",
+      "timeout_seconds": 180,
+      "native_timeout_seconds": 120,
+      "xcli_exit_code": 0,
+      "exit_code": 0,
+      "parse_status": "complete",
+      "usage": {
+        "input_tokens": 46983,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0,
+        "output_tokens": 2452,
+        "reasoning_tokens": 2003,
+        "total_tokens": 49435
+      },
+      "model_output_status": "success",
+      "output_sha256": "1e5fac4b5cd032c17db33b49023bc3345b869281a69ce9d6c2d751ec9b63e191",
+      "diagnostic_category": "unclassified",
+      "artifact": {
+        "format": "JPEG",
+        "mime": "image/jpeg",
+        "width": 1024,
+        "height": 1024,
+        "byte_length": 541008,
+        "sha256": "9e852c568ed988cea9ee050a8c0d7d871aa07133ec568c6c5575e8c56a55fb41",
+        "evidence_file": "antigravity-edit.jpg",
+        "native_origin_path_redacted": true
+      },
+      "native_audit": {
+        "native_started": true,
+        "stdout_sha256": "69c9e755116f3a2ced7676a89d9cd080980f4128b56552e97660aaa714895839",
+        "event_types": {
+          "init": 1,
+          "step_update": 21,
+          "result": 1
+        },
+        "observed_tool_names": [
+          "invoke_subagent",
+          "run_command",
+          "subagent",
+          "subagent_info"
+        ],
+        "image_tool_events": 0,
+        "parse_errors": 0,
+        "first_stdout_seconds": 3.297,
+        "native_exit_code": 0,
+        "duration_seconds": 80.387
+      },
+      "original_unchanged": true,
+      "normalized_mean_pixel_difference": 0.025542,
+      "duration_seconds": 80.473,
+      "observer_status": "PASS_BYTES_PENDING_REVIEW",
+      "reviewed_at": "2026-11-06T12:49:36Z",
+      "visual_review": "pot changed to vivid blue; plant, background and composition preserved; actual reference retained",
+      "provenance": "native invoke_subagent observed; child internal requests opaque",
+      "evidence_original_unchanged": true
+    }
+  ],
+  "skipped": [
+    {
+      "agent": "cursor",
+      "kind": "generate",
+      "status": "BLOCKED",
+      "started": false,
+      "reason": "workspace_trust_precondition",
+      "execution_status": "NOT_TESTED"
+    },
+    {
+      "agent": "cursor",
+      "kind": "edit",
+      "status": "BLOCKED",
+      "started": false,
+      "reason": "workspace_trust_precondition",
+      "execution_status": "NOT_TESTED"
+    }
+  ],
+  "review_method": "real file bytes/full decode/hash/original-preservation plus visual inspection; raw observer records retained separately",
+  "internal_model_requests": "not fully observable"
+}

@@ -1,0 +1,23 @@
+{
+  "authorized_text": 6,
+  "authorized_media": 6,
+  "text_starts": 5,
+  "media_starts": 0,
+  "text_results": {
+    "PASS": 4,
+    "BLOCKED": 1
+  },
+  "unused_text_starts": 1,
+  "text_group_completed": true,
+  "media_precondition_passed": [
+    "codex",
+    "antigravity"
+  ],
+  "media_precondition_blocked": [
+    "cursor"
+  ],
+  "media_max_additional_starts": 4,
+  "automatic_retries": 0,
+  "extra_paid_access_enabled": false,
+  "billing_visibility": "No extra-payment signal observed; internal requests and subscription/credit charges are not fully observable."
+}

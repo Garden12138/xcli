@@ -1,0 +1,140 @@
+{
+  "kind": "real-native-media",
+  "max_process_starts": 6,
+  "invocations": 2,
+  "started_at": "2026-11-06T12:43:07Z",
+  "calls": [
+    {
+      "agent": "codex",
+      "version": "codex-cli 0.167.0",
+      "kind": "generate",
+      "status": "FAIL",
+      "timeout_seconds": 180,
+      "native_timeout_seconds": null,
+      "xcli_exit_code": 0,
+      "exit_code": 0,
+      "parse_status": "complete",
+      "usage": {
+        "input_tokens": 16676,
+        "cache_read_tokens": 46336,
+        "cache_write_tokens": 0,
+        "output_tokens": 308,
+        "reasoning_tokens": 236,
+        "total_tokens": 63556
+      },
+      "model_output_status": "success",
+      "output_sha256": "b75320101ba025c690b0f768864e7178f268ce86b460c86a5a9333f8a2856f45",
+      "diagnostic_category": "unclassified",
+      "artifact": {
+        "format": "PNG",
+        "mime": "image/png",
+        "width": 1254,
+        "height": 1254,
+        "byte_length": 1959177,
+        "sha256": "cf2638ab84bd063c83805ac5ff03d593ae5f6e81c31e7c36da511b39db969436",
+        "evidence_file": "codex-generate.png",
+        "native_origin_path_redacted": true
+      },
+      "native_audit": {
+        "native_started": true,
+        "stdout_sha256": "077634a0c00745eb80c25a78fd243100f22df9c5b02fc92f121e161512c00930",
+        "event_types": {
+          "thread.started": 1,
+          "turn.started": 1,
+          "item.completed": 3,
+          "item.started": 1,
+          "turn.completed": 1
+        },
+        "observed_tool_names": [
+          "command_execution"
+        ],
+        "image_tool_events": 0,
+        "parse_errors": 0,
+        "first_stdout_seconds": 0.061,
+        "native_exit_code": 0,
+        "duration_seconds": 44.101
+      },
+      "duration_seconds": 44.176
+    },
+    {
+      "agent": "antigravity",
+      "version": "1.5.2",
+      "kind": "generate",
+      "status": "FAIL",
+      "timeout_seconds": 180,
+      "native_timeout_seconds": 120,
+      "xcli_exit_code": 0,
+      "exit_code": 0,
+      "parse_status": "complete",
+      "usage": {
+        "input_tokens": 26225,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0,
+        "output_tokens": 1399,
+        "reasoning_tokens": 1210,
+        "total_tokens": 27624
+      },
+      "model_output_status": "success",
+      "output_sha256": "881bcf7f46de895e83fb5c86ce558ac05dc4608a82b08690e7fbe51979d48f1c",
+      "diagnostic_category": "unclassified",
+      "artifact": {
+        "format": "JPEG",
+        "mime": "image/jpeg",
+        "width": 1024,
+        "height": 1024,
+        "byte_length": 470653,
+        "sha256": "a7ea7e3ae25038643d8b8f2e11fd1498242b58943dccc7e1d92dca3ebc81694e",
+        "evidence_file": "antigravity-generate.jpg",
+        "native_origin_path_redacted": true
+      },
+      "native_audit": {
+        "native_started": true,
+        "stdout_sha256": "e9b1525530d59604cefdf113d6e1d4f1a6ade19761937615c0279e2f45d13383",
+        "event_types": {
+          "init": 1,
+          "step_update": 16,
+          "result": 1
+        },
+        "observed_tool_names": [
+          "invoke_subagent",
+          "subagent",
+          "subagent_info"
+        ],
+        "image_tool_events": 0,
+        "parse_errors": 0,
+        "first_stdout_seconds": 3.017,
+        "native_exit_code": 0,
+        "duration_seconds": 58.047
+      },
+      "duration_seconds": 58.094
+    }
+  ],
+  "skipped": [
+    {
+      "agent": "codex",
+      "operations": [
+        "edit"
+      ],
+      "status": "NOT_TESTED",
+      "reason": "no validated original; failed generation is not retried"
+    },
+    {
+      "agent": "cursor",
+      "operations": [
+        "generate",
+        "edit"
+      ],
+      "status": "BLOCKED",
+      "reason": "text_precondition_failed; no retry or permission expansion"
+    },
+    {
+      "agent": "antigravity",
+      "operations": [
+        "edit"
+      ],
+      "status": "NOT_TESTED",
+      "reason": "no validated original; failed generation is not retried"
+    }
+  ],
+  "ended_at": "2026-11-06T12:44:50Z"
+}

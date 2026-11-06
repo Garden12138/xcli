@@ -1,14 +1,24 @@
 # GardenFlow 接入适配（Planned / Blocked）
 
-2026-11-06，只读核对 HEAD `33b59295888f5cd34abab902182c08cf6f5442b7`，初始干净。没有改源码、运行 UI、导入媒体或调用模型。
+2026-11-06，只读核对 HEAD `33b59295888f5cd34abab902182c08cf6f5442b7`，初始干净。没有改源码、运行 UI、向 GardenFlow 导入媒体或从应用调用模型。
 
 **CLI 文本、Vision、生成/编辑图片接入均 BLOCKED。** 现有 xcli 图片 provider 调用 `/v1/images/*` 的 HTTP 上游路径；不能用三个 Agent 的名字填 model 参数，宣称已用会员原生图片能力。
+
+## 本轮 xcli 真实结果与三层边界
+
+| 层 | 当前事实 | 对 GardenFlow 的含义 |
+| --- | --- | --- |
+| 原生 Agent Runtime | Codex、Antigravity 文本/同 Session/图片生成/参考编辑 PASS；Cursor trust BLOCKED；实际 9/12 次且不重试 | 可以作为本人终端受控任务的实测基线，不是应用已接入 |
+| 现有 Model Gateway | 显式 HTTP 上游的文本/SSE、能力门控 Vision/Images/Embedding 协议转发；不启动原生 CLI | 现有应用 HTTP provider 仍按原合同工作，不能填原生 Agent 名冒充模型 alias |
+| Native CLI Backend / Agent API | **未实现，Gate B BLOCKED**；本轮未做新桥接框架 | 应用接入仍 Planned/Blocked；需独立协议、客户端授权、预算、审批和文件边界 |
+
+[本轮报告与证据](../ACCEPTANCE_REPORT.md)只验证 xcli 隔离合成任务；未运行本应用 UI、未改本应用业务代码、未从本应用调用真实业务数据。已验证原生图片交付为文件字节，不等同 `/images/*`；未验证的 Schema、Embedding、并发或取消不能随之开放。
 
 ## 当前边界
 
 已核对 `desktop/electron/core/aiModelRouteResolver.ts`、`xcliGateway.ts`、`imageProviderAdapters.ts`，并定位 `imageGenerationService.ts` 与 `desktop/electron/pi/agent.ts`。当前 xcli transport 只允许 loopback `/v1` 和有限 routes，校验能力目录；图片 Adapter 期待有效 `b64_json` 并限制大小。它不理解 Agent 会话、工作区审批或原生文件路径。
 
-[历史三 CLI 媒体验收](../../r0/media-acceptance.zh-CN.md)有原生工具、文件与视觉证据，本轮三种 CLI 的生成/编辑仍为 NOT_TESTED。不能把历史 JPEG/PNG 复制进本轮目录再记成功。
+[历史三 CLI 媒体验收](../../r0/media-acceptance.zh-CN.md)有原生工具、文件与视觉证据，本轮 Codex、Antigravity 的生成/编辑已通过，Cursor 媒体因 trust 前置受阻而未启动。不能把历史 JPEG/PNG 复制进本轮目录再记成功。
 
 ## 拟议用户流程
 
@@ -39,7 +49,7 @@
 
 | 优先级 | 变更 |
 | --- | --- |
-| P0（xcli） | 原生媒体真实验收、独立 Agent API、安全 Artifact 服务及进程/云任务取消边界 |
+| P0（xcli） | 保留已验证的 Codex/Agy 媒体基线、独立 Agent API、安全 Artifact 服务及进程/云任务取消边界 |
 | P1（GardenFlow） | `aiModelRouteResolver.ts` 区分 HTTP model 与 Agent task；新增能力门禁，不虚构 model alias |
 | P1（GardenFlow） | `xcliGateway.ts` 旁新增独立 Agent transport；保留原来的 `/v1` URL/route/SSRF 限制，不直接扩大白名单 |
 | P1（GardenFlow） | `imageProviderAdapters.ts`/`imageGenerationService.ts` 增加任务→认证文件→媒体导入的状态机；不将路径塞进 b64_json |

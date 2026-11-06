@@ -2,6 +2,14 @@
 
 **本文是设计，不是已实现接口。** 当前 xcli 没有本文中的 HTTP Agent 路由、NativeAgentBackend、媒体 Artifact 服务或原生 CLI 模型 alias。Gate B BLOCKED，四应用不能把现有 Model Gateway endpoint 当作 CLI 能力入口。依据见[报告](ACCEPTANCE_REPORT.md)和[官方资料](OFFICIAL_SOURCES.md)。
 
+## 本轮真实结果对设计的约束
+
+本轮实际 9 次原生 CLI 启动：Codex、Antigravity 的文本、同 Session、生成和参考编辑通过；Cursor 首次文本因临时项目 trust BLOCKED，未重试。详见[验收报告](ACCEPTANCE_REPORT.md)。这些结果只证明现有 Agent Runtime 的本地任务路径，没有 HTTP→CLI 链路、应用接入或 Embedding 证据。
+
+现有 Model Gateway 支持显式 HTTP 文本/SSE、能力门控的 Vision/Images/Embedding 透传，原生 CLI backend 仍未实现。媒体返回真实文件，外层事件可能看不到嵌套图像工具；新服务需区分“缺观察证据”和“任务失败”，让校验/复核保持独立状态。本轮 helper 的透明观察器与字节/视觉复核不是一个已上线的 Artifact API。
+
+Cursor 的 trust 不能由服务自动授予，许可不足要保留 BLOCKED；Codex/Agy 的成功也不能成为其他客户端的账户/文件/工具授权。会话来源、云同意、预算、取消和文件边界仍需要服务层实现和各自验收。
+
 ## 现状与推荐接口
 
 ```mermaid
@@ -109,7 +117,7 @@ data: {"version":1,"task_id":"example-task","seq":2,"text":"示例合成结果"}
 
 ## 可用的当前客户端示例（终端桥接，不是 HTTP）
 
-本示例只说明当前源码的 subprocess 调用方法；本轮未作真实推理验收。须在已审批、无敏感材料的 Git 项目中执行，每运行一次会消耗原生额度。
+本示例采用本轮已验证的 subprocess/run/只读方法；该逐字提示没有另占额度重复执行，实际真实脚本为 tests/r0/smoke.py。须在已审批、无敏感材料的 Git 项目中执行，每运行一次会消耗原生额度。
 
 ```python
 import json
@@ -149,7 +157,7 @@ def synthetic_text(binary, project):
 
 | 优先级 | 需要单独确认的工程任务 | 完成门槛 |
 | --- | --- | --- |
-| P0 | 补齐已授权的三 CLI 文本/媒体真实基线 | 每次启动有账本、最终标记、文件与原生工具证据；不改全局设置 |
+| P0 | 保留本轮 Codex/Agy 基线；Cursor 仅在新的最小 trust/预算授权后独立补测 | 每次启动有账本、最终标记、文件与原生工具证据；不改全局设置 |
 | P1 | 新增独立 Agent 服务/NativeAgentBackend，复用 agent/runtime/runstore；认证、策略、预算、取消、会话归属 | 离线权限拒绝、跨客户端越权、断线/未知状态、预算耗尽、进程组清理；再批准小额真实 HTTP → CLI 测试 |
 | P2 | 增加安全 Artifact 导入/下载、MIME/解码/摘要和参考编辑验证 | 拒绝 symlink、越界路径、伪图、超限、输入覆盖、虚假图片结果 |
 | P3 | 四应用新增 Agent 模式适配，不替换既有 HTTP 模型模式 | 各自合成任务、云拒绝零调用、权限/取消/断连、Keyring、媒体入库验收；UI 另行授权 |

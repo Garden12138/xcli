@@ -4,6 +4,18 @@
 
 **xcli 原生 CLI Agent API 接入 BLOCKED，Docker → 宿主 CLI 桥接也未在本轮实现/启用。** 当前 `xcli_local` 只接已有 HTTP Model Gateway，不能通过把 model 改成 Codex 就获得原生 Agent 能力。
 
+最终只读比较时，该仓库 HEAD 已为 `5177157909e87cb540d3bb52f06f0521d09e8ac4`，与前一阶段记录不同；本轮核对的所选接入源码摘要保持一致，未执行任何写入或回放补丁。后续改造仍须重新检查完整 HEAD/diff。
+
+## 本轮 xcli 真实结果与三层边界
+
+| 层 | 当前事实 | 对 Contribution OS 的含义 |
+| --- | --- | --- |
+| 原生 Agent Runtime | Codex、Antigravity 文本/同 Session/图片生成/参考编辑 PASS；Cursor trust BLOCKED；实际 9/12 次且不重试 | 可以作为本人终端受控任务的实测基线，不是应用已接入 |
+| 现有 Model Gateway | 显式 HTTP 上游的文本/SSE、能力门控 Vision/Images/Embedding 协议转发；不启动原生 CLI | 现有应用 HTTP provider 仍按原合同工作，不能填原生 Agent 名冒充模型 alias |
+| Native CLI Backend / Agent API | **未实现，Gate B BLOCKED**；本轮未做新桥接框架 | 应用接入仍 Planned/Blocked；需独立协议、客户端授权、预算、审批和文件边界 |
+
+[本轮报告与证据](../ACCEPTANCE_REPORT.md)只验证 xcli 隔离合成任务；未运行本应用 UI、未改本应用业务代码、未从本应用调用真实业务数据。已验证原生图片交付为文件字节，不等同 `/images/*`；未验证的 Schema、Embedding、并发或取消不能随之开放。
+
 ## 当前源码边界
 
 已核对 `app/model_settings.py`、`app/providers/xcli_local.py`，定位 `contracts.py`、`gateway.py`、`gateway_http.py`、`runtime.py`、`workflow.py`、`codex_cli.py` 等相关模块。
@@ -49,7 +61,7 @@ Agent 内部 shell/MCP 调用不等于应用可执行的 `tool_calls`。应用�
 
 | 优先级 | 变更 |
 | --- | --- |
-| P0（xcli） | 实测三 CLI 原生文本/媒体，确认 Agent 服务的审批/隔离/取消与文件合同 |
+| P0（xcli） | 保留本轮 Codex/Agy 文本/媒体基线，另行补 Cursor；确认 Agent 服务的审批/隔离/取消与文件合同 |
 | P1（xcli） | [独立 Agent API](../INTEGRATION_ARCHITECTURE.md)、客户端认证/会话归属与真实 HTTP→CLI 合成验收 |
 | P2（应用） | `model_settings.py` 增加冻结 Agent Profile/能力来源，`providers` 新增独立 Agent adapter，不把旧 HTTP transport 扩权 |
 | P2（应用） | `runtime.py`/`workflow.py`/`contracts.py` 接入任务生命周期、Schema 验证、审批和预算审计；保留既有原生 provider 的独立边界 |

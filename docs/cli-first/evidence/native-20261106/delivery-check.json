@@ -1,0 +1,13 @@
+{
+  "local_links_checked": 74,
+  "python_syntax": "PASS",
+  "json_parse": "PASS",
+  "image_bytes_dimensions_hashes": "PASS",
+  "unique_native_task_starts": 9,
+  "remaining_unused": 3,
+  "go_product_source_changed": false,
+  "harness_unit_tests": "11/11 PASS",
+  "gate_b": "BLOCKED",
+  "model_calls_during_delivery_checks": 0,
+  "errors": []
+}

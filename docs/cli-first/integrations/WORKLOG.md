@@ -1,8 +1,18 @@
 # Worklog 接入适配（Planned / Blocked）
 
-2026-11-06，只读核对 HEAD `e38f2a4901d871777989ffee6684e836370e70aa`，初始干净。本轮未改业务代码、未运行 UI、未发日报数据或调用模型。
+2026-11-06，只读核对 HEAD `e38f2a4901d871777989ffee6684e836370e70aa`，初始干净。本轮未改业务代码、未运行 UI、未发日报数据或从 Worklog 调用模型。
 
 **CLI 接入 BLOCKED。** Worklog 现有 `xcli` provider 是 Model Gateway HTTP 客户端；配置中的 `xcli/text-default` 是 HTTP 模型 alias 的默认占位，不代表原生 Codex、Cursor 或 Antigravity 已可用。没有本轮可发布的 CLI endpoint/alias/Token 配置。
+
+## 本轮 xcli 真实结果与三层边界
+
+| 层 | 当前事实 | 对 Worklog 的含义 |
+| --- | --- | --- |
+| 原生 Agent Runtime | Codex、Antigravity 文本/同 Session/图片生成/参考编辑 PASS；Cursor trust BLOCKED；实际 9/12 次且不重试 | 可以作为本人终端受控任务的实测基线，不是应用已接入 |
+| 现有 Model Gateway | 显式 HTTP 上游的文本/SSE、能力门控 Vision/Images/Embedding 协议转发；不启动原生 CLI | 现有应用 HTTP provider 仍按原合同工作，不能填原生 Agent 名冒充模型 alias |
+| Native CLI Backend / Agent API | **未实现，Gate B BLOCKED**；本轮未做新桥接框架 | 应用接入仍 Planned/Blocked；需独立协议、客户端授权、预算、审批和文件边界 |
+
+[本轮报告与证据](../ACCEPTANCE_REPORT.md)只验证 xcli 隔离合成任务；未运行本应用 UI、未改本应用业务代码、未从本应用调用真实业务数据。已验证原生图片交付为文件字节，不等同 `/images/*`；未验证的 Schema、Embedding、并发或取消不能随之开放。
 
 ## 当前入口与拟议模式
 
@@ -37,7 +47,7 @@
 
 | 优先级 | 待确认工程 |
 | --- | --- |
-| P0（xcli） | 先验收原生文本，再实现独立 Agent API 的认证、限次、取消和会话归属 |
+| P0（xcli） | 保留本轮 Codex/Agy 文本实测基线，再实现独立 Agent API 的认证、限次、取消和会话归属 |
 | P1（Worklog） | `llm.rs` 新增 Agent 任务结果转换，保留现有 HTTP 模型模式；`xcli.rs` 旁新增独立 Agent transport，不假装兼容 chat/completions |
 | P1（Worklog） | `commands.rs` 及对应前端配置显示 Agent 入口、证据状态、每任务预算与同意；只读 capability 检查不能发模型探测 |
 | P1（Worklog） | `secrets.rs` 及配置存储使用独立客户端 Token 的 Keyring 引用；不把原生 CLI 登录 Token 填入 api_key |

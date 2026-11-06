@@ -4,6 +4,16 @@
 
 **原生 CLI 对话接入 BLOCKED，原生 CLI Embedding 能力缺失。** 三个 Coding CLI 的任务/图片能力不能证明存在批量向量接口。没有可发布的 CLI chat/embedding alias 配置。
 
+## 本轮 xcli 真实结果与三层边界
+
+| 层 | 当前事实 | 对 Chat Insight 的含义 |
+| --- | --- | --- |
+| 原生 Agent Runtime | Codex、Antigravity 文本/同 Session/图片生成/参考编辑 PASS；Cursor trust BLOCKED；实际 9/12 次且不重试 | 可以作为本人终端受控任务的实测基线，不是应用已接入 |
+| 现有 Model Gateway | 显式 HTTP 上游的文本/SSE、能力门控 Vision/Images/Embedding 协议转发；不启动原生 CLI | 现有应用 HTTP provider 仍按原合同工作，不能填原生 Agent 名冒充模型 alias |
+| Native CLI Backend / Agent API | **未实现，Gate B BLOCKED**；本轮未做新桥接框架 | 应用接入仍 Planned/Blocked；需独立协议、客户端授权、预算、审批和文件边界 |
+
+[本轮报告与证据](../ACCEPTANCE_REPORT.md)只验证 xcli 隔离合成任务；未运行本应用 UI、未改本应用业务代码、未从本应用调用真实业务数据。已验证原生图片交付为文件字节，不等同 `/images/*`；未验证的 Schema、Embedding、并发或取消不能随之开放。
+
 ## 现有代码与新接口边界
 
 `src-tauri/src/ai/client.rs` 和 `gateway.rs` 已有 Model Gateway 目录、聊天/向量路由、云同意与向量身份检查；`settings.rs`、`commands.rs`、`indexer.rs`、`retrieval.rs` 及 `src/ai.ts` 分别承担设置、执行、索引、检索与前端接口。现有 `/v1` 代码是 HTTP 模型客户端，不会因 endpoint 在 localhost 就执行原生 CLI。

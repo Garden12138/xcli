@@ -1,0 +1,130 @@
+{
+  "kind": "real-native-media",
+  "max_process_starts": 6,
+  "invocations": 2,
+  "prior_media_process_starts": 2,
+  "started_at": "2026-11-06T12:47:05Z",
+  "calls": [
+    {
+      "agent": "codex",
+      "version": "codex-cli 0.167.0",
+      "kind": "edit",
+      "status": "PASS_BYTES_PENDING_REVIEW",
+      "timeout_seconds": 180,
+      "native_timeout_seconds": null,
+      "xcli_exit_code": 0,
+      "exit_code": 0,
+      "parse_status": "complete",
+      "usage": {
+        "input_tokens": 18976,
+        "cache_read_tokens": 87296,
+        "cache_write_tokens": 0,
+        "output_tokens": 481,
+        "reasoning_tokens": 56,
+        "total_tokens": 106809
+      },
+      "model_output_status": "success",
+      "output_sha256": "dc93a466dd8386b6d20ef698362d7cf957d3fd34c8a9fff20a4c05f8b9421114",
+      "diagnostic_category": "unclassified",
+      "artifact": {
+        "format": "PNG",
+        "mime": "image/png",
+        "width": 1254,
+        "height": 1254,
+        "byte_length": 2073699,
+        "sha256": "ea5568fa8213b14a75f21f05c34581252ae1290ea640c992de19cebb66515285",
+        "evidence_file": "codex-edit.png",
+        "native_origin_path_redacted": true
+      },
+      "native_audit": {
+        "native_started": true,
+        "stdout_sha256": "fe625b36d330a0fc9e9e30784b0cff1bdf5ce099c0828dca86b5bc1a284b8724",
+        "event_types": {
+          "thread.started": 1,
+          "turn.started": 1,
+          "item.completed": 3,
+          "item.started": 1,
+          "turn.completed": 1
+        },
+        "observed_tool_names": [
+          "command_execution"
+        ],
+        "image_tool_events": 0,
+        "parse_errors": 0,
+        "first_stdout_seconds": 0.08,
+        "native_exit_code": 0,
+        "duration_seconds": 48.889
+      },
+      "original_unchanged": true,
+      "normalized_mean_pixel_difference": 0.070025,
+      "duration_seconds": 49.039
+    },
+    {
+      "agent": "antigravity",
+      "version": "1.5.2",
+      "kind": "edit",
+      "status": "PASS_BYTES_PENDING_REVIEW",
+      "timeout_seconds": 180,
+      "native_timeout_seconds": 120,
+      "xcli_exit_code": 0,
+      "exit_code": 0,
+      "parse_status": "complete",
+      "usage": {
+        "input_tokens": 46983,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0,
+        "output_tokens": 2452,
+        "reasoning_tokens": 2003,
+        "total_tokens": 49435
+      },
+      "model_output_status": "success",
+      "output_sha256": "1e5fac4b5cd032c17db33b49023bc3345b869281a69ce9d6c2d751ec9b63e191",
+      "diagnostic_category": "unclassified",
+      "artifact": {
+        "format": "JPEG",
+        "mime": "image/jpeg",
+        "width": 1024,
+        "height": 1024,
+        "byte_length": 541008,
+        "sha256": "9e852c568ed988cea9ee050a8c0d7d871aa07133ec568c6c5575e8c56a55fb41",
+        "evidence_file": "antigravity-edit.jpg",
+        "native_origin_path_redacted": true
+      },
+      "native_audit": {
+        "native_started": true,
+        "stdout_sha256": "69c9e755116f3a2ced7676a89d9cd080980f4128b56552e97660aaa714895839",
+        "event_types": {
+          "init": 1,
+          "step_update": 21,
+          "result": 1
+        },
+        "observed_tool_names": [
+          "invoke_subagent",
+          "run_command",
+          "subagent",
+          "subagent_info"
+        ],
+        "image_tool_events": 0,
+        "parse_errors": 0,
+        "first_stdout_seconds": 3.297,
+        "native_exit_code": 0,
+        "duration_seconds": 80.387
+      },
+      "original_unchanged": true,
+      "normalized_mean_pixel_difference": 0.025542,
+      "duration_seconds": 80.473
+    }
+  ],
+  "skipped": [
+    {
+      "agent": "cursor",
+      "operations": [
+        "generate",
+        "edit"
+      ],
+      "status": "BLOCKED",
+      "reason": "text_precondition_failed; no retry or permission expansion"
+    }
+  ],
+  "ended_at": "2026-11-06T12:49:14Z"
+}

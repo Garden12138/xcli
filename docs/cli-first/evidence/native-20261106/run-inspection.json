@@ -1,0 +1,45 @@
+{
+  "native_cli_starts": 0,
+  "checks": [
+    {
+      "agent": "antigravity",
+      "list_exit_code": 0,
+      "show_exit_code": 0,
+      "status": "success",
+      "output_file_present": false,
+      "jobs_list_exit_code": 0,
+      "background_jobs_count": 0,
+      "private_state_scope": true
+    },
+    {
+      "agent": "codex",
+      "list_exit_code": 0,
+      "show_exit_code": 0,
+      "status": "success",
+      "output_file_present": false,
+      "jobs_list_exit_code": 0,
+      "background_jobs_count": 0,
+      "private_state_scope": true
+    },
+    {
+      "agent": "antigravity",
+      "list_exit_code": 0,
+      "show_exit_code": 0,
+      "status": "success",
+      "output_file_present": false,
+      "jobs_list_exit_code": 0,
+      "background_jobs_count": 0,
+      "private_state_scope": true
+    },
+    {
+      "agent": "codex",
+      "list_exit_code": 0,
+      "show_exit_code": 0,
+      "status": "success",
+      "output_file_present": false,
+      "jobs_list_exit_code": 0,
+      "background_jobs_count": 0,
+      "private_state_scope": true
+    }
+  ]
+}

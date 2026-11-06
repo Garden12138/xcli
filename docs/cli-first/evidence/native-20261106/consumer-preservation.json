@@ -1,0 +1,30 @@
+[
+  {
+    "repository": "worklog",
+    "head_matches_prior_readonly_baseline": true,
+    "status_matches_prior_readonly_baseline": true,
+    "selected_source_hashes_match": true,
+    "writes_by_this_task": 0
+  },
+  {
+    "repository": "garden-flow",
+    "head_matches_prior_readonly_baseline": true,
+    "status_matches_prior_readonly_baseline": true,
+    "selected_source_hashes_match": true,
+    "writes_by_this_task": 0
+  },
+  {
+    "repository": "chat-insight",
+    "head_matches_prior_readonly_baseline": true,
+    "status_matches_prior_readonly_baseline": true,
+    "selected_source_hashes_match": true,
+    "writes_by_this_task": 0
+  },
+  {
+    "repository": "ai-open-source-contribution-os-summary",
+    "head_matches_prior_readonly_baseline": false,
+    "status_matches_prior_readonly_baseline": false,
+    "selected_source_hashes_match": true,
+    "writes_by_this_task": 0
+  }
+]
