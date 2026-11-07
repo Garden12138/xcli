@@ -38,3 +38,10 @@ func killProcess(command *exec.Cmd, separate bool) {
 	}
 	_ = command.Process.Kill()
 }
+
+func processStopped(command *exec.Cmd, separate bool) bool {
+	if !separate {
+		return true
+	}
+	return syscall.Kill(-command.Process.Pid, 0) == syscall.ESRCH
+}

@@ -98,6 +98,8 @@ type StreamDecoder struct {
 	result          RunResult
 	usage           *usageAccumulator
 	progress        func(string)
+	observer        func(Observation) error
+	observerErr     error
 }
 
 func NewStreamDecoder(adapter, format string, progress func(string)) *StreamDecoder {
@@ -141,7 +143,7 @@ func (d *StreamDecoder) Write(data []byte) (int, error) {
 	n := len(data)
 	if d.text() {
 		d.setOutput(string(data), true)
-		return n, nil
+		return n, d.observerErr
 	}
 	// Generic JSON is a single document and can include pretty-printed newlines.
 	if d.adapter == "generic" && d.format == "json" {
@@ -152,7 +154,7 @@ func (d *StreamDecoder) Write(data []byte) (int, error) {
 		} else if !d.dropping {
 			d.pending = append(d.pending, data...)
 		}
-		return n, nil
+		return n, d.observerErr
 	}
 	for len(data) > 0 {
 		index := bytes.IndexByte(data, '\n')
@@ -180,7 +182,7 @@ func (d *StreamDecoder) Write(data []byte) (int, error) {
 		d.dropping = false
 		data = data[index+1:]
 	}
-	return n, nil
+	return n, d.observerErr
 }
 
 func (d *StreamDecoder) consume(data []byte) {
@@ -191,6 +193,9 @@ func (d *StreamDecoder) consume(data []byte) {
 	if err := json.Unmarshal(data, &event); err != nil || event == nil {
 		d.fail("parse_error", "invalid JSON object")
 		return
+	}
+	if d.observer != nil {
+		d.observeEvent(event)
 	}
 	d.usage.capture(d.adapter, event)
 	captureSession(event, &d.result)

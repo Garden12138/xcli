@@ -321,6 +321,13 @@ func (a *app) runDetachedRunWorker(
 		}
 		record.OutputFile = raw.Name()
 	}
+	// Publish terminal state after the normalized result has reached the log.
+	// Readers of a successful job must not observe an unfinished result log.
+	if outcome.Result.Output != "" {
+		if _, err := fmt.Fprintln(logWriter, outcome.Result.Output); err != nil {
+			return fail(err)
+		}
+	}
 	record.EndedAt = time.Now().UTC()
 	applyResult(record, outcome.Result)
 	if err := store.Save(*record); err != nil {
@@ -328,11 +335,6 @@ func (a *app) runDetachedRunWorker(
 	}
 	if runErr != nil {
 		return runErr
-	}
-	if outcome.Result.Output != "" {
-		if _, err := fmt.Fprintln(logWriter, outcome.Result.Output); err != nil {
-			return err
-		}
 	}
 	if outcome.CLIExitCode != 0 {
 		return &ExitError{Code: outcome.CLIExitCode}

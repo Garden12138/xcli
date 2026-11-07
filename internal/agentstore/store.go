@@ -30,6 +30,7 @@ type SessionRecord struct {
 	Context  api.Context `json:"context"`
 }
 type TaskRecord struct {
+	GrantEpoch      int            `json:"grant_epoch"`
 	Task            api.Task       `json:"task"`
 	Owner           string         `json:"owner"`
 	Request         api.TaskCreate `json:"request"`
@@ -117,7 +118,12 @@ func Open(root string) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
+	probe, err := modelstore.Lock(filepath.Join(root, "probe.lock"), true)
+	if err != nil {
+		return nil, err
+	}
 	lease, err := modelstore.Lock(filepath.Join(root, "journal.lock"), false)
+	_ = probe.Close()
 	if err != nil {
 		return nil, err
 	}

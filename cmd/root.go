@@ -62,6 +62,7 @@ func newRootCommand() *cobra.Command {
 		a.newRunsCommand(),
 		a.newConfigCommand(),
 		a.newModelCommand(),
+		a.newAgentGatewayCommand(),
 	)
 	return root
 }

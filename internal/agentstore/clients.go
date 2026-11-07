@@ -28,6 +28,7 @@ type Client struct {
 	DailyDispatches       int      `json:"daily_dispatches"`
 	DailyProcessStarts    int      `json:"daily_process_starts"`
 	DailyExecutionSeconds int      `json:"daily_execution_seconds"`
+	GrantEpoch            int      `json:"grant_epoch"`
 	Revision              int      `json:"revision"`
 	Revoked               bool     `json:"revoked"`
 }
@@ -115,6 +116,7 @@ func (c *Clients) Revoke(id string) error {
 		return api.Failure(404, "not_found")
 	}
 	r.Client.Revoked = true
+	r.Client.GrantEpoch++
 	r.Client.Revision++
 	r.TokenHash = ""
 	f.Clients[id] = r
@@ -167,4 +169,9 @@ func (c *Clients) List() ([]Client, error) {
 		return 0
 	})
 	return out, nil
+}
+
+// LockGrants serializes durable dispatch authorization with issue/revoke.
+func (c *Clients) LockGrants() (*os.File, error) {
+	return modelstore.Lock(filepath.Join(c.Root, "clients.lock"), true)
 }

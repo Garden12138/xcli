@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/Users/cengjiada/Documents/github/xcli/tests/native_agent_gateway/control_smoke.py", line 98, in <module>
+    main()
+  File "/Users/cengjiada/Documents/github/xcli/tests/native_agent_gateway/control_smoke.py", line 43, in main
+    raise AssertionError("gateway exited during startup")
+AssertionError: gateway exited during startup

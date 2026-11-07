@@ -1,0 +1,10 @@
+{
+  "test": "offline_control_smoke",
+  "result": "PASS",
+  "binary_sha256": "7700c095284fd7e8dce50a73f9a6462fc00f409cdcd7d4cdf4e5db41e7223112",
+  "native_model_requests": 0,
+  "server_starts": 2,
+  "persistent_instance": true,
+  "distinct_generations": true,
+  "native_profile_rejection": "policy_unenforceable"
+}

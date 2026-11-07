@@ -46,10 +46,15 @@ func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Drive
 		s.mu.Unlock()
 		return false, nil
 	}
+	grantLease, err := s.Clients.LockGrants()
+	if err != nil {
+		s.mu.Unlock()
+		return false, err
+	}
 	var bound nativeadapter.BoundRequest
 	var tr agentstore.TaskRecord
 	var dispatch bool
-	err := s.Store.Update(func(st *agentstore.State) error {
+	err = s.Store.Update(func(st *agentstore.State) error {
 		if st.Quarantined {
 			return nil
 		}
@@ -81,7 +86,7 @@ func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Drive
 				return errors.New("missing session")
 			}
 			c, e := s.Clients.Get(r.Owner)
-			if e != nil {
+			if e != nil || c.GrantEpoch != r.GrantEpoch || !c.Has("task:create") {
 				finish(st, r, "blocked", "scope_denied")
 				continue
 			}
@@ -150,6 +155,7 @@ func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Drive
 		}
 		return nil
 	})
+	_ = grantLease.Close()
 	s.mu.Unlock()
 	if err != nil || !dispatch {
 		return false, err
@@ -178,6 +184,10 @@ func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Drive
 			}
 		}
 		return e
+	}
+	bound.Workspace, bound.OutputRoot, err = s.Store.Workspace(bound.SessionID, bound.TaskID)
+	if err != nil {
+		return true, err
 	}
 	resultCh := make(chan nativeadapter.TurnResult, 1)
 	go func() { resultCh <- driver.StartTurn(ctx, bound, observer) }()
@@ -220,7 +230,7 @@ func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Drive
 			if e != nil {
 				stop()
 			}
-			if _, e = s.Clients.Get(tr.Owner); e != nil {
+			if current, e := s.Clients.Get(tr.Owner); e != nil || current.GrantEpoch != tr.GrantEpoch {
 				stop()
 			}
 		}

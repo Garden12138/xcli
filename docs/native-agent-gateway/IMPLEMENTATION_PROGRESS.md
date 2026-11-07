@@ -4,7 +4,7 @@
 
 ## 当前入口
 
-当前阶段：**G1 离线通过，准备 G2**（对应用户阶段 A，按原 SPEC 依赖推进）。
+当前阶段：**G2 离线通过，准备 G3**（对应用户阶段 A，按原 SPEC 依赖推进）。
 
 恢复先读本文件，再读 `TASKS.md`、`ACCEPTANCE.md` 和 `git log --oneline -8` / `git status --short`。不得重新执行历史 native smoke。
 
@@ -21,8 +21,8 @@
 | 阶段 | 状态 | 本地提交 | 测试/证据 |
 | --- | --- | --- | --- |
 | G0 | 已继承设计 | `40fc6ca` | 七份 SPEC + README |
-| G1 | PASS（离线范围） | 本条所在提交，见 git log | [核心 race](evidence/g1-core-race.log)、[旧回归 race](evidence/g1-regression-race.log)、vet/build |
-| G2 | PENDING | — | 文本/续接/事件/停止 |
+| G1 | PASS（离线范围） | `86717e6` | [核心 race](evidence/g1-core-race.log)、[旧回归 race](evidence/g1-regression-race.log)、vet/build |
+| G2 | PASS（离线范围，覆盖用户 B/C 的实现） | 本条所在提交 | [全量 race](evidence/g2-all-race.log)、[最终补充](evidence/g2-additions-race.log)、[CLI 控制](evidence/g2-control.json) |
 | G3 | PENDING | — | 输入/字节产物/复核 |
 | G4 离线 | PENDING | — | 故障、安全、兼容、性能 |
 | G4 真实 / 用户 F | BLOCKED | — | 无新授权；需计划与权限先决条件 |
@@ -51,3 +51,16 @@ G1：实现闭合 DTO、私有事务存储、客户端授权、Session/CAS、预
 - 原生 profile 均关闭；G1 策略测试只证明拒绝、环境清洗，CLI 实际边界 L04 未验；[公开接口/条款与调整记录](OFFICIAL_PROTOCOL_REVIEW.md)。G1 不声称 NAG 真实 Gate PASS。
 
 下一入口：G2 typed observer、受控原生 argv/最小环境、实际假子进程 HTTP 链路、续接/错 ID、撤销、主动取消、deadline 和后代 pipe；新真实模型调用仍为 0。
+
+## G2 实际交付（2026-11-07）
+
+- 可选 typed observer 保留本次 native ID/terminal/diagnostic/nullable usage，旧 Event/Normalize/fallback 合同保持；Gateway 不读取 fallback。
+- Codex exec、Cursor headless、Agy print 的固定 argv/原生 ID 恢复和错误优先级；三者均用新建假进程验证，Cursor trust、Agy SUCCESS+soft deny、Codex reconnect/quota/截断/超长覆盖。三家真实 profile 仍关闭。
+- 实际 HTTP Client → Gateway → 原生协议假 CLI 子进程 → 持久任务/结果/SSE；split 字节、同 ID、错/缺 ID、无终止均有测试；没有 final 切片 delta。
+- 服务单并发、Session 串行、排队/期限、撤销 epoch（重新授权不能复活旧队列）、授权变更与 dispatch 持久事务锁；取消与上游撤销独立。原生 workspace/HOME 都是服务私有合成根，不复制认证资料。
+- Gateway opt-in WaitDelay/有界清理，TERM 最多 2 秒、KILL/管道收尾受 5 秒硬上限；后代持有 pipe 无无限等待，无法确认停止则 needs_reconcile/全局隔离。旧 CLI 仍采用原有默认进程等待行为。
+- `xcli agent-gateway serve/status/stop/client issue/rotate/revoke/list/refresh`；独立 `--gateway-config`。refresh 是本人显式且停服时的有界 `--version` 缓存，不能晋升 profile；本轮只用假版本程序测试，未探测已安装 CLI。
+- 完整 `go test -race ./...` PASS；最终相关包/CLI 补充 PASS；vet/build 退出 0。CLI 服务两次实际启动/HTTP/stop/重启验证实例 ID 不变、generation 不同、native 拒绝。[证据目录](evidence/)。
+- 失败修复如实保留：新增 token 测试最初用了公开临时目录，改成 0700 私有子目录；零退出等待暴露旧 Jobs 先写成功再写最终日志的竞态，调整发布顺序并连续 10 次 race 回归；status 与启动锁的竞争用单独 probe 锁串行，新增并发回归。未删测试或降权限。
+
+下一入口：G3 原始字节上传、安全 FD 导入/格式解码/哈希/输入保护、待审→来源+语义复核→认证交付。图片夹具只证明离线数据流程，绝不作为新 native 图片成功证据。

@@ -22,6 +22,7 @@ type ProcessOptions struct {
 	CaptureStdout   bool
 	SeparateProcess bool
 	RawOutput       io.Writer
+	BoundedCleanup  bool
 }
 
 type ProcessResult struct {
@@ -32,13 +33,18 @@ type ProcessResult struct {
 	CaptureTruncated bool
 	StderrTail       []byte
 	IOError          bool
+	StopConfirmed    bool
+	WaitIncomplete   bool
 }
 
 func RunProcess(ctx context.Context, spec agent.CommandSpec, options ProcessOptions) (ProcessResult, error) {
 	if ctx.Err() != nil {
-		return ProcessResult{ExitCode: -1, Canceled: !errors.Is(ctx.Err(), context.DeadlineExceeded), TimedOut: errors.Is(ctx.Err(), context.DeadlineExceeded)}, nil
+		return ProcessResult{StopConfirmed: true, ExitCode: -1, Canceled: !errors.Is(ctx.Err(), context.DeadlineExceeded), TimedOut: errors.Is(ctx.Err(), context.DeadlineExceeded)}, nil
 	}
 	command := exec.Command(spec.Command, spec.Args...)
+	if options.BoundedCleanup {
+		command.WaitDelay = 500 * time.Millisecond
+	}
 	command.Dir = options.Dir
 	command.Env = options.Env
 	if command.Env != nil && options.Dir != "" {
@@ -46,11 +52,11 @@ func RunProcess(ctx context.Context, spec agent.CommandSpec, options ProcessOpti
 		// a different project or isolated checkout.
 		directory, err := filepath.Abs(options.Dir)
 		if err != nil {
-			return ProcessResult{ExitCode: -1}, err
+			return ProcessResult{StopConfirmed: true, ExitCode: -1}, err
 		}
 		directory, err = filepath.EvalSymlinks(directory)
 		if err != nil {
-			return ProcessResult{ExitCode: -1}, err
+			return ProcessResult{StopConfirmed: true, ExitCode: -1}, err
 		}
 		command.Env = append([]string(nil), options.Env...)
 		filtered := command.Env[:0]
@@ -85,13 +91,13 @@ func RunProcess(ctx context.Context, spec agent.CommandSpec, options ProcessOpti
 	command.Stderr = tail
 
 	if err := command.Start(); err != nil {
-		return ProcessResult{ExitCode: -1}, err
+		return ProcessResult{StopConfirmed: true, ExitCode: -1}, err
 	}
 	cleanup, err := attachProcess(command, options.SeparateProcess)
 	if err != nil {
 		_ = command.Process.Kill()
 		_ = command.Wait()
-		return ProcessResult{ExitCode: -1}, err
+		return ProcessResult{StopConfirmed: true, ExitCode: -1}, err
 	}
 	defer cleanup()
 
@@ -103,7 +109,7 @@ func RunProcess(ctx context.Context, spec agent.CommandSpec, options ProcessOpti
 	select {
 	case err := <-waited:
 		code, ioFailed := waitOutcome(command, err)
-		return ProcessResult{ExitCode: code, IOError: ioFailed, Stdout: captured.Bytes(), CaptureTruncated: captured.truncated, StderrTail: tail.tail}, nil
+		return ProcessResult{StopConfirmed: processStopped(command, options.SeparateProcess), ExitCode: code, IOError: ioFailed, Stdout: captured.Bytes(), CaptureTruncated: captured.truncated, StderrTail: tail.tail}, nil
 	case <-ctx.Done():
 		terminateProcess(command, options.SeparateProcess)
 		timer := time.NewTimer(2 * time.Second)
@@ -113,10 +119,29 @@ func RunProcess(ctx context.Context, spec agent.CommandSpec, options ProcessOpti
 		case waitErr = <-waited:
 		case <-timer.C:
 			killProcess(command, options.SeparateProcess)
-			waitErr = <-waited
+			if options.BoundedCleanup {
+				select {
+				case waitErr = <-waited:
+				case <-time.After(2500 * time.Millisecond):
+					return ProcessResult{ExitCode: -1, IOError: true, WaitIncomplete: true, Canceled: !errors.Is(ctx.Err(), context.DeadlineExceeded), TimedOut: errors.Is(ctx.Err(), context.DeadlineExceeded)}, nil
+				}
+			} else {
+				waitErr = <-waited
+			}
+		}
+		if options.BoundedCleanup && !processStopped(command, options.SeparateProcess) {
+			killProcess(command, options.SeparateProcess)
+		}
+		confirmed := processStopped(command, options.SeparateProcess)
+		if options.BoundedCleanup && !confirmed {
+			deadline := time.Now().Add(250 * time.Millisecond)
+			for !confirmed && time.Now().Before(deadline) {
+				time.Sleep(10 * time.Millisecond)
+				confirmed = processStopped(command, options.SeparateProcess)
+			}
 		}
 		code, ioFailed := waitOutcome(command, waitErr)
-		result := ProcessResult{ExitCode: code, IOError: ioFailed, Stdout: captured.Bytes(), Canceled: true, CaptureTruncated: captured.truncated, StderrTail: tail.tail}
+		result := ProcessResult{StopConfirmed: confirmed, ExitCode: code, IOError: ioFailed, Stdout: captured.Bytes(), Canceled: true, CaptureTruncated: captured.truncated, StderrTail: tail.tail}
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			result.Canceled = false
 			result.TimedOut = true

@@ -218,3 +218,25 @@ func TestExplicitZeroCostIsUnenforceable(t *testing.T) {
 		t.Fatal(e)
 	}
 }
+func TestRevocationEpochCannotResurrectQueuedWork(t *testing.T) {
+	s, c, p := fixture(t)
+	ses := createSession(t, s, c, p)
+	out, _, e := s.CreateTask(c, taskRequest(ses), "revoked-queued")
+	if e != nil {
+		t.Fatal(e)
+	}
+	if e = s.Clients.Revoke(c.ID); e != nil {
+		t.Fatal(e)
+	}
+	if _, e = s.Clients.Issue(c, true); e != nil {
+		t.Fatal(e)
+	}
+	d := &fakeDriver{}
+	if _, e = s.ExecuteNext(context.Background(), d); e != nil {
+		t.Fatal(e)
+	}
+	out, _ = s.GetTask(c, out.ID)
+	if out.Status != "blocked" || d.calls != 0 {
+		t.Fatal(out, d.calls)
+	}
+}

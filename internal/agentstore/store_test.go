@@ -1,10 +1,14 @@
 package agentstore
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
+	"github.com/Garden12138/xcli/internal/modelstore"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	api "github.com/Garden12138/xcli/internal/agentapi"
 )
@@ -122,4 +126,85 @@ func TestTokenIsolationRotationAndRevocation(t *testing.T) {
 		t.Fatal("revoked token works")
 	}
 }
-func TestIdleReadAndNoopDoNotGrowJournal(t *testing.T){s,e:=Open(filepath.Join(t.TempDir(),"state"));if e!=nil{t.Fatal(e)};defer s.Close();before,_:=s.file.Stat();for range 100{if e=s.Update(func(*State)error{return nil});e!=nil{t.Fatal(e)}};after,_:=s.file.Stat();if before.Size()!=after.Size(){t.Fatal("idle service fills journal")}}
+func TestIdleReadAndNoopDoNotGrowJournal(t *testing.T) {
+	s, e := Open(filepath.Join(t.TempDir(), "state"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	before, _ := s.file.Stat()
+	for range 100 {
+		if e = s.Update(func(*State) error { return nil }); e != nil {
+			t.Fatal(e)
+		}
+	}
+	after, _ := s.file.Stat()
+	if before.Size() != after.Size() {
+		t.Fatal("idle service fills journal")
+	}
+}
+func TestServiceGenerationStopsWithoutPIDAndIdentityPersists(t *testing.T) {
+	s, e := Open(filepath.Join(t.TempDir(), "state"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	state, e := s.Publish("127.0.0.1:18742", "config")
+	if e != nil {
+		t.Fatal(e)
+	}
+	current, e := Status(s.Root)
+	if e != nil || !current.Active || current.InstanceID != state.InstanceID {
+		t.Fatal(current, e)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- WatchStop(ctx, s.Root, state, cancel) }()
+	b, _ := json.Marshal(map[string]string{"instance_id": state.InstanceID, "generation_id": "stale-generation"})
+	if e = modelstore.WritePrivate(filepath.Join(s.Root, "stop.json"), b); e != nil {
+		t.Fatal(e)
+	}
+	select {
+	case <-ctx.Done():
+		t.Fatal("stale stop canceled current worker")
+	case <-time.After(150 * time.Millisecond):
+	}
+	b, _ = json.Marshal(map[string]string{"instance_id": state.InstanceID, "generation_id": state.GenerationID})
+	if e = modelstore.WritePrivate(filepath.Join(s.Root, "stop.json"), b); e != nil {
+		t.Fatal(e)
+	}
+	select {
+	case e = <-done:
+		if e != nil {
+			t.Fatal(e)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("stop not observed")
+	}
+	if e = s.Unpublish(state); e != nil {
+		t.Fatal(e)
+	}
+}
+func TestStatusProbeCannotRejectAStartingWriter(t *testing.T) {
+	s, e := Open(filepath.Join(t.TempDir(), "state"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	root := s.Root
+	if _, e = s.Publish("127.0.0.1:18742", "config"); e != nil {
+		t.Fatal(e)
+	}
+	s.Close()
+	for range 20 {
+		done := make(chan error, 1)
+		go func() { _, e := Status(root); done <- e }()
+		next, e := Open(root)
+		if e != nil {
+			t.Fatal(e)
+		}
+		if e = <-done; e != nil {
+			t.Fatal(e)
+		}
+		next.Close()
+	}
+}

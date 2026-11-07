@@ -32,13 +32,13 @@
 
 依赖 G1。实现 `codex-exec-v1`、`antigravity-print-v1` 和 Cursor 的解析/阻断路径，不在本阶段自动执行真实调用。
 
-- [ ] 给现有 agent decoder 增加向后兼容 typed observer：原生会话来源、terminal/denial/usage/activity；不把 fallback ID 当 observed。
-- [ ] 受控固定 argv + 最小环境 + task 工作区；进程组监督、总 deadline、无界 wait/后代 pipe 收尾问题修复。
-- [ ] Session 首次绑定与续接；strict owner/profile/capability checks；无任意原生 Session import。
-- [ ] Task 异步调度、有限队列、安装域/Session 锁、累积预算、取消/超时/撤销。
-- [ ] 本地 journal 与 SSE 观察者解耦，终态先持久化；缺 native delta 时仅活动+最终引用。
-- [ ] 版本化错误分类，trust/auth/quota/denied_actions 不再被纯 protocol_error 掩盖；保留旧 CLI 状态兼容。
-- [ ] token/usage 字段缺失语义保真，新 API 不推断精确费用或 native model。
+- [x] 给现有 agent decoder 增加向后兼容 typed observer：原生会话来源、terminal/denial/usage/activity；不把 fallback ID 当 observed。
+- [x] 受控固定 argv + 最小环境 + task 工作区；进程组监督、总 deadline、无界 wait/后代 pipe 收尾问题修复。
+- [x] Session 首次绑定与续接；strict owner/profile/capability checks；无任意原生 Session import。
+- [x] Task 异步调度、有限队列、安装域/Session 锁、累积预算、取消/超时/撤销。
+- [x] 本地 journal 与 SSE 观察者解耦，终态先持久化；缺 native delta 时仅活动+最终引用。
+- [x] 版本化错误分类，trust/auth/quota/denied_actions 不再被纯 protocol_error 掩盖；保留旧 CLI 状态兼容。
+- [x] token/usage 字段缺失语义保真，新 API 不推断精确费用或 native model。
 
 明确验收：N01–N10、N14、N15 文本部分全通过；拆分/超长/未知/截断事件、Agy soft-deny、Cursor trust、Codex reconnect/quota、Session 缺 ID/错 ID 均有固定夹具。fake 子进程主动拒绝 TERM/持有 pipe/派生后代，收敛在 deadline+5 秒清理硬上限内（含 2 秒 TERM grace）；无法确认时正确进入 needs_reconcile 并隔离，不声称 worker 已停止。
 

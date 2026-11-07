@@ -1,6 +1,6 @@
 # Native Agent Gateway V1 SPEC
 
-日期：2026-11-06。状态：**设计交付，产品实现尚未开始**。适用范围为本人控制的本机应用；不是共享推理服务或 OpenAI API 兼容层。
+日期：2026-11-06。状态：**G1/G2 离线实现通过；真实原生 Gateway 仍 BLOCKED**。适用范围为本人控制的本机应用；不是共享推理服务或 OpenAI API 兼容层。
 
 真实 CLI 基线为 `7e57c6774b4bcfd4735f0d4c35c7c7a3a58d2ac4`；验收证据及 Smoke 修复已单独提交为 `864a6b1`。本 SPEC 基于该提交的源码与[验收报告](../cli-first/ACCEPTANCE_REPORT.md)，没有新模型调用。
 
@@ -19,3 +19,5 @@
 **Gate B 保持 BLOCKED**：原 Gate B 专指原生 CLI → Model Gateway `/v1/*`，V1 不实现该兼容层。新 Agent 链路使用独立的 NAG 验收，不能借改名关闭 Gate B。Gate C 的四应用原生接入也仍为 Planned/BLOCKED。
 
 本轮只读取本仓库源码、已有四应用接入记录及供应商公开官方文档；不读取原生登录凭据，不运行 native 版本/认证/推理探测，不修改四应用、不部署、不发布、不 Push。
+
+当前实现、提交、失败及恢复入口见 [IMPLEMENTATION_PROGRESS.md](IMPLEMENTATION_PROGRESS.md)。SPEC 的历史“本轮只设计”描述属于 2026-11-06；2026-11-07 的实现/离线测试单独留证，未启动新的真实模型调用。

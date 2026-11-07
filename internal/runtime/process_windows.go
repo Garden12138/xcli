@@ -68,3 +68,19 @@ func killProcess(command *exec.Cmd, _ bool) {
 		_ = command.Process.Kill()
 	}
 }
+
+func processStopped(command *exec.Cmd, separate bool) bool {
+	if !separate {
+		return true
+	}
+	job, ok := processJobs.Load(command)
+	if !ok {
+		return false
+	}
+	var info struct {
+		TotalUserTime, TotalKernelTime, ThisPeriodTotalUserTime, ThisPeriodTotalKernelTime int64
+		TotalPageFaultCount, TotalProcesses, ActiveProcesses, TotalTerminatedProcesses     uint32
+	}
+	err := windows.QueryInformationJobObject(job.(windows.Handle), windows.JobObjectBasicAccountingInformation, uintptr(unsafe.Pointer(&info)), uint32(unsafe.Sizeof(info)), nil)
+	return err == nil && info.ActiveProcesses == 0
+}
