@@ -1,0 +1,26 @@
+?   	github.com/Garden12138/xcli	[no test files]
+ok  	github.com/Garden12138/xcli/cmd	14.524s
+ok  	github.com/Garden12138/xcli/internal/agent	(cached)
+ok  	github.com/Garden12138/xcli/internal/agentapi	(cached)
+ok  	github.com/Garden12138/xcli/internal/agentartifact	(cached)
+ok  	github.com/Garden12138/xcli/internal/agentgateway	1.903s
+ok  	github.com/Garden12138/xcli/internal/agentpolicy	2.389s
+ok  	github.com/Garden12138/xcli/internal/agentservice	2.008s
+ok  	github.com/Garden12138/xcli/internal/agentstore	1.682s
+ok  	github.com/Garden12138/xcli/internal/config	(cached)
+ok  	github.com/Garden12138/xcli/internal/jobs	(cached)
+ok  	github.com/Garden12138/xcli/internal/mcp	(cached)
+?   	github.com/Garden12138/xcli/internal/media	[no test files]
+ok  	github.com/Garden12138/xcli/internal/model	(cached)
+ok  	github.com/Garden12138/xcli/internal/modelbackend	(cached)
+?   	github.com/Garden12138/xcli/internal/modelbackend/fake	[no test files]
+ok  	github.com/Garden12138/xcli/internal/modelgateway	(cached)
+ok  	github.com/Garden12138/xcli/internal/modelstore	(cached)
+ok  	github.com/Garden12138/xcli/internal/nativeadapter	12.949s
+ok  	github.com/Garden12138/xcli/internal/runstore	(cached)
+ok  	github.com/Garden12138/xcli/internal/runtime	(cached)
+ok  	github.com/Garden12138/xcli/internal/task	(cached)
+ok  	github.com/Garden12138/xcli/internal/workflow	(cached)
+ok  	github.com/Garden12138/xcli/internal/worktree	(cached)
+ok  	github.com/Garden12138/xcli/tests/model_gateway	(cached)
+ok  	github.com/Garden12138/xcli/tests/phase0	(cached)

@@ -48,12 +48,12 @@
 
 依赖 G2，新增媒体 profile 单独注册，不把文本默认沙箱升级为写权限。
 
-- [ ] input 字节上传、不可变哈希与 Session 归属；只接受文本/单参考图片。
-- [ ] 提取现有纯图片校验器，安全根/目录 FD/no-follow/有界复制/atomic publish；拒绝全局原生目录泛读。
-- [ ] ArtifactCandidate、真实 MIME/尺寸/完整解码/哈希、原图不变、来源观察与人工复核。
-- [ ] authenticated preview/review_only → provenance+semantics → ready；review 不调用模型，不覆盖权限或账单阻断。
-- [ ] 下载、过期、取消后晚到文件隔离、存储额度/磁盘不足/清理。
-- [ ] GardenFlow 风格 fake 客户端按两阶段接收，但只放在 xcli 测试目录，不改应用。
+- [x] input 字节上传、不可变哈希与 Session 归属；只接受文本/单参考图片。
+- [x] 提取现有纯图片校验器，安全根/目录 FD/no-follow/有界复制/atomic publish；拒绝全局原生目录泛读。
+- [x] ArtifactCandidate、真实 MIME/尺寸/完整解码/哈希、原图不变、来源观察与人工复核。
+- [x] authenticated preview/review_only → provenance+semantics → ready；review 不调用模型，不覆盖权限或账单阻断。
+- [x] 下载、过期、取消后晚到文件隔离、存储额度/磁盘不足/清理。
+- [x] GardenFlow 风格 fake 客户端按两阶段接收，但只放在 xcli 测试目录，不改应用。
 
 明确验收：N07、N11、N12 图片部分；恶意路径/目录分量 symlink/硬链接/替换竞态/超大解码/伪 MIME/输入覆盖/URL/仅文案完成均失败关闭。嵌套工具不可见进入复核，不能自动 PASS；无码来源证明不能 ready。过期或取消后文件不自动入库。
 

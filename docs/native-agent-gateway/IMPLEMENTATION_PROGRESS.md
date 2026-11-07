@@ -4,7 +4,7 @@
 
 ## 当前入口
 
-当前阶段：**G2 离线通过，准备 G3**（对应用户阶段 A，按原 SPEC 依赖推进）。
+当前阶段：**G3 离线通过，准备 G4 离线收敛与真实验收计划**（对应用户阶段 A，按原 SPEC 依赖推进）。
 
 恢复先读本文件，再读 `TASKS.md`、`ACCEPTANCE.md` 和 `git log --oneline -8` / `git status --short`。不得重新执行历史 native smoke。
 
@@ -22,8 +22,8 @@
 | --- | --- | --- | --- |
 | G0 | 已继承设计 | `40fc6ca` | 七份 SPEC + README |
 | G1 | PASS（离线范围） | `86717e6` | [核心 race](evidence/g1-core-race.log)、[旧回归 race](evidence/g1-regression-race.log)、vet/build |
-| G2 | PASS（离线范围，覆盖用户 B/C 的实现） | 本条所在提交 | [全量 race](evidence/g2-all-race.log)、[最终补充](evidence/g2-additions-race.log)、[CLI 控制](evidence/g2-control.json) |
-| G3 | PENDING | — | 输入/字节产物/复核 |
+| G2 | PASS（离线范围，覆盖用户 B/C 的实现） | `25201e1` | [全量 race](evidence/g2-all-race.log)、[最终补充](evidence/g2-additions-race.log)、[CLI 控制](evidence/g2-control.json) |
+| G3 | PASS（macOS 离线范围） | 本条所在提交 | [全量 race](evidence/g3-all-race.log)、[最终核心](evidence/g3-core-final.log) |
 | G4 离线 | PENDING | — | 故障、安全、兼容、性能 |
 | G4 真实 / 用户 F | BLOCKED | — | 无新授权；需计划与权限先决条件 |
 | G5 / G6 | 后续独立范围 | — | app-server 晋升 / 四应用 |
@@ -64,3 +64,17 @@ G1：实现闭合 DTO、私有事务存储、客户端授权、Session/CAS、预
 - 失败修复如实保留：新增 token 测试最初用了公开临时目录，改成 0700 私有子目录；零退出等待暴露旧 Jobs 先写成功再写最终日志的竞态，调整发布顺序并连续 10 次 race 回归；status 与启动锁的竞争用单独 probe 锁串行，新增并发回归。未删测试或降权限。
 
 下一入口：G3 原始字节上传、安全 FD 导入/格式解码/哈希/输入保护、待审→来源+语义复核→认证交付。图片夹具只证明离线数据流程，绝不作为新 native 图片成功证据。
+
+## G3 实际交付（2026-11-07）
+
+- 完成合同内的原始字节 `/inputs`、Artifact 元数据/认证内容、Task review；PNG/JPEG/WebP 真实格式、完整解码、像素/字节上限复用提取后的纯 `internal/media` 校验器，旧 Model error/响应语义保持。
+- Input owner/Session/哈希绑定，Task 持久记录全部输入哈希及 consent 摘要；原始 blob 与工作区只读副本都复核。生成固定一图；编辑固定一个参考，结果单独输出。API 不接路径/URL/文件名。
+- macOS/Linux 实现 openat + 每层 no-follow + 普通文件/nlink/FD 前后 identity/size/mtime/ctime 检查，再复制/校验/私有原子发布；只读服务副本下载。Windows 缺等价 handle 验收时媒体读取明确失败关闭，后续只做交叉构建。
+- review_only 认证预览→已观测来源或本人额外 attest scope→语义接收→ready；来源与视觉复核各记摘要/审核者。新增可选响应字段 `semantic_review` 用于审计，不改变请求合同。
+- 取消/拒绝/过期产物隔离；待审 24h/Session 绝对期限；私有 blob 限额 256 MiB；HTTP 普通请求/SSE/大 body 并发分别限制，上传流式上限按 MIME 施加。
+- 新状态根 namespace 拒绝复用 Model 根或任意非空目录。G1/G2 未发布的无 namespace 预览根也拒绝自动迁移；使用新私有根或由本人单独审核迁移，绝不自动删除旧状态。
+- GardenFlow 风格假客户端通过上传→Task→待审→来源拒绝/attest→ready→认证下载 SHA/ETag 闭环；仅改 xcli 测试，没有触碰 GardenFlow 业务代码。
+- 全量 `go test -race ./...` 与最后核心/Model 回归 PASS；vet/build 退出 0。所有图片是明确的测试夹具，仅证明字节/状态流程，不是新模型图片证据。
+- 保留初次失败：媒体夹具扩展了内存 client scope 但未更新持久授权，执行前正确拒绝；修正为显式登记独立假客户端。一次全量负载下的有界假版本探测 3s 超时，未放宽条件，连续 10 次探测及完整回归随后通过。
+
+G4 下一任务：journal 压缩与实际留存、fsync/crash 故障点、SSE 重连/过窗/慢读/撤销、预算竞争与安装域监督、完整离线门禁/交叉构建/性能报告、用户操作手册与真实 L01–L05 计划。原生调用仍 0，原 Gate B 仍 BLOCKED。

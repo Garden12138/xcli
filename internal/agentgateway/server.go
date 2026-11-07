@@ -6,10 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"mime"
 	"net"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	api "github.com/Garden12138/xcli/internal/agentapi"
@@ -18,8 +20,12 @@ import (
 )
 
 type Server struct {
-	Service *agentservice.Service
-	Address string
+	Service   *agentservice.Service
+	Address   string
+	once      sync.Once
+	slots     chan struct{}
+	bodySlots chan struct{}
+	sseSlots  chan struct{}
 }
 
 func (s *Server) Serve(ctx context.Context, listener net.Listener) error {
@@ -98,6 +104,23 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		JSON(w, 200, map[string]any{"api_version": 1, "status": "ok"})
 		return
 	}
+	s.once.Do(func() {
+		s.slots = make(chan struct{}, 8)
+		s.bodySlots = make(chan struct{}, 2)
+		s.sseSlots = make(chan struct{}, 8)
+	})
+	isSSE := r.Method == "GET" && strings.HasSuffix(r.URL.Path, "/events")
+	slots := s.slots
+	if isSSE {
+		slots = s.sseSlots
+	}
+	select {
+	case slots <- struct{}{}:
+		defer func() { <-slots }()
+	default:
+		Fail(w, api.Failure(429, "concurrency_limit"))
+		return
+	}
 	c, err := authenticate(s, r)
 	if err != nil {
 		Fail(w, err)
@@ -143,6 +166,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Fail(w, api.Failure(403, "scope_denied"))
 		return
 	}
+	if r.Method == "POST" || (r.Method == "GET" && strings.HasSuffix(path, "/content")) {
+		select {
+		case s.bodySlots <- struct{}{}:
+			defer func() { <-s.bodySlots }()
+		default:
+			Fail(w, api.Failure(429, "concurrency_limit"))
+			return
+		}
+	}
 	replayed := false
 	var out any
 	status := 200
@@ -161,6 +193,46 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			out, replayed, err = s.Service.CreateTask(c, req, k)
 			status = 202
 		}
+	case r.Method == "POST" && path == "/inputs":
+		if len(r.Header.Values("X-Xcli-Session-ID")) != 1 || len(r.Header.Values("X-Xcli-Content-SHA256")) != 1 {
+			err = api.Failure(400, "invalid_request")
+			break
+		}
+		typ, limit, typeErr := api.InputType(r.Header.Get("Content-Type"))
+		if typeErr != nil {
+			err = typeErr
+			break
+		}
+		var data []byte
+		data, err = io.ReadAll(http.MaxBytesReader(w, r.Body, limit))
+		if err != nil {
+			err = api.Failure(413, "input_too_large")
+			break
+		}
+		out, replayed, err = s.Service.Upload(c, r.Header.Get("X-Xcli-Session-ID"), typ, r.Header.Get("X-Xcli-Content-SHA256"), k, data)
+		status = 201
+	case r.Method == "POST" && len(parts) == 3 && parts[0] == "tasks" && parts[2] == "review":
+		var review api.Review
+		if err = readJSON(w, r, &review); err == nil {
+			out, replayed, err = s.Service.Review(c, parts[1], k, review)
+		}
+	case r.Method == "GET" && len(parts) == 2 && parts[0] == "artifacts":
+		out, err = s.Service.GetArtifact(c, parts[1])
+	case r.Method == "GET" && len(parts) == 3 && parts[0] == "artifacts" && parts[2] == "content":
+		var meta api.Artifact
+		var data []byte
+		meta, data, err = s.Service.ArtifactContent(c, parts[1])
+		if err != nil {
+			break
+		}
+		ext := map[string]string{"image/png": "png", "image/jpeg": "jpg", "image/webp": "webp"}[meta.MediaType]
+		w.Header().Set("Content-Type", meta.MediaType)
+		w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+		w.Header().Set("ETag", "\""+meta.SHA256+"\"")
+		w.Header().Set("Content-Disposition", "attachment; filename=\""+meta.ID+"."+ext+"\"")
+		w.WriteHeader(200)
+		_, _ = w.Write(data)
+		return
 	case r.Method == "GET" && len(parts) == 2 && parts[0] == "sessions":
 		out, err = s.Service.GetSession(c, parts[1])
 	case r.Method == "GET" && len(parts) == 2 && parts[0] == "tasks":
@@ -212,7 +284,8 @@ func validKey(v string) bool {
 	return true
 }
 func readJSON(w http.ResponseWriter, r *http.Request, dst any) error {
-	if r.Header.Get("Content-Type") != "application/json" {
+	typ, params, e := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if e != nil || typ != "application/json" || len(params) > 1 || (len(params) == 1 && strings.ToLower(params["charset"]) != "utf-8") {
 		return api.Failure(400, "invalid_request")
 	}
 	b, e := io.ReadAll(http.MaxBytesReader(w, r.Body, api.MaxJSON))

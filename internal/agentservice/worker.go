@@ -16,6 +16,7 @@ import (
 // Run is deliberately serial across the entire installation. HTTP request
 // lifetimes never own a worker; disconnecting a reader does not cancel a turn.
 func (s *Service) Run(ctx context.Context, driver nativeadapter.Driver) error {
+	maintenanceAt := time.Now()
 	ticker := time.NewTicker(50 * time.Millisecond)
 	defer ticker.Stop()
 	for {
@@ -24,6 +25,12 @@ func (s *Service) Run(ctx context.Context, driver nativeadapter.Driver) error {
 			s.stopping = true
 			s.mu.Unlock()
 			return nil
+		}
+		if time.Since(maintenanceAt) >= time.Second {
+			if e := s.Maintain(time.Now().UTC()); e != nil {
+				return e
+			}
+			maintenanceAt = time.Now()
 		}
 		ran, e := s.ExecuteNext(ctx, driver)
 		if e != nil {
@@ -138,9 +145,9 @@ func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Drive
 			b.ProcessStartsConsumed++
 			b.ExecutionSecondsReserved += seconds
 			ses.Session.ContextSHA256 = api.Digest(struct {
-				Previous string
-				Request  api.TaskCreate
-			}{ses.Session.ContextSHA256, r.Request})
+				Previous      string
+				ConsentSHA256 string
+			}{ses.Session.ContextSHA256, r.ConsentSHA256})
 			ses.Session.Revision++
 			addEvent(r, "task.started", map[string]any{"task_revision": r.Task.Revision})
 			bound = nativeadapter.BoundRequest{TaskID: r.Task.ID, SessionID: ses.Session.ID, NativeID: ses.NativeID, Operation: r.Task.Operation, Profile: p}
@@ -187,6 +194,9 @@ func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Drive
 	}
 	bound.Workspace, bound.OutputRoot, err = s.Store.Workspace(bound.SessionID, bound.TaskID)
 	if err != nil {
+		return true, err
+	}
+	if err = s.prepareInputs(&bound, tr); err != nil {
 		return true, err
 	}
 	resultCh := make(chan nativeadapter.TurnResult, 1)
@@ -335,9 +345,13 @@ complete:
 		r.Task.Status = "validating"
 		r.Task.Revision++
 		r.Task.Validation.Status = "running"
-		if r.Task.Operation != "text_task" {
-			finish(st, r, "blocked", "artifact_access_blocked")
+		if e := s.verifyInputs(bound, *r); e != nil {
+			r.Task.Validation.Status = "failed"
+			finish(st, r, "failed", "validation_failed")
 			return nil
+		}
+		if r.Task.Operation != "text_task" {
+			return s.validateMedia(st, r, bound, result.Candidates)
 		}
 		if strings.TrimSpace(result.Text) == "" || !utf8.ValidString(result.Text) {
 			r.Task.Validation.Status = "failed"

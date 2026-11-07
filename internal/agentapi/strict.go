@@ -27,10 +27,6 @@ func StrictDecode(data []byte, dst any) error {
 	if len(bytes.TrimSpace(data)) == 0 || bytes.TrimSpace(data)[0] != '{' {
 		return Failure(400, "invalid_request")
 	}
-	var shape any
-	if json.Unmarshal(data, &shape) != nil || !requiredShape(shape, reflect.TypeOf(dst).Elem()) {
-		return Failure(400, "invalid_request")
-	}
 	d = json.NewDecoder(bytes.NewReader(data))
 	d.DisallowUnknownFields()
 	if err := d.Decode(dst); err != nil {
@@ -38,6 +34,23 @@ func StrictDecode(data []byte, dst any) error {
 			return Failure(422, "unsupported_parameter")
 		}
 		return Failure(400, "invalid_request")
+	}
+	var shape any
+	if json.Unmarshal(data, &shape) != nil || !requiredShape(shape, reflect.TypeOf(dst).Elem()) {
+		return Failure(400, "invalid_request")
+	}
+	object := shape.(map[string]any)
+	if budget, ok := object["budget"].(map[string]any); ok {
+		switch dst.(type) {
+		case *SessionCreate:
+			if _, ok = budget["timeout_seconds"]; ok {
+				return Failure(422, "unsupported_parameter")
+			}
+		case *TaskCreate:
+			if _, ok = budget["max_execution_seconds"]; ok {
+				return Failure(422, "unsupported_parameter")
+			}
+		}
 	}
 	return nil
 }

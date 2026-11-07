@@ -208,3 +208,20 @@ func TestStatusProbeCannotRejectAStartingWriter(t *testing.T) {
 		next.Close()
 	}
 }
+func TestModelGatewayStateRootCannotBeReused(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "model")
+	if e := os.Mkdir(root, 0o700); e != nil {
+		t.Fatal(e)
+	}
+	original := []byte(`{"version":1,"clients":{}}`)
+	if e := os.WriteFile(filepath.Join(root, "clients.json"), original, 0o600); e != nil {
+		t.Fatal(e)
+	}
+	if _, e := Prepare(root); e == nil {
+		t.Fatal("Model state root accepted")
+	}
+	data, _ := os.ReadFile(filepath.Join(root, "clients.json"))
+	if string(data) != string(original) {
+		t.Fatal("Model store changed")
+	}
+}

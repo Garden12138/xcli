@@ -1,6 +1,6 @@
 # Native Agent Gateway V1 — API Contract
 
-规范性拟议合同，2026-11-06；**以下路由当前均不存在**。所有示例是合成数据，不是本轮真实调用结果。协议不接受 OpenAI `messages/model/response_format/tool_calls` 的替代映射。
+规范性 V1 合同，2026-11-06；实现与验收状态见 [IMPLEMENTATION_PROGRESS.md](IMPLEMENTATION_PROGRESS.md)。2026-11-07 已有独立路由，真实 native profile 仍关闭。所有示例是合成数据，不是本轮真实调用结果。协议不接受 OpenAI `messages/model/response_format/tool_calls` 的替代映射。
 
 ## 传输、身份和通用规则
 

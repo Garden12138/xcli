@@ -289,6 +289,7 @@ func (s *Service) CreateTask(c agentstore.Client, r api.TaskCreate, k string) (o
 		if e = p.Check(r.Operation); e != nil {
 			return e
 		}
+		inputHashes := map[string]string{}
 		imageCount, files := 0, 0
 		seen := map[string]bool{}
 		for _, part := range r.Input {
@@ -308,6 +309,7 @@ func (s *Service) CreateTask(c agentstore.Client, r api.TaskCreate, k string) (o
 			}
 			seen[id] = true
 			files++
+			inputHashes[id] = in.Input.SHA256
 			if strings.HasPrefix(in.Input.MediaType, "image/") {
 				imageCount++
 			} else {
@@ -337,7 +339,10 @@ func (s *Service) CreateTask(c agentstore.Client, r api.TaskCreate, k string) (o
 		}
 		now := time.Now().UTC()
 		out = api.Task{APIVersion: 1, ID: api.ID("tsk"), SessionID: ses.ID, AgentID: ses.AgentID, AdapterID: ses.AdapterID, ProfileSHA256: ses.ProfileSHA256, CapabilityRevision: ses.CapabilityRevision, Operation: r.Operation, Status: "queued", Revision: 1, Execution: api.Execution{State: "not_started", NativeTerminal: "unknown", SideEffects: "none_observed"}, Protocol: api.Protocol{Status: "not_started"}, Validation: api.Validation{Status: "not_run", Bytes: "not_applicable", Provenance: "not_applicable", Semantics: "not_applicable"}, Result: api.Result{Artifacts: []string{}}, Usage: api.Usage{Source: "none", Scope: "unknown"}, CreatedAt: now, DeadlineAt: now.Add(time.Duration(r.Budget.TimeoutSeconds) * time.Second), ExpiresAt: now.Add(7 * 24 * time.Hour)}
-		tr := &agentstore.TaskRecord{GrantEpoch: c.GrantEpoch, Task: out, Owner: c.ID, Request: r, Events: []api.Event{}}
+		tr := &agentstore.TaskRecord{InputHashes: inputHashes, ConsentSHA256: api.Digest(struct {
+			Request api.TaskCreate
+			Hashes  map[string]string
+		}{r, inputHashes}), GrantEpoch: c.GrantEpoch, Task: out, Owner: c.ID, Request: r, Events: []api.Event{}}
 		st.Tasks[out.ID] = tr
 		ses.ActiveTaskID = &tr.Task.ID
 		ses.Revision++
@@ -379,6 +384,18 @@ func finish(st *agentstore.State, r *agentstore.TaskRecord, status, code string)
 		return
 	}
 	now := time.Now().UTC()
+	if status != "succeeded" {
+		for _, id := range r.Task.Result.Artifacts {
+			art, ok := st.Artifacts[id]
+			if ok {
+				art.Artifact.DeliveryState = "quarantined"
+				if status == "expired" {
+					art.Artifact.DeliveryState = "expired"
+				}
+				st.Artifacts[id] = art
+			}
+		}
+	}
 	r.Task.Status = status
 	r.Task.Revision++
 	r.Task.EndedAt = &now

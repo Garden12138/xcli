@@ -30,15 +30,17 @@ type SessionRecord struct {
 	Context  api.Context `json:"context"`
 }
 type TaskRecord struct {
-	GrantEpoch      int            `json:"grant_epoch"`
-	Task            api.Task       `json:"task"`
-	Owner           string         `json:"owner"`
-	Request         api.TaskCreate `json:"request"`
-	Events          []api.Event    `json:"events"`
-	InvocationID    string         `json:"invocation_id"`
-	StartedAt       *time.Time     `json:"started_at"`
-	ReservedSeconds int            `json:"reserved_seconds"`
-	BudgetDay       string         `json:"budget_day"`
+	InputHashes     map[string]string `json:"input_hashes"`
+	ConsentSHA256   string            `json:"consent_sha256"`
+	GrantEpoch      int               `json:"grant_epoch"`
+	Task            api.Task          `json:"task"`
+	Owner           string            `json:"owner"`
+	Request         api.TaskCreate    `json:"request"`
+	Events          []api.Event       `json:"events"`
+	InvocationID    string            `json:"invocation_id"`
+	StartedAt       *time.Time        `json:"started_at"`
+	ReservedSeconds int               `json:"reserved_seconds"`
+	BudgetDay       string            `json:"budget_day"`
 }
 type Idempotency struct {
 	Digest    string    `json:"digest"`
@@ -111,7 +113,34 @@ func Prepare(root string) (string, error) {
 		return "", err
 	}
 	root, err = filepath.EvalSymlinks(root)
-	return root, err
+	if err != nil {
+		return "", err
+	}
+	marker := filepath.Join(root, "namespace.json")
+	data, e := modelstore.ReadPrivate(marker, 1024)
+	if os.IsNotExist(e) {
+		entries, readErr := os.ReadDir(root)
+		if readErr != nil {
+			return "", readErr
+		}
+		if len(entries) > 0 {
+			return "", errors.New("unrecognized state root; an empty independent Agent Gateway root is required")
+		}
+		if e = modelstore.WritePrivate(marker, []byte(`{"kind":"xcli.native-agent-gateway","version":1}`)); e != nil {
+			return "", e
+		}
+	} else if e != nil {
+		return "", e
+	} else {
+		var ns struct {
+			Kind    string `json:"kind"`
+			Version int    `json:"version"`
+		}
+		if json.Unmarshal(data, &ns) != nil || ns.Kind != "xcli.native-agent-gateway" || ns.Version != 1 {
+			return "", ErrCorrupt
+		}
+	}
+	return root, nil
 }
 func Open(root string) (*Store, error) {
 	root, err := Prepare(root)
