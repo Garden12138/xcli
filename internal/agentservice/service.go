@@ -15,20 +15,21 @@ import (
 )
 
 type Service struct {
-	Store    *agentstore.Store
-	Clients  *agentstore.Clients
-	Config   agentpolicy.Config
-	Profiles []agentpolicy.Profile
-	mu       sync.Mutex
-	stopping bool
-	wake     chan struct{}
+	Store          *agentstore.Store
+	Clients        *agentstore.Clients
+	Config         agentpolicy.Config
+	Profiles       []agentpolicy.Profile
+	mu             sync.Mutex
+	stopping       bool
+	wake           chan struct{}
+	acceptedClocks map[string]time.Time
 }
 
 func New(store *agentstore.Store, clients *agentstore.Clients, cfg agentpolicy.Config, profiles []agentpolicy.Profile) (*Service, error) {
 	if e := cfg.Validate(); e != nil {
 		return nil, e
 	}
-	s := &Service{Store: store, Clients: clients, Config: cfg, wake: make(chan struct{}, 1)}
+	s := &Service{Store: store, Clients: clients, Config: cfg, wake: make(chan struct{}, 1), acceptedClocks: map[string]time.Time{}}
 	for _, p := range profiles {
 		p.CapabilityRevision = api.Digest(profiles)
 		s.Profiles = append(s.Profiles, p.Freeze())
@@ -68,9 +69,46 @@ func grant(c agentstore.Client, p agentpolicy.Profile, op string) error {
 	return nil
 }
 func (s *Service) Capabilities(c agentstore.Client) (api.Capabilities, error) {
-	var instance string
-	e := s.Store.View(func(st agentstore.State) error { instance = st.InstanceID; return nil })
-	return agentpolicy.Catalog(s.Profiles, instance, c.Agents, c.Policies, c.Operations), e
+	instance, quarantined, e := s.Store.GatewayState()
+	catalog := agentpolicy.Catalog(s.Profiles, instance, c.Agents, c.Policies, c.Operations)
+	if !c.AllowRemote {
+		for i := range catalog.Agents {
+			if catalog.Agents[i].InferenceLocation != "local" {
+				for op, value := range catalog.Agents[i].Operations {
+					value.Availability = "blocked"
+					value.Reason = "cloud_consent_required"
+					catalog.Agents[i].Operations[op] = value
+				}
+			}
+		}
+	}
+	blockers, blockErr := s.Store.BinaryBlockers()
+	if blockErr != nil {
+		return catalog, blockErr
+	}
+	for _, p := range s.Profiles {
+		if reason, ok := blockers[p.SHA256]; ok {
+			for i := range catalog.Agents {
+				if catalog.Agents[i].AgentID == p.AgentID && catalog.Agents[i].AdapterID == p.AdapterID {
+					for op, value := range catalog.Agents[i].Operations {
+						value.Availability = "blocked"
+						value.Reason = reason
+						catalog.Agents[i].Operations[op] = value
+					}
+				}
+			}
+		}
+	}
+	if quarantined {
+		for i := range catalog.Agents {
+			for op, value := range catalog.Agents[i].Operations {
+				value.Availability = "blocked"
+				value.Reason = "execution_state_unknown"
+				catalog.Agents[i].Operations[op] = value
+			}
+		}
+	}
+	return catalog, e
 }
 func validateBudget(b api.Budget, session bool) error {
 	if len(b.MaxCostUSD) > 0 {
@@ -352,6 +390,9 @@ func (s *Service) CreateTask(c agentstore.Client, r api.TaskCreate, k string) (o
 		return nil
 	})
 	if err == nil {
+		if !replayed {
+			s.acceptedClocks[out.ID] = time.Now()
+		}
 		s.Notify()
 	}
 	return
@@ -482,6 +523,15 @@ func cancelTask(st *agentstore.State, r *agentstore.TaskRecord) {
 	if api.Terminal(r.Task.Status) {
 		return
 	}
+	now := time.Now().UTC()
+	if r.Task.Status == "queued" && (!now.Before(r.Task.DeadlineAt) || now.Sub(r.Task.CreatedAt) >= 30*time.Second) {
+		finish(st, r, "timed_out", "queue_timeout")
+		return
+	}
+	if r.Task.Status == "awaiting_review" && r.Task.ReviewDeadlineAt != nil && !now.Before(*r.Task.ReviewDeadlineAt) {
+		finish(st, r, "expired", "object_expired")
+		return
+	}
 	if r.Task.Status == "queued" || r.Task.Status == "awaiting_review" {
 		finish(st, r, "canceled", "canceled")
 		return
@@ -556,3 +606,5 @@ func (s *Service) Events(c agentstore.Client, id string, cursor int64) (out []ap
 func IsUnavailable(err error) bool {
 	return errors.Is(err, agentstore.ErrUnavailable) || errors.Is(err, agentstore.ErrCorrupt)
 }
+
+func (s *Service) StopAccepting() { s.mu.Lock(); s.stopping = true; s.mu.Unlock(); s.Notify() }

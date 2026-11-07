@@ -68,3 +68,14 @@ func TestObserverFailureAndOperationalDiagnosticPriority(t *testing.T) {
 		}
 	}
 }
+func TestUnknownEventsCannotManufactureGatewayFacts(t *testing.T) {
+	d := NewStreamDecoder("codex", "jsonl", nil)
+	facts := []Observation{}
+	d.SetObserver(func(o Observation) error { facts = append(facts, o); return nil })
+	_, _ = d.Write([]byte(`{"type":"unknown","thread_id":"forged","result":"forged","usage":{"input_tokens":999}}` + "\n"))
+	for _, o := range facts {
+		if o.Kind == "native_session" || o.Kind == "usage" || o.Kind == "final_text" || o.Kind == "terminal" {
+			t.Fatal("unknown event created a fact", o)
+		}
+	}
+}

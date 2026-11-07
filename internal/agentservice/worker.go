@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -16,6 +17,9 @@ import (
 // Run is deliberately serial across the entire installation. HTTP request
 // lifetimes never own a worker; disconnecting a reader does not cancel a turn.
 func (s *Service) Run(ctx context.Context, driver nativeadapter.Driver) error {
+	if e := s.Maintain(time.Now().UTC()); e != nil {
+		return e
+	}
 	maintenanceAt := time.Now()
 	ticker := time.NewTicker(50 * time.Millisecond)
 	defer ticker.Stop()
@@ -27,8 +31,14 @@ func (s *Service) Run(ctx context.Context, driver nativeadapter.Driver) error {
 			return nil
 		}
 		if time.Since(maintenanceAt) >= time.Second {
-			if e := s.Maintain(time.Now().UTC()); e != nil {
+			due, e := s.Store.MaintenanceDue(time.Now().UTC())
+			if e != nil {
 				return e
+			}
+			if due {
+				if e = s.Maintain(time.Now().UTC()); e != nil {
+					return e
+				}
 			}
 			maintenanceAt = time.Now()
 		}
@@ -48,6 +58,10 @@ func (s *Service) Run(ctx context.Context, driver nativeadapter.Driver) error {
 	}
 }
 func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Driver) (bool, error) {
+	queued, e := s.Store.HasQueued()
+	if e != nil || !queued {
+		return false, e
+	}
 	s.mu.Lock()
 	if s.stopping {
 		s.mu.Unlock()
@@ -61,6 +75,7 @@ func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Drive
 	var bound nativeadapter.BoundRequest
 	var tr agentstore.TaskRecord
 	var dispatch bool
+	var remaining time.Duration
 	err = s.Store.Update(func(st *agentstore.State) error {
 		if st.Quarantined {
 			return nil
@@ -84,7 +99,11 @@ func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Drive
 		})
 		for _, r := range queue {
 			now := time.Now().UTC()
-			if !now.Before(r.Task.DeadlineAt) || now.Sub(r.Task.CreatedAt) >= 30*time.Second {
+			elapsed := time.Since(s.acceptedClocks[r.Task.ID])
+			if s.acceptedClocks[r.Task.ID].IsZero() {
+				elapsed = now.Sub(r.Task.CreatedAt)
+			}
+			if !now.Before(r.Task.DeadlineAt) || elapsed >= min(30*time.Second, time.Duration(r.Request.Budget.TimeoutSeconds)*time.Second) {
 				finish(st, r, "timed_out", "queue_timeout")
 				continue
 			}
@@ -103,6 +122,9 @@ func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Drive
 			}
 			if e == nil {
 				e = p.Check(r.Task.Operation)
+			}
+			if e == nil && p.Binary != "" {
+				e = p.CheckBinary()
 			}
 			if e == nil && p.SHA256 != ses.Session.ProfileSHA256 {
 				e = api.Failure(409, "profile_changed")
@@ -157,6 +179,7 @@ func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Drive
 				}
 			}
 			tr = *r
+			remaining = min(time.Until(r.Task.DeadlineAt), time.Duration(r.Request.Budget.TimeoutSeconds)*time.Second-elapsed, time.Until(ses.Session.ExpiresAt))
 			dispatch = true
 			break
 		}
@@ -167,10 +190,23 @@ func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Drive
 	if err != nil || !dispatch {
 		return false, err
 	}
-	ctx, cancel := context.WithDeadline(parent, tr.Task.DeadlineAt)
+	executionStart := time.Now()
+	ctx, cancel := context.WithTimeout(parent, remaining)
+	bound.Deadline, _ = ctx.Deadline()
 	defer cancel()
 	observedError := make(chan error, 1)
+	var observationMu sync.Mutex
+	lastActivity := map[string]time.Time{}
 	observer := func(o nativeadapter.Observation) error {
+		observationMu.Lock()
+		defer observationMu.Unlock()
+		if o.Kind == "activity" {
+			if previous := lastActivity[o.Category]; !previous.IsZero() && time.Since(previous) < time.Second {
+				return nil
+			}
+			lastActivity[o.Category] = time.Now()
+		}
+
 		e := s.Store.Update(func(st *agentstore.State) error {
 			r := st.Tasks[tr.Task.ID]
 			if r == nil || api.Terminal(r.Task.Status) {
@@ -230,16 +266,11 @@ func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Drive
 			result = nativeadapter.TurnResult{Terminal: "unknown", Protocol: "unknown", Code: "execution_state_unknown"}
 			goto complete
 		case <-monitor.C:
-			e := s.Store.View(func(st agentstore.State) error {
-				r := st.Tasks[tr.Task.ID]
-				if r == nil || r.Task.Status == "cancel_requested" {
-					stop()
-				}
-				return nil
-			})
-			if e != nil {
+			status, e := s.Store.TaskStatus(tr.Task.ID)
+			if e != nil || status == "cancel_requested" {
 				stop()
 			}
+
 			if current, e := s.Clients.Get(tr.Owner); e != nil || current.GrantEpoch != tr.GrantEpoch {
 				stop()
 			}
@@ -258,7 +289,7 @@ complete:
 		}
 		ses := st.Sessions[r.Task.SessionID]
 		now := time.Now().UTC()
-		seconds := now.Sub(*r.StartedAt).Seconds()
+		seconds := time.Since(executionStart).Seconds()
 		if seconds > float64(r.ReservedSeconds) {
 			seconds = float64(r.ReservedSeconds)
 		}
@@ -292,7 +323,7 @@ complete:
 			return nil
 		}
 		r.Task.Execution.State = "completed"
-		if !now.Before(r.Task.DeadlineAt) {
+		if ctx.Err() == context.DeadlineExceeded || !time.Now().Before(bound.Deadline) || !now.Before(r.Task.DeadlineAt) {
 			r.Task.Execution.State = "stopped"
 			r.Task.Execution.SideEffects = "unknown"
 			finish(st, r, "timed_out", "timeout")
@@ -337,6 +368,9 @@ complete:
 			case "workspace_untrusted", "native_auth_required", "native_quota_exceeded", "extra_payment_required", "approval_required", "native_tool_unavailable", "artifact_access_blocked", "policy_unenforceable":
 				status = "blocked"
 			}
+			if code == "approval_required" {
+				addEvent(r, "approval.required", map[string]any{"category": "tool", "can_approve": false})
+			}
 			finish(st, r, status, code)
 			return nil
 		}
@@ -356,6 +390,11 @@ complete:
 		if strings.TrimSpace(result.Text) == "" || !utf8.ValidString(result.Text) {
 			r.Task.Validation.Status = "failed"
 			finish(st, r, "failed", "validation_failed")
+			return nil
+		}
+		if ctx.Err() == context.DeadlineExceeded || !time.Now().Before(bound.Deadline) {
+			r.Task.Execution.SideEffects = "unknown"
+			finish(st, r, "timed_out", "timeout")
 			return nil
 		}
 		r.Task.Result.Final = true

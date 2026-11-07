@@ -1,0 +1,33 @@
+{
+  "scope": "cross-compilation only; host darwin/arm64 build and lifecycle are in g4-offline.log",
+  "checks": [
+    {
+      "target": "darwin/amd64",
+      "command": "GOCACHE=/tmp/xcli-nag-go-cache GOPROXY=off GOSUMDB=off GOOS=darwin GOARCH=amd64 go build -trimpath -o /tmp/xcli-nag-delivery-darwin-amd64 .",
+      "exit_code": 0,
+      "output": "",
+      "runtime_acceptance": "NOT_TESTED"
+    },
+    {
+      "target": "linux/amd64",
+      "command": "GOCACHE=/tmp/xcli-nag-go-cache GOPROXY=off GOSUMDB=off GOOS=linux GOARCH=amd64 go build -trimpath -o /tmp/xcli-nag-delivery-linux-amd64 .",
+      "exit_code": 0,
+      "output": "",
+      "runtime_acceptance": "NOT_TESTED"
+    },
+    {
+      "target": "linux/arm64",
+      "command": "GOCACHE=/tmp/xcli-nag-go-cache GOPROXY=off GOSUMDB=off GOOS=linux GOARCH=arm64 go build -trimpath -o /tmp/xcli-nag-delivery-linux-arm64 .",
+      "exit_code": 0,
+      "output": "",
+      "runtime_acceptance": "NOT_TESTED"
+    },
+    {
+      "target": "windows/amd64",
+      "command": "GOCACHE=/tmp/xcli-nag-go-cache GOPROXY=off GOSUMDB=off GOOS=windows GOARCH=amd64 go build -trimpath -o /tmp/xcli-nag-delivery-windows-amd64.exe .",
+      "exit_code": 0,
+      "output": "",
+      "runtime_acceptance": "NOT_TESTED"
+    }
+  ]
+}

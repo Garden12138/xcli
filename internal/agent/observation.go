@@ -9,6 +9,7 @@ import (
 // SessionID is emitted only for an explicitly present native field, before any
 // legacy runtime fallback. Existing Event/RunResult semantics remain unchanged.
 type Observation struct {
+	Text       string
 	Kind       string
 	Category   string
 	SessionID  string
@@ -34,10 +35,11 @@ func (d *StreamDecoder) observeEvent(event map[string]any) {
 	terminal := ""
 	diagnostic := ""
 	id := ""
-	for _, key := range []string{"session_id", "sessionID", "thread_id", "threadId"} {
-		if v, ok := event[key].(string); ok && v != "" {
-			id = v
-		}
+	if d.adapter == "codex" && kind == "thread.started" {
+		id, _ = event["thread_id"].(string)
+	}
+	if d.adapter == "cursor" && (kind == "system" || kind == "init" || kind == "assistant" || kind == "result") {
+		id, _ = event["session_id"].(string)
 	}
 	if d.adapter == "antigravity" {
 		kind, _ = event["event"].(string)
@@ -81,6 +83,53 @@ func (d *StreamDecoder) observeEvent(event map[string]any) {
 			terminal = "failure"
 		}
 	}
+	var finalText *string
+	switch d.adapter {
+	case "codex":
+		if kind == "item.completed" {
+			if item, ok := event["item"].(map[string]any); ok && item["type"] == "agent_message" {
+				if text, ok := item["text"].(string); ok {
+					finalText = &text
+				}
+			}
+		}
+	case "cursor":
+		if kind == "assistant" {
+			if message, ok := event["message"].(map[string]any); ok && message["role"] == "assistant" {
+				if text, ok := message["content"].(string); ok {
+					finalText = &text
+				} else if content, ok := message["content"].([]any); ok {
+					var parts []string
+					for _, part := range content {
+						if block, ok := part.(map[string]any); ok && block["type"] == "text" {
+							if text, ok := block["text"].(string); ok {
+								parts = append(parts, text)
+							}
+						}
+					}
+					if len(parts) > 0 {
+						text := strings.Join(parts, "")
+						finalText = &text
+					}
+				}
+			}
+		}
+
+		if kind == "result" {
+			if text, ok := event["result"].(string); ok && (!d.cursorAssistant || d.output == "" || !strings.HasSuffix(text, d.output)) {
+				finalText = &text
+			}
+		}
+	case "antigravity":
+		if kind == "result" {
+			if text, ok := body["response"].(string); ok {
+				finalText = &text
+			}
+		}
+	}
+	if finalText != nil {
+		d.notify(Observation{Kind: "final_text", Category: "response", Text: *finalText})
+	}
 	if id != "" {
 		if !safeNativeID(id) {
 			d.notify(Observation{Kind: "diagnostic", Diagnostic: "protocol_error"})
@@ -94,7 +143,7 @@ func (d *StreamDecoder) observeEvent(event map[string]any) {
 	if terminal != "" {
 		d.notify(Observation{Kind: "terminal", Terminal: terminal})
 	}
-	if values, ok := body["usage"].(map[string]any); ok {
+	if values, ok := body["usage"].(map[string]any); ok && ((d.adapter == "codex" && kind == "turn.completed") || ((d.adapter == "cursor" || d.adapter == "antigravity") && kind == "result")) {
 		scope := "unknown"
 		if d.adapter == "codex" && kind == "turn.completed" {
 			scope = "turn"

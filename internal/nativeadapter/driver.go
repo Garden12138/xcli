@@ -3,12 +3,14 @@ package nativeadapter
 
 import (
 	"context"
+	"time"
 
 	api "github.com/Garden12138/xcli/internal/agentapi"
 	"github.com/Garden12138/xcli/internal/agentpolicy"
 )
 
 type BoundRequest struct {
+	Deadline      time.Time
 	TaskID        string
 	SessionID     string
 	NativeID      string

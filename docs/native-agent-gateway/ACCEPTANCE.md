@@ -1,6 +1,6 @@
 # Native Agent Gateway V1 — Acceptance
 
-日期：2026-11-06。本轮只完成 D 类设计交付检查；N/L/A/BHOST 为未来验收清单，**全部未执行为产品验收**。现有 11 项 Python 回归仅验证先前验收 harness。
+原始门禁定义：2026-11-06。2026-11-07 已完成 N 类的离线/假进程范围验收，详见 [IMPLEMENTATION_REPORT.md](IMPLEMENTATION_REPORT.md) 和 [IMPLEMENTATION_PROGRESS.md](IMPLEMENTATION_PROGRESS.md)。L/A/BHOST 未执行；真实 NAG 仍 BLOCKED。下方历史基线表描述设计交付当时的事实，不作为当前实现状态。
 
 ## 证据分层与当前状态
 

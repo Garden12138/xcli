@@ -147,7 +147,7 @@ func Catalog(profiles []Profile, instance string, clientAgents, clientPolicies, 
 			if reason == "" {
 				reason = "policy_unenforceable"
 			}
-			ops[op] = api.Operation{Documented: p.Native, NativeEvidence: "unverified", GatewayEvidence: evidence, Availability: available, Reason: reason}
+			ops[op] = api.Operation{Documented: p.Native && op == "text_task", NativeEvidence: "unverified", GatewayEvidence: evidence, Availability: available, Reason: reason}
 		}
 		var digest *string
 		if p.BinarySHA256 != "" {

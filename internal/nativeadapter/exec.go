@@ -33,12 +33,13 @@ func Specification(b BoundRequest) (agent.Definition, agent.CommandSpec, error) 
 		return agent.Definition{}, agent.CommandSpec{}, api.Failure(503, "adapter_unavailable")
 	}
 	d := agent.Definition{Name: b.Profile.AgentID, Config: config.AgentConfig{Adapter: adapter, Command: b.Profile.Binary, Output: "jsonl"}}
+	prompt := "xcli user task:\n" + b.Prompt
 	var spec agent.CommandSpec
 	var err error
 	if b.NativeID == "" {
-		spec, err = d.Run(b.Prompt, true, extra)
+		spec, err = d.Run(prompt, true, extra)
 	} else {
-		spec, err = d.Resume(b.NativeID, b.Prompt, true, extra)
+		spec, err = d.Resume(b.NativeID, prompt, true, extra)
 	}
 	return d, spec, err
 }
@@ -62,6 +63,12 @@ func (Exec) StartTurn(ctx context.Context, b BoundRequest, observe func(Observat
 	decoder := agent.NewStreamDecoder(d.Config.Adapter, "jsonl", nil)
 	decoder.SetObserver(func(o agent.Observation) error {
 		switch o.Kind {
+		case "final_text":
+			result.Text = o.Text
+			if len(o.Text) > api.MaxText {
+				result.Code = "output_limit"
+				cancel()
+			}
 		case "native_session":
 			if result.NativeID != "" && result.NativeID != o.SessionID {
 				result.Code = "native_session_lost"
@@ -97,7 +104,6 @@ func (Exec) StartTurn(ctx context.Context, b BoundRequest, observe func(Observat
 		return TurnResult{Code: "execution_state_unknown", Terminal: "unknown", Protocol: "unknown"}
 	}
 	parsed := decoder.Finish()
-	result.Text = parsed.Output
 	result.ExitCode = &process.ExitCode
 	result.Protocol = parsed.ParseStatus
 	result.LocalStopConfirmed = process.StopConfirmed

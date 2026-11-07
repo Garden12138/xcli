@@ -22,3 +22,13 @@
 新增 `internal/agentapi` 集中 wire DTO，供 store/service/HTTP/adapter 共用，避免循环依赖；不变更 HTTP 合同。Driver 的同步 `StartTurn(ctx, bound, observer)` 在任务独占 controller 内运行；context 承担只对活 worker 的取消，不暴露持久 PID。缓存发现由 server-owned policy 目录提供。未来 app-server 仍须单独实现双向 pump，不把静态评估器当运行传输。
 
 G1 checkpoint 为可重建缓存，journal 为唯一恢复依据。记录以完整状态帧提交，带版本/序号/长度/头校验/内容校验/commit trailer；有限容量到限拒绝，不悄悄删除审计或已接受事务。后续 G4 检查压缩/保留策略与性能界限。
+
+## G4 存储收敛调整（实施前记录）
+
+完整状态帧在有限 journal 中会重复携带过期正文，单靠删除最新 state 的正文不能兑现留存。G4 增加原子 journal 压缩：保留当前完整状态、事件窗、预算与幂等，不重放执行；压缩帧使用独立首帧标记，序号继续递增，旧预览二进制遇到新标记失败关闭。每次压缩都先 fsync 临时文件，再 rename/fsync 目录。
+
+为区别未提交尾部与已确认提交尾部被截断，增加私有 fsync watermark（实例/序号/状态摘要），只充当已确认提交的最低约束；正文恢复仍以 journal 为准，checkpoint 仍是缓存。水位之后的完整未确认帧保守恢复，dispatch 不补发；低于水位或摘要冲突拒绝启动。日志压缩/水位更新异常使当前 writer poison；不会通过清空日志重置预算。初版 V1 仅本机 macOS 离线验收，无自动迁移无 namespace 的前序预览根。
+
+G4 同步错误边界：fsync/写入出现不确定结果时，服务不能诚实地返回 `accepted:false` 来保证没有对象。此时沿用合同已有的“连接丢失”恢复规则：中止 HTTP 响应，poison 当前 writer，客户端只能以原幂等键查询/重放，不能生成新键重做。恢复若看到完整接受记录，将其封存为 service_restarted/needs_reconcile，不自动 dispatch。明确发生在写入前的合同/容量拒绝仍返回普通脱敏 Error。这不增加 endpoint/错误枚举，也不允许自动模型重试。
+
+G4 argv 边界调整：`--print` 为开关的 CLI 和 resume 位置参数不能仅靠 Go argv 数组防止以 `--force` 等开头的提示被原生参数解析器当成选项。Gateway 为单个 user prompt 添加固定 `xcli user task:\n` 数据前缀，使参数始终以普通文本开头；不修改旧 run/resume 的用户合同，不依赖未确认的 stdin/`--` 开关，也不把该前缀当作权限沙箱。请求/预算/HTTP 字段均不变，需重新验证三家 argv/续接夹具。

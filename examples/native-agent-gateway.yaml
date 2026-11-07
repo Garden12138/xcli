@@ -1,0 +1,9 @@
+# Independent of model-gateway.yaml and the legacy Agent CLI config.
+version: 1
+host: 127.0.0.1
+port: 18742
+queue_limit: 16
+# No inference authorization is implied by installing or starting the service.
+daily_dispatches: 0
+daily_process_starts: 0
+daily_execution_seconds: 0

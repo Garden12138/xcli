@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -24,10 +25,11 @@ var ErrCorrupt = errors.New("store_corrupt")
 var ErrUnavailable = errors.New("store_unavailable")
 
 type SessionRecord struct {
-	Session  api.Session `json:"session"`
-	Owner    string      `json:"owner"`
-	NativeID string      `json:"native_id"`
-	Context  api.Context `json:"context"`
+	WorkspacePurged bool        `json:"workspace_purged"`
+	Session         api.Session `json:"session"`
+	Owner           string      `json:"owner"`
+	NativeID        string      `json:"native_id"`
+	Context         api.Context `json:"context"`
 }
 type TaskRecord struct {
 	InputHashes     map[string]string `json:"input_hashes"`
@@ -56,8 +58,9 @@ type Counter struct {
 	Reserved   int     `json:"reserved"`
 }
 type InputRecord struct {
-	Owner string    `json:"owner"`
-	Input api.Input `json:"input"`
+	Purged bool      `json:"purged,omitempty"`
+	Owner  string    `json:"owner"`
+	Input  api.Input `json:"input"`
 }
 type ArtifactRecord struct {
 	Owner    string       `json:"owner"`
@@ -188,6 +191,27 @@ func Open(root string) (*Store, error) {
 			return fail(err)
 		}
 	}
+	if e := s.writeWatermark(s.seq, s.state.InstanceID, api.Digest(s.state)); e != nil {
+		return fail(e)
+	}
+	grantLease, e := (&Clients{Root: s.Root}).LockGrants()
+	if e != nil {
+		return fail(e)
+	}
+	entries, e := os.ReadDir(s.Root)
+	if e != nil {
+		grantLease.Close()
+		return fail(e)
+	}
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), ".journal-compact-") || strings.HasPrefix(entry.Name(), ".xcli-state-") {
+			if e = os.Remove(filepath.Join(s.Root, entry.Name())); e != nil {
+				grantLease.Close()
+				return fail(e)
+			}
+		}
+	}
+	grantLease.Close()
 	return s, nil
 }
 func (s *Store) replay() error {
@@ -198,7 +222,15 @@ func (s *Store) replay() error {
 	if info.Size() > maxJournal {
 		return ErrUnavailable
 	}
+	watermark, e := s.readWatermark()
+	if e != nil {
+		return e
+	}
+	var watermarkDigest, firstDigest string
+	var firstSeq uint64
+	var firstMagic string
 	var offset int64
+	pendingTrim := false
 	for offset < info.Size() {
 		header := make([]byte, 84)
 		n, e := io.ReadFull(s.file, header)
@@ -206,23 +238,25 @@ func (s *Store) replay() error {
 			if n == 0 && e == io.EOF {
 				break
 			}
-			return s.trim(offset)
+			pendingTrim = true
+			break
 		}
 		if e != nil {
 			return e
 		}
 		sum := sha256.Sum256(header[:52])
-		if string(header[:4]) != "NAG1" || !bytes.Equal(sum[:], header[52:]) {
+		if (string(header[:4]) != "NAG1" && (string(header[:4]) != "NAGC" || offset != 0)) || !bytes.Equal(sum[:], header[52:]) {
 			return ErrCorrupt
 		}
 		seq := binary.BigEndian.Uint64(header[4:12])
 		size := binary.BigEndian.Uint64(header[12:20])
-		if seq != s.seq+1 || size == 0 || size > maxFrame {
+		if ((offset != 0 || string(header[:4]) != "NAGC") && seq != s.seq+1) || seq == 0 || size == 0 || size > maxFrame {
 			return ErrCorrupt
 		}
 		payload := make([]byte, int(size)+8)
 		if _, err = io.ReadFull(s.file, payload); err == io.EOF || err == io.ErrUnexpectedEOF {
-			return s.trim(offset)
+			pendingTrim = true
+			break
 		} else if err != nil {
 			return err
 		}
@@ -234,9 +268,34 @@ func (s *Store) replay() error {
 		if json.Unmarshal(payload[:size], &st) != nil || st.Version != 1 || st.InstanceID == "" || st.Sessions == nil || st.Tasks == nil || st.Keys == nil || st.Counters == nil || st.Inputs == nil || st.Artifacts == nil {
 			return ErrCorrupt
 		}
+		if offset == 0 {
+			firstSeq = seq
+			firstMagic = string(header[:4])
+			firstDigest = api.Hash(payload[:size])
+		}
+		if watermark != nil && seq == watermark.Sequence {
+			watermarkDigest = api.Hash(payload[:size])
+		}
 		s.state = st
 		s.seq = seq
 		offset += int64(84 + size + 8)
+	}
+	if watermark != nil {
+		if watermark.Sequence > s.seq || watermark.InstanceID != s.state.InstanceID {
+			return ErrCorrupt
+		}
+		if firstSeq > watermark.Sequence {
+			if firstMagic != "NAGC" || firstDigest != watermark.Digest {
+				return ErrCorrupt
+			}
+		} else if watermarkDigest != watermark.Digest {
+			return ErrCorrupt
+		}
+	} else if s.seq > 1 {
+		return ErrCorrupt
+	}
+	if pendingTrim {
+		return s.trim(offset)
 	}
 	_, err = s.file.Seek(0, io.SeekEnd)
 	return err
@@ -319,8 +378,19 @@ func (s *Store) commit(st State) error {
 		s.broken = true
 		return ErrUnavailable
 	}
+	if err = s.writeWatermark(s.seq+1, st.InstanceID, api.Hash(data)); err != nil {
+		s.broken = true
+		return ErrUnavailable
+	}
 	s.state = st
 	s.seq++
+	if info.Size()+int64(len(frame)) > 16<<20 {
+		if e := s.compactLocked(); e != nil {
+			s.broken = true
+			return ErrUnavailable
+		}
+		return nil
+	}
 	return nil
 }
 func (s *Store) Checkpoint() error {

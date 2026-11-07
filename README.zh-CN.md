@@ -8,6 +8,8 @@
 
 当前源码为 **R3 / `0.5.0-r3-dev` 候选版**，尚未正式发布。已发布的 v0.4.0 不包含 Task。实验、安装和阶段边界见 [R3 使用说明](docs/r3/README.zh-CN.md)与[候选验收记录](docs/r3/results.zh-CN.md)；后台恢复见 [R2 说明](docs/r2/README.zh-CN.md)，升级见[迁移说明](docs/r3/release-notes.md)。
 
+源码已新增独立 **Native Agent Gateway V1**：`/agent/v1` 单 turn 任务、客户端授权、持久预算/事件和复核后产物交付。HTTP→假 CLI 离线验收通过，真实 native profile 仍因权限与新授权验收关闭。见[实施报告](docs/native-agent-gateway/IMPLEMENTATION_REPORT.md)和[安装/API 手册](docs/native-agent-gateway/USER_GUIDE.md)；不接 Model Gateway 或伪装 OpenAI 模型接口。
+
 ## 快速开始
 
 先按原生工具的方式安装并登录，xcli 复用已有认证、工具和 MCP 配置，不要求另开模型 API 账号。

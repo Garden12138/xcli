@@ -225,3 +225,53 @@ func TestModelGatewayStateRootCannotBeReused(t *testing.T) {
 		t.Fatal("Model store changed")
 	}
 }
+func TestCommittedTailTruncationCannotResetBudget(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "state")
+	s, e := Open(root)
+	if e != nil {
+		t.Fatal(e)
+	}
+	_ = s.Update(func(st *State) error { st.Counters["budget"] = Counter{Dispatches: 1}; return nil })
+	s.Close()
+	file, e := os.OpenFile(filepath.Join(root, "journal"), os.O_WRONLY, 0)
+	if e != nil {
+		t.Fatal(e)
+	}
+	info, _ := file.Stat()
+	_ = file.Truncate(info.Size() - 10)
+	file.Close()
+	if _, e = Open(root); !errors.Is(e, ErrCorrupt) {
+		t.Fatal("committed truncation accepted", e)
+	}
+}
+func TestCompactionKeepsIdempotencyBudgetAndSequence(t *testing.T) {
+	s, e := Open(filepath.Join(t.TempDir(), "state"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	_ = s.Update(func(st *State) error {
+		st.Counters["budget"] = Counter{Dispatches: 2, Starts: 2}
+		st.Keys["key"] = Idempotency{Digest: "hash", ObjectID: "task", ExpiresAt: time.Now().Add(time.Hour)}
+		return nil
+	})
+	before := s.seq
+	if e = s.Compact(); e != nil {
+		t.Fatal(e)
+	}
+	if s.seq <= before {
+		t.Fatal("sequence reset")
+	}
+	root := s.Root
+	s.Close()
+	s, e = Open(root)
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer s.Close()
+	_ = s.View(func(st State) error {
+		if st.Counters["budget"].Dispatches != 2 || st.Keys["key"].ObjectID != "task" {
+			t.Fatal(st)
+		}
+		return nil
+	})
+}

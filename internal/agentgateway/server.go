@@ -34,7 +34,7 @@ func (s *Server) Serve(ctx context.Context, listener net.Listener) error {
 		return errors.New("literal loopback listener required")
 	}
 	s.Address = listener.Addr().String()
-	h := &http.Server{Handler: s, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10, BaseContext: func(net.Listener) context.Context { return ctx }}
+	h := &http.Server{Handler: s, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 30 * time.Second, WriteTimeout: 35 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10, BaseContext: func(net.Listener) context.Context { return ctx }}
 	done := make(chan struct{})
 	go func() {
 		select {
@@ -264,6 +264,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		err = api.Failure(404, "not_found")
 	}
 	if err != nil {
+		if r.Method == "POST" && s.Service.Store.Uncertain() {
+			panic(http.ErrAbortHandler)
+		}
 		Fail(w, err)
 		return
 	}
@@ -322,6 +325,10 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request, c agentstore.Cli
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.WriteHeader(200)
 	controller := http.NewResponseController(w)
+	_ = controller.SetWriteDeadline(time.Now().Add(time.Second))
+	if controller.Flush() != nil {
+		return
+	}
 	send := func(b []byte) bool {
 		_ = controller.SetWriteDeadline(time.Now().Add(time.Second))
 		if _, e := w.Write(b); e != nil {

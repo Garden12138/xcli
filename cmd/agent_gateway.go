@@ -50,6 +50,7 @@ func (a *app) newAgentGatewayCommand() *cobra.Command {
 		defer listener.Close()
 		ctx, cancel := signalContext(c.Context())
 		defer cancel()
+		go func() { <-ctx.Done(); svc.StopAccepting() }()
 		state, e := st.Publish(listener.Addr().String(), api.Digest(cfg))
 		if e != nil {
 			return e
@@ -113,6 +114,7 @@ func agentClientCommand(root *string) *cobra.Command {
 			name = "rotate"
 		}
 		var file string
+		var reauthorize bool
 		grant := agentstore.Client{}
 		command := &cobra.Command{Use: name + " <app-id>", Args: cobra.ExactArgs(1), RunE: func(c *cobra.Command, args []string) error {
 			if file == "" {
@@ -125,9 +127,23 @@ func agentClientCommand(root *string) *cobra.Command {
 			clients := &agentstore.Clients{Root: stateRoot}
 			grant.ID = args[0]
 			if rotate {
-				grant, e = clients.Get(args[0])
-				if e != nil {
-					return e
+				list, err := clients.List()
+				if err != nil {
+					return err
+				}
+				found := false
+				for _, old := range list {
+					if old.ID == args[0] {
+						grant = old
+						found = true
+						break
+					}
+				}
+				if !found {
+					return errors.New("rotation target is missing")
+				}
+				if grant.Revoked && !reauthorize {
+					return errors.New("revoked grant requires explicit --reauthorize-revoked")
 				}
 			}
 			if e = modelstore.PrivateDirectory(filepath.Dir(file)); e != nil {
@@ -155,6 +171,9 @@ func agentClientCommand(root *string) *cobra.Command {
 			return nil
 		}}
 		command.Flags().StringVar(&file, "token-file", "", "new private token delivery file")
+		if rotate {
+			command.Flags().BoolVar(&reauthorize, "reauthorize-revoked", false, "explicitly restore a revoked grant; old queued work remains blocked")
+		}
 		if !rotate {
 			command.Flags().StringSliceVar(&grant.Scopes, "scope", []string{"session:create", "session:read", "session:close", "input:write", "task:create", "task:read", "task:cancel", "task:review", "artifact:read"}, "explicit HTTP scopes (no origin attestation by default)")
 			command.Flags().StringSliceVar(&grant.Agents, "agent", nil, "allowed registered Agent IDs")

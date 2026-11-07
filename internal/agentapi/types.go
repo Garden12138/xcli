@@ -72,6 +72,26 @@ func Failure(status int, code string) *Error {
 	case "invalid_image", "input_hash_mismatch", "provenance_unverified", "validation_failed", "artifact_not_ready", "artifact_access_blocked", "review_incomplete":
 		category = "artifact"
 	}
+	switch code {
+	case "invalid_client_token", "native_auth_required":
+		category = "auth"
+	case "scope_denied", "cloud_consent_required", "policy_denied", "origin_denied", "workspace_untrusted", "approval_required":
+		category = "permission"
+	case "agent_not_installed", "adapter_unavailable", "policy_unenforceable", "service_stopping", "service_restarted", "native_tool_unavailable":
+		category = "availability"
+	case "native_quota_exceeded", "extra_payment_required":
+		category = "budget"
+	case "not_found", "agent_not_found", "idempotency_conflict", "session_busy", "session_revision_changed", "capability_changed", "consent_scope_changed", "profile_changed", "object_expired", "event_cursor_expired", "idempotent_result_expired":
+		category = "state"
+	case "store_unavailable", "store_corrupt":
+		category = "internal"
+	}
+	switch code {
+	case "workspace_untrusted", "native_auth_required", "native_quota_exceeded", "extra_payment_required", "approval_required", "policy_unenforceable", "profile_changed":
+		remediation = "owner_review_required"
+	case "native_session_lost":
+		remediation = "reconcile_required"
+	}
 	// Neither arbitrary native diagnostics nor user content is reflected in errors.
 	return &Error{Status: status, Code: code, Category: category, Message: "Native Agent Gateway: " + code, Remediation: remediation}
 }

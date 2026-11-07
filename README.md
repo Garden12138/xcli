@@ -8,6 +8,8 @@ The current source is **R3 / `0.5.0-r3-dev`**, an unpublished candidate. Publish
 
 The source also includes an isolated, local-only **Model Gateway development candidate**: `xcli model serve/start/status/stop`, authenticated Chat Completions/SSE, verified image APIs and embedding passthrough. See the [gateway setup and limits](docs/model-gateway/README.md), [stage evidence/open acceptance gates](docs/model-gateway/PROGRESS.md), and [hands-on acceptance handoff](docs/model-gateway/REAL_ACCEPTANCE.md). Real providers, desktop application integration and other-platform runtime acceptance remain unverified; native CLI subscription credentials are not gateway API credentials.
 
+The source now also contains **Native Agent Gateway V1**: independent `/agent/v1` tasks, client authorization, durable budgets/events and reviewed artifact delivery. Offline HTTP→fixture CLI acceptance passes; all real native profiles remain blocked pending policy and separately authorized validation. See the [implementation report](docs/native-agent-gateway/IMPLEMENTATION_REPORT.md) and [setup/API guide](docs/native-agent-gateway/USER_GUIDE.md). It is separate from Model Gateway and does not provide an OpenAI-compatible native backend.
+
 ## Start a task
 
 Install and authenticate your preferred CLI using its native instructions. xcli reuses existing authentication and tool configuration; it does not require a model API account.

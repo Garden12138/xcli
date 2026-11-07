@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	api "github.com/Garden12138/xcli/internal/agentapi"
 	"github.com/Garden12138/xcli/internal/media"
@@ -125,4 +126,46 @@ func Validate(data []byte, claimed string) (media.ImageInfo, error) {
 		code = "input_too_large"
 	}
 	return info, api.Failure(bad.Status, code)
+}
+
+// Sweep only visits service-owned blob directories. The caller serializes this
+// with blob publication using the state transaction lock; native roots are never scanned.
+func Sweep(root string, liveInputs, liveArtifacts map[string]bool) error {
+	for _, kind := range []string{"inputs", "artifacts"} {
+		dir := filepath.Join(root, "blobs", kind)
+		info, e := os.Lstat(dir)
+		if os.IsNotExist(e) {
+			continue
+		}
+		if e != nil {
+			return e
+		}
+		if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+			return api.Failure(503, "store_unavailable")
+		}
+		entries, e := os.ReadDir(dir)
+		if e != nil {
+			return e
+		}
+		for _, entry := range entries {
+			name := entry.Name()
+			if entry.IsDir() || entry.Type()&os.ModeSymlink != 0 {
+				return api.Failure(503, "store_unavailable")
+			}
+			object := strings.TrimSuffix(name, ".blob")
+			live := liveInputs[object]
+			if kind == "artifacts" {
+				live = liveArtifacts[object]
+			}
+			if live {
+				continue
+			}
+			if strings.HasPrefix(name, ".import-") || (id.MatchString(object) && name == object+".blob") {
+				if e = os.Remove(filepath.Join(dir, name)); e != nil {
+					return e
+				}
+			}
+		}
+	}
+	return nil
 }

@@ -170,15 +170,19 @@ func (s *Service) validateMedia(st *agentstore.State, r *agentstore.TaskRecord, 
 		return nil
 	}
 	now := time.Now().UTC()
-	if !now.Before(r.Task.DeadlineAt) {
+	if !now.Before(r.Task.DeadlineAt) || (!bound.Deadline.IsZero() && !time.Now().Before(bound.Deadline)) {
 		r.Task.Execution.SideEffects = "unknown"
 		finish(st, r, "timed_out", "timeout")
 		return nil
 	}
 	provenance := api.Provenance{Status: "unverified"}
 	if candidate.Tool != nil && *candidate.Tool != "" && len(*candidate.Tool) <= 128 && candidate.EvidenceSHA256 != nil && validHash(*candidate.EvidenceSHA256) {
-		method := "native_event"
-		provenance = api.Provenance{Status: "passed", Method: &method, ObservedTool: candidate.Tool, EvidenceSHA256: candidate.EvidenceSHA256}
+		provenance.ObservedTool = candidate.Tool
+		provenance.EvidenceSHA256 = candidate.EvidenceSHA256
+		// Current official exec/print adapters cannot prove a file-bound image
+		// tool call. Tool catalogs, outer subagents and names remain unverified;
+		// owner trace attestation is required until a separate adapter is accepted.
+
 	}
 	art := api.Artifact{APIVersion: 1, ID: api.ID("art"), TaskID: r.Task.ID, SessionID: r.Task.SessionID, MediaType: info.MIME, ByteLength: len(data), Width: info.Width, Height: info.Height, SHA256: api.Hash(data), CreatedAt: now, ExpiresAt: r.Task.ExpiresAt, DeliveryState: "review_only", Provenance: provenance, Validation: api.Validation{Status: "pending_review", Bytes: "passed", Provenance: provenance.Status, Semantics: "unverified"}}
 	if r.Task.Operation == "image_edit" {
@@ -190,7 +194,7 @@ func (s *Service) validateMedia(st *agentstore.State, r *agentstore.TaskRecord, 
 	if e = agentartifact.Put(s.Store.Root, "artifacts", art.ID, data); e != nil {
 		return e
 	}
-	if !time.Now().Before(r.Task.DeadlineAt) {
+	if !time.Now().Before(r.Task.DeadlineAt) || (!bound.Deadline.IsZero() && !time.Now().Before(bound.Deadline)) {
 		_ = agentartifact.Remove(s.Store.Root, "artifacts", art.ID)
 		r.Task.Execution.SideEffects = "unknown"
 		finish(st, r, "timed_out", "timeout")

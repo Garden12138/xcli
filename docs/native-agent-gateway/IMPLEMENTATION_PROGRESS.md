@@ -4,7 +4,7 @@
 
 ## 当前入口
 
-当前阶段：**G3 离线通过，准备 G4 离线收敛与真实验收计划**（对应用户阶段 A，按原 SPEC 依赖推进）。
+当前阶段：**G4 离线交付完成；真实验收计划已提交文档，执行 BLOCKED（授权/策略前置未满足）**（对应用户阶段 A，按原 SPEC 依赖推进）。
 
 恢复先读本文件，再读 `TASKS.md`、`ACCEPTANCE.md` 和 `git log --oneline -8` / `git status --short`。不得重新执行历史 native smoke。
 
@@ -23,9 +23,9 @@
 | G0 | 已继承设计 | `40fc6ca` | 七份 SPEC + README |
 | G1 | PASS（离线范围） | `86717e6` | [核心 race](evidence/g1-core-race.log)、[旧回归 race](evidence/g1-regression-race.log)、vet/build |
 | G2 | PASS（离线范围，覆盖用户 B/C 的实现） | `25201e1` | [全量 race](evidence/g2-all-race.log)、[最终补充](evidence/g2-additions-race.log)、[CLI 控制](evidence/g2-control.json) |
-| G3 | PASS（macOS 离线范围） | 本条所在提交 | [全量 race](evidence/g3-all-race.log)、[最终核心](evidence/g3-core-final.log) |
-| G4 离线 | PENDING | — | 故障、安全、兼容、性能 |
-| G4 真实 / 用户 F | BLOCKED | — | 无新授权；需计划与权限先决条件 |
+| G3 | PASS（macOS 离线范围） | `01581bf` | [全量 race](evidence/g3-all-race.log)、[最终核心](evidence/g3-core-final.log) |
+| G4 离线 | PASS | 本条所在实现提交（随后交接记录写 SHA） | [完整离线](evidence/g4-offline.log)、[报告](IMPLEMENTATION_REPORT.md)、[源摘要](evidence/source-manifest.json) |
+| G4 真实 / 用户 F | 计划交付；执行 BLOCKED | 本条所在提交 | [真实计划/每 CLI 最小预算](REAL_HTTP_ACCEPTANCE_PLAN.md)，未执行 |
 | G5 / G6 | 后续独立范围 | — | app-server 晋升 / 四应用 |
 
 ## 门禁
@@ -33,7 +33,7 @@
 - 本轮真实模型启动：0；真实 HTTP→native CLI：NOT_TESTED。
 - 原 Gate A：继承 Codex/Agy 的特定历史场景 PASS，Cursor workspace trust BLOCKED；不作为新 Gateway 证据。
 - 原 Gate B（native CLI→Model Gateway）：**BLOCKED**；V1 无该兼容层。
-- NAG 离线：进行中；NAG 真实：BLOCKED；四应用 Gate C：Planned/BLOCKED。
+- NAG 离线：PASS（仅离线范围）；NAG 真实：BLOCKED；四应用 Gate C：Planned/BLOCKED。
 
 ## 下一任务与恢复命令
 
@@ -78,3 +78,30 @@ G1：实现闭合 DTO、私有事务存储、客户端授权、Session/CAS、预
 - 保留初次失败：媒体夹具扩展了内存 client scope 但未更新持久授权，执行前正确拒绝；修正为显式登记独立假客户端。一次全量负载下的有界假版本探测 3s 超时，未放宽条件，连续 10 次探测及完整回归随后通过。
 
 G4 下一任务：journal 压缩与实际留存、fsync/crash 故障点、SSE 重连/过窗/慢读/撤销、预算竞争与安装域监督、完整离线门禁/交叉构建/性能报告、用户操作手册与真实 L01–L05 计划。原生调用仍 0，原 Gate B 仍 BLOCKED。
+
+## G4 最终离线交付（2026-11-07）
+
+- 真正杀死测试服务进程的 accepted/dispatch-write/driver-start/terminal-write/checkpoint 故障点恢复通过；任一分支没有第 2 个 dispatch。不确定 fsync/ENOSPC 中止 HTTP 响应，原键恢复，无虚假拒绝 ACK。
+- 新增 watermark 最低序号/实例/摘要，已确认尾部截断不再当成正常尾部丢弃，完整损坏原样保留并拒绝启动。原子压缩持续递增序号，清理过期正文/旧 checkpoint/本服务临时文件，不清零预算；仅扫描本服务 blob 做 GC。
+- UTC+单调时限、deadline 优先于晚取消，未确认停止全根隔离，版本漂移执行前拒绝；idle/worker 状态查询避免复制全部结果。活动每类每秒聚合，终态不丢。
+- 原生未知事件不能提供 Gateway 的会话/最终文本/用量；固定 prompt 数据前缀阻止 print/resume 将 `--force` 等输入误作 native 选项；旧 run/resume 不变。
+- 当前适配器无法证明文件绑定的原生图片工具来源，工具名/catalog/父 subagent 均不自动通过，真实来源需本人 trace attestation；没有生产测试专用强开分支。媒体的 documented 不从 headless 文档泛化。
+- 100 并发 HTTP 同键、跨 Session 预算 race、队列满/busy、零调用排队取消、日志故障中止、SSE 重连/过窗/慢读/撤销、取消后晚图、过期 input tombstone 与隐私正文清理等均通过。
+- 最终完整脚本 `bash tests/native_agent_gateway/verify-offline.sh` 退出 0：全量 race、vet、宿主 build、两次实际 xcli 服务生命周期/HTTP、旧 Python harness 11/11、diff 检查。另 `go mod tidy -diff` 退出 0；Darwin amd64、Linux amd64/arm64、Windows amd64 交叉构建退出 0（不是实机验收）。
+- 基准仅缓存目录与 1 KiB 假任务的进程内 HTTP handler：约 24.5/40.9 μs/op；不是 native 推理/网络吞吐。状态帧 32 MiB、journal 256 MiB/16 MiB 自动压缩、blob 256 MiB，容量不足失败关闭。
+- 各阶段初始失败日志保留。G4 一次未带 loopback 权限的专项命令失败，最终完整宿主离线门禁通过；没有删除/跳过测试或放宽权限。
+- [安装/启动/停止/Token/API 与恢复](USER_GUIDE.md)、[支持矩阵](SUPPORT_MATRIX.md)、[完整报告](IMPLEMENTATION_REPORT.md)、[真实计划](REAL_HTTP_ACCEPTANCE_PLAN.md)已交付；四应用只提供 APP-NAG-1/模块入口，没有写业务代码。
+
+## 最终阻塞与恢复
+
+真实 native 启动/模型请求仍 **0**。三家 profile 均因逐次策略、账号条款适用性、真实认证/安全媒体路径未证明而关闭；Cursor Trust 另由本人处理。授权本身不等于策略已实现；真实入口须先补可执行隔离工程、逐项合成 L04 计划和明确新预算，不能从普通配置/Token 强开。G5 app-server 晋升、G6 四应用/UI、Docker 桥接、生产部署均未实施。
+
+恢复命令：
+
+```bash
+git status --short
+git log -8 --oneline
+bash tests/native_agent_gateway/verify-offline.sh
+```
+
+恢复先读本文件、IMPLEMENTATION_REPORT、REAL_HTTP_ACCEPTANCE_PLAN；仅在要复验离线代码时运行上述脚本。不得运行旧 native smoke 的 --execute，不读原生登录缓存，不改 Cursor Trust，不按历史 PID kill，不 Push。真实 NAG Gate 和原 Gate B 均保持 BLOCKED；原 Gate A 仅继承历史特定场景。

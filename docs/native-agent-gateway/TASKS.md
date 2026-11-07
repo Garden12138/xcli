@@ -1,6 +1,6 @@
 # Native Agent Gateway V1 — Tasks & Milestones
 
-日期：2026-11-06。只有 G0 为本轮设计交付；其余全部 Planned，未执行实现、真实模型或应用测试。每个阶段建议独立本地提交；不自动 Push/部署。验收编号见 [ACCEPTANCE.md](ACCEPTANCE.md)。
+原始拆分：2026-11-06；2026-11-07 实施更新：G1–G3 离线实现通过，G4 离线收敛与真实验收计划交付，真实模型/四应用仍 BLOCKED。阶段独立本地提交，不 Push/部署。实际证据与 SHA 见 [IMPLEMENTATION_PROGRESS.md](IMPLEMENTATION_PROGRESS.md)，门禁定义见 [ACCEPTANCE.md](ACCEPTANCE.md)。
 
 ## G0 — 固定证据与设计（本轮）
 
@@ -63,9 +63,9 @@
 
 依赖 G1–G3 全部离线检查。先运行 N13–N15 故障/兼容回归；只有用户另立的 CLI/场景/进程预算与数据/权限范围获批后，才执行 L01–L05。
 
-- [ ] go test/race/vet/build、旧 CLI/HTTP Gateway 确定性回归；不引入 native-cli backend。
-- [ ] journal crash 点、预算 race、对象越权、重启、Token 撤销、断网/SSE 重连、取消与磁盘错误。
-- [ ] 逐 profile 检查实际可执行权限边界及全局工具继承；无足够约束只保留合成 profile。
+- [x] go test/race/vet/build、旧 CLI/HTTP Gateway 确定性回归；不引入 native-cli backend。
+- [x] journal crash 点、预算 race、对象越权、重启、Token 撤销、断网/SSE 重连、取消与磁盘错误。
+- [x] 逐 profile 检查实际可执行权限边界及全局工具继承；无足够约束只保留合成 profile。
 - [ ] 新授权后：先 Codex HTTP 新文本+同 Session，再 Antigravity；Cursor 先由本人审查 trust，不加 --trust/force 或变更全局权限。
 - [ ] 文本通过后，另按明确预算验证媒体生成/编辑与官方工具来源、真实字节/视觉，不自动重复失败。
 - [ ] 主动取消、超时、并发分别安排独立场景和调用槽；不借已通过文本/图片证据补齐。

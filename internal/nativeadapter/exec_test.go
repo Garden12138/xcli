@@ -30,7 +30,7 @@ func TestGatewayCLIHelper(t *testing.T) {
 		return
 	}
 	args := os.Args
-	prompt := args[len(args)-1]
+	prompt := strings.TrimPrefix(args[len(args)-1], "xcli user task:\n")
 	if adapter := os.Getenv("XCLI_NAG_ADAPTER"); adapter != "" {
 		if adapter == "cursor" && prompt == "trust" {
 			fmt.Fprintln(os.Stderr, "Workspace is not trusted")
@@ -70,6 +70,11 @@ func TestGatewayCLIHelper(t *testing.T) {
 	}
 	if prompt == "bad" {
 		fmt.Println("{broken")
+		os.Exit(0)
+	}
+	if prompt == "unknown-output" {
+		fmt.Println(`{"type":"unknown","result":"untrusted diagnostic text"}`)
+		fmt.Println(`{"type":"turn.completed"}`)
 		os.Exit(0)
 	}
 	if prompt == "noterminal" {
@@ -146,7 +151,7 @@ func create(t *testing.T, s *agentservice.Service, c agentstore.Client, ses api.
 	return out
 }
 func TestNativeExecFixtureResumeAndProtocolFailures(t *testing.T) {
-	for _, mode := range []string{"split", "lost", "missing", "bad", "noterminal", "overlong", "quota"} {
+	for _, mode := range []string{"split", "lost", "missing", "bad", "noterminal", "unknown-output", "overlong", "quota"} {
 		t.Run(mode, func(t *testing.T) {
 			s, c := fixture(t)
 			ses := newSession(t, s, c)
@@ -241,10 +246,13 @@ func TestNativeExecFixtureTimeoutCancelAndRevocation(t *testing.T) {
 func TestFixedNativeArgumentsDoNotEscalate(t *testing.T) {
 	for _, id := range []string{"codex-exec-v1", "cursor-headless-v1", "antigravity-print-v1"} {
 		for _, native := range []string{"", "fixture-id"} {
-			b := nativeadapter.BoundRequest{Prompt: "--yolo ; echo attack", NativeID: native, Profile: agentpolicy.Profile{AgentID: "fixture", AdapterID: id, Binary: "/fixture"}}
+			b := nativeadapter.BoundRequest{Prompt: "--yolo", NativeID: native, Profile: agentpolicy.Profile{AgentID: "fixture", AdapterID: id, Binary: "/fixture"}}
 			_, spec, e := nativeadapter.Specification(b)
 			if e != nil {
 				t.Fatal(e)
+			}
+			if strings.HasPrefix(spec.Args[len(spec.Args)-1], "-") {
+				t.Fatal("prompt interpreted as native option", spec)
 			}
 			for _, arg := range spec.Args {
 				if slices.Contains([]string{"--force", "--yolo", "--trust", "--dangerously-bypass-approvals-and-sandbox", "danger-full-access", "workspace-write"}, arg) {
@@ -374,5 +382,41 @@ func TestOfficialPrintPathsWithFakeProcesses(t *testing.T) {
 				t.Fatal(r)
 			}
 		})
+	}
+}
+func TestObservedBinaryDriftDisablesCachedProfileWithoutSpawn(t *testing.T) {
+	s, c := fixture(t)
+	ses := newSession(t, s, c)
+	out := create(t, s, c, ses, "first", 10)
+	if e := os.WriteFile(s.Profiles[0].Binary, []byte("#!/bin/sh\nexit 13\n"), 0o700); e != nil {
+		t.Fatal(e)
+	}
+	if _, e := s.ExecuteNext(context.Background(), nativeadapter.Exec{}); e != nil {
+		t.Fatal(e)
+	}
+	out, _ = s.GetTask(c, out.ID)
+	if out.Status != "blocked" || out.Error.Code != "profile_changed" || out.Budget.DispatchesConsumed != 0 {
+		t.Fatal(out)
+	}
+	caps, e := s.Capabilities(c)
+	if e != nil || caps.Agents[0].Operations["text_task"].Availability != "blocked" {
+		t.Fatal(caps, e)
+	}
+}
+func TestJournalFailureDuringActivityStopsFakeNativeWorker(t *testing.T) {
+	s, c := fixture(t)
+	ses := newSession(t, s, c)
+	_ = create(t, s, c, ses, "sleep", 10)
+	count := 0
+	s.Store.BeforeSync = func() error {
+		count++
+		if count >= 2 {
+			return syscall.ENOSPC
+		}
+		return nil
+	}
+	start := time.Now()
+	if _, e := s.ExecuteNext(context.Background(), nativeadapter.Exec{}); e == nil || time.Since(start) > 6*time.Second {
+		t.Fatal("journal error did not stop worker", e, time.Since(start))
 	}
 }

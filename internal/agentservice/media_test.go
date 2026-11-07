@@ -170,7 +170,7 @@ func TestImageEditReferenceImmutableAndLateCancellation(t *testing.T) {
 						t.Fatal("canceled preview accessible")
 					}
 				} else {
-					_, _, e = s.Review(c, out.ID, "accept-edit", api.Review{Decision: "accept", ArtifactID: id, ExpectedSHA256: meta.SHA256, SemanticCheck: "edit_matches_requested_change"})
+					_, _, e = s.Review(c, out.ID, "accept-edit", api.Review{Decision: "accept", ArtifactID: id, ExpectedSHA256: meta.SHA256, SemanticCheck: "edit_matches_requested_change", ProvenanceAttestation: &api.Attestation{Source: "native_task_trace", EvidenceSHA256: api.Hash([]byte("synthetic edit origin review"))}})
 					if e != nil {
 						t.Fatal(e)
 					}
@@ -244,5 +244,93 @@ func TestReviewExpiryAndRejectNeverBecomeReady(t *testing.T) {
 				t.Fatal("review caused generation")
 			}
 		})
+	}
+}
+
+type lateImageDriver struct {
+	started, release chan struct{}
+	data             []byte
+}
+
+func (d lateImageDriver) StartTurn(_ context.Context, b nativeadapter.BoundRequest, _ func(nativeadapter.Observation) error) nativeadapter.TurnResult {
+	close(d.started)
+	<-d.release
+	_ = os.WriteFile(filepath.Join(b.OutputRoot, "late.png"), d.data, 0o600)
+	zero := 0
+	return nativeadapter.TurnResult{NativeID: "late-native", SessionObserved: true, Terminal: "success", Protocol: "complete", ExitCode: &zero, LocalStopConfirmed: true, Candidates: []nativeadapter.Candidate{{RelativePath: "late.png"}}}
+}
+func TestCanceledTaskCannotPublishLateImage(t *testing.T) {
+	s, c, ses := mediaFixture(t)
+	out := mediaTask(t, s, c, ses, "image_generate", nil)
+	d := lateImageDriver{make(chan struct{}), make(chan struct{}), imageFixture()}
+	done := make(chan error, 1)
+	go func() { _, e := s.ExecuteNext(context.Background(), d); done <- e }()
+	<-d.started
+	if _, _, e := s.Cancel(c, out.ID, "cancel-late-file"); e != nil {
+		t.Fatal(e)
+	}
+	close(d.release)
+	if e := <-done; e != nil {
+		t.Fatal(e)
+	}
+	out, _ = s.GetTask(c, out.ID)
+	if out.Status != "canceled" || len(out.Result.Artifacts) != 0 {
+		t.Fatal(out)
+	}
+	_ = s.Store.View(func(st agentstore.State) error {
+		if len(st.Artifacts) != 0 {
+			t.Fatal("late image imported")
+		}
+		return nil
+	})
+}
+func TestExpiredInputKeepsOwnerScopedTombstoneAfterByteCleanup(t *testing.T) {
+	s, c, ses := mediaFixture(t)
+	data := []byte("synthetic selected input")
+	input, _, e := s.Upload(c, ses.ID, "text/plain; charset=utf-8", api.Hash(data), "expiry-input", data)
+	if e != nil {
+		t.Fatal(e)
+	}
+	_ = s.Store.Update(func(st *agentstore.State) error {
+		r := st.Inputs[input.ID]
+		r.Input.ExpiresAt = time.Now().Add(-time.Second)
+		st.Inputs[input.ID] = r
+		return nil
+	})
+	if e = s.Maintain(time.Now()); e != nil {
+		t.Fatal(e)
+	}
+	r := taskRequest(ses)
+	r.Input = append(r.Input, api.Part{Type: "file", InputID: &input.ID})
+	if _, _, e = s.CreateTask(c, r, "expired-input-task"); e == nil || e.Error() != "object_expired" {
+		t.Fatal(e)
+	}
+}
+
+type outerSubagentDriver struct{ imageDriver }
+
+func (d *outerSubagentDriver) StartTurn(ctx context.Context, b nativeadapter.BoundRequest, o func(nativeadapter.Observation) error) nativeadapter.TurnResult {
+	r := d.imageDriver.StartTurn(ctx, b, o)
+	tool := "invoke_subagent"
+	evidence := api.Hash([]byte("outer activity only"))
+	r.Candidates[0].Tool = &tool
+	r.Candidates[0].EvidenceSHA256 = &evidence
+	return r
+}
+func TestOuterSubagentAndToolNameDoNotProveImageOrigin(t *testing.T) {
+	s, c, ses := mediaFixture(t)
+	out := mediaTask(t, s, c, ses, "image_generate", nil)
+	d := &outerSubagentDriver{imageDriver{data: imageFixture()}}
+	if _, e := s.ExecuteNext(context.Background(), d); e != nil {
+		t.Fatal(e)
+	}
+	out, _ = s.GetTask(c, out.ID)
+	meta, _ := s.GetArtifact(c, out.Result.Artifacts[0])
+	if meta.Provenance.Status != "unverified" {
+		t.Fatal(meta)
+	}
+	c.Scopes = []string{"task:review"}
+	if _, _, e := s.Review(c, out.ID, "subagent-review", api.Review{Decision: "accept", ArtifactID: meta.ID, ExpectedSHA256: meta.SHA256, SemanticCheck: "generated_as_requested"}); e == nil || e.Error() != "provenance_unverified" {
+		t.Fatal(e)
 	}
 }
