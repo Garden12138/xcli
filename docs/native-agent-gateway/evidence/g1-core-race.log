@@ -1,0 +1,6 @@
+ok  	github.com/Garden12138/xcli/internal/agentapi	(cached)
+ok  	github.com/Garden12138/xcli/internal/agentstore	1.275s
+ok  	github.com/Garden12138/xcli/internal/agentpolicy	1.328s
+ok  	github.com/Garden12138/xcli/internal/agentservice	1.740s
+ok  	github.com/Garden12138/xcli/internal/agentgateway	2.006s
+ok  	github.com/Garden12138/xcli/internal/nativeadapter	(cached)

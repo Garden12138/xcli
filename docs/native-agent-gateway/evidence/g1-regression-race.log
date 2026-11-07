@@ -1,0 +1,13 @@
+ok  	github.com/Garden12138/xcli/internal/agentapi	1.179s
+ok  	github.com/Garden12138/xcli/internal/agentstore	1.523s
+?   	github.com/Garden12138/xcli/internal/agentpolicy	[no test files]
+ok  	github.com/Garden12138/xcli/internal/agentservice	2.280s
+ok  	github.com/Garden12138/xcli/internal/agentgateway	1.611s
+ok  	github.com/Garden12138/xcli/internal/nativeadapter	2.203s
+ok  	github.com/Garden12138/xcli/internal/agent	3.184s
+ok  	github.com/Garden12138/xcli/internal/runtime	5.892s
+ok  	github.com/Garden12138/xcli/internal/runstore	1.972s
+ok  	github.com/Garden12138/xcli/internal/modelgateway	1.720s
+ok  	github.com/Garden12138/xcli/internal/modelstore	2.552s
+ok  	github.com/Garden12138/xcli/internal/task	164.784s
+ok  	github.com/Garden12138/xcli/cmd	46.172s

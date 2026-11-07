@@ -1,0 +1,351 @@
+package agentservice
+
+import (
+	"context"
+	"errors"
+	"sort"
+	"strings"
+	"time"
+	"unicode/utf8"
+
+	api "github.com/Garden12138/xcli/internal/agentapi"
+	"github.com/Garden12138/xcli/internal/agentstore"
+	"github.com/Garden12138/xcli/internal/nativeadapter"
+)
+
+// Run is deliberately serial across the entire installation. HTTP request
+// lifetimes never own a worker; disconnecting a reader does not cancel a turn.
+func (s *Service) Run(ctx context.Context, driver nativeadapter.Driver) error {
+	ticker := time.NewTicker(50 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		if ctx.Err() != nil {
+			s.mu.Lock()
+			s.stopping = true
+			s.mu.Unlock()
+			return nil
+		}
+		ran, e := s.ExecuteNext(ctx, driver)
+		if e != nil {
+			return e
+		}
+		if ran {
+			continue
+		}
+		select {
+		case <-ctx.Done():
+			continue
+		case <-s.wake:
+		case <-ticker.C:
+		}
+	}
+}
+func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Driver) (bool, error) {
+	s.mu.Lock()
+	if s.stopping {
+		s.mu.Unlock()
+		return false, nil
+	}
+	var bound nativeadapter.BoundRequest
+	var tr agentstore.TaskRecord
+	var dispatch bool
+	err := s.Store.Update(func(st *agentstore.State) error {
+		if st.Quarantined {
+			return nil
+		}
+		for _, active := range st.Tasks {
+			if active.Task.Status == "running" || active.Task.Status == "validating" || active.Task.Status == "cancel_requested" {
+				return nil
+			}
+		}
+		queue := []*agentstore.TaskRecord{}
+		for _, r := range st.Tasks {
+			if r.Task.Status == "queued" {
+				queue = append(queue, r)
+			}
+		}
+		sort.Slice(queue, func(i, j int) bool {
+			if queue[i].Task.CreatedAt.Equal(queue[j].Task.CreatedAt) {
+				return queue[i].Task.ID < queue[j].Task.ID
+			}
+			return queue[i].Task.CreatedAt.Before(queue[j].Task.CreatedAt)
+		})
+		for _, r := range queue {
+			now := time.Now().UTC()
+			if !now.Before(r.Task.DeadlineAt) || now.Sub(r.Task.CreatedAt) >= 30*time.Second {
+				finish(st, r, "timed_out", "queue_timeout")
+				continue
+			}
+			ses := st.Sessions[r.Task.SessionID]
+			if ses == nil {
+				return errors.New("missing session")
+			}
+			c, e := s.Clients.Get(r.Owner)
+			if e != nil {
+				finish(st, r, "blocked", "scope_denied")
+				continue
+			}
+			p, e := s.profile(ses.Session.AgentID, ses.Session.AdapterID, ses.Session.PolicyID)
+			if e == nil {
+				e = grant(c, p, r.Task.Operation)
+			}
+			if e == nil {
+				e = p.Check(r.Task.Operation)
+			}
+			if e == nil && p.SHA256 != ses.Session.ProfileSHA256 {
+				e = api.Failure(409, "profile_changed")
+			}
+			if e == nil && !ses.Session.ExpiresAt.After(now) {
+				e = api.Failure(410, "object_expired")
+			}
+			if e == nil && p.Location != "local" && (!c.AllowRemote || !r.Request.Consent.AllowRemote) {
+				e = api.Failure(403, "cloud_consent_required")
+			}
+			if e != nil {
+				finish(st, r, "blocked", safeCode(e))
+				continue
+			}
+			day := now.Format("2006-01-02")
+			seconds := r.Request.Budget.TimeoutSeconds
+			if !s.canReserve(st, c, &ses.Session, seconds, day) {
+				finish(st, r, "blocked", "budget_exhausted")
+				continue
+			}
+			// Durable reservation and invocation identity precede all driver work.
+			r.InvocationID = api.ID("inv")
+			r.ReservedSeconds = seconds
+			r.BudgetDay = day
+			r.StartedAt = &now
+			r.Task.Status = "running"
+			r.Task.Revision++
+			r.Task.Execution.State = "running"
+			r.Task.Budget.DispatchesConsumed = 1
+			r.Task.Budget.ProcessStartsConsumed = 1
+			for _, k := range []string{"global/" + day, c.ID + "/" + day} {
+				x := st.Counters[k]
+				x.Dispatches++
+				x.Starts++
+				x.Reserved += seconds
+				st.Counters[k] = x
+			}
+			b := &ses.Session.Budget
+			b.DispatchesConsumed++
+			b.ProcessStartsConsumed++
+			b.ExecutionSecondsReserved += seconds
+			ses.Session.ContextSHA256 = api.Digest(struct {
+				Previous string
+				Request  api.TaskCreate
+			}{ses.Session.ContextSHA256, r.Request})
+			ses.Session.Revision++
+			addEvent(r, "task.started", map[string]any{"task_revision": r.Task.Revision})
+			bound = nativeadapter.BoundRequest{TaskID: r.Task.ID, SessionID: ses.Session.ID, NativeID: ses.NativeID, Operation: r.Task.Operation, Profile: p}
+			for _, part := range r.Request.Input {
+				if part.Text != nil {
+					bound.Prompt = *part.Text
+				}
+			}
+			tr = *r
+			dispatch = true
+			break
+		}
+		return nil
+	})
+	s.mu.Unlock()
+	if err != nil || !dispatch {
+		return false, err
+	}
+	ctx, cancel := context.WithDeadline(parent, tr.Task.DeadlineAt)
+	defer cancel()
+	observedError := make(chan error, 1)
+	observer := func(o nativeadapter.Observation) error {
+		e := s.Store.Update(func(st *agentstore.State) error {
+			r := st.Tasks[tr.Task.ID]
+			if r == nil || api.Terminal(r.Task.Status) {
+				return api.Failure(409, "profile_changed")
+			}
+			category := o.Category
+			if category != "session" && category != "tool" && category != "response" {
+				category = "activity"
+			}
+			addEvent(r, "task.progress", map[string]any{"category": category})
+			return nil
+		})
+		if e != nil {
+			cancel()
+			select {
+			case observedError <- e:
+			default:
+			}
+		}
+		return e
+	}
+	resultCh := make(chan nativeadapter.TurnResult, 1)
+	go func() { resultCh <- driver.StartTurn(ctx, bound, observer) }()
+	monitor := time.NewTicker(25 * time.Millisecond)
+	defer monitor.Stop()
+	var result nativeadapter.TurnResult
+	stopping := false
+	var cleanupTimer *time.Timer
+	var cleanup <-chan time.Time
+	ctxDone := ctx.Done()
+	stop := func() {
+		if !stopping {
+			ctxDone = nil
+			stopping = true
+			cancel()
+			cleanupTimer = time.NewTimer(5 * time.Second)
+			cleanup = cleanupTimer.C
+		}
+	}
+	for {
+		select {
+		case result = <-resultCh:
+			if cleanupTimer != nil {
+				cleanupTimer.Stop()
+			}
+			goto complete
+		case <-ctxDone:
+			stop()
+		case <-cleanup:
+			result = nativeadapter.TurnResult{Terminal: "unknown", Protocol: "unknown", Code: "execution_state_unknown"}
+			goto complete
+		case <-monitor.C:
+			e := s.Store.View(func(st agentstore.State) error {
+				r := st.Tasks[tr.Task.ID]
+				if r == nil || r.Task.Status == "cancel_requested" {
+					stop()
+				}
+				return nil
+			})
+			if e != nil {
+				stop()
+			}
+			if _, e = s.Clients.Get(tr.Owner); e != nil {
+				stop()
+			}
+		}
+	}
+complete:
+	select {
+	case e := <-observedError:
+		return true, e
+	default:
+	}
+	err = s.Store.Update(func(st *agentstore.State) error {
+		r := st.Tasks[tr.Task.ID]
+		if r == nil || api.Terminal(r.Task.Status) {
+			return nil
+		}
+		ses := st.Sessions[r.Task.SessionID]
+		now := time.Now().UTC()
+		seconds := now.Sub(*r.StartedAt).Seconds()
+		if seconds > float64(r.ReservedSeconds) {
+			seconds = float64(r.ReservedSeconds)
+		}
+		r.Task.Budget.ExecutionSeconds = seconds
+		b := &ses.Session.Budget
+		b.ExecutionSeconds += seconds
+		b.ExecutionSecondsReserved -= r.ReservedSeconds
+		for _, k := range []string{"global/" + r.BudgetDay, r.Owner + "/" + r.BudgetDay} {
+			x := st.Counters[k]
+			x.Seconds += seconds
+			x.Reserved -= r.ReservedSeconds
+			st.Counters[k] = x
+		}
+		r.Task.Execution.NativeExitCode = result.ExitCode
+		r.Task.Execution.NativeTerminal = result.Terminal
+		r.Task.Execution.LocalStopConfirmed = &result.LocalStopConfirmed
+		r.Task.Execution.UpstreamCancelConfirmed = result.UpstreamCancelConfirmed
+		r.Task.Protocol = api.Protocol{Status: result.Protocol, NativeSessionObserved: result.SessionObserved}
+		r.Task.Usage = result.Usage
+		if r.Task.Usage.Source == "" {
+			r.Task.Usage = api.Usage{Source: "none", Scope: "unknown"}
+		}
+		if result.Text != "" && len(result.Text) <= api.MaxText {
+			r.Task.Result.Text = &result.Text
+		}
+		if !result.LocalStopConfirmed {
+			r.Task.Execution.State = "unknown"
+			r.Task.Execution.SideEffects = "unknown"
+			st.Quarantined = true
+			finish(st, r, "needs_reconcile", "execution_state_unknown")
+			return nil
+		}
+		r.Task.Execution.State = "completed"
+		if !now.Before(r.Task.DeadlineAt) {
+			r.Task.Execution.State = "stopped"
+			r.Task.Execution.SideEffects = "unknown"
+			finish(st, r, "timed_out", "timeout")
+			return nil
+		}
+		if r.Task.Status == "cancel_requested" || parent.Err() != nil || stopping {
+			r.Task.Execution.State = "stopped"
+			r.Task.Execution.SideEffects = "unknown"
+			finish(st, r, "canceled", "canceled")
+			return nil
+		}
+		code := result.Code
+		if code == "" && result.ExitCode == nil {
+			code = "start_failed"
+		}
+		if code == "" && *result.ExitCode != 0 {
+			code = "native_process_failed"
+		}
+		if code == "" && (!result.SessionObserved || result.NativeID == "") {
+			code = "protocol_error"
+			if ses.NativeID != "" {
+				code = "native_session_lost"
+			}
+		}
+		if code == "" && ses.NativeID != "" && ses.NativeID != result.NativeID {
+			code = "native_session_lost"
+		}
+		if code == "" && (result.Terminal != "success" || result.Protocol != "complete") {
+			code = "protocol_error"
+		}
+		if code == "" && len(result.Text) > api.MaxText {
+			code = "output_limit"
+		}
+		if code != "" {
+			r.Task.Execution.State = "failed"
+			if result.Terminal != "success" || !result.SessionObserved || code == "native_session_lost" {
+				ses.Session.State = "needs_reconcile"
+				ses.Session.BindingState = "lost"
+			}
+			status := "failed"
+			switch code {
+			case "workspace_untrusted", "native_auth_required", "native_quota_exceeded", "extra_payment_required", "approval_required", "native_tool_unavailable", "artifact_access_blocked", "policy_unenforceable":
+				status = "blocked"
+			}
+			finish(st, r, status, code)
+			return nil
+		}
+		ses.NativeID = result.NativeID
+		ses.Session.BindingState = "bound"
+		r.Task.Status = "validating"
+		r.Task.Revision++
+		r.Task.Validation.Status = "running"
+		if r.Task.Operation != "text_task" {
+			finish(st, r, "blocked", "artifact_access_blocked")
+			return nil
+		}
+		if strings.TrimSpace(result.Text) == "" || !utf8.ValidString(result.Text) {
+			r.Task.Validation.Status = "failed"
+			finish(st, r, "failed", "validation_failed")
+			return nil
+		}
+		r.Task.Result.Final = true
+		r.Task.Validation.Status = "passed"
+		addEvent(r, "text.completed", map[string]any{"result_sha256": api.Hash([]byte(result.Text)), "utf8_bytes": len(result.Text), "result_path": api.Prefix + "/tasks/" + r.Task.ID})
+		finish(st, r, "succeeded", "")
+		return nil
+	})
+	return true, err
+}
+func safeCode(e error) string {
+	var wire *api.Error
+	if errors.As(e, &wire) {
+		return wire.Code
+	}
+	return "store_unavailable"
+}

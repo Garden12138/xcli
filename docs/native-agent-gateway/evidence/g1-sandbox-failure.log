@@ -1,0 +1,36 @@
+ok  	github.com/Garden12138/xcli/internal/agentapi	(cached)
+ok  	github.com/Garden12138/xcli/internal/agentstore	(cached)
+?   	github.com/Garden12138/xcli/internal/agentpolicy	[no test files]
+ok  	github.com/Garden12138/xcli/internal/agentservice	(cached)
+ok  	github.com/Garden12138/xcli/internal/agentgateway	1.535s
+ok  	github.com/Garden12138/xcli/internal/nativeadapter	(cached)
+ok  	github.com/Garden12138/xcli/internal/agent	(cached)
+ok  	github.com/Garden12138/xcli/internal/runtime	(cached)
+ok  	github.com/Garden12138/xcli/internal/runstore	(cached)
+--- FAIL: TestRealSSEForwardingBeforeCompletionAndCancellation (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 25 [running]:
+testing.tRunner.func1.2({0x105199120, 0xc00011dc40})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:1974 +0x2b8
+testing.tRunner.func1()
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:1977 +0x460
+panic({0x105199120?, 0xc00011dc40?})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:72 +0x13c
+net/http/httptest.NewUnstartedServer(...)
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x105233c20, 0xc00011dc00})
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/net/http/httptest/server.go:107 +0x30
+github.com/Garden12138/xcli/internal/modelgateway.TestRealSSEForwardingBeforeCompletionAndCancellation(0xc000168d88)
+	/Users/cengjiada/Documents/github/xcli/internal/modelgateway/chat_test.go:136 +0xa8
+testing.tRunner(0xc000168d88, 0x10522ef00)
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:2036 +0x168
+created by testing.(*T).Run in goroutine 1
+	/opt/homebrew/Cellar/go/1.26.4/libexec/src/testing/testing.go:2101 +0x7c0
+FAIL	github.com/Garden12138/xcli/internal/modelgateway	0.775s
+ok  	github.com/Garden12138/xcli/internal/modelstore	(cached)
+ok  	github.com/Garden12138/xcli/internal/task	166.689s
+ok  	github.com/Garden12138/xcli/cmd	42.020s
+FAIL

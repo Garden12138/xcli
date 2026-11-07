@@ -11,16 +11,18 @@
 
 完成标准：D01–D04 通过设计交付检查；所有未来 endpoint/命令明确 Proposed，真实 HTTP→CLI 和四应用仍未验收。设计交付检查不把任何 NAG 实现 Gate 提升为 PASS。
 
+实施进度以 [IMPLEMENTATION_PROGRESS.md](IMPLEMENTATION_PROGRESS.md) 为准；下列勾选只表示离线实现完成，不表示真实 CLI 获准启用。
+
 ## G1 — 合同、策略、事务骨架与官方协议评估（4–6 人日）
 
 依赖 G0，默认服务 dispatch 预算 0。此阶段先证明安全和 crash 不重放，再接真实 native worker。
 
-- [ ] 固定 JSON DTO/闭合字段、状态/error/SSE 合同，增加 fake-only contract suite。
-- [ ] 独立配置/数据根/loopback server/Host-Origin 检查、客户端 issue/rotate/revoke 与权限 scope；复用私有存储工具，不共用 Model Token。
-- [ ] 实现单写者事务 journal、checkpoint、幂等/预算原子扣减、归属与 Session CAS。
-- [ ] 建 profile/二进制摘要/适配 revision/能力证据目录；GET 仅缓存，显式非模型 refresh 与执行分开。
-- [ ] 逐 CLI 建立可执行的最小策略清单；无法约束全局配置的标为 policy_unenforceable，先只允许合成数据。
-- [ ] 以官方 app-server 文档/schema 静态夹具 timebox 1–2 人日评估 Go stdio RPC：初始化、请求关联、delta、拒绝审批、interrupt、未知方法；不登录、不 turn/start 真模型。
+- [x] 固定 JSON DTO/闭合字段、状态/error/SSE 合同，增加 fake-only contract suite。
+- [x] 独立配置/数据根/loopback server/Host-Origin 检查、客户端 issue/rotate/revoke 与权限 scope；复用私有存储工具，不共用 Model Token。
+- [x] 实现单写者事务 journal、checkpoint、幂等/预算原子扣减、归属与 Session CAS。
+- [x] 建 profile/二进制摘要/适配 revision/能力证据目录；GET 仅缓存，显式非模型 refresh 与执行分开。
+- [x] 逐 CLI 建立可执行的最小策略清单；无法约束全局配置的标为 policy_unenforceable，先只允许合成数据。
+- [x] 以官方 app-server 文档/schema 静态夹具 timebox 1–2 人日评估 Go stdio RPC：初始化、请求关联、delta、拒绝审批、interrupt、未知方法；不登录、不 turn/start 真模型。
 
 明确验收：N01–N06、N09、N14 的 fake/存储部分通过；100 个并发同幂等键提交只创建 1 个 Task；任意 crash 点不产生第 2 个 dispatch。旧 Model Gateway native-cli 拒绝仍通过。测试只用受控临时目录/假 worker/假上游，不启动已安装的 native 程序。
 
