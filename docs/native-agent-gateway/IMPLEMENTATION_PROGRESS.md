@@ -4,7 +4,7 @@
 
 ## 当前入口
 
-当前阶段：**G4 离线交付完成；真实验收计划已提交文档，执行 BLOCKED（授权/策略前置未满足）**（对应用户阶段 A，按原 SPEC 依赖推进）。
+当前阶段：**G4 离线交付完成；真实验收计划已提交文档，执行 BLOCKED（授权/策略前置未满足）**（对应用户阶段 A–F 的获授权部分；真实执行保持阻塞）。
 
 恢复先读本文件，再读 `TASKS.md`、`ACCEPTANCE.md` 和 `git log --oneline -8` / `git status --short`。不得重新执行历史 native smoke。
 
@@ -14,7 +14,7 @@
 - 独立 `/agent/v1`、Token、配置、端口、状态根；不接 `model.ChatBackend`，不调用多轮 Task Runner。
 - 所有真实 profile 在逐次权限和 Gateway 验收前关闭；缺官方可执行隔离证据时 `policy_unenforceable`。先做 HTTP → 受控假进程，可复现的离线证据与真实验收分开。
 - append-only fsync 事务先于 dispatch，重启仅恢复状态；不按历史 PID kill，不自动 retry/fallback。
-- 官方文档核查进行中，app-server 仅离线协议评估，G5 晋升另立范围。
+- 官方文档核查已记录，app-server 仅离线协议评估，G5 晋升另立范围。
 
 ## 阶段记录
 
@@ -24,8 +24,8 @@
 | G1 | PASS（离线范围） | `86717e6` | [核心 race](evidence/g1-core-race.log)、[旧回归 race](evidence/g1-regression-race.log)、vet/build |
 | G2 | PASS（离线范围，覆盖用户 B/C 的实现） | `25201e1` | [全量 race](evidence/g2-all-race.log)、[最终补充](evidence/g2-additions-race.log)、[CLI 控制](evidence/g2-control.json) |
 | G3 | PASS（macOS 离线范围） | `01581bf` | [全量 race](evidence/g3-all-race.log)、[最终核心](evidence/g3-core-final.log) |
-| G4 离线 | PASS | 本条所在实现提交（随后交接记录写 SHA） | [完整离线](evidence/g4-offline.log)、[报告](IMPLEMENTATION_REPORT.md)、[源摘要](evidence/source-manifest.json) |
-| G4 真实 / 用户 F | 计划交付；执行 BLOCKED | 本条所在提交 | [真实计划/每 CLI 最小预算](REAL_HTTP_ACCEPTANCE_PLAN.md)，未执行 |
+| G4 离线 | PASS | `8526361` | [完整离线](evidence/g4-offline.log)、[报告](IMPLEMENTATION_REPORT.md)、[源摘要](evidence/source-manifest.json) |
+| G4 真实 / 用户 F | 计划交付；执行 BLOCKED | `8526361` | [真实计划/每 CLI 最小预算](REAL_HTTP_ACCEPTANCE_PLAN.md)，未执行 |
 | G5 / G6 | 后续独立范围 | — | app-server 晋升 / 四应用 |
 
 ## 门禁
@@ -35,7 +35,7 @@
 - 原 Gate B（native CLI→Model Gateway）：**BLOCKED**；V1 无该兼容层。
 - NAG 离线：PASS（仅离线范围）；NAG 真实：BLOCKED；四应用 Gate C：Planned/BLOCKED。
 
-## 下一任务与恢复命令
+## 初始任务入口（历史，已完成）
 
 G1：实现闭合 DTO、私有事务存储、客户端授权、Session/CAS、预算/幂等和 HTTP 安全检查，新增 fake-only contract tests。所有 Go 命令使用 `GOCACHE=/tmp/xcli-nag-go-cache GOPROXY=off GOSUMDB=off`；只运行明确的离线测试，不运行 native smoke。
 
@@ -105,3 +105,9 @@ bash tests/native_agent_gateway/verify-offline.sh
 ```
 
 恢复先读本文件、IMPLEMENTATION_REPORT、REAL_HTTP_ACCEPTANCE_PLAN；仅在要复验离线代码时运行上述脚本。不得运行旧 native smoke 的 --execute，不读原生登录缓存，不改 Cursor Trust，不按历史 PID kill，不 Push。真实 NAG Gate 和原 Gate B 均保持 BLOCKED；原 Gate A 仅继承历史特定场景。
+
+## 最终交接定位
+
+产品代码提交：`8526361f8d62b7dd5058096aa69a21a121fa3c3b`。本节为仅文档交接补充，不修改已验收代码；当前报告版本用 `git log -1 -- docs/native-agent-gateway/IMPLEMENTATION_PROGRESS.md` 定位，避免自引用 SHA。
+
+本轮阶段提交依次为 `86717e6`（G1）、`25201e1`（G2）、`01581bf`（G3）、`8526361`（G4 离线与真实计划），均只在本地；前序 `864a6b1` / `40fc6ca` 完整保留。最终产品/测试源码清单 SHA-256：`aca0d152e5ac43cec6dd85c98faa931fd74af496ed72ad89ac00736d14165eab`。文档交接后不需要重复执行已经通过的完整测试；只有代码/约束改变或复验需要时才运行离线门禁。
