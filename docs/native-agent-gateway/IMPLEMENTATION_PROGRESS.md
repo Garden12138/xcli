@@ -147,4 +147,4 @@ bash tests/native_agent_gateway/verify-offline.sh
 
 不要自动重跑 `probe_protocol.py --execute-non-model` 或 `profile_preflight.py --execute-non-model` 来增加无必要启动；已有证据足够。后续若安装变动需重新非模型检查，单独记账；所有真实推理仍需要新明确授权。Cursor 另需具体服务 workspace 的官方 Trust 审查、bundle 完整性和生命周期修复；Agy 另需供应商用途授权依据。未获授权前不运行 G5B／旧 native smoke。
 
-G5A 提交定位：本节随实现创建独立本地提交；完成后用 `git log -1 -- internal/nativeadapter/preflight.go` 定位实现 SHA、`git log -1 -- docs/native-agent-gateway/IMPLEMENTATION_PROGRESS.md` 定位交接版本。不 Push/Tag/Release/部署。
+G5A 实现、审查、测试及证据提交：`33ac9273f25dce9574b0f82af8c1e4f5dc413580`（`feat(agent-gateway): review G5A native profile readiness`）。提交后再次核对 171 个源码摘要一致，工作区干净。本段随后仅补录实际 SHA；交接文档自身提交由 `git log -1 -- docs/native-agent-gateway/IMPLEMENTATION_PROGRESS.md` 定位，避免自引用。不 Push/Tag/Release/部署。
