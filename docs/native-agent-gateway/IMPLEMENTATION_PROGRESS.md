@@ -219,3 +219,7 @@ GOCACHE=/tmp/xcli-nag-go-cache GOPROXY=off GOSUMDB=off go build -trimpath -o /tm
 新合成工作区 `/private/tmp/xcli-g5a2-pgnzz8as/state/codex-limited/workspace`，auth-home 是空假目录，最终配置和运行开关关闭、服务已停止；不能用于真实推理。临时目录可能被清理，证据已脱敏保存在仓库；不要靠新建根重置预算。历史 G5A.1 根未改认证引用、未补写目录身份。完整离线复验入口仍为 `bash tests/native_agent_gateway/verify-offline.sh`，只在需要复验或源码修改后重跑；不自动重跑原生 probe。
 
 未来工程和本人确认齐备，再按 CODEX_FIRST_REAL_HTTP_TEST 的 enable→本轮授权 authorize→--execute 命令处理。当前任何一次调用同意都不足以运行。禁止 Push、真实推理、原生认证资料读取／复制和 Cursor Trust 自动改动仍有效。
+
+### G5A.2 最终提交定位
+
+代码、测试、隔离验证器与证据提交：`380559cdf9e82371bf36f256af52d8ea957f438b`。本节为仅文档的交接补记；当前文档提交用 `git log -1 -- docs/native-agent-gateway/IMPLEMENTATION_PROGRESS.md` 定位，避免自引用 SHA。最终源码清单仍为 184 文件／`bcbd8d5134bf6facd63a49c0db1f4ff929f6d649be46444380a3a9cb79b4962d`；交接不改变源码或测试结果，不重复启动原生探针。全部仅本地提交，未 Push／部署／发布；ENGINEERING_BLOCKED／USER_CONFIRMATION_REQUIRED、真实推理 0 和三家真实 Gate B 非 PASS 保持不变。

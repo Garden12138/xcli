@@ -101,3 +101,5 @@ NAG_CONFIG="$PWD/examples/codex-limited-gateway.yaml"
 [完整离线日志](evidence/g5a2/offline.log)、[HTTP Session 503／开关和声明拒绝](evidence/g5a2/control-boundary.json)、[默认 dry-run](evidence/g5a2/script-dry-run.json)、[显式 execute 仍零 Task 阻断](evidence/g5a2/script-execute-blocked.json)共同证明 fail closed。execute 负向测试没有 token 参数、没有调用许可，也没有执行模型。服务最终停止，配置／运行开关都关闭。首次脚本新增服务 generation 校验，防止重启期间读到旧端口。
 
 新建合成根时须重新 prepare；不能为旧登记自动补 inode，不能以换根绕过既有一次预算。现有 client／Session／预算／幂等／持久化协议未重新设计，旧日志及真实执行证据保持原样。工程阻塞、本人声明待确认、本轮调用未授权和真实 L01-a NOT_TESTED 分别保留。
+
+G5A.2 最终代码／测试／证据 Git SHA：`380559cdf9e82371bf36f256af52d8ea957f438b`；后续交接仅更新文档，不改变已验收源码。
