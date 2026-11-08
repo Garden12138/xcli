@@ -1,5 +1,7 @@
 # G5A：真实 Profile 启用前审查
 
+2026-11-08 G5A.2：**Codex ENGINEERING_BLOCKED，用户轴 USER_CONFIRMATION_REQUIRED**。实际假认证 Canary 的原生命令沙箱通过；不是完整 exec 工具或真实凭据隔离证明。[边界与逐项缺口](CODEX_ISOLATION_BOUNDARY.md)、[本人确认](CODEX_ACCOUNT_AND_USAGE_CONFIRMATION.md)、[新版 readiness](evidence/g5a2/readiness.json)、[HTTP 503/控制拒绝](evidence/g5a2/control-boundary.json)。新增同字节目录替换拒绝、严格确认导入、分轴状态和首次脚本代次校验；真实推理 0，Cursor/Agy 仍关闭。以下 G5A.1/G5A 段落保留其日期范围，当前入口以 G5A.2 为准。
+
 2026-11-08 G5A.1 增量：[Codex 受限控制工程与原生 canary](CODEX_LIMITED_PROFILE.md)、[首次 HTTP 脚本](CODEX_FIRST_REAL_HTTP_TEST.md)。单个合成 Git 项目、固定任务／客户端、一次性持久预算、独立开关／调用许可已实现；官方 CLI 报告 ChatGPT 登录，原生命令沙箱读写／链接／网络 canary 通过。**全量内置工具与认证目录隔离验证器仍缺失，原生 Profile 继续 BLOCKED，未标 READY_FOR_AUTHORIZATION。** 下文保留 G5A 历史结论与证据；S01/C01 已有增量，S03 仅部分有证据，S04/S05/S06 未被替代。
 
 2026-11-08，起点 `f72e32a`。**G5A 审查和最小修复不等于真实验收完成；三个真实 Profile 均保持关闭。** 当前没有具备直接执行 G5B 条件的 CLI；优先补齐 Codex 的文本路线。新推理请求 0，不沿用此前 3 次余额。
@@ -24,7 +26,7 @@
 
 共 21 次顶层原生非模型探针调用：Codex 8、Agy 7、Cursor 6，见[账本](evidence/g5a/non-model-ledger.json)。Cursor wrapper 内部还会执行 Node 检查，不能把顶层次数称为全部 OS 子进程数。没有 authenticate、thread/start、session/new、turn/start 或 session/prompt；没有真实 Task 提交。
 
-## 默认关闭的确切路径
+## G5A 时默认关闭的确切路径（历史）
 
 1. [policy.go](../../internal/agentpolicy/policy.go) 的 `Defaults()`：Native=true、Blocker=policy_unenforceable。`Profile.Check()` 即使清空 Blocker，仍无条件拒绝 Native；**尚无受支持的真实晋升机制**。
 2. `agentservice.CreateSession`、`CreateTask` 和 `ExecuteNext` 检查 Profile；[Exec.StartTurn](../../internal/nativeadapter/exec.go) 在 CheckBinary、生成 argv 和 spawn 前再次 Check。
@@ -85,3 +87,19 @@ HTTP 预检使用真实安装的缓存和生产服务，预算故意设 1/1/120�
 | 真实媒体 adapter | 精确参考输入、任务输出授权、tool/turn/file/hash 来源关联，既有 FD 校验和 review 复用；不扫描外部产物 | 每家另估 2–4，需独立真实媒体授权 |
 
 是否新增 app-server/ACP 取决于选定能力；**首个文本 HTTP turn 不强制要求新传输，但当前工程仍未到“只差批准一次调用”的状态**。下一入口为 S01–S03 + C01 的最小文本启用工程，再按 [G5B 计划](G5B_REAL_HTTP_PLAN.md)申请固定新场景。
+
+## G5A.2 当前 Codex 阻塞清单
+
+| 项目 | 当前状态 |
+| --- | --- |
+| 固定 CLI/version/hash、合成 Git 目录／dev+inode、loopback、专用客户端 | 已实现；非推理及离线证据通过 |
+| exec 最终有效工具目录 | ENGINEERING_BLOCKED：feature resolver 不是工具目录 |
+| builtin 直接 IO 到认证／私人文件的独立边界 | ENGINEERING_BLOCKED：没有完整 broker/不同权限域证明 |
+| exec 工具实际环境 | ENGINEERING_BLOCKED：仅静态过滤配置，helper 不等于 exec launcher |
+| check→spawn 的持续目录边界／所有 builtin 网络 | NOT_PROVEN；目录静态攻击与 curl Canary 不涵盖全部通道 |
+| 当前登录／计划／该次模型权益 | 本轮未运行真实登录检查，计划待本人确认；历史 G5A.1 登录不复用为当前证据 |
+| 所有权、个人本地用途、无共享服务、云发送、费用 | USER_CONFIRMATION_REQUIRED；六项未代填 |
+| 一次新的真实调用许可 | 未授权；enable 与 authorize 独立且当前均拒绝 |
+| HTTP→真实 exec 文本、后续 Session/取消/媒体 | NOT_TESTED；真实 Gate B 不得 PASS |
+
+当前 `BindLimited` 可绑定受限候选，但 Native `Profile.Check`→`LimitedBinding.Check`、dispatch、spawn 均保留验证器；清空原 Blocker 或配置 enabled=true 不会绕过工程 Gate。用户文件不能实现缺失的工具 broker。替代路线只记录估算，不在本轮改 Adapter 或申请新的实际推理额度。

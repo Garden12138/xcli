@@ -1,0 +1,141 @@
+{
+  "version": 1,
+  "registration_sha256": "8595ce1118ab9de92af3bbec788443d95e3ec9693b1b10ef0bf86b7c37b1dec6",
+  "policy_sha256": "6d838af91690083e311a42d27057fa4c05c8c25195e5addd8c316f1a2b97dd54",
+  "binary_sha256": "030316ecfbb41f4e7946e584b0063ef333b7a36cd312ba349f2f6869e39b62cc",
+  "platform": "darwin/arm64",
+  "at": "2026-11-08T10:46:16.780451Z",
+  "native_processes": 9,
+  "model_requests": 0,
+  "real_credentials_used": false,
+  "observations": {
+    "binary_unchanged": {
+      "mechanism": "FILE_DIGEST",
+      "result": "PASS"
+    },
+    "direct_builtin_credential_io": {
+      "mechanism": "NO_INDEPENDENT_BROKER_OR_OS_IDENTITY",
+      "result": "NOT_PROVEN"
+    },
+    "exec_effective_tool_catalog": {
+      "mechanism": "REAL_EXEC_TURN_NOT_RUN",
+      "result": "NOT_PROVEN"
+    },
+    "exec_tool_environment_filter": {
+      "mechanism": "CONFIG_STATIC_ONLY_SANDBOX_HELPER_IS_NOT_EXEC_TOOL_LAUNCHER",
+      "result": "NOT_PROVEN"
+    },
+    "fake_auth_absolute_read_denied": {
+      "mechanism": "NATIVE_SANDBOX_OS_CANARY",
+      "result": "PASS",
+      "exit_code": 1
+    },
+    "fake_auth_relative_read_denied": {
+      "mechanism": "NATIVE_SANDBOX_OS_CANARY",
+      "result": "PASS",
+      "exit_code": 1
+    },
+    "feature_disabled_apps": {
+      "mechanism": "OFFICIAL_FEATURE_RESOLVER_NOT_TOOL_CATALOG",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    "feature_disabled_browser_use": {
+      "mechanism": "OFFICIAL_FEATURE_RESOLVER_NOT_TOOL_CATALOG",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    "feature_disabled_code_mode_host": {
+      "mechanism": "OFFICIAL_FEATURE_RESOLVER_NOT_TOOL_CATALOG",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    "feature_disabled_computer_use": {
+      "mechanism": "OFFICIAL_FEATURE_RESOLVER_NOT_TOOL_CATALOG",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    "feature_disabled_hooks": {
+      "mechanism": "OFFICIAL_FEATURE_RESOLVER_NOT_TOOL_CATALOG",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    "feature_disabled_multi_agent": {
+      "mechanism": "OFFICIAL_FEATURE_RESOLVER_NOT_TOOL_CATALOG",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    "feature_disabled_plugins": {
+      "mechanism": "OFFICIAL_FEATURE_RESOLVER_NOT_TOOL_CATALOG",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    "feature_disabled_remote_plugin": {
+      "mechanism": "OFFICIAL_FEATURE_RESOLVER_NOT_TOOL_CATALOG",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    "feature_disabled_shell_tool": {
+      "mechanism": "OFFICIAL_FEATURE_RESOLVER_NOT_TOOL_CATALOG",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    "feature_disabled_view_image": {
+      "mechanism": "OFFICIAL_FEATURE_RESOLVER_NOT_TOOL_CATALOG",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    "gateway_native_environment_allowlist": {
+      "mechanism": "GO_ALLOWLIST",
+      "result": "PASS"
+    },
+    "mock_service_tool_network_denied": {
+      "mechanism": "NATIVE_SANDBOX_OS_CANARY",
+      "result": "PASS",
+      "exit_code": 7
+    },
+    "outside_read_denied": {
+      "mechanism": "NATIVE_SANDBOX_OS_CANARY",
+      "result": "PASS",
+      "exit_code": 1
+    },
+    "parent_can_connect_mock_model_service": {
+      "mechanism": "OS_PROCESS_CONTROL",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    "real_model_service_connectivity": {
+      "mechanism": "MOCK_ENDPOINT_ONLY_NO_PROVIDER_CALL",
+      "result": "NOT_TESTED"
+    },
+    "same_uid": {
+      "mechanism": "NATIVE_SANDBOX_OS_CANARY",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    "same_uid_unsandboxed_fake_credential_readable": {
+      "mechanism": "OS_PROCESS_CONTROL",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    "selected_read": {
+      "mechanism": "NATIVE_SANDBOX_OS_CANARY",
+      "result": "PASS",
+      "exit_code": 0
+    },
+    "symlink_fake_auth_read_denied": {
+      "mechanism": "NATIVE_SANDBOX_OS_CANARY",
+      "result": "PASS",
+      "exit_code": 1
+    },
+    "workspace_unchanged": {
+      "mechanism": "NOFOLLOW_FD_AND_DIGEST",
+      "result": "PASS"
+    },
+    "workspace_write_denied": {
+      "mechanism": "NATIVE_SANDBOX_OS_CANARY",
+      "result": "PASS",
+      "exit_code": 1
+    }
+  }
+}

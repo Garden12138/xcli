@@ -1,12 +1,22 @@
 import hashlib
 import json
 import unittest
-from codex_first_http import execute_gate, one_task, EXPECTED, PROMPT
+from codex_first_http import execute_gate, new_service_ready, one_task, EXPECTED, PROMPT
 
 
 class FirstCodexHTTPTest(unittest.TestCase):
+    def test_old_active_status_cannot_select_stale_endpoint(self):
+        old = {"active": True, "generation_id": "old", "address": "127.0.0.1:1"}
+        self.assertFalse(new_service_ready(old, "old"))
+        self.assertFalse(new_service_ready({**old, "active": False}, "other"))
+        self.assertFalse(new_service_ready({**old, "generation_id": ""}, "old"))
+        self.assertFalse(new_service_ready({**old, "address": ""}, "other"))
+        self.assertTrue(new_service_ready({**old, "generation_id": "new"}, "old"))
+
     def test_execute_requires_separate_authorization(self):
         state = {"state": "READY_FOR_AUTHORIZATION", "enabled": True, "client_ready": True,
+                 "engineering_state": "ENGINEERING_READY", "user_confirmation_state": "CONFIRMED",
+                 "user_confirmation_sha256": "owner-confirmation-fixture",
                  "call_authorized": True, "authorization_ref_sha256": hashlib.sha256(b"new-ref").hexdigest()}
         self.assertTrue(execute_gate(state, "new-ref"))
         for field in ("enabled", "client_ready", "call_authorized"):
@@ -14,6 +24,10 @@ class FirstCodexHTTPTest(unittest.TestCase):
         self.assertFalse(execute_gate({**state, "state": "BLOCKED"}, "new-ref"))
         self.assertFalse(execute_gate(state, "old-ref"))
         self.assertFalse(execute_gate(state, ""))
+        for field in ("engineering_state", "user_confirmation_state", "user_confirmation_sha256"):
+            self.assertFalse(execute_gate({k: v for k, v in state.items() if k != field}, "new-ref"))
+        self.assertFalse(execute_gate({**state, "engineering_state": "ENGINEERING_BLOCKED"}, "new-ref"))
+        self.assertFalse(execute_gate({**state, "user_confirmation_state": "USER_CONFIRMATION_REQUIRED"}, "new-ref"))
 
     def test_one_post_success_and_failure_never_retry(self):
         for failure in (False, True):

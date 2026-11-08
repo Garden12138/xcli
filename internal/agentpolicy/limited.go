@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"os"
 	"path/filepath"
 	"slices"
@@ -44,13 +43,14 @@ func (c LimitedConfig) Validate() error {
 }
 
 type LimitedRegistration struct {
-	Version         int    `json:"version"`
-	Binary          string `json:"binary"`
-	BinarySHA256    string `json:"binary_sha256"`
-	CLIVersion      string `json:"cli_version"`
-	AuthHome        string `json:"auth_home"`
-	Workspace       string `json:"workspace"`
-	WorkspaceSHA256 string `json:"workspace_sha256"`
+	Version           int    `json:"version"`
+	Binary            string `json:"binary"`
+	BinarySHA256      string `json:"binary_sha256"`
+	CLIVersion        string `json:"cli_version"`
+	AuthHome          string `json:"auth_home"`
+	Workspace         string `json:"workspace"`
+	WorkspaceSHA256   string `json:"workspace_sha256"`
+	WorkspaceIdentity string `json:"workspace_identity,omitempty"`
 }
 type LimitedControl struct {
 	RegistrationSHA256 string    `json:"registration_sha256"`
@@ -66,9 +66,13 @@ type LimitedBinding struct {
 	AuthHome           string
 }
 type LimitedReadiness struct {
-	State              string `json:"state"`
-	RegistrationSHA256 string `json:"registration_sha256"`
-	Checks             []struct {
+	State                  string   `json:"state"`
+	EngineeringState       string   `json:"engineering_state"`
+	UserConfirmationState  string   `json:"user_confirmation_state"`
+	UserConfirmationSHA256 string   `json:"user_confirmation_sha256"`
+	Blockers               []string `json:"blockers"`
+	RegistrationSHA256     string   `json:"registration_sha256"`
+	Checks                 []struct {
 		ID     string `json:"id"`
 		Status string `json:"status"`
 	} `json:"checks"`
@@ -84,16 +88,21 @@ func limitedRead(root, name string, v any) error {
 	if e != nil {
 		return errors.New("limited_state_unavailable")
 	}
-	d := json.NewDecoder(bytes.NewReader(b))
-	d.DisallowUnknownFields()
-	if d.Decode(v) != nil {
-		return errors.New("limited_state_invalid")
-	}
-	var extra any
-	if d.Decode(&extra) != io.EOF {
+	if strictLimitedDecode(b, v) != nil {
 		return errors.New("limited_state_invalid")
 	}
 	return nil
+}
+func strictLimitedDecode(b []byte, v any) error {
+	// Validate duplicate keys/UTF-8 before typed decoding. Private state includes
+	// time.Time, unlike wire DTOs, so wire requiredShape is applied to a raw map.
+	var shape map[string]json.RawMessage
+	if e := api.StrictDecode(b, &shape); e != nil {
+		return e
+	}
+	d := json.NewDecoder(bytes.NewReader(b))
+	d.DisallowUnknownFields()
+	return d.Decode(v)
 }
 func limitedWrite(root, name string, v any) error {
 	b, e := json.Marshal(v)
@@ -125,7 +134,7 @@ func LimitedPolicyArgs(workspace string) []string {
 func LimitedExecArgs(workspace string) []string {
 	out := []string{"exec", "--json", "--ephemeral", "--ignore-user-config", "--ignore-rules"}
 	out = append(out, LimitedPolicyArgs(workspace)...)
-	for _, v := range []string{`mcp_servers={}`, `web_search="disabled"`, `plugins._default.enabled=false`, `apps._default.enabled=false`, `features.apps=false`, `features.hooks=false`, `features.multi_agent=false`, `features.remote_plugin=false`, `features.shell_snapshot=false`, `allow_login_shell=false`} {
+	for _, v := range []string{`mcp_servers={}`, `web_search="disabled"`, `plugins._default.enabled=false`, `apps._default.enabled=false`, `features.apps=false`, `features.hooks=false`, `features.multi_agent=false`, `features.remote_plugin=false`, `features.shell_snapshot=false`, `features.shell_tool=false`, `features.view_image=false`, `features.plugins=false`, `features.browser_use=false`, `features.computer_use=false`, `features.code_mode_host=false`, `shell_environment_policy.inherit="none"`, `shell_environment_policy.ignore_default_excludes=false`, `allow_login_shell=false`} {
 		out = append(out, "-c", v)
 	}
 	return out
@@ -179,13 +188,31 @@ func PrepareLimited(ctx context.Context, root, binary, authHome string) (Limited
 	if e != nil {
 		return r, e
 	}
-	r = LimitedRegistration{1, cached.Binary, cached.BinarySHA256, cached.Version, ah, ws, hash}
+	identity, e := limitedDirectoryIdentity(ws)
+	if e != nil {
+		return r, e
+	}
+	r = LimitedRegistration{Version: 1, Binary: cached.Binary, BinarySHA256: cached.BinarySHA256, CLIVersion: cached.Version, AuthHome: ah, Workspace: ws, WorkspaceSHA256: hash, WorkspaceIdentity: identity}
 	if e = limitedWrite(root, "codex-limited-registration.json", r); e != nil {
 		return r, e
 	}
 	e = limitedWrite(root, "codex-limited-control.json", LimitedControl{RegistrationSHA256: api.Digest(r)})
 	ok = e == nil
 	return r, e
+}
+
+// The digest alone cannot distinguish an identical-content directory swap.
+// Legacy registrations lack identity and must be explicitly prepared afresh.
+func CheckLimitedWorkspace(r LimitedRegistration) error {
+	identity, e := limitedDirectoryIdentity(r.Workspace)
+	if e != nil || r.WorkspaceIdentity == "" || identity != r.WorkspaceIdentity {
+		return errors.New("limited_workspace_identity_changed")
+	}
+	h, e := LimitedWorkspaceDigest(r.Workspace)
+	if e != nil || h != r.WorkspaceSHA256 {
+		return errors.New("limited_workspace_changed")
+	}
+	return nil
 }
 func LimitedWorkspaceDigest(ws string) (string, error) {
 	info, e := os.Lstat(ws)
@@ -235,11 +262,8 @@ func LimitedWorkspaceDigest(ws string) (string, error) {
 	return api.Digest(files), nil
 }
 
-// Complete builtin-tool/config/credential isolation is NOT inferred from a
-// shell canary. This fail-closed verifier cannot be overridden by JSON/YAML.
-func nativeToolBoundaryVerified() bool { return false }
 func LimitedStatus(root string, cfg LimitedConfig) LimitedReadiness {
-	out := LimitedReadiness{State: "BLOCKED"}
+	out := LimitedReadiness{State: EngineeringBlocked, EngineeringState: EngineeringBlocked, UserConfirmationState: UserConfirmationRequired, Blockers: []string{}}
 	add := func(id, status string) {
 		out.Checks = append(out.Checks, struct {
 			ID     string `json:"id"`
@@ -249,6 +273,7 @@ func LimitedStatus(root string, cfg LimitedConfig) LimitedReadiness {
 	r, e := ReadLimited(root)
 	if e != nil {
 		add("registration", "BLOCKED")
+		out.Blockers = append(out.Blockers, "registration_unavailable")
 		return out
 	}
 	out.RegistrationSHA256 = api.Digest(r)
@@ -261,8 +286,8 @@ func LimitedStatus(root string, cfg LimitedConfig) LimitedReadiness {
 		}
 	}
 	add("registration", "PASS")
-	ws, e := LimitedWorkspaceDigest(r.Workspace)
-	if e == nil && ws == r.WorkspaceSHA256 {
+	workspaceErr := CheckLimitedWorkspace(r)
+	if workspaceErr == nil {
 		add("workspace", "PASS")
 	} else {
 		add("workspace", "BLOCKED")
@@ -273,14 +298,11 @@ func LimitedStatus(root string, cfg LimitedConfig) LimitedReadiness {
 	} else {
 		add("binary_integrity", "BLOCKED")
 	}
-	if cfg.ProviderAuthorizationRef != "" {
-		add("provider_use_case", "OWNER_ASSERTED_NOT_PROVIDER_VERIFIED")
-	} else {
-		add("provider_use_case", "BLOCKED")
-	}
 	var probe LimitedProbe
+	loginReady := false
 	if limitedRead(root, "codex-limited-probe.json", &probe) == nil && probe.RegistrationSHA256 == out.RegistrationSHA256 && probe.PolicySHA256 == api.Digest(LimitedExecArgs(r.Workspace)) && time.Since(probe.At) >= 0 && time.Since(probe.At) < 15*time.Minute {
 		add("native_login", probe.Login)
+		loginReady = probe.Login == "AUTHENTICATED_CHATGPT"
 		pass := probe.Checks["binary_unchanged"] && probe.Checks["fixed_command_format"]
 		for _, id := range []string{"read_selected", "deny_outside_read", "deny_symlink_read", "deny_workspace_write", "deny_tool_network"} {
 			pass = pass && probe.Checks[id]
@@ -291,13 +313,36 @@ func LimitedStatus(root string, cfg LimitedConfig) LimitedReadiness {
 			add("native_sandbox", "BLOCKED")
 		}
 	} else {
-		add("native_login", "RUN_EXPLICIT_PROBE")
+		add("native_login", "NOT_TESTED_CURRENT_POLICY")
 		add("native_sandbox", "RUN_EXPLICIT_PROBE")
 	}
-	add("builtin_tools_and_auth_isolation", "BLOCKED")
-	if nativeToolBoundaryVerified() {
-		out.State = "READY_FOR_AUTHORIZATION"
+	confirmed, digest := userConfirmation(root, r, cfg)
+	out.UserConfirmationSHA256 = digest
+	if confirmed {
+		add("provider_use_case", "OWNER_CONFIRMED_NOT_PROVIDER_ENTITLEMENT_PROOF")
+	} else {
+		add("provider_use_case", UserConfirmationRequired)
 	}
+	var boundary LimitedBoundaryProbe
+	boundaryReady := nativeBoundaryVerified(root, r)
+	if limitedRead(root, "codex-limited-boundary.json", &boundary) == nil && boundaryProbeValid(boundary, r) {
+		add("native_command_credential_canaries", "SCOPED_OS_EVIDENCE_AVAILABLE")
+	} else {
+		out.Blockers = append(out.Blockers, "current_boundary_probe_required")
+	}
+	out.Blockers = append(out.Blockers, execBoundaryMissing()...)
+	if !loginReady {
+		out.Blockers = append(out.Blockers, "native_login_status_not_current")
+	}
+	if workspaceErr != nil {
+		out.Blockers = append(out.Blockers, "workspace_identity_or_material_invalid")
+	}
+	if p.CheckBinary() != nil {
+		out.Blockers = append(out.Blockers, "binary_integrity_invalid")
+	}
+	engineering := boundaryReady && loginReady && p.CheckBinary() == nil && workspaceErr == nil
+	out.State, out.EngineeringState, out.UserConfirmationState = resolveLimitedState(engineering, confirmed)
+	add("builtin_tools_and_auth_isolation", out.EngineeringState)
 	return out
 }
 func (b *LimitedBinding) Check(native bool) error {
@@ -309,11 +354,11 @@ func (b *LimitedBinding) Check(native bool) error {
 	if e != nil || api.Digest(r) != b.RegistrationSHA256 {
 		return api.Failure(409, "profile_changed")
 	}
-	h, e := LimitedWorkspaceDigest(b.Workspace)
-	if e != nil || h != r.WorkspaceSHA256 {
+	if b.Workspace != r.Workspace || CheckLimitedWorkspace(r) != nil {
 		return api.Failure(503, "policy_unenforceable")
 	}
-	if native && !nativeToolBoundaryVerified() {
+	confirmed, _ := userConfirmation(b.Root, r, LimitedConfig{ClientID: b.ClientID})
+	if native && (!nativeBoundaryVerified(b.Root, r) || !confirmed) {
 		return api.Failure(503, "policy_unenforceable")
 	}
 	return nil
@@ -353,7 +398,7 @@ func EnableLimited(root string, cfg LimitedConfig) error {
 		return e
 	}
 	defer lock.Close()
-	if !cfg.Enabled || cfg.ProviderAuthorizationRef == "" || LimitedStatus(root, cfg).State != "READY_FOR_AUTHORIZATION" {
+	if !cfg.Enabled || LimitedStatus(root, cfg).State != ReadyForAuthorization {
 		return errors.New("limited_profile_not_ready")
 	}
 	r, e := ReadLimited(root)
@@ -362,14 +407,16 @@ func EnableLimited(root string, cfg LimitedConfig) error {
 	}
 	return limitedWrite(root, "codex-limited-control.json", LimitedControl{RegistrationSHA256: api.Digest(r), Enabled: true})
 }
-func AuthorizeLimited(root, ref string) error {
+func AuthorizeLimited(root, ref string, cfg LimitedConfig) error {
 	lock, e := LockLimited(root)
 	if e != nil {
 		return e
 	}
 	defer lock.Close()
 	var c LimitedControl
-	if limitedRead(root, "codex-limited-control.json", &c) != nil || !c.Enabled || !nativeToolBoundaryVerified() || ref == "" || len(ref) > 128 {
+	r, err := ReadLimited(root)
+	confirmed, _ := userConfirmation(root, r, cfg)
+	if limitedRead(root, "codex-limited-control.json", &c) != nil || !cfg.Enabled || !c.Enabled || err != nil || c.RegistrationSHA256 != api.Digest(r) || !confirmed || !nativeBoundaryVerified(root, r) || ref == "" || len(ref) > 128 {
 		return errors.New("limited_profile_not_ready_for_call_authorization")
 	}
 	c.AuthorizationRef = ref

@@ -1,0 +1,32 @@
+{
+  "stage": "G5A.2",
+  "real_inference_requests": 0,
+  "real_HTTP_task_posts": 0,
+  "source_files": 184,
+  "source_sha256": "bcbd8d5134bf6facd63a49c0db1f4ff929f6d649be46444380a3a9cb79b4962d",
+  "engineering_state": "ENGINEERING_BLOCKED",
+  "user_confirmation_state": "USER_CONFIRMATION_REQUIRED",
+  "limited_profile_enabled": false,
+  "real_gate_B": "NOT_PASSED",
+  "offline_gate": {
+    "command": "bash tests/native_agent_gateway/verify-offline.sh",
+    "exit_code": 0,
+    "go_race": "all packages, -p 1 -count=1 -timeout 240s",
+    "go_vet": "PASS",
+    "go_build": "PASS",
+    "legacy_python_tests": 11,
+    "gateway_python_tests": 5,
+    "loopback_control_smoke": "PASS: 2 starts, persisted instance, distinct generations, three native profile refusals"
+  },
+  "boundary_observations": {
+    "PASS": 23,
+    "NOT_PROVEN": 3,
+    "NOT_TESTED": 1
+  },
+  "notes": [
+    "Initial cache/loopback sandbox failures and startup/stale-port negative-check failures summarized in initial-check-failures.json.",
+    "Initial full offline PASS retained as offline-initial.log; stale service generation fix then final full offline PASS in offline.log.",
+    "No actual user declaration imported; positive owner confirmations appear only in offline unit fixtures.",
+    "No real auth materials used; helper scope is not full exec tool isolation."
+  ]
+}

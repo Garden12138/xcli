@@ -40,8 +40,7 @@ func ProbeLimited(ctx context.Context, root string) (LimitedProbe, error) {
 	if e = p.CheckBinary(); e != nil {
 		return out, e
 	}
-	h, e := LimitedWorkspaceDigest(r.Workspace)
-	if e != nil || h != r.WorkspaceSHA256 {
+	if CheckLimitedWorkspace(r) != nil {
 		return out, api.Failure(503, "policy_unenforceable")
 	}
 	temp, e := os.MkdirTemp(filepath.Join(root, "codex-limited"), "probe-")

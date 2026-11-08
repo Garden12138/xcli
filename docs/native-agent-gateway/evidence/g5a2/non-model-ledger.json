@@ -1,0 +1,51 @@
+{
+  "stage": "G5A.2",
+  "real_inference_requests": 0,
+  "real_HTTP_task_posts": 0,
+  "real_login_material_used": false,
+  "native_top_level_non_model_starts": 22,
+  "entries": [
+    {
+      "count": 3,
+      "commands": [
+        "features --help",
+        "features list",
+        "features list with six disabled features"
+      ],
+      "environment": "fresh constructed HOME/CODEX_HOME",
+      "evidence": "features.json"
+    },
+    {
+      "count": 9,
+      "commands": [
+        "sandbox helper: 8 harmless canary commands",
+        "features list: ten false flags"
+      ],
+      "environment": "constructed HOME/CODEX_HOME and fake auth.json; historical registration only for pinned binary/workspace",
+      "evidence": "boundary-probe.json"
+    },
+    {
+      "count": 1,
+      "commands": [
+        "--version (prepare)"
+      ],
+      "environment": "temporary HOME from registered safe refresh, no native login",
+      "evidence": "control-boundary.json"
+    },
+    {
+      "count": 9,
+      "commands": [
+        "sandbox helper: 8 harmless canary commands",
+        "features list: ten false flags"
+      ],
+      "environment": "new dev/inode-bound synthetic registration, constructed HOME/CODEX_HOME and fake auth.json",
+      "evidence": "final-boundary-probe.json"
+    }
+  ],
+  "notes": [
+    "Top-level Codex process starts only; not all OS child processes, model request counts, tokens or cost.",
+    "No exec turn, thread/start, turn/start, login status or vendor inference endpoint in G5A.2.",
+    "HTTP Session refusal and dry-run/execute negative checks have zero native inference starts; no retry of a model task.",
+    "Earlier G5A/G5A.1 probe counts remain separate historical ledgers."
+  ]
+}

@@ -1,5 +1,7 @@
 # Native Agent Gateway V1 SPEC
 
+G5A.2 当前结论：**ENGINEERING_BLOCKED / USER_CONFIRMATION_REQUIRED**，真实模型调用 0。恢复从 [IMPLEMENTATION_PROGRESS](IMPLEMENTATION_PROGRESS.md)、[Codex 隔离边界](CODEX_ISOLATION_BOUNDARY.md)、[本人确认](CODEX_ACCOUNT_AND_USAGE_CONFIRMATION.md)进入；不要将原生命令 Canary PASS 视作真实 HTTP Gate B PASS。
+
 日期：2026-11-06。状态：**G1–G4 离线实现交付；真实验收计划已备齐；真实原生 Gateway 仍 BLOCKED**。适用范围为本人控制的本机应用；不是共享推理服务或 OpenAI API 兼容层。
 
 真实 CLI 基线为 `7e57c6774b4bcfd4735f0d4c35c7c7a3a58d2ac4`；验收证据及 Smoke 修复已单独提交为 `864a6b1`。本 SPEC 基于该提交的源码与[验收报告](../cli-first/ACCEPTANCE_REPORT.md)，没有新模型调用。

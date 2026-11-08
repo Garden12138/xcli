@@ -1,8 +1,10 @@
 # Native Agent Gateway V1 使用与接入
 
+G5A.2 当前状态：**ENGINEERING_BLOCKED**；本人账号、用途、云发送与费用声明为 **USER_CONFIRMATION_REQUIRED**。见 [隔离边界与实际证据](CODEX_ISOLATION_BOUNDARY.md)及[本人确认步骤](CODEX_ACCOUNT_AND_USAGE_CONFIRMATION.md)。新增 `codex-limited boundary-probe`（只用假认证和 Canary）、`confirmation-template`（六项默认 false）、`confirm --file`（本人编写的私有 JSON）；readiness 零原生启动、分别报告工程／声明／调用授权状态。当前不能因确认用途或脚本存在就标 READY_FOR_AUTHORIZATION。
+
 G5A.1 新增 Codex-only 的 `codex-limited prepare/probe/readiness/enable/authorize/disable` 控制面，完整配置和实际验证范围见 [受限 Profile 手册](CODEX_LIMITED_PROFILE.md)。`prepare` 只建服务自己的合成 Git 项目；`probe` 是显式非模型检查；`readiness` 零原生启动。Profile 启用与一次推理许可独立，当前内置工具／认证目录隔离未证明，enable/authorize 均失败关闭。Cursor/Agy 保持关闭。
 
-[首次 HTTP 文本脚本](CODEX_FIRST_REAL_HTTP_TEST.md)默认 dry-run，本轮实际运行只产生就绪报告、0 Task POST。它不启动登录、不自动重试，不接受任意 prompt；当前不能成功执行真实推理。实时关闭用 `agent-gateway --state-dir <独立根> codex-limited disable`；停服用 `stop`，客户端撤销用 `client revoke <本人客户端ID>`。
+[首次 HTTP 文本脚本](CODEX_FIRST_REAL_HTTP_TEST.md)默认 dry-run，本轮 dry-run 与缺许可的 execute 负向测试都只有就绪报告、0 Task POST。它不启动登录、不自动重试，不接受任意 prompt；当前不能成功执行真实推理。实时关闭用 `agent-gateway --state-dir <独立根> codex-limited disable`；停服用 `stop`，客户端撤销用 `client revoke <本人客户端ID>`。
 
 2026-11-08（G5A）。**已交付独立服务、无模型预检与可复现的 HTTP→假 CLI 离线链路；三家真实 native profile 均关闭。** 当前不能把本服务作为已验收的原生推理入口。真实 HTTP→CLI、真实取消/媒体以及四应用 UI 仍待验收。没有 OpenAI 兼容路由、Embedding、自动 fallback、账号池或工具批准接口。
 

@@ -36,7 +36,7 @@ func TestLimitedDefaultAndCannotForgeNativeReadiness(t *testing.T) {
 	if e := EnableLimited(root, cfg); e == nil {
 		t.Fatal("unverified native enabled")
 	}
-	if e := AuthorizeLimited(root, "new-call-reference"); e == nil {
+	if e := AuthorizeLimited(root, "new-call-reference", cfg); e == nil {
 		t.Fatal("unverified call authorized")
 	}
 	if e := limitedWrite(root, "codex-limited-control.json", LimitedControl{RegistrationSHA256: api.Digest(r), Enabled: true}); e != nil {
@@ -46,7 +46,7 @@ func TestLimitedDefaultAndCannotForgeNativeReadiness(t *testing.T) {
 	if e := b.Check(true); e == nil {
 		t.Fatal("forged control file promoted native")
 	}
-	if LimitedStatus(root, cfg).State != "BLOCKED" {
+	if LimitedStatus(root, cfg).State != EngineeringBlocked {
 		t.Fatal("unproven native readiness")
 	}
 	if e := DisableLimited(root); e != nil {
@@ -95,6 +95,16 @@ func TestLimitedFixedArgumentsAndClosedConfiguration(t *testing.T) {
 	for _, want := range []string{"--ignore-user-config", "--ignore-rules", `approval_policy="never"`, `:root`, `network.enabled=false`} {
 		if !strings.Contains(joined, want) {
 			t.Fatal(args)
+		}
+	}
+	for _, name := range []string{"shell_tool", "view_image", "plugins", "apps", "hooks", "multi_agent", "remote_plugin", "browser_use", "computer_use", "code_mode_host"} {
+		if !strings.Contains(joined, "features."+name+"=false") {
+			t.Fatal("missing candidate tool restriction", name)
+		}
+	}
+	for _, want := range []string{`shell_environment_policy.inherit="none"`, `shell_environment_policy.ignore_default_excludes=false`} {
+		if !strings.Contains(joined, want) {
+			t.Fatal(want)
 		}
 	}
 	cfg := DefaultConfig()

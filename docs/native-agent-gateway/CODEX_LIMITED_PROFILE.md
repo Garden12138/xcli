@@ -1,6 +1,8 @@
-# Codex 最小受限 Profile（G5A.1）
+# Codex 最小受限 Profile（G5A.2）
 
-2026-11-08，基线 `6e2ecd7`。**控制路径、合成工作区、无模型原生 canary、离线集成已实现；真实启用 Gate 仍 BLOCKED，不能标 READY_FOR_AUTHORIZATION。** 真实模型调用 0。Cursor/Agy 的生产 Adapter、Trust、账号和配置不变。
+2026-11-08，G5A.2 起点 `3494756`（G5A.1 实现 `e742590` 保留）。**控制路径、合成工作区、独立 Canary 验证器和分轴就绪状态已实现；当前 ENGINEERING_BLOCKED，不能标 READY_FOR_AUTHORIZATION。** 真实模型调用 0。Cursor/Agy 的生产 Adapter、Trust、账号和配置不变。
+
+当前结论与完整机制／证据分层见 [CODEX_ISOLATION_BOUNDARY](CODEX_ISOLATION_BOUNDARY.md)；账号、用途、云端和费用声明必须由本人按 [确认入口](CODEX_ACCOUNT_AND_USAGE_CONFIRMATION.md)处理。readiness 分别报告 engineering_state 与 user_confirmation_state；YAML 字符串和历史登录不能代答。
 
 ## 三种集成模式
 
@@ -22,9 +24,9 @@
 
 ## 工作区与真实隔离证据
 
-`prepare` 只在独立状态根创建新项目：`codex-limited/workspace`。`git init --template=` 禁用全局 Git 配置与 hooks 模板；不使用 xcli 源码、已有个人项目或公司项目。固定材料 `material.txt` 内容为 `XCLI_G5B_CODEX_SYNTHETIC_20261108` 加换行。项目只允许材料和 `.git/HEAD`、`.git/config`，每次检查全量路径／字节摘要；额外配置、hooks、符号链接、硬链接、材料变化均拒绝。文件读取复用 no-follow FD 校验。
+`prepare` 只在独立状态根创建新项目：`codex-limited/workspace`。`git init --template=` 禁用全局 Git 配置与 hooks 模板；不使用 xcli 源码、已有个人项目或公司项目。固定材料 `material.txt` 内容为 `XCLI_G5B_CODEX_SYNTHETIC_20261108` 加换行。项目只允许材料和 `.git/HEAD`、`.git/config`，登记时同时绑定设备／inode，后续每次检查目录身份及全量路径／字节摘要；额外配置、hooks、符号链接、硬链接、材料变化均拒绝。文件读取复用 no-follow FD 校验。
 
-实际项目：`/private/tmp/xcli-g5a1-state-9a6vyye3/codex-limited/workspace`。它是私有临时合成项目，没有登录文件副本，没有运行中的 Gateway；临时目录未来可能被系统清理，不能把恢复临时项目当自动重发授权。
+G5A.1 历史项目：`/private/tmp/xcli-g5a1-state-9a6vyye3/codex-limited/workspace`；旧登记缺少目录身份，不再用于执行，原证据不覆盖。G5A.2 新项目为 `/private/tmp/xcli-g5a2-pgnzz8as/state/codex-limited/workspace`，登记的 auth-home 是程序创建的空假目录，不能用于真实登录／推理。它是私有临时合成项目，没有登录文件副本，没有运行中的 Gateway；临时目录未来可能被系统清理，不能把恢复临时项目当自动重发授权。
 
 [最终原生探针](evidence/g5a1/final-probe.json)使用 Codex 0.167.0、已登记 executable hash，直接运行官方 `codex sandbox`，**没有启动 exec turn**：
 
@@ -42,7 +44,7 @@
 
 **这些 PASS 仅覆盖原生沙箱中的本地命令。** 当前 exec 是单向事件适配器，不能在执行前仲裁所有工具；`--ignore-user-config` 与 MCP/apps/plugins/hooks 的固定候选配置，尚无同版本、零推理的完整有效工具清单／认证根访问隔离证明。不能把关闭配置字段、shell canary 或退出 0 当成所有工具已隔离。
 
-因此源码 `nativeToolBoundaryVerified()` 明确返回 false；编辑启用布尔值、控制文件或伪造探针 JSON 均不能晋升真实 Profile。该验证器未完成是**真实工程阻塞**，不是“只差用户批准一次调用”。下一工程需要证实当前 exec 所有暴露工具的执行边界，或在独立审查后增加能提供所需证据的官方 transport；不在本轮自动切换 app-server。
+G5A.2 新增 `boundary-probe`：完全不使用登记的真实 auth-home，构造假凭据／HOME、绝对与相对路径、符号链接、父／工具 mock 网络对照，以及 10 项 feature 关闭检查。实际 [最终证据](evidence/g5a2/final-boundary-probe.json)覆盖所选命令，未覆盖 exec 全工具目录、builtin 直接 IO 或 exec 工具环境。`nativeBoundaryVerified` 按登记／策略／二进制／15min 检查证据，并保留这三项明确的机制缺口；伪造全 PASS JSON 也不能补足它们。当前 exec 路线继续拒绝，不自动切换 app-server；替代边界增量估算见隔离文档。
 
 ## 配置和命令
 
@@ -82,7 +84,7 @@ NAG_CONFIG="$PWD/examples/codex-limited-gateway.yaml"
   --daily-execution-seconds 120 --token-file /本人私有0700目录/codex.token
 ```
 
-未来证明所有工程前置且用途确认后，显式设置 enabled=true、记录 provider_authorization_ref，再依次调用 `codex-limited enable` 和另行获批的 `codex-limited authorize --authorization-ref <本轮新授权引用>`。**当前两条命令都会失败关闭，不能用手改 JSON、Native=false 或删除检查代替。** 一次进程可有多次内部推理／重连，费用与模型内部调用数不是启动计数可精确约束的对象。
+未来证明所有工程前置并由本人完成六项绑定确认后（旧 provider_authorization_ref 不能代替），显式设置 enabled=true，再依次调用 `codex-limited enable` 和另行获批的 `codex-limited authorize --authorization-ref <本轮新授权引用>`。**当前两条命令都会失败关闭，不能用手改 JSON、Native=false 或删除检查代替。** 一次进程可有多次内部推理／重连，费用与模型内部调用数不是启动计数可精确约束的对象。
 
 关闭：`agent-gateway --state-dir "$NAG_STATE" codex-limited disable`；撤销客户端：`client revoke codex-acceptance`；停止服务：`stop`。崩溃恢复只查状态，不补发；本地／云执行事实未知时保留 needs_reconcile，不清空根或预算来重做。
 
@@ -91,3 +93,11 @@ NAG_CONFIG="$PWD/examples/codex-limited-gateway.yaml"
 [完整离线日志](evidence/g5a1/offline.log)及[源码／测试摘要](evidence/g5a1/validation.json)已通过；[真实安装的 HTTP 拒绝测试](evidence/g5a1/native-gateway-rejection.json)确认配置意向不会绕过验证器。实际仅本地验收客户端已准备，无真实调用许可。179 个源码文件摘要固定为 `ac62544bea11f79f9f5a5309f59dfa35a9225729078692d6ae1c05f465d0d417`；最终实现 Git SHA 见 [进度交接](IMPLEMENTATION_PROGRESS.md) 末尾。
 
 剩余项分别为：内置工具／认证根隔离验证器（工程 BLOCKED）、账号／计划／用途适用性确认（尚未完整证实）、本轮 1 次真实调用授权（未授予）、真实 HTTP L01-a（NOT_TESTED）。前两项没有解决前不能仅凭第三项运行；原 Gate B 始终 BLOCKED。
+
+## G5A.2 增量验证与恢复
+
+新增 `codex-limited boundary-probe / confirmation-template / confirm --file`，readiness 不启动原生进程；boundary-probe 运行 8 个原生 sandbox 命令及 1 个 features list，无 exec turn。prepare 另有一次 --version。当前实际原生非推理总启动 22，账本见 [G5A.2](evidence/g5a2/non-model-ledger.json)；本轮不调用旧 probe 登录检查。
+
+[完整离线日志](evidence/g5a2/offline.log)、[HTTP Session 503／开关和声明拒绝](evidence/g5a2/control-boundary.json)、[默认 dry-run](evidence/g5a2/script-dry-run.json)、[显式 execute 仍零 Task 阻断](evidence/g5a2/script-execute-blocked.json)共同证明 fail closed。execute 负向测试没有 token 参数、没有调用许可，也没有执行模型。服务最终停止，配置／运行开关都关闭。首次脚本新增服务 generation 校验，防止重启期间读到旧端口。
+
+新建合成根时须重新 prepare；不能为旧登记自动补 inode，不能以换根绕过既有一次预算。现有 client／Session／预算／幂等／持久化协议未重新设计，旧日志及真实执行证据保持原样。工程阻塞、本人声明待确认、本轮调用未授权和真实 L01-a NOT_TESTED 分别保留。

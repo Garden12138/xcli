@@ -21,11 +21,21 @@ EXPECTED = "XCLI_G5B_CODEX_SYNTHETIC_20261108"
 
 def execute_gate(readiness, authorization_ref):
     return (readiness.get("state") == "READY_FOR_AUTHORIZATION"
+            and readiness.get("engineering_state") == "ENGINEERING_READY"
+            and readiness.get("user_confirmation_state") == "CONFIRMED"
+            and bool(readiness.get("user_confirmation_sha256"))
             and readiness.get("enabled") is True
             and readiness.get("call_authorized") is True
             and readiness.get("client_ready") is True
             and bool(authorization_ref)
             and readiness.get("authorization_ref_sha256") == hashlib.sha256(authorization_ref.encode()).hexdigest())
+
+
+def new_service_ready(state, previous_generation):
+    # The process lock can be held before the new endpoint is published.
+    # An old status file must not send an acceptance request to a stale port.
+    return (state.get("active") is True and bool(state.get("generation_id"))
+            and state["generation_id"] != previous_generation and bool(state.get("address")))
 
 
 def read_token(path):
@@ -132,14 +142,23 @@ def main():
             token = read_token(args.token_file)
             def start():
                 nonlocal proc
+                previous = json.loads(run("status"))
+                if previous["active"]:
+                    raise ValueError("gateway_already_active")
                 proc = subprocess.Popen(command + ["serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 deadline = time.monotonic() + 7
                 while time.monotonic() < deadline:
-                    state = json.loads(run("status"))
-                    if state["active"]:
-                        return state["address"]
                     if proc.poll() is not None:
                         raise ValueError("gateway_exited")
+                    try:
+                        state = json.loads(run("status"))
+                    except ValueError:
+                        # Only read-only startup discovery is polled; Task
+                        # submission still has exactly one POST attempt.
+                        time.sleep(0.05)
+                        continue
+                    if new_service_ready(state, previous["generation_id"]):
+                        return state["address"]
                     time.sleep(0.05)
                 raise ValueError("gateway_start_timeout")
             address = start()

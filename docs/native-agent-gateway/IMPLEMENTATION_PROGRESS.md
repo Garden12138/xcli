@@ -4,7 +4,7 @@
 
 ## 当前入口
 
-当前阶段：**G5A.1 已完成可交付的受限控制实现、非模型检查与离线回归，起点 `6e2ecd7`；全部启用工程前置尚未满足，真实启用 Gate 为 BLOCKED，G5B 未授权。** 只处理 Codex；真实模型请求预算 0，其他 CLI 关闭。具体进度与最终提交见末尾 G5A.1 节。此前“不运行版本探针”属于旧轮范围，本轮非推理登录／原生 sandbox canary 由用户明确授权。
+当前阶段：**G5A.2 非推理工程检查及最小修复完成；ENGINEERING_BLOCKED，用户确认轴 USER_CONFIRMATION_REQUIRED。** 起点 `3494756`，实现 SHA 见末尾交接。本轮真实推理 0；仅 Codex、合成 Canary／假凭据和非推理探针。恢复先读文末 G5A.2 记录及新隔离／用户确认文档。G1–G4、G5A.1 的控制、预算和旧证据不重做、不覆盖；三家真实 Profile 继续关闭。
 
 最新恢复入口：[G5A 分项状态](G5A_PROFILE_READINESS.md) → [官方集成与授权](OFFICIAL_INTEGRATION_REVIEW.md) → [G5B 每家首次 1 次文本计划](G5B_REAL_HTTP_PLAN.md)。G5A 本地提交定位见本文件末尾；不得将审查完成解读为已具备直接推理条件。
 
@@ -178,3 +178,44 @@ G5A 实现、审查、测试及证据提交：`33ac9273f25dce9574b0f82af8c1e4f5d
 恢复：先读本节、CODEX_LIMITED_PROFILE、CODEX_FIRST_REAL_HTTP_TEST，检查 git status/log。离线复验 `bash tests/native_agent_gateway/verify-offline.sh`；只读报告用 `codex-limited readiness`。不要运行真实脚本的 execute 或旧 native smoke；不要手改 Native/控制状态强开。要继续启用，先补齐全工具／认证根隔离验证器及其真实非模型证据；账号／用途确认和独立一次调用授权随后分别处理。现阶段即使批准 1 次调用，脚本仍应拒绝。
 
 G5A.1 最终代码、测试、证据及主体文档提交：`e742590dc7edda55dc6943b2f17e726f2bce0909`（`feat(agent-gateway): add fail-closed limited Codex controls`）。提交后确认工作区干净，179 个源码摘要与完整测试版本一致。本段仅补录实际 SHA；交接文档自身版本由 `git log -1 -- docs/native-agent-gateway/IMPLEMENTATION_PROGRESS.md` 定位。真实启用和 G5B 均未执行，原 Gate B 仍 BLOCKED。
+
+## G5A.2 实际交付（2026-11-08）
+
+起点 `3494756d2dda9e2b76c94ff4254b3c92db943bc9`。已读本轮指定六份文档、复核 limited policy/adapter/control/worker/旧证据，增量检查官方配置、权限、SIWC app-server；没有重做 G1–G4、迁移 Adapter 或改四应用。
+
+- 新 `codex-limited boundary-probe` 只用程序生成的假 HOME/CODEX_HOME、假 auth.json、无害 Canary 和 mock 服务，不使用登记的真实 AuthHome，不运行 login/exec turn。实际原生 helper 证明同 UID 未沙箱可读假凭据、所选沙箱命令不能绝对／相对／symlink 读假凭据、越界读写或访问 mock 网络。当前版本 resolver 的 10 项 false 通过，但不代表全部工具不存在。
+- 补齐目录替换检查：登记 dev/inode + no-follow 内容摘要；同字节目录复制替换也被拒。旧登记缺身份 fail closed、历史日志不覆盖；没有将静态检查声称为 check→spawn 持续 OS 隔离。
+- 独立状态轴：ENGINEERING_BLOCKED / ENGINEERING_READY 与 USER_CONFIRMATION_REQUIRED / CONFIRMED；仅工程与本人声明齐备时总体 READY_FOR_AUTHORIZATION，仍不授权推理。新本人六项声明私有 JSON 导入，登记/策略/client 绑定、24h、严格 UTF-8/重复键/未知字段拒绝。旧 YAML 引用不代替同意；本轮真实声明全未确认，正向记录只在单元夹具中。
+- 伪造全 PASS 探针／手写运行开关／用途引用不能补出缺失的有效工具目录、builtin 直接 IO 独立边界和 exec 工具环境证明；enable/authorize/native Session/dispatch/spawn 保持阻断。
+- 额外真实安装链路检查：配置 enabled 意向、专用客户端、1/1/120 预算具备，HTTP Session 仍 503 policy_unenforceable；无推理 Task POST。默认 dry-run 与无前置许可的 --execute 都为 0 Task。[控制证据](evidence/g5a2/control-boundary.json)、[readiness](evidence/g5a2/readiness.json)。
+- 首次脚本在启动／重启前记住旧 generation，只接受新代次发布的地址；修复补充检查暴露的旧状态端口竞争，不重试任何模型 POST。新增单元回归。HTTP 初次检查失败和第二次连接旧端口失败均保留[原因记录](evidence/g5a2/initial-check-failures.json)，修复后同一状态根负向验证通过，没有重复原生探针。
+- 完整最终 [offline.log](evidence/g5a2/offline.log)退出 0：全量 go test -race -p 1 -count=1 -timeout 240s ./...、go vet ./...、go build、两次服务生命周期/三家 native 拒绝、旧 Python 11/11、新 Python 5/5、diff 检查。首次全量通过后因脚本新修复重跑，原始 PASS 保存在 offline-initial.log。初步默认 Go cache／loopback 权限失败已记录；未删测试或放宽条件。
+- [源码清单](evidence/g5a2/source-manifest.json)：184 文件，SHA256 `bcbd8d5134bf6facd63a49c0db1f4ff929f6d649be46444380a3a9cb79b4962d`；[验证索引](evidence/g5a2/validation.json)。[最终 OS probe](evidence/g5a2/final-boundary-probe.json)23 项 PASS、3 项 NOT_PROVEN、1 项 NOT_TESTED，明确区分 static/mock/helper/真实 turn。
+- 本轮 22 次顶层 Codex 非模型启动：3 features 检查、9 初次 boundary、1 新 prepare 的 --version、9 最终 boundary；[账本](evidence/g5a2/non-model-ledger.json)。**真实推理请求 0、真实 HTTP Task 0、真实认证材料使用 0**；没有复用剩余额度或修改原生配置、Trust、账号。顶层次数不是全部 OS 进程数或模型内部调用／费用。
+
+### 当前未完成门禁
+
+| 门禁 | 结果／独立原因 |
+| --- | --- |
+| G5A.2 工程检查及离线增量 | PASS（上述限定范围），不代表安全工程整体已就绪 |
+| Codex 工程就绪 | ENGINEERING_BLOCKED：完整工具目录、直接 builtin IO 独立边界、实际 exec 工具环境未证明；目录 check→spawn 持续边界／所有 builtin 网络也未证明 |
+| 本人账号／计划／用途／云发送／费用 | USER_CONFIRMATION_REQUIRED；本轮未读真实登录，历史登录不是权益或同意 |
+| 新的一次真实调用授权 | 未授予，enable 与 authorize 仍拒绝；不能只授权一次便跨过工程缺口 |
+| Codex/Cursor/Agy 真实 Gate B、NAG 真实 L01-a | BLOCKED／NOT_TESTED，均非 PASS；Cursor/Agy 没有新增工程或 Trust 变化 |
+| 原 Gate A / Model Gateway Gate B | 只继承原特定历史证据；不增加模型 API 兼容、原 Gate B 仍 BLOCKED |
+
+### 恢复入口与后续工程
+
+先读 [CODEX_ISOLATION_BOUNDARY](CODEX_ISOLATION_BOUNDARY.md)及[本人确认](CODEX_ACCOUNT_AND_USAGE_CONFIRMATION.md)，再读 CODEX_LIMITED_PROFILE、CODEX_FIRST_REAL_HTTP_TEST、G5B_REAL_HTTP_PLAN。下一任务是补独立执行边界：exec 专用环境初估 3–6 人日，app-server Adapter 5–9 人日，SIWC 在其上另 3–5 人日及资格审核等待。只是增量评估，没有自动创建系统用户、环境、OAuth 或切换后端。
+
+```bash
+git status --short
+git log -6 --oneline
+GOCACHE=/tmp/xcli-nag-go-cache GOPROXY=off GOSUMDB=off go build -trimpath -o /tmp/xcli-nag .
+/tmp/xcli-nag agent-gateway --state-dir /private/tmp/xcli-g5a2-pgnzz8as/state \
+  --gateway-config /private/tmp/xcli-g5a2-pgnzz8as/gateway.yaml codex-limited readiness
+```
+
+新合成工作区 `/private/tmp/xcli-g5a2-pgnzz8as/state/codex-limited/workspace`，auth-home 是空假目录，最终配置和运行开关关闭、服务已停止；不能用于真实推理。临时目录可能被清理，证据已脱敏保存在仓库；不要靠新建根重置预算。历史 G5A.1 根未改认证引用、未补写目录身份。完整离线复验入口仍为 `bash tests/native_agent_gateway/verify-offline.sh`，只在需要复验或源码修改后重跑；不自动重跑原生 probe。
+
+未来工程和本人确认齐备，再按 CODEX_FIRST_REAL_HTTP_TEST 的 enable→本轮授权 authorize→--execute 命令处理。当前任何一次调用同意都不足以运行。禁止 Push、真实推理、原生认证资料读取／复制和 Cursor Trust 自动改动仍有效。

@@ -22,7 +22,7 @@ import (
 )
 
 // This fixture is explicitly non-native, injected only through Go tests. No
-// production config can construct it or bypass nativeToolBoundaryVerified.
+// production config can construct it or bypass nativeBoundaryVerified.
 func limitedService(t *testing.T, sleep bool) (*agentservice.Service, agentstore.Client, string, string) {
 	t.Helper()
 	old, c := fixture(t)

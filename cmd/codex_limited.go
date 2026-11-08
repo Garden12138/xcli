@@ -3,13 +3,14 @@ package cmd
 import (
 	"github.com/Garden12138/xcli/internal/agentpolicy"
 	"github.com/Garden12138/xcli/internal/agentstore"
+	"github.com/Garden12138/xcli/internal/modelstore"
 	"github.com/spf13/cobra"
 	"slices"
 )
 
 func (a *app) limitedCodexCommand(root, path *string) *cobra.Command {
 	group := &cobra.Command{Use: "codex-limited", Short: "Owner-only synthetic Codex controls; enabling never authorizes inference"}
-	var binary, authHome, ref string
+	var binary, authHome, ref, confirmationFile string
 	prepare := &cobra.Command{Use: "prepare", Args: cobra.NoArgs, RunE: func(c *cobra.Command, _ []string) error {
 		st, e := agentstore.Open(*root)
 		if e != nil {
@@ -25,7 +26,7 @@ func (a *app) limitedCodexCommand(root, path *string) *cobra.Command {
 	prepare.Flags().StringVar(&binary, "binary", "", "absolute selected official Codex executable")
 	prepare.Flags().StringVar(&authHome, "auth-home", "", "canonical existing CODEX_HOME; only official CLI reads authentication")
 	group.AddCommand(prepare)
-	for _, name := range []string{"readiness", "probe", "enable", "authorize"} {
+	for _, name := range []string{"readiness", "probe", "boundary-probe", "confirmation-template", "confirm", "enable", "authorize"} {
 		command := &cobra.Command{Use: name, Args: cobra.NoArgs, RunE: func(c *cobra.Command, _ []string) error {
 			cfg, e := agentpolicy.Load(*path)
 			if e != nil {
@@ -37,6 +38,18 @@ func (a *app) limitedCodexCommand(root, path *string) *cobra.Command {
 			}
 			defer st.Close()
 			switch c.Name() {
+			case "confirmation-template":
+				r, e := agentpolicy.LimitedConfirmationTemplate(st.Root, cfg.CodexLimited)
+				if e != nil {
+					return e
+				}
+				return encodeJSON(c.OutOrStdout(), r)
+			case "confirm":
+				b, e := modelstore.ReadPrivate(confirmationFile, 16<<10)
+				if e != nil {
+					return e
+				}
+				return agentpolicy.ConfirmLimitedJSON(st.Root, cfg.CodexLimited, b)
 			case "readiness":
 				r := agentpolicy.LimitedStatus(st.Root, cfg.CodexLimited)
 				client, err := (&agentstore.Clients{Root: st.Root}).Get(cfg.CodexLimited.ClientID)
@@ -45,7 +58,9 @@ func (a *app) limitedCodexCommand(root, path *string) *cobra.Command {
 					r.ClientReady = r.ClientReady && slices.Contains(client.Scopes, scope)
 				}
 				if !r.ClientReady {
-					r.State = "BLOCKED"
+					r.State = agentpolicy.EngineeringBlocked
+					r.EngineeringState = agentpolicy.EngineeringBlocked
+					r.Blockers = append(r.Blockers, "limited_client_grant_not_ready")
 				}
 				return encodeJSON(c.OutOrStdout(), r)
 			case "probe":
@@ -54,15 +69,24 @@ func (a *app) limitedCodexCommand(root, path *string) *cobra.Command {
 					return e
 				}
 				return encodeJSON(c.OutOrStdout(), r)
+			case "boundary-probe":
+				r, e := agentpolicy.ProbeLimitedBoundary(c.Context(), st.Root)
+				if e != nil {
+					return e
+				}
+				return encodeJSON(c.OutOrStdout(), r)
 			case "enable":
 				return agentpolicy.EnableLimited(st.Root, cfg.CodexLimited)
 			case "authorize":
-				return agentpolicy.AuthorizeLimited(st.Root, ref)
+				return agentpolicy.AuthorizeLimited(st.Root, ref, cfg.CodexLimited)
 			}
 			return nil
 		}}
 		if name == "authorize" {
 			command.Flags().StringVar(&ref, "authorization-ref", "", "new explicit owner inference authorization; never inherited")
+		}
+		if name == "confirm" {
+			command.Flags().StringVar(&confirmationFile, "file", "", "private owner-authored JSON; never inferred by xcli")
 		}
 		group.AddCommand(command)
 	}

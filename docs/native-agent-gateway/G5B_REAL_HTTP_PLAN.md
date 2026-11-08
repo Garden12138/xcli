@@ -1,5 +1,7 @@
 # G5B：逐 CLI 的首次真实 HTTP 文本验收计划
 
+G5A.2 最终决定：Codex 当前 ENGINEERING_BLOCKED／USER_CONFIRMATION_REQUIRED；[独立隔离证据与替代路线](CODEX_ISOLATION_BOUNDARY.md)和[本人声明入口](CODEX_ACCOUNT_AND_USAGE_CONFIRMATION.md)为前置。脚本已实现新 generation、防陈旧端口及双轴门禁，dry-run／显式 execute 负向均零 Task。**本轮没有 G5B 推理授权，真实 Gate B 仍非 PASS。**
+
 G5A.1 已交付 [Codex 默认 dry-run 的独立脚本与准确参数](CODEX_FIRST_REAL_HTTP_TEST.md)，以及 [受限配置／控制面／隔离证据](CODEX_LIMITED_PROFILE.md)。首个文本仍未授权、未执行；全量工具／认证目录隔离与用途确认仍 BLOCKED，不能仅批准一次调用后直接运行。
 
 2026-11-08。**未授权、未执行。** 本文件不是启用开关或调用授权，不沿用此前剩余 3 次。当前三家均未达到执行前置；先解决 [G5A 分项阻塞](G5A_PROFILE_READINESS.md)，不能仅获一次调用同意就绕过 `Profile.Check`。
@@ -9,7 +11,7 @@ G5A.1 已交付 [Codex 默认 dry-run 的独立脚本与准确参数](CODEX_FIRS
 ## 执行前的硬性条件
 
 1. 固定单一官方 CLI、精确 binary/bundle hash、版本、adapter/schema/policy/profile/capability revision。版本漂移重新审查，不自动更新或换 transport。
-2. S01–S03 已实现并经离线安全审查；合成验收入口只能绑定本人客户端、text_task、单一非秘密材料、1 dispatch／1 顶层原生进程、期限和授权摘要。普通应用仍 unavailable；该受限入口**目前未实现**，不得注释 Native 拒绝或伪装 Native=false。若要证明 L04，额外 canary 场景须另批，不能借本次文本预算完成。
+2. S01–S03 已实现并经离线安全审查；合成验收入口只能绑定本人客户端、text_task、单一非秘密材料、1 dispatch／1 顶层原生进程、期限和授权摘要。普通应用仍 unavailable；该受限控制入口已在 G5A.1 实现，但完整工具／认证边界在 G5A.2 仍未证明，不得注释 Native 拒绝或伪装 Native=false。若要证明 L04，额外 canary 场景须另批，不能借本次文本预算完成。
 3. 原生认证由官方进程自行使用，不读取／复制／打印认证资料。确认账号／组织及应用场景适用条件；若改用 SIWC，先另行完成应用注册、OAuth 与用户 plan usage 授权，不能套用历史 native 登录。
 4. 采用合成材料、固定服务工作区，不读取真实业务数据库／原生会话历史。工具、读写、shell、网络及全局扩展边界能实际强制，不能以“请不要使用工具”的 prompt 代替隔离。
 5. 本人提交新的明确授权：供应商、具体路径／hash、用途与账号、可承担的订阅／credits 费用风险、最多 1 次启动、120s、云同意、停止条件。若要求精确金额硬上限而官方 route 无法强制，则该任务不能执行；`max_cost_usd` 仍返回 budget_unenforceable。
@@ -23,10 +25,10 @@ G5A.1 已交付 [Codex 默认 dry-run 的独立脚本与准确参数](CODEX_FIRS
 | 首选入口 | codex-exec-v1；当前 0.167.0、hash 见 G5A。只有 exec 安全边界无法满足且新 adapter 经审查后才另选 app-server，不在失败后切换 |
 | 最小预算 | L01-a：1 dispatch、1 顶层 native 进程；Session/GET/幂等重放 0 新启动；全服务／安装域／Session 并发 1 |
 | 超时／清理 | 120s 含排队／启动／验证；本地清理另最多 5s。失败消耗次数，不退款、不重试 |
-| 实际前置缺口 | S01–S06、C01 Git workspace、认证与配置／权限隔离；当前有 app-server 握手/schema，但没有运行 adapter。不能仅凭该证据启用 exec |
+| 实际前置缺口 | 受限 workspace／身份／固定文本／持久一次预算已实现；G5A.2 仍缺 exec 有效工具目录、builtin 独立 IO 边界、实际工具环境、当前登录及本人声明。当前仅有 app-server 握手/schema，没有运行 adapter。不能仅凭 Canary 或一次调用许可启用 exec |
 | 账号／费用 | 用户确认所选账号、计划及应用用途；首次 turn 才能证明该次模型访问。单进程内推理／工具／重试数量不可精确限制，订阅额度、credits 或其他计费可能消耗；不得切换 API Key、账号或 provider 补测 |
 | 真实权限审批 | 保留只读／拒绝语义；需要升级权限时拒绝并 blocked，不批准工具或使用自动审查／全权限参数。工作区/Git 前置须在推理前完成本人审查 |
-| 固定任务 | HTTP 内联一个随机合成标记，请求只返回同一标记。不附文件，不使用图片、shell、MCP 或外部业务材料；此约束还须由执行策略强制 |
+| 固定任务 | HTTP 内联固定标记 XCLI_G5B_CODEX_SYNTHETIC_20261108，请求只返回同一标记。不附文件，不使用图片、shell、MCP 或外部业务材料；此约束还须由执行策略强制 |
 | PASS | 独立 HTTP Task succeeded；完整原生会话 ID 观察、terminal 成功及 exit 0；最终文本严格匹配标记、final=true、预算仅 1/1，持久 GET／原键重放为同一 Task，无额外 native 启动 |
 | 停止 | 任一策略／登录／额度／支付／权限／Git 拒绝、缺终态或 ID、文本不匹配、执行事实不明，即记录并停止。未知停止 needs_reconcile，不能重发 |
 | 需要的新确认 | 确切 Profile／工作区／账号用途与云同意；仅这 1 次启动／120s，以及内部调用和费用不可精确观察的风险；如需 SIWC，另外批准登录授权流程 |
