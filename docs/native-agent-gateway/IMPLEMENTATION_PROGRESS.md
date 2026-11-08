@@ -29,6 +29,7 @@
 | G4 离线 | PASS | `8526361` | [完整离线](evidence/g4-offline.log)、[报告](IMPLEMENTATION_REPORT.md)、[源摘要](evidence/source-manifest.json) |
 | G4 真实 / 用户 F | 计划交付；执行 BLOCKED | `8526361` | [真实计划/每 CLI 最小预算](REAL_HTTP_ACCEPTANCE_PLAN.md)，未执行 |
 | G5A | PASS（审查／最小修复／非推理范围） | 见末尾提交定位 | [就绪审查与实际证据](G5A_PROFILE_READINESS.md)；三个真实 Profile 仍关闭 |
+| G5A.1 | 控制工程／离线交付完成；全部启用 Gate BLOCKED | `e742590` | [受限工程与剩余验证器](CODEX_LIMITED_PROFILE.md)、[完整离线](evidence/g5a1/offline.log)；不标 READY |
 | G5B / G5 transport / G6 | 后续独立范围 | — | 真实调用 / app-server、ACP 晋升 / 四应用 |
 
 ## 门禁
@@ -175,3 +176,5 @@ G5A 实现、审查、测试及证据提交：`33ac9273f25dce9574b0f82af8c1e4f5d
 [最终源码清单](evidence/g5a1/source-manifest.json)：179 文件，SHA-256 `ac62544bea11f79f9f5a5309f59dfa35a9225729078692d6ae1c05f465d0d417`；文档链接与新增证据秘密形态检查通过，旧证据未覆盖。本地实现提交随后由 `git log -1 -- internal/agentpolicy/limited.go` 定位，实际 SHA 在交接段补录。
 
 恢复：先读本节、CODEX_LIMITED_PROFILE、CODEX_FIRST_REAL_HTTP_TEST，检查 git status/log。离线复验 `bash tests/native_agent_gateway/verify-offline.sh`；只读报告用 `codex-limited readiness`。不要运行真实脚本的 execute 或旧 native smoke；不要手改 Native/控制状态强开。要继续启用，先补齐全工具／认证根隔离验证器及其真实非模型证据；账号／用途确认和独立一次调用授权随后分别处理。现阶段即使批准 1 次调用，脚本仍应拒绝。
+
+G5A.1 最终代码、测试、证据及主体文档提交：`e742590dc7edda55dc6943b2f17e726f2bce0909`（`feat(agent-gateway): add fail-closed limited Codex controls`）。提交后确认工作区干净，179 个源码摘要与完整测试版本一致。本段仅补录实际 SHA；交接文档自身版本由 `git log -1 -- docs/native-agent-gateway/IMPLEMENTATION_PROGRESS.md` 定位。真实启用和 G5B 均未执行，原 Gate B 仍 BLOCKED。
