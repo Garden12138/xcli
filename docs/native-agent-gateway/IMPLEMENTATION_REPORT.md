@@ -1,5 +1,7 @@
 # Native Agent Gateway V1 实施验收报告
 
+2026-11-08 G5A 补充见 [Profile 就绪审查](G5A_PROFILE_READINESS.md)、[官方集成对照](OFFICIAL_INTEGRATION_REVIEW.md)及 [G5B 首次文本计划](G5B_REAL_HTTP_PLAN.md)。下文保留 G1–G4 历史证据；本轮没有将真实 Gate 升为 PASS。
+
 日期：2026-11-07。基线 `40fc6ca` / 前序真实证据 `864a6b1`，本轮产品代码 `8526361`。**已完成本轮获授权的实现与离线交付；真实 NAG 最低验收仍 BLOCKED，不能宣称三个 CLI 已在 HTTP 服务可用。** 新真实 native 启动/模型请求 0，没有沿用前轮 3 次余额，没有 Push/Tag/Release/部署或四应用改动。
 
 ## 实现范围

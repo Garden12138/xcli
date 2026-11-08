@@ -18,8 +18,10 @@
 
 **Gate B 保持 BLOCKED**：原 Gate B 专指原生 CLI → Model Gateway `/v1/*`，V1 不实现该兼容层。新 Agent 链路使用独立的 NAG 验收，不能借改名关闭 Gate B。Gate C 的四应用原生接入也仍为 Planned/BLOCKED。
 
-本轮只读取本仓库源码、已有四应用接入记录及供应商公开官方文档；不读取原生登录凭据，不运行 native 版本/认证/推理探测，不修改四应用、不部署、不发布、不 Push。
+2026-11-06 的 SPEC 阶段只读取本仓库源码、已有四应用接入记录及供应商公开官方文档，没有 native 探测。2026-11-08 G5A 按新授权完成版本／帮助/schema／无 turn 握手，仍无新推理；不读取原生登录凭据、不修改四应用、不部署、不发布、不 Push。
 
 当前实现、提交、失败及恢复入口见 [IMPLEMENTATION_PROGRESS.md](IMPLEMENTATION_PROGRESS.md)。SPEC 的历史“本轮只设计”描述属于 2026-11-06；2026-11-07 的实现/离线测试单独留证，未启动新的真实模型调用。
 
 实施交付：[验收报告](IMPLEMENTATION_REPORT.md) · [安装/API 手册](USER_GUIDE.md) · [实际支持矩阵](SUPPORT_MATRIX.md) · [真实验收预算计划（未授权）](REAL_HTTP_ACCEPTANCE_PLAN.md)。
+
+G5A 最新入口：[逐 Profile 就绪与分项阻塞](G5A_PROFILE_READINESS.md) · [官方接口／账号／应用授权边界](OFFICIAL_INTEGRATION_REVIEW.md) · [G5B 每家首次 1 次文本计划（未授权）](G5B_REAL_HTTP_PLAN.md)。三个真实 Profile 仍关闭，app-server/ACP 尚未晋升。

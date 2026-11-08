@@ -1,0 +1,183 @@
+{
+  "checked_at": "2026-11-08T02:32:58.379205+00:00",
+  "native_process_starts": 10,
+  "results": [
+    {
+      "agent": "codex",
+      "binary": "/Users/cengjiada/.codex/packages/standalone/releases/0.167.0-aarch64-apple-darwin/bin/codex",
+      "binary_sha256": "030316ecfbb41f4e7946e584b0063ef333b7a36cd312ba349f2f6869e39b62cc",
+      "argv": [
+        "--version"
+      ],
+      "exit_code": 0,
+      "timed_out": false,
+      "stdout_bytes": 18,
+      "stderr_bytes": 0,
+      "stdout_file": "codex-0.txt",
+      "stdout_sha256": "ff63aca76f41814af0725bba286b7311709b1cfd7fbb17df9e17d18eaa3c5e62",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "environment": "gateway_synthetic_home",
+      "model_requests_sent": 0
+    },
+    {
+      "agent": "codex",
+      "binary": "/Users/cengjiada/.codex/packages/standalone/releases/0.167.0-aarch64-apple-darwin/bin/codex",
+      "binary_sha256": "030316ecfbb41f4e7946e584b0063ef333b7a36cd312ba349f2f6869e39b62cc",
+      "argv": [
+        "--help"
+      ],
+      "exit_code": 0,
+      "timed_out": false,
+      "stdout_bytes": 5940,
+      "stderr_bytes": 0,
+      "stdout_file": "codex-1.json",
+      "stdout_sha256": "d38f0c75ef44deb9f6f3f40c3bed05aefc44e36905432361c4254a1d799a50bc",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "environment": "gateway_synthetic_home",
+      "model_requests_sent": 0,
+      "stdout_storage": "lossless_json_field_stdout; sha256 applies to decoded original bytes"
+    },
+    {
+      "agent": "codex",
+      "binary": "/Users/cengjiada/.codex/packages/standalone/releases/0.167.0-aarch64-apple-darwin/bin/codex",
+      "binary_sha256": "030316ecfbb41f4e7946e584b0063ef333b7a36cd312ba349f2f6869e39b62cc",
+      "argv": [
+        "exec",
+        "--help"
+      ],
+      "exit_code": 0,
+      "timed_out": false,
+      "stdout_bytes": 4331,
+      "stderr_bytes": 0,
+      "stdout_file": "codex-2.json",
+      "stdout_sha256": "df0d864ca2076f7654288c6a1e3394e3eaa2ea8f15021df2524efdd90c70986c",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "environment": "gateway_synthetic_home",
+      "model_requests_sent": 0,
+      "stdout_storage": "lossless_json_field_stdout; sha256 applies to decoded original bytes"
+    },
+    {
+      "agent": "codex",
+      "binary": "/Users/cengjiada/.codex/packages/standalone/releases/0.167.0-aarch64-apple-darwin/bin/codex",
+      "binary_sha256": "030316ecfbb41f4e7946e584b0063ef333b7a36cd312ba349f2f6869e39b62cc",
+      "argv": [
+        "app-server",
+        "--help"
+      ],
+      "exit_code": 0,
+      "timed_out": false,
+      "stdout_bytes": 3703,
+      "stderr_bytes": 0,
+      "stdout_file": "codex-3.json",
+      "stdout_sha256": "d2854a3ad9c9733f8be8034feb198ba017ddce07d539d8e777167fc96dffbd10",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "environment": "gateway_synthetic_home",
+      "model_requests_sent": 0,
+      "stdout_storage": "lossless_json_field_stdout; sha256 applies to decoded original bytes"
+    },
+    {
+      "agent": "cursor",
+      "binary": "/Users/cengjiada/.local/share/cursor-agent/versions/2026.10.22-27dcf5f/cursor-agent",
+      "binary_sha256": "2ccc9a8e167797641448b5e5c936f006ba137a2555f117f38c5eb76a5238a233",
+      "argv": [
+        "--version"
+      ],
+      "exit_code": 0,
+      "timed_out": false,
+      "stdout_bytes": 19,
+      "stderr_bytes": 0,
+      "stdout_file": "cursor-0.txt",
+      "stdout_sha256": "f2264c653dd0de2771588a899015e476ae6f7bcdf7cac7bf759ce4476a6f3bfb",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "environment": "gateway_synthetic_home",
+      "model_requests_sent": 0
+    },
+    {
+      "agent": "cursor",
+      "binary": "/Users/cengjiada/.local/share/cursor-agent/versions/2026.10.22-27dcf5f/cursor-agent",
+      "binary_sha256": "2ccc9a8e167797641448b5e5c936f006ba137a2555f117f38c5eb76a5238a233",
+      "argv": [
+        "--help"
+      ],
+      "exit_code": 0,
+      "timed_out": false,
+      "stdout_bytes": 5991,
+      "stderr_bytes": 0,
+      "stdout_file": "cursor-1.txt",
+      "stdout_sha256": "c24026e17118188478fcb47ed8113fa842f93df2043da5116660a368d3dc64b0",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "environment": "gateway_synthetic_home",
+      "model_requests_sent": 0
+    },
+    {
+      "agent": "cursor",
+      "binary": "/Users/cengjiada/.local/share/cursor-agent/versions/2026.10.22-27dcf5f/cursor-agent",
+      "binary_sha256": "2ccc9a8e167797641448b5e5c936f006ba137a2555f117f38c5eb76a5238a233",
+      "argv": [
+        "acp",
+        "--help"
+      ],
+      "exit_code": 0,
+      "timed_out": false,
+      "stdout_bytes": 141,
+      "stderr_bytes": 0,
+      "stdout_file": "cursor-2.txt",
+      "stdout_sha256": "9b55e20ac13686f2854b5fa7da3fd03a007be1b3c5cc9ba434f53596c45993af",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "environment": "gateway_synthetic_home",
+      "model_requests_sent": 0
+    },
+    {
+      "agent": "antigravity",
+      "binary": "/Users/cengjiada/.local/bin/agy",
+      "binary_sha256": "d972bb48e8b98ba99479de8cd66b6f3b4e8184d95789ea8cce39dd18855d5184",
+      "argv": [
+        "--version"
+      ],
+      "exit_code": 0,
+      "timed_out": false,
+      "stdout_bytes": 6,
+      "stderr_bytes": 0,
+      "stdout_file": "antigravity-0.txt",
+      "stdout_sha256": "ded1b601e81d31ca1f65c4f3ccf2ebd7992b6390e37bc2a86f3837282f1e00cf",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "environment": "gateway_synthetic_home",
+      "model_requests_sent": 0
+    },
+    {
+      "agent": "antigravity",
+      "binary": "/Users/cengjiada/.local/bin/agy",
+      "binary_sha256": "d972bb48e8b98ba99479de8cd66b6f3b4e8184d95789ea8cce39dd18855d5184",
+      "argv": [
+        "--help"
+      ],
+      "exit_code": 0,
+      "timed_out": false,
+      "stdout_bytes": 0,
+      "stderr_bytes": 3319,
+      "stdout_file": "antigravity-1.txt",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e92946f85cec63eca61f93014ca49f53b1e84277eac7954e7fac7d8d712940fd",
+      "environment": "gateway_synthetic_home",
+      "model_requests_sent": 0
+    },
+    {
+      "agent": "antigravity",
+      "binary": "/Users/cengjiada/.local/bin/agy",
+      "binary_sha256": "d972bb48e8b98ba99479de8cd66b6f3b4e8184d95789ea8cce39dd18855d5184",
+      "argv": [
+        "acp",
+        "--help"
+      ],
+      "exit_code": 0,
+      "timed_out": false,
+      "stdout_bytes": 0,
+      "stderr_bytes": 2254,
+      "stdout_file": "antigravity-2.txt",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "08cedbbc6d63dc2dbd9f3c108d949e048ee3a6696c31e41914384c2057d27747",
+      "environment": "gateway_synthetic_home",
+      "model_requests_sent": 0
+    }
+  ]
+}

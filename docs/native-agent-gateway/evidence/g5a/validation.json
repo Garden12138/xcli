@@ -1,0 +1,22 @@
+{
+  "result": "PASS_OFFLINE_ONLY",
+  "base_commit": "f72e32a",
+  "source_sha256": "176b75449d36fca750711ec3bed248e9b889798ffd7d2cf2cb3163e741dbcf83",
+  "command": "bash tests/native_agent_gateway/verify-offline.sh",
+  "exit_code": 0,
+  "go_test_command": "go test -race -p 1 -count=1 -timeout 240s ./...",
+  "go_vet_exit_code": 0,
+  "go_build_exit_code": 0,
+  "legacy_python_tests": 11,
+  "probe_plan_python_tests": 2,
+  "http_control_server_starts": 2,
+  "log_sha256": "91caf997ae29c69b303e3907871eb4d782d00d6ddb581ef0db7ec8a8ee750610",
+  "real_http_text": "NOT_TESTED",
+  "real_profiles_enabled": 0,
+  "real_model_requests_sent": 0,
+  "original_gate_b": "BLOCKED",
+  "initial_failures_retained": [
+    "offline-parallel-startup-failure.log",
+    "gateway-preflight-initial.log"
+  ]
+}

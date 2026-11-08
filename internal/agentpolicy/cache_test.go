@@ -31,3 +31,27 @@ func TestExplicitRefreshIsNonModelAndCannotEnableNative(t *testing.T) {
 		}
 	}
 }
+
+func TestFailedVersionProbeDoesNotCacheOrExposeDiagnostics(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "state")
+	if e := modelstore.PrivateDirectory(root); e != nil {
+		t.Fatal(e)
+	}
+	script := filepath.Join(root, "fixture-version")
+	if e := os.WriteFile(script, []byte("#!/bin/sh\nprintf 'private-diagnostic-secret' >&2\nexit 17\n"), 0o700); e != nil {
+		t.Fatal(e)
+	}
+	_, e := Refresh(context.Background(), root, "cursor", script)
+	if e == nil || e.Error() != "version_probe_exit_nonzero" {
+		t.Fatal(e)
+	}
+	profiles, e := CachedProfiles(root)
+	if e != nil {
+		t.Fatal(e)
+	}
+	for _, p := range profiles {
+		if p.Version != nil || p.Binary != "" || p.Check("text_task") == nil {
+			t.Fatal("failed probe changed capability", p)
+		}
+	}
+}

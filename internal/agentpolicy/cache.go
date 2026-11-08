@@ -89,8 +89,20 @@ func Refresh(ctx context.Context, root, agentID, binary string) (CachedInstallat
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 	result, e := xruntime.RunProcess(ctx, agent.CommandSpec{Command: resolved, Args: []string{"--version"}}, xruntime.ProcessOptions{Dir: work, Env: Environment(nil, work), CaptureStdout: true, SeparateProcess: true, BoundedCleanup: true})
-	if e != nil || result.ExitCode != 0 || !result.StopConfirmed || result.TimedOut || result.CaptureTruncated || len(result.Stdout) > 64<<10 {
-		return CachedInstallation{}, errors.New("bounded non-model version probe failed")
+	// Fixed, non-sensitive failure codes: never print the native stderr tail.
+	switch {
+	case e != nil:
+		return CachedInstallation{}, errors.New("version_probe_start_failed")
+	case result.WaitIncomplete || !result.StopConfirmed:
+		return CachedInstallation{}, errors.New("version_probe_stop_unconfirmed")
+	case result.TimedOut || result.Canceled:
+		return CachedInstallation{}, errors.New("version_probe_timeout_or_canceled")
+	case result.ExitCode != 0:
+		return CachedInstallation{}, errors.New("version_probe_exit_nonzero")
+	case result.CaptureTruncated || len(result.Stdout) > 64<<10:
+		return CachedInstallation{}, errors.New("version_probe_output_limit")
+	case result.IOError:
+		return CachedInstallation{}, errors.New("version_probe_io_failed")
 	}
 	version := strings.TrimSpace(string(result.Stdout))
 	if len(version) < 1 || len(version) > 200 || strings.ContainsAny(version, "\r\n") {

@@ -103,7 +103,34 @@ func (a *app) newAgentGatewayCommand() *cobra.Command {
 	}}
 	refresh.Flags().StringVar(&refreshAgent, "agent", "", "codex, cursor or antigravity")
 	refresh.Flags().StringVar(&refreshBinary, "binary", "", "owner-selected absolute official executable path")
-	group.AddCommand(refresh, agentClientCommand(&root))
+	var preflightAgent string
+	preflight := &cobra.Command{Use: "preflight", Short: "Inspect native text blockers without spawning a CLI; service must be stopped", Args: cobra.NoArgs, RunE: func(c *cobra.Command, _ []string) error {
+		cfg, e := agentpolicy.Load(path)
+		if e != nil {
+			return e
+		}
+		st, e := agentstore.Open(root)
+		if e != nil {
+			return e
+		}
+		defer st.Close()
+		profiles, e := agentpolicy.CachedProfiles(st.Root)
+		if e != nil {
+			return e
+		}
+		for _, p := range profiles {
+			if p.AgentID == preflightAgent {
+				r, err := nativeadapter.InspectNativeText(p, cfg)
+				if err != nil {
+					return err
+				}
+				return encodeJSON(c.OutOrStdout(), r)
+			}
+		}
+		return errors.New("registered --agent required")
+	}}
+	preflight.Flags().StringVar(&preflightAgent, "agent", "", "codex, cursor or antigravity")
+	group.AddCommand(refresh, preflight, agentClientCommand(&root))
 	return group
 }
 func agentClientCommand(root *string) *cobra.Command {

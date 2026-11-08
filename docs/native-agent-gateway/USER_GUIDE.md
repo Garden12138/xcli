@@ -1,6 +1,6 @@
 # Native Agent Gateway V1 使用与接入
 
-2026-11-07。**已交付独立服务与可复现的 HTTP→假 CLI 离线链路；三家真实 native profile 均关闭。** 当前不能把本服务作为已验收的原生推理入口。真实 HTTP→CLI、真实取消/媒体以及四应用 UI 仍待验收。没有 OpenAI 兼容路由、Embedding、自动 fallback、账号池或工具批准接口。
+2026-11-08（G5A）。**已交付独立服务、无模型预检与可复现的 HTTP→假 CLI 离线链路；三家真实 native profile 均关闭。** 当前不能把本服务作为已验收的原生推理入口。真实 HTTP→CLI、真实取消/媒体以及四应用 UI 仍待验收。没有 OpenAI 兼容路由、Embedding、自动 fallback、账号池或工具批准接口。
 
 ## 安装、启动和停止
 
@@ -56,7 +56,7 @@ mkdir -p -m 700 "$NAG_SECRET_DIR"
 
 轮换保留 client_id/对象归属并使旧 Token 失效。撤销阻止读写，并由监督器取消活跃 turn；已排队任务不能因再次授权而复活。API 不提供 Token 管理路由。已撤销的 grant 不能静默轮换恢复。本人审查后，可在 rotate 时另加 `--reauthorize-revoked` 恢复原授权并交付新 Token；预算累计和撤销 epoch 保留，不恢复旧队列。
 
-可选非模型 refresh 只能在停服时由本人显式执行；本轮只在假程序上验过，没有探测真实安装：
+可选非模型 refresh 只能在停服时由本人显式执行。G5A 中 Codex 0.167.0、Antigravity 1.5.2 的真实 `--version` 已通过；Cursor 独立版本可返回，但 Gateway refresh 为 `version_probe_stop_unconfirmed`，没有写入缓存：
 
 ```bash
 /tmp/xcli-nag agent-gateway --state-dir "$NAG_STATE" refresh \
@@ -64,6 +64,17 @@ mkdir -p -m 700 "$NAG_SECRET_DIR"
 ```
 
 它只运行固定 `--version`、有界超时/输出、最小环境并缓存二进制摘要，不登录、不读凭据、不启动任务，也不能启用 profile。当前网页上的新参数不能当作本机版本支持证明。
+
+停服控制面的安全预检不启动 CLI，不发送任何 prompt：
+
+```bash
+/tmp/xcli-nag agent-gateway --gateway-config "$NAG_CONFIG" --state-dir "$NAG_STATE" \
+  preflight --agent codex
+```
+
+`--agent` 也可为 `cursor` 或 `antigravity`。报告分别列出配置、缓存、选中文件 hash、策略、认证环境、账号／应用授权及真实验收；Cursor 另列历史 Trust 阻塞。退出 0 表示报告生成，当前 `can_execute` 始终为 false。缓存／hash PASS 不证明 runtime 依赖、账号权益或沙箱有效；不支持通过 JSON/YAML 修改报告启用真实 Profile。
+
+三家的无 turn stdio 初始化已验证；Codex 的本机 schema 已生成。ACP/app-server 尚无生产运行 adapter，不能作为 serve 的可选开关；Cursor ACP 的 EOF 退出还有阻塞。详见 [G5A 启用前状态](G5A_PROFILE_READINESS.md)和[官方授权审查](OFFICIAL_INTEGRATION_REVIEW.md)。这些探针不是 HTTP 推理验收。
 
 ## 实际 HTTP 路由
 
@@ -89,7 +100,7 @@ mkdir -p -m 700 "$NAG_SECRET_DIR"
 
 ## 调用示例与恢复规则
 
-下面结构遵循实际路由，但真实 Session/Task 示例须先满足[真实验收计划](REAL_HTTP_ACCEPTANCE_PLAN.md)的工程和新授权条件。当前默认配置不会完成真实推理。
+下面结构遵循实际路由，但真实 Session/Task 示例须先满足 [G5B 逐 CLI 计划](G5B_REAL_HTTP_PLAN.md)的工程和新授权条件。首次文本 1 次与原 L01 文本＋续接 2 次分别授权。当前默认配置不会完成真实推理；现在不应执行下面 Task 示例来尝试启用。
 
 不要把 Token 放进 curl argv/env。先在上述 0700 目录创建 header 文件（不会打印秘密）：
 

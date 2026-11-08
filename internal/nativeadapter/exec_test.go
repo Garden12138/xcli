@@ -81,8 +81,15 @@ func TestGatewayCLIHelper(t *testing.T) {
 		fmt.Println(`{"type":"unknown"}`)
 		os.Exit(0)
 	}
-	if prompt == "overlong" {
+	if prompt == "overlong" || prompt == "overlong-quota" || prompt == "overlong-auth" {
+		fmt.Println(`{"type":"item.completed","item":{"type":"agent_message","text":"partial result"}}`)
 		fmt.Printf("{\"type\":\"unknown\",\"data\":\"%s\"}\n", strings.Repeat("x", 9<<20))
+		if prompt == "overlong-quota" {
+			fmt.Fprintln(os.Stderr, "quota exceeded")
+		}
+		if prompt == "overlong-auth" {
+			fmt.Fprintln(os.Stderr, "authentication required")
+		}
 		os.Exit(0)
 	}
 	if os.Getenv("OPENAI_API_KEY") != "" || os.Getenv("HTTP_PROXY") != "" || os.Getenv("XCLI_APPLICATION_TOKEN") != "" {
@@ -99,6 +106,23 @@ func TestGatewayCLIHelper(t *testing.T) {
 	}
 	fmt.Println(`{"type":"turn.completed","usage":{"input_tokens":0,"output_tokens":2}}`)
 	os.Exit(0)
+}
+
+func TestDenialSurvivesTruncatedOutputAndPartialText(t *testing.T) {
+	for mode, want := range map[string]string{"overlong-quota": "native_quota_exceeded", "overlong-auth": "native_auth_required"} {
+		t.Run(mode, func(t *testing.T) {
+			s, c := fixture(t)
+			ses := newSession(t, s, c)
+			task := create(t, s, c, ses, mode, 10)
+			if _, err := s.ExecuteNext(context.Background(), nativeadapter.Exec{}); err != nil {
+				t.Fatal(err)
+			}
+			out, err := s.GetTask(c, task.ID)
+			if err != nil || out.Status != "blocked" || out.Error == nil || out.Error.Code != want || out.Protocol.Status != "truncated" || out.Result.Final || out.Result.Text == nil || *out.Result.Text != "partial result" {
+				t.Fatalf("task=%+v err=%v", out, err)
+			}
+		})
+	}
 }
 func fixture(t *testing.T) (*agentservice.Service, agentstore.Client) {
 	t.Helper()

@@ -1,0 +1,6 @@
+Usage: agent acp [options]
+
+Start the Cursor Agent as an ACP (Agent Client Protocol) server
+
+Options:
+  -h, --help  Display help for command

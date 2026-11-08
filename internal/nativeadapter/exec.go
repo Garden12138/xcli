@@ -119,7 +119,9 @@ func (Exec) StartTurn(ctx context.Context, b BoundRequest, observe func(Observat
 	if process.IOError && result.Code == "" {
 		result.Code = "native_process_failed"
 	}
-	if parsed.ParseStatus == "truncated" {
+	// A known denial remains authoritative even if subsequent output exceeds
+	// the parser limit. Truncation is a protocol fact, not permission to erase it.
+	if parsed.ParseStatus == "truncated" && result.Code == "" {
 		result.Code = "output_limit"
 	}
 	return result

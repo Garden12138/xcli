@@ -4,7 +4,9 @@
 
 ## 当前入口
 
-当前阶段：**G4 离线交付完成；真实验收计划已提交文档，执行 BLOCKED（授权/策略前置未满足）**（对应用户阶段 A–F 的获授权部分；真实执行保持阻塞）。
+当前阶段：**G5A 启用前审查与最小修复已完成（2026-11-08），起点 `f72e32a`；G1–G4 不重复实施。G5B 尚未授权且工程前置未齐。** 本轮允许官方文档、版本/帮助/schema/无 turn 握手和离线回归；真实模型请求预算仍为 0。真实 Profile 保持关闭。此前文档中“不运行版本探针”是前轮范围，本轮仅由这次明确的非推理授权取代。
+
+最新恢复入口：[G5A 分项状态](G5A_PROFILE_READINESS.md) → [官方集成与授权](OFFICIAL_INTEGRATION_REVIEW.md) → [G5B 每家首次 1 次文本计划](G5B_REAL_HTTP_PLAN.md)。G5A 本地提交定位见本文件末尾；不得将审查完成解读为已具备直接推理条件。
 
 恢复先读本文件，再读 `TASKS.md`、`ACCEPTANCE.md` 和 `git log --oneline -8` / `git status --short`。不得重新执行历史 native smoke。
 
@@ -26,7 +28,8 @@
 | G3 | PASS（macOS 离线范围） | `01581bf` | [全量 race](evidence/g3-all-race.log)、[最终核心](evidence/g3-core-final.log) |
 | G4 离线 | PASS | `8526361` | [完整离线](evidence/g4-offline.log)、[报告](IMPLEMENTATION_REPORT.md)、[源摘要](evidence/source-manifest.json) |
 | G4 真实 / 用户 F | 计划交付；执行 BLOCKED | `8526361` | [真实计划/每 CLI 最小预算](REAL_HTTP_ACCEPTANCE_PLAN.md)，未执行 |
-| G5 / G6 | 后续独立范围 | — | app-server 晋升 / 四应用 |
+| G5A | PASS（审查／最小修复／非推理范围） | 见末尾提交定位 | [就绪审查与实际证据](G5A_PROFILE_READINESS.md)；三个真实 Profile 仍关闭 |
+| G5B / G5 transport / G6 | 后续独立范围 | — | 真实调用 / app-server、ACP 晋升 / 四应用 |
 
 ## 门禁
 
@@ -92,7 +95,7 @@ G4 下一任务：journal 压缩与实际留存、fsync/crash 故障点、SSE �
 - 各阶段初始失败日志保留。G4 一次未带 loopback 权限的专项命令失败，最终完整宿主离线门禁通过；没有删除/跳过测试或放宽权限。
 - [安装/启动/停止/Token/API 与恢复](USER_GUIDE.md)、[支持矩阵](SUPPORT_MATRIX.md)、[完整报告](IMPLEMENTATION_REPORT.md)、[真实计划](REAL_HTTP_ACCEPTANCE_PLAN.md)已交付；四应用只提供 APP-NAG-1/模块入口，没有写业务代码。
 
-## 最终阻塞与恢复
+## G4 最终阻塞与恢复（历史）
 
 真实 native 启动/模型请求仍 **0**。三家 profile 均因逐次策略、账号条款适用性、真实认证/安全媒体路径未证明而关闭；Cursor Trust 另由本人处理。授权本身不等于策略已实现；真实入口须先补可执行隔离工程、逐项合成 L04 计划和明确新预算，不能从普通配置/Token 强开。G5 app-server 晋升、G6 四应用/UI、Docker 桥接、生产部署均未实施。
 
@@ -111,3 +114,37 @@ bash tests/native_agent_gateway/verify-offline.sh
 产品代码提交：`8526361f8d62b7dd5058096aa69a21a121fa3c3b`。本节为仅文档交接补充，不修改已验收代码；当前报告版本用 `git log -1 -- docs/native-agent-gateway/IMPLEMENTATION_PROGRESS.md` 定位，避免自引用 SHA。
 
 本轮阶段提交依次为 `86717e6`（G1）、`25201e1`（G2）、`01581bf`（G3）、`8526361`（G4 离线与真实计划），均只在本地；前序 `864a6b1` / `40fc6ca` 完整保留。最终产品/测试源码清单 SHA-256：`aca0d152e5ac43cec6dd85c98faa931fd74af496ed72ad89ac00736d14165eab`。文档交接后不需要重复执行已经通过的完整测试；只有代码/约束改变或复验需要时才运行离线门禁。
+
+## G5A 实际交付（2026-11-08）
+
+- 完整恢复用户指定八份文档，复核生产命令、Profile.Check/Defaults、缓存、Exec、observer、service worker/Workspace/媒体和既有回归。没有重做 G1–G4，也没有更改 Model Gateway 或四应用。
+- 官方页面实际核查：Codex app-server/SDK/SIWC/plan usage，Cursor headless/ACP，Agy headless/ACP，三家条款。区分接口存在、当前安装、账号、应用场景及可执行隔离；Agy 条款与多应用网关用途关系独立 BLOCKED，未假定通用豁免。
+- 本机版本 Codex 0.167.0、Agy 1.5.2、Cursor 2026.10.22-27dcf5f。三家无 turn initialize 成功；Codex 322 个 schema 文件摘要/所需方法存在。Cursor ACP EOF 后超时、TERM 143；不能升级为退出行为通过。
+- 共 21 次顶层非模型探针调用：Codex 8、Agy 7、Cursor 6；[独立账本](evidence/g5a/non-model-ledger.json)。没有认证/Session/turn 请求、推理 prompt 或真实 HTTP Task。未读取、复制、打印认证 Token；未改 Trust、账号、模型、长期配置或开启付费额度。
+- 新增 owner-only 停服 `preflight --agent`：配置／缓存／选中文件 hash／策略／认证／账号／授权／Trust／真实 Gate 分项；零 spawn、不可晋升。Native 无条件拒绝仍在，非 native 夹具不能进入真实就绪检查。
+- 修复 Exec 已知拒绝被后续 truncated 覆盖的问题；保留协议 truncated、部分文本 final=false，auth/quota＋9 MiB 假输出回归通过。refresh 失败固定脱敏分类、IOError 失败关闭，3s/停止条件未放宽。
+- 真实 Gateway refresh：Codex/Agy PASS；Cursor 两次尝试均未写缓存，第二次明确 `version_probe_stop_unconfirmed`。第一次 harness 在 Cursor 失败即终止，保留[初次日志](evidence/g5a/gateway-preflight-initial.log)；改为独立记录每家后完成[三家 HTTP 拒绝](evidence/g5a/gateway-preflight.json)，没有把 Cursor 写为通过。
+- 完整离线最终 PASS：[offline.log](evidence/g5a/offline.log)。`go test -race -p 1 -count=1 -timeout 240s ./...` 全量实际重跑、vet、build、Gateway 两次生命周期／三家拒绝／预检、旧 harness 11/11、新探针测试 2/2。Token/Session owner、幂等、预算、超时／取消、进程崩溃／恢复、SSE 和媒体路径攻击等既有测试全部保留。
+- 早期[并行无缓存失败](evidence/g5a/offline-parallel-startup-failure.log)：两个固定版本夹具在包级并发启动负载下超出 3s；改测试包串行分配资源后完整通过，包内并发和生产超时／安全条件不变。[初次含缓存通过](evidence/g5a/offline-initial.log)也保留。没有删测试或把失败算 PASS。
+- [G5A 源码清单](evidence/g5a/source-manifest.json)：171 文件，SHA-256 `176b75449d36fca750711ec3bed248e9b889798ffd7d2cf2cb3163e741dbcf83`。文档不参与清单以免自引用；G4 旧清单／日志不覆盖。
+
+### 当前尚未完成的 Gate
+
+| Gate／任务 | 状态与证据范围 |
+| --- | --- |
+| G5A 工程／非推理审查 | PASS（上述范围）；不含 real turn／账号权益／原生隔离证明 |
+| 原 Gate A | 仅继承历史 Codex/Agy 的特定场景 PASS；Cursor Trust BLOCKED；G5A 未重新推理 |
+| NAG 真实最低 Gate / L01–L05 | BLOCKED；所有真实场景 NOT_TESTED，S01–S08 + 各 CLI 独立原因见 readiness，不能归为只差用户调用许可 |
+| 原 Gate B | **BLOCKED**；native CLI→Model Gateway `/v1/*` 未实现且不属于本服务 |
+| 官方 app-server / ACP 运行 adapter | NOT_IMPLEMENTED；仅本机 initialize/schema 评估。增量 SPEC 与估算已记录，未重构 |
+| 四应用／UI／Docker／生产 | 原计划不变，未实施 |
+
+### 后续恢复与具体入口
+
+先检查 `git status --short`、`git log -5 --oneline`，读本节和 G5A/G5B 文件。下一工程是 Codex S01–S03 + C01：受限验收许可、原生认证与逐次工具／文件／网络隔离、服务合成 Git 工作区，约 2–4 人日；做不到安全边界就保持关闭。app-server（5–9 人日）和 ACP 为独立可选 transport，不能为省事改 Native=false、添加 enable bool 或透传 RPC。
+
+仅复验已完成离线代码：`bash tests/native_agent_gateway/verify-offline.sh`。停服只读就绪报告：`/tmp/xcli-g5a agent-gateway --state-dir <独立私有根> preflight --agent codex`，当前 can_execute=false。二进制为临时构建，下一会话必要时按 USER_GUIDE 重建。
+
+不要自动重跑 `probe_protocol.py --execute-non-model` 或 `profile_preflight.py --execute-non-model` 来增加无必要启动；已有证据足够。后续若安装变动需重新非模型检查，单独记账；所有真实推理仍需要新明确授权。Cursor 另需具体服务 workspace 的官方 Trust 审查、bundle 完整性和生命周期修复；Agy 另需供应商用途授权依据。未获授权前不运行 G5B／旧 native smoke。
+
+G5A 提交定位：本节随实现创建独立本地提交；完成后用 `git log -1 -- internal/nativeadapter/preflight.go` 定位实现 SHA、`git log -1 -- docs/native-agent-gateway/IMPLEMENTATION_PROGRESS.md` 定位交接版本。不 Push/Tag/Release/部署。

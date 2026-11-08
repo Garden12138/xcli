@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/Users/cengjiada/Documents/github/xcli/tests/native_agent_gateway/profile_preflight.py", line 105, in <module>
+    main()
+  File "/Users/cengjiada/Documents/github/xcli/tests/native_agent_gateway/profile_preflight.py", line 49, in main
+    report["installations"].append(json.loads(run("refresh", "--agent", agent, "--binary", path)))
+  File "/Users/cengjiada/Documents/github/xcli/tests/native_agent_gateway/profile_preflight.py", line 42, in run
+    return subprocess.run(command + list(tail), env=env, check=True, capture_output=True,
+  File "/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/private/tmp/xcli-g5a', 'agent-gateway', '--state-dir', '/var/folders/tc/48w0b8390_q9xhrvc2v_mv580000gn/T/xcli-g5a-http-5bykt4w9/state', '--gateway-config', '/var/folders/tc/48w0b8390_q9xhrvc2v_mv580000gn/T/xcli-g5a-http-5bykt4w9/gateway.yaml', 'refresh', '--agent', 'cursor', '--binary', '/Users/cengjiada/.local/bin/agent']' returned non-zero exit status 1.

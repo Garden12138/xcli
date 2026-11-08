@@ -26,11 +26,18 @@ def main():
         def run(*tail):
             return subprocess.run(command + list(tail), check=True, text=True,
                                   capture_output=True, timeout=12).stdout
-        run("client", "issue", "worklog", "--agent", "codex",
+        run("client", "issue", "worklog", "--agent", "codex,cursor,antigravity",
             "--policy", "synthetic-text-readonly-v1", "--allow-remote",
             "--daily-dispatches", "2", "--daily-process-starts", "2",
             "--daily-execution-seconds", "300", "--token-file", str(token_file))
         token = token_file.read_text().strip()
+        for agent in ("codex", "cursor", "antigravity"):
+            preflight = json.loads(run("preflight", "--agent", agent))
+            assert preflight["can_execute"] is False
+            assert preflight["process_starts"] == preflight["model_requests"] == 0
+            checks = {c["id"]: c for c in preflight["checks"]}
+            assert checks["execution_policy"]["evidence"] == "policy_unenforceable"
+            assert checks["account_entitlement"]["status"] == "NOT_TESTED"
         identities = []
         generations = []
         for iteration in range(2):
@@ -65,17 +72,18 @@ def main():
                 capabilities = json.loads(response.read())
                 assert capabilities["instance_id"] == identities[-1]
                 assert capabilities["agents"][0]["operations"]["text_task"]["availability"] == "blocked"
-                payload = {"agent_id": "codex", "adapter_id": "codex-exec-v1",
+                for agent, adapter in (("codex", "codex-exec-v1"), ("cursor", "cursor-headless-v1"), ("antigravity", "antigravity-print-v1")):
+                    payload = {"agent_id": agent, "adapter_id": adapter,
                            "policy_id": "synthetic-text-readonly-v1",
                            "capability_revision": capabilities["revision"],
                            "budget": {"max_dispatches": 2, "max_process_starts": 2, "max_execution_seconds": 300},
                            "context": {"app": "worklog", "workflow": "synthetic", "opaque_ref": "offline"}}
-                conn.request("POST", "/agent/v1/sessions", json.dumps(payload),
+                    conn.request("POST", "/agent/v1/sessions", json.dumps(payload),
                              headers={"Authorization": "Bearer " + token, "Content-Type": "application/json",
                                       "Idempotency-Key": "offline-session"})
-                response = conn.getresponse()
-                assert response.status == 503
-                assert json.loads(response.read())["error"]["code"] == "policy_unenforceable"
+                    response = conn.getresponse()
+                    assert response.status == 503
+                    assert json.loads(response.read())["error"]["code"] == "policy_unenforceable"
                 conn.close()
                 run("stop")
                 proc.wait(timeout=7)
