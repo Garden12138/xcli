@@ -31,6 +31,9 @@ func TestGatewayCLIHelper(t *testing.T) {
 	}
 	args := os.Args
 	prompt := strings.TrimPrefix(args[len(args)-1], "xcli user task:\n")
+	if os.Getenv("XCLI_NAG_FORCE_SLEEP") == "1" {
+		prompt = "sleep"
+	}
 	if adapter := os.Getenv("XCLI_NAG_ADAPTER"); adapter != "" {
 		if adapter == "cursor" && prompt == "trust" {
 			fmt.Fprintln(os.Stderr, "Workspace is not trusted")

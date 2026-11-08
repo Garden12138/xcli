@@ -17,6 +17,14 @@ type Exec struct{}
 // Specification is fixed by the registered adapter. Request data never becomes
 // native options, environment entries, account/model selection or a shell.
 func Specification(b BoundRequest) (agent.Definition, agent.CommandSpec, error) {
+	if b.Profile.Limited != nil {
+		if b.Profile.AgentID != "codex" || b.Profile.AdapterID != "codex-exec-v1" || b.NativeID != "" || b.Operation != "text_task" || b.Prompt != agentpolicy.LimitedPrompt || b.Workspace != b.Profile.Limited.Workspace {
+			return agent.Definition{}, agent.CommandSpec{}, api.Failure(403, "policy_denied")
+		}
+		d := agent.Definition{Name: "codex", Config: config.AgentConfig{Adapter: "codex", Command: b.Profile.Binary, Output: "jsonl"}}
+		args := append(agentpolicy.LimitedExecArgs(b.Workspace), "--", "xcli user task:\n"+b.Prompt)
+		return d, agent.CommandSpec{Command: b.Profile.Binary, Args: args}, nil
+	}
 	adapter := ""
 	extra := []string{}
 	switch b.Profile.AdapterID {
@@ -95,11 +103,22 @@ func (Exec) StartTurn(ctx context.Context, b BoundRequest, observe func(Observat
 	})
 	diagnostics := &agent.GatewayDiagnostics{Adapter: d.Config.Adapter}
 	home := filepath.Join(b.Workspace, "home")
+	if b.Profile.Limited != nil {
+		home = filepath.Join(b.Profile.Limited.Root, "codex-limited", "home")
+	}
 	if e = os.MkdirAll(home, 0o700); e != nil {
 		result.Code = "start_failed"
 		return result
 	}
-	process, err := xruntime.RunProcess(ctx, spec, xruntime.ProcessOptions{Dir: b.Workspace, Env: agentpolicy.Environment(nil, home), Stdout: decoder, Stderr: diagnostics, SeparateProcess: true, BoundedCleanup: true})
+	env := agentpolicy.Environment(nil, home)
+	if b.Profile.Limited != nil {
+		if e = b.Profile.Limited.CheckAuthorization(); e != nil {
+			result.Code = e.Error()
+			return result
+		}
+		env = append(env, "CODEX_HOME="+b.Profile.Limited.AuthHome)
+	}
+	process, err := xruntime.RunProcess(ctx, spec, xruntime.ProcessOptions{Dir: b.Workspace, Env: env, Stdout: decoder, Stderr: diagnostics, SeparateProcess: true, BoundedCleanup: true})
 	if process.WaitIncomplete {
 		return TurnResult{Code: "execution_state_unknown", Terminal: "unknown", Protocol: "unknown"}
 	}

@@ -1,5 +1,7 @@
 # Native Agent Gateway V1 实施验收报告
 
+G5A.1 交付：[Codex 受限控制工程](CODEX_LIMITED_PROFILE.md)、[首次 HTTP 脚本](CODEX_FIRST_REAL_HTTP_TEST.md)、[最终离线日志](evidence/g5a1/offline.log)。控制工程与非模型沙箱 canary 有实际证据，全工具／认证隔离仍为工程 BLOCKED；没有标记 READY_FOR_AUTHORIZATION 或真实 Gate PASS。
+
 2026-11-08 G5A 补充见 [Profile 就绪审查](G5A_PROFILE_READINESS.md)、[官方集成对照](OFFICIAL_INTEGRATION_REVIEW.md)及 [G5B 首次文本计划](G5B_REAL_HTTP_PLAN.md)。下文保留 G1–G4 历史证据；本轮没有将真实 Gate 升为 PASS。
 
 日期：2026-11-07。基线 `40fc6ca` / 前序真实证据 `864a6b1`，本轮产品代码 `8526361`。**已完成本轮获授权的实现与离线交付；真实 NAG 最低验收仍 BLOCKED，不能宣称三个 CLI 已在 HTTP 服务可用。** 新真实 native 启动/模型请求 0，没有沿用前轮 3 次余额，没有 Push/Tag/Release/部署或四应用改动。

@@ -1,0 +1,29 @@
+=== RUN   TestLimitedHTTPFixtureOwnershipOneLifetimeStartAndPersistence
+    limited_test.go:126: 403
+    limited_test.go:126: 403
+    limited_test.go:126: 403
+    limited_test.go:126: 403
+    limited_test.go:126: 403
+    limited_test.go:126: 403
+    limited_test.go:126: 403
+    limited_test.go:126: 403
+    limited_test.go:126: 403
+    limited_test.go:126: 403
+    limited_test.go:126: 403
+    limited_test.go:126: 403
+    limited_test.go:126: 403
+    limited_test.go:126: 403
+    limited_test.go:145: {0         0 { <nil>  <nil> <nil> } { false} {   } {<nil> false [] <nil>} {  <nil> <nil> <nil> <nil> <nil> <nil> <nil>} {0 0 0} <nil> 0001-01-01 00:00:00 +0000 UTC 0001-01-01 00:00:00 +0000 UTC <nil> 0001-01-01 00:00:00 +0000 UTC 0 <nil>} not_found
+--- FAIL: TestLimitedHTTPFixtureOwnershipOneLifetimeStartAndPersistence (0.49s)
+=== RUN   TestLimitedFixtureDisableRevokeTimeoutAndLateSuccess
+=== RUN   TestLimitedFixtureDisableRevokeTimeoutAndLateSuccess/disable
+=== RUN   TestLimitedFixtureDisableRevokeTimeoutAndLateSuccess/revoke
+=== RUN   TestLimitedFixtureDisableRevokeTimeoutAndLateSuccess/timeout
+    limited_test.go:227: {1 tsk_822ddd456547b93c41d51a31ec2f6aaf ses_d3abdf40a81e5a50e80f22f8fb819630 codex codex-exec-v1 2db252c040e0042a93b3df83384b729c5682f41998523edf603e7d08d70d7237 9fc8ce6f83b44a72233cecc9d5d969a922f705e300bd8ed4b8756c0d3b237fb0 text_task blocked 2 {not_started <nil> unknown <nil> <nil> none_observed} {not_started false} {not_run not_applicable not_applicable not_applicable} {<nil> false [] <nil>} {none unknown <nil> <nil> <nil> <nil> <nil> <nil> <nil>} {0 0 0} policy_denied 2026-11-08 05:32:26.303594 +0000 UTC 2026-11-08 05:34:26.303594 +0000 UTC 2026-11-08 05:32:26.317857 +0000 UTC 2026-11-15 05:32:26.303594 +0000 UTC 2 <nil>}
+--- FAIL: TestLimitedFixtureDisableRevokeTimeoutAndLateSuccess (7.11s)
+    --- PASS: TestLimitedFixtureDisableRevokeTimeoutAndLateSuccess/disable (2.53s)
+    --- PASS: TestLimitedFixtureDisableRevokeTimeoutAndLateSuccess/revoke (2.30s)
+    --- FAIL: TestLimitedFixtureDisableRevokeTimeoutAndLateSuccess/timeout (2.28s)
+FAIL
+FAIL	github.com/Garden12138/xcli/internal/nativeadapter	8.003s
+FAIL

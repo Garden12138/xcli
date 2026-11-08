@@ -1,0 +1,17 @@
+=== RUN   TestLimitedHTTPFixtureOwnershipOneLifetimeStartAndPersistence
+    limited_test.go:93: policy_denied
+--- FAIL: TestLimitedHTTPFixtureOwnershipOneLifetimeStartAndPersistence (0.46s)
+=== RUN   TestLimitedFixtureDisableRevokeTimeoutAndLateSuccess
+=== RUN   TestLimitedFixtureDisableRevokeTimeoutAndLateSuccess/disable
+    limited_test.go:192: policy_denied
+=== RUN   TestLimitedFixtureDisableRevokeTimeoutAndLateSuccess/revoke
+    limited_test.go:192: policy_denied
+=== RUN   TestLimitedFixtureDisableRevokeTimeoutAndLateSuccess/timeout
+    limited_test.go:192: policy_denied
+--- FAIL: TestLimitedFixtureDisableRevokeTimeoutAndLateSuccess (0.91s)
+    --- FAIL: TestLimitedFixtureDisableRevokeTimeoutAndLateSuccess/disable (0.45s)
+    --- FAIL: TestLimitedFixtureDisableRevokeTimeoutAndLateSuccess/revoke (0.23s)
+    --- FAIL: TestLimitedFixtureDisableRevokeTimeoutAndLateSuccess/timeout (0.23s)
+FAIL
+FAIL	github.com/Garden12138/xcli/internal/nativeadapter	1.786s
+FAIL

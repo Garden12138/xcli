@@ -1,0 +1,54 @@
+{
+  "model_requests": 0,
+  "task_posts": 0,
+  "unverified_enable_rejected": true,
+  "session_status": 503,
+  "session_error": {
+    "code": "policy_unenforceable",
+    "category": "availability",
+    "message": "Native Agent Gateway: policy_unenforceable",
+    "accepted": false,
+    "task_id": null,
+    "automatic_retry_allowed": false,
+    "remediation": "owner_review_required"
+  },
+  "readiness": {
+    "state": "BLOCKED",
+    "registration_sha256": "8595ce1118ab9de92af3bbec788443d95e3ec9693b1b10ef0bf86b7c37b1dec6",
+    "checks": [
+      {
+        "id": "registration",
+        "status": "PASS"
+      },
+      {
+        "id": "workspace",
+        "status": "PASS"
+      },
+      {
+        "id": "binary_integrity",
+        "status": "PASS"
+      },
+      {
+        "id": "provider_use_case",
+        "status": "BLOCKED"
+      },
+      {
+        "id": "native_login",
+        "status": "AUTHENTICATED_CHATGPT"
+      },
+      {
+        "id": "native_sandbox",
+        "status": "PASS_COMMAND_CANARIES_ONLY"
+      },
+      {
+        "id": "builtin_tools_and_auth_isolation",
+        "status": "BLOCKED"
+      }
+    ],
+    "model_requests": 0,
+    "enabled": false,
+    "call_authorized": false,
+    "authorization_ref_sha256": "",
+    "client_ready": true
+  }
+}

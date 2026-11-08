@@ -1,5 +1,7 @@
 # G5A：真实 Profile 启用前审查
 
+2026-11-08 G5A.1 增量：[Codex 受限控制工程与原生 canary](CODEX_LIMITED_PROFILE.md)、[首次 HTTP 脚本](CODEX_FIRST_REAL_HTTP_TEST.md)。单个合成 Git 项目、固定任务／客户端、一次性持久预算、独立开关／调用许可已实现；官方 CLI 报告 ChatGPT 登录，原生命令沙箱读写／链接／网络 canary 通过。**全量内置工具与认证目录隔离验证器仍缺失，原生 Profile 继续 BLOCKED，未标 READY_FOR_AUTHORIZATION。** 下文保留 G5A 历史结论与证据；S01/C01 已有增量，S03 仅部分有证据，S04/S05/S06 未被替代。
+
 2026-11-08，起点 `f72e32a`。**G5A 审查和最小修复不等于真实验收完成；三个真实 Profile 均保持关闭。** 当前没有具备直接执行 G5B 条件的 CLI；优先补齐 Codex 的文本路线。新推理请求 0，不沿用此前 3 次余额。
 
 ## 实际证据

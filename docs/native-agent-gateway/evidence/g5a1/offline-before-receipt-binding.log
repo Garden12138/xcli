@@ -1,0 +1,46 @@
+?   	github.com/Garden12138/xcli	[no test files]
+ok  	github.com/Garden12138/xcli/cmd	16.386s
+ok  	github.com/Garden12138/xcli/internal/agent	1.079s
+ok  	github.com/Garden12138/xcli/internal/agentapi	0.362s
+ok  	github.com/Garden12138/xcli/internal/agentartifact	0.431s
+ok  	github.com/Garden12138/xcli/internal/agentgateway	4.350s
+ok  	github.com/Garden12138/xcli/internal/agentpolicy	2.612s
+ok  	github.com/Garden12138/xcli/internal/agentservice	3.743s
+ok  	github.com/Garden12138/xcli/internal/agentstore	1.084s
+ok  	github.com/Garden12138/xcli/internal/config	0.409s
+ok  	github.com/Garden12138/xcli/internal/jobs	0.440s
+ok  	github.com/Garden12138/xcli/internal/mcp	0.403s
+?   	github.com/Garden12138/xcli/internal/media	[no test files]
+ok  	github.com/Garden12138/xcli/internal/model	0.392s
+ok  	github.com/Garden12138/xcli/internal/modelbackend	0.829s
+?   	github.com/Garden12138/xcli/internal/modelbackend/fake	[no test files]
+ok  	github.com/Garden12138/xcli/internal/modelgateway	0.494s
+ok  	github.com/Garden12138/xcli/internal/modelstore	0.781s
+ok  	github.com/Garden12138/xcli/internal/nativeadapter	22.839s
+ok  	github.com/Garden12138/xcli/internal/runstore	0.594s
+ok  	github.com/Garden12138/xcli/internal/runtime	3.177s
+ok  	github.com/Garden12138/xcli/internal/task	39.375s
+ok  	github.com/Garden12138/xcli/internal/workflow	5.236s
+ok  	github.com/Garden12138/xcli/internal/worktree	1.252s
+ok  	github.com/Garden12138/xcli/tests/model_gateway	0.668s
+ok  	github.com/Garden12138/xcli/tests/phase0	0.378s
+{
+  "test": "offline_control_smoke",
+  "result": "PASS",
+  "binary_sha256": "2612a2d4ceba7e4898b2d46bc35bc7f7c77e5caff228c8d79cb666150ae8bdad",
+  "native_model_requests": 0,
+  "server_starts": 2,
+  "persistent_instance": true,
+  "distinct_generations": true,
+  "native_profile_rejection": "policy_unenforceable"
+}
+...........
+----------------------------------------------------------------------
+Ran 11 tests in 0.072s
+
+OK
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.000s
+
+OK

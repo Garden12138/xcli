@@ -60,6 +60,9 @@ func authorize(c agentstore.Client, scope string) error {
 	return nil
 }
 func grant(c agentstore.Client, p agentpolicy.Profile, op string) error {
+	if p.Limited != nil && c.ID != p.Limited.ClientID {
+		return api.Failure(403, "policy_denied")
+	}
 	if !slices.Contains(c.Agents, p.AgentID) || !slices.Contains(c.Policies, p.PolicyID) {
 		return api.Failure(403, "policy_denied")
 	}
@@ -164,6 +167,9 @@ func (s *Service) CreateSession(c agentstore.Client, r api.SessionCreate, k stri
 	}
 	if e = p.Check("text_task"); e != nil {
 		return out, false, e
+	}
+	if p.Limited != nil && (r.Budget.MaxDispatches != 1 || r.Budget.MaxProcessStarts != 1 || r.Budget.MaxExecutionSeconds != 120) {
+		return out, false, api.Failure(403, "policy_denied")
 	}
 	if r.Budget.MaxDispatches > c.DailyDispatches || r.Budget.MaxProcessStarts > c.DailyProcessStarts || r.Budget.MaxExecutionSeconds > c.DailyExecutionSeconds {
 		return out, false, api.Failure(429, "budget_exhausted")
@@ -327,6 +333,17 @@ func (s *Service) CreateTask(c agentstore.Client, r api.TaskCreate, k string) (o
 		if e = p.Check(r.Operation); e != nil {
 			return e
 		}
+		if p.Limited != nil {
+			if e = p.Limited.CheckAuthorization(); e != nil {
+				return e
+			}
+			if r.Operation != "text_task" || len(r.Input) != 1 || r.Input[0].Type != "text" || r.Input[0].Text == nil || *r.Input[0].Text != agentpolicy.LimitedPrompt || r.Budget.TimeoutSeconds != 120 || rec.NativeID != "" {
+				return api.Failure(403, "policy_denied")
+			}
+			if st.Counters["limited/"+p.Limited.RegistrationSHA256].Starts != 0 {
+				return api.Failure(429, "budget_exhausted")
+			}
+		}
 		inputHashes := map[string]string{}
 		imageCount, files := 0, 0
 		seen := map[string]bool{}
@@ -381,6 +398,12 @@ func (s *Service) CreateTask(c agentstore.Client, r api.TaskCreate, k string) (o
 			Request api.TaskCreate
 			Hashes  map[string]string
 		}{r, inputHashes}), GrantEpoch: c.GrantEpoch, Task: out, Owner: c.ID, Request: r, Events: []api.Event{}}
+		if p.Limited != nil {
+			tr.CallAuthorizationSHA256 = p.Limited.AuthorizationSHA256()
+			if tr.CallAuthorizationSHA256 == "" {
+				return api.Failure(403, "policy_denied")
+			}
+		}
 		st.Tasks[out.ID] = tr
 		ses.ActiveTaskID = &tr.Task.ID
 		ses.Revision++

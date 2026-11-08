@@ -1,0 +1,4 @@
+# github.com/Garden12138/xcli/internal/nativeadapter_test [github.com/Garden12138/xcli/internal/nativeadapter.test]
+internal/nativeadapter/limited_test.go:142:15: assignment mismatch: 2 variables but s.Events returns 4 values
+FAIL	github.com/Garden12138/xcli/internal/nativeadapter [build failed]
+FAIL

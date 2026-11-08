@@ -1,5 +1,7 @@
 # G5B：逐 CLI 的首次真实 HTTP 文本验收计划
 
+G5A.1 已交付 [Codex 默认 dry-run 的独立脚本与准确参数](CODEX_FIRST_REAL_HTTP_TEST.md)，以及 [受限配置／控制面／隔离证据](CODEX_LIMITED_PROFILE.md)。首个文本仍未授权、未执行；全量工具／认证目录隔离与用途确认仍 BLOCKED，不能仅批准一次调用后直接运行。
+
 2026-11-08。**未授权、未执行。** 本文件不是启用开关或调用授权，不沿用此前剩余 3 次。当前三家均未达到执行前置；先解决 [G5A 分项阻塞](G5A_PROFILE_READINESS.md)，不能仅获一次调用同意就绕过 `Profile.Check`。
 
 本计划把 L01 拆为 **L01-a 首次文本（1 次）**、L01-b 续接（另 1 次）。不改变 ACCEPTANCE 的完整门槛；首次文本成功也不能将 NAG 真实 Gate 或原 Gate B 标 PASS。旧 [REAL_HTTP_ACCEPTANCE_PLAN](REAL_HTTP_ACCEPTANCE_PLAN.md) 的 L01 2 次指两个子场景，本计划以更小的首个子场景作为下一次授权单位。

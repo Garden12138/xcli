@@ -32,17 +32,18 @@ type SessionRecord struct {
 	Context         api.Context `json:"context"`
 }
 type TaskRecord struct {
-	InputHashes     map[string]string `json:"input_hashes"`
-	ConsentSHA256   string            `json:"consent_sha256"`
-	GrantEpoch      int               `json:"grant_epoch"`
-	Task            api.Task          `json:"task"`
-	Owner           string            `json:"owner"`
-	Request         api.TaskCreate    `json:"request"`
-	Events          []api.Event       `json:"events"`
-	InvocationID    string            `json:"invocation_id"`
-	StartedAt       *time.Time        `json:"started_at"`
-	ReservedSeconds int               `json:"reserved_seconds"`
-	BudgetDay       string            `json:"budget_day"`
+	CallAuthorizationSHA256 string            `json:"call_authorization_sha256,omitempty"`
+	InputHashes             map[string]string `json:"input_hashes"`
+	ConsentSHA256           string            `json:"consent_sha256"`
+	GrantEpoch              int               `json:"grant_epoch"`
+	Task                    api.Task          `json:"task"`
+	Owner                   string            `json:"owner"`
+	Request                 api.TaskCreate    `json:"request"`
+	Events                  []api.Event       `json:"events"`
+	InvocationID            string            `json:"invocation_id"`
+	StartedAt               *time.Time        `json:"started_at"`
+	ReservedSeconds         int               `json:"reserved_seconds"`
+	BudgetDay               string            `json:"budget_day"`
 }
 type Idempotency struct {
 	Digest    string    `json:"digest"`

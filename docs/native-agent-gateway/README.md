@@ -25,3 +25,5 @@
 实施交付：[验收报告](IMPLEMENTATION_REPORT.md) · [安装/API 手册](USER_GUIDE.md) · [实际支持矩阵](SUPPORT_MATRIX.md) · [真实验收预算计划（未授权）](REAL_HTTP_ACCEPTANCE_PLAN.md)。
 
 G5A 最新入口：[逐 Profile 就绪与分项阻塞](G5A_PROFILE_READINESS.md) · [官方接口／账号／应用授权边界](OFFICIAL_INTEGRATION_REVIEW.md) · [G5B 每家首次 1 次文本计划（未授权）](G5B_REAL_HTTP_PLAN.md)。三个真实 Profile 仍关闭，app-server/ACP 尚未晋升。
+
+G5A.1：[Codex 受限控制与真实命令沙箱证据](CODEX_LIMITED_PROFILE.md) · [首次 HTTP 脚本（默认 dry-run）](CODEX_FIRST_REAL_HTTP_TEST.md)。Native 全工具／认证隔离验证器仍 BLOCKED，不把部分原生 canary 通过当真实推理 Gate 通过。

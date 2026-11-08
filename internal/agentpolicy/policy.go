@@ -19,13 +19,14 @@ import (
 )
 
 type Config struct {
-	Version               int    `yaml:"version" json:"version"`
-	Host                  string `yaml:"host" json:"host"`
-	Port                  int    `yaml:"port" json:"port"`
-	DailyDispatches       int    `yaml:"daily_dispatches" json:"daily_dispatches"`
-	DailyProcessStarts    int    `yaml:"daily_process_starts" json:"daily_process_starts"`
-	DailyExecutionSeconds int    `yaml:"daily_execution_seconds" json:"daily_execution_seconds"`
-	QueueLimit            int    `yaml:"queue_limit" json:"queue_limit"`
+	Version               int           `yaml:"version" json:"version"`
+	Host                  string        `yaml:"host" json:"host"`
+	Port                  int           `yaml:"port" json:"port"`
+	DailyDispatches       int           `yaml:"daily_dispatches" json:"daily_dispatches"`
+	DailyProcessStarts    int           `yaml:"daily_process_starts" json:"daily_process_starts"`
+	DailyExecutionSeconds int           `yaml:"daily_execution_seconds" json:"daily_execution_seconds"`
+	QueueLimit            int           `yaml:"queue_limit" json:"queue_limit"`
+	CodexLimited          LimitedConfig `yaml:"codex_limited" json:"codex_limited"`
 }
 
 func DefaultConfig() Config {
@@ -34,6 +35,9 @@ func DefaultConfig() Config {
 func (c Config) Validate() error {
 	if c.Version != 1 || !slices.Contains([]string{"127.0.0.1", "::1"}, c.Host) || c.Port < 0 || c.Port > 65535 || c.DailyDispatches < 0 || c.DailyDispatches > 1000 || c.DailyProcessStarts < 0 || c.DailyProcessStarts > 1000 || c.DailyExecutionSeconds < 0 || c.DailyExecutionSeconds > 86400 || c.QueueLimit < 1 || c.QueueLimit > 128 {
 		return errors.New("invalid independent Agent Gateway configuration")
+	}
+	if err := c.CodexLimited.Validate(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -81,6 +85,7 @@ type Profile struct {
 	Native             bool
 	Blocker            string
 	Operations         []string
+	Limited            *LimitedBinding `json:",omitempty"`
 }
 
 func (p Profile) Freeze() Profile {
@@ -93,12 +98,17 @@ func (p Profile) Check(operation string) error {
 	if !slices.Contains(p.Operations, operation) {
 		return api.Failure(422, "capability_missing")
 	}
+	if p.Limited != nil {
+		if err := p.Limited.Check(p.Native); err != nil {
+			return err
+		}
+	}
 	if p.Blocker != "" {
 		return api.Failure(503, p.Blocker)
 	}
 	// No production native profile is promoted by a configuration boolean. L04
 	// must establish a per-invocation filesystem/tool/network boundary first.
-	if p.Native {
+	if p.Native && p.Limited == nil {
 		return api.Failure(503, "policy_unenforceable")
 	}
 	return nil
@@ -143,6 +153,11 @@ func Catalog(profiles []Profile, instance string, clientAgents, clientPolicies, 
 				available = "available"
 				reason = "offline_fixture_only"
 				evidence = "verified"
+				if p.Native && p.Limited != nil {
+					available = "unverified"
+					reason = "limited_acceptance_only"
+					evidence = "unverified"
+				}
 			}
 			if reason == "" {
 				reason = "policy_unenforceable"

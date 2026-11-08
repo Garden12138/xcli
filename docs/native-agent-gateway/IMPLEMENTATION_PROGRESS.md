@@ -4,7 +4,7 @@
 
 ## 当前入口
 
-当前阶段：**G5A 启用前审查与最小修复已完成（2026-11-08），起点 `f72e32a`；G1–G4 不重复实施。G5B 尚未授权且工程前置未齐。** 本轮允许官方文档、版本/帮助/schema/无 turn 握手和离线回归；真实模型请求预算仍为 0。真实 Profile 保持关闭。此前文档中“不运行版本探针”是前轮范围，本轮仅由这次明确的非推理授权取代。
+当前阶段：**G5A.1 已完成可交付的受限控制实现、非模型检查与离线回归，起点 `6e2ecd7`；全部启用工程前置尚未满足，真实启用 Gate 为 BLOCKED，G5B 未授权。** 只处理 Codex；真实模型请求预算 0，其他 CLI 关闭。具体进度与最终提交见末尾 G5A.1 节。此前“不运行版本探针”属于旧轮范围，本轮非推理登录／原生 sandbox canary 由用户明确授权。
 
 最新恢复入口：[G5A 分项状态](G5A_PROFILE_READINESS.md) → [官方集成与授权](OFFICIAL_INTEGRATION_REVIEW.md) → [G5B 每家首次 1 次文本计划](G5B_REAL_HTTP_PLAN.md)。G5A 本地提交定位见本文件末尾；不得将审查完成解读为已具备直接推理条件。
 
@@ -148,3 +148,30 @@ bash tests/native_agent_gateway/verify-offline.sh
 不要自动重跑 `probe_protocol.py --execute-non-model` 或 `profile_preflight.py --execute-non-model` 来增加无必要启动；已有证据足够。后续若安装变动需重新非模型检查，单独记账；所有真实推理仍需要新明确授权。Cursor 另需具体服务 workspace 的官方 Trust 审查、bundle 完整性和生命周期修复；Agy 另需供应商用途授权依据。未获授权前不运行 G5B／旧 native smoke。
 
 G5A 实现、审查、测试及证据提交：`33ac9273f25dce9574b0f82af8c1e4f5dc413580`（`feat(agent-gateway): review G5A native profile readiness`）。提交后再次核对 171 个源码摘要一致，工作区干净。本段随后仅补录实际 SHA；交接文档自身提交由 `git log -1 -- docs/native-agent-gateway/IMPLEMENTATION_PROGRESS.md` 定位，避免自引用。不 Push/Tag/Release/部署。
+
+## G5A.1 Codex 最小受限启用工程（2026-11-08）
+
+基线 HEAD `6e2ecd77c0c4`（完整值以 Git 为准），工作区开始干净。已重新阅读用户指定七份文档及相关配置／Profile／service／worker／Exec／私有存储代码；基于原架构增量实现。未做 Cursor/Agy 生产改造，未修改四应用，未部署、Push 或发布。
+
+已实现：
+
+- 默认关闭的 Codex-only 配置和 owner 控制面；prepare 新合成 Git 注册、显式非模型 probe、readiness、启用、独立调用授权、运行期 disable。未知状态／字段、版本／摘要变化、未完成证明均关闭，不能用配置 true 或伪造 JSON 越过 native verifier。
+- 固定 workspace/材料/prompt、text-only、指定客户端、禁止续接／文件／HTTP argv/env/binary/cwd；1/1/120 Session 和 Task 限制，复用单并发、owner、scope、grant epoch、CAS、幂等、deadline、cancel、重启恢复。
+- journal lifetime 计数每登记 Profile 最多一次启动，不随新 Session／重启／跨日恢复。新 Task 记录调用授权摘要；dispatch 再核对、活动监督器检查关闭／授权撤回或过期。控制文件管理锁、fsync/rename/目录 fsync，不靠清空预算恢复。
+- [首次 HTTP 脚本](CODEX_FIRST_REAL_HTTP_TEST.md)：默认 dry-run，明确 execute＋新授权引用才检查进入；一次 Task POST、无不确定结果重试、SSE／终态／内容校验、停止重启后的持久查询、脱敏证据。当前真实就绪门禁不满足，不能执行成功。
+
+原生实际证据：[final-probe.json](evidence/g5a1/final-probe.json)。Codex 0.167.0，登录类别 AUTHENTICATED_CHATGPT；登记材料读取阳性对照、越界读拒绝、工作区写拒绝、symlink 逃逸拒绝、工具 loopback 网络拒绝均通过。官方 `sandbox` helper 执行固定系统命令，没有 exec turn 或推理 prompt。首次尝试按网站旧 `sandbox macos` 形态被环境拒绝，保留 [help.json](evidence/g5a1/help.json)，之后以本机 `sandbox --help` 正式格式执行；没有放宽策略。
+
+独立合成项目 `/private/tmp/xcli-g5a1-state-9a6vyye3/codex-limited/workspace`；没有将 xcli 或其他仓库作 Agent 工作区。只登记 native auth-home 路径，登录凭据始终由官方进程读取；报告不保存账户、Token 或原始诊断。
+
+**当前工程 Gate：BLOCKED，不是 READY_FOR_AUTHORIZATION。** 实际 kernel canary 只证明本地命令边界。现有单向 exec 适配器尚无完整有效工具清单／内置工具与认证目录访问隔离的证明；`nativeToolBoundaryVerified()` 保持 false，是需补齐的真实验证器工程，不是再给一次调用授权可消除的问题。账号所有权、计划／目标模型权益、个人本地用途适用性也未全部确认。Native exec 未启动推理；不自动切换 app-server 或 SIWC 来绕过。
+
+最终完整离线回归 PASS：[offline.log](evidence/g5a1/offline.log)、[验收摘要](evidence/g5a1/validation.json)。全量 `go test -race -p 1 -count=1 -timeout 240s ./...`、vet、build、既有 Python 11/11、新脚本 4/4；HTTP→假 Codex／持久结果、100 同键竞争、跨 owner、一次 lifetime 启动、关闭／撤销／超时与重启均有回归。原有媒体路径攻击、晚到、故障／旧 Runtime 检查保留且通过。源码变更后早期完整通过日志另存 before-receipt-binding / before-authorization-snapshot，不冒充最终源码验证。
+
+真实预检另有 [HTTP 拒绝证据](evidence/g5a1/native-gateway-rejection.json)：独立本地 codex-acceptance 客户端准备就绪；即使暂时配置 enabled=true，enable 命令仍拒绝，HTTP 建 Session 仍 503 policy_unenforceable，0 Task POST。临时启用意向配置已删，持久开关仍 false、调用授权为空；实际验收 Token 仅存该临时状态根的私有 client-secrets 目录，没有导出到仓库或四应用。[默认 dry-run](evidence/g5a1/script-dry-run.json) 已执行，0 模型 Task POST。
+
+本轮顶层原生非模型调用共 **18**：[账本](evidence/g5a1/non-model-ledger.json)，不包括 Git、xcli 管理命令或明确的假进程测试；真实推理／HTTP 真实 Task 仍 **0**。失败记录保留：初次 Events 返回值编译错误；HTTP fixture 缺固定 Host、错误尝试用 rotate 改授权（生产代码正确保留原授权）等，在独立新客户端 fixture 修复；没有删测试／放宽 Host 或 grant 检查。
+
+[最终源码清单](evidence/g5a1/source-manifest.json)：179 文件，SHA-256 `ac62544bea11f79f9f5a5309f59dfa35a9225729078692d6ae1c05f465d0d417`；文档链接与新增证据秘密形态检查通过，旧证据未覆盖。本地实现提交随后由 `git log -1 -- internal/agentpolicy/limited.go` 定位，实际 SHA 在交接段补录。
+
+恢复：先读本节、CODEX_LIMITED_PROFILE、CODEX_FIRST_REAL_HTTP_TEST，检查 git status/log。离线复验 `bash tests/native_agent_gateway/verify-offline.sh`；只读报告用 `codex-limited readiness`。不要运行真实脚本的 execute 或旧 native smoke；不要手改 Native/控制状态强开。要继续启用，先补齐全工具／认证根隔离验证器及其真实非模型证据；账号／用途确认和独立一次调用授权随后分别处理。现阶段即使批准 1 次调用，脚本仍应拒绝。

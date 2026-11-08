@@ -123,6 +123,15 @@ func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Drive
 			if e == nil {
 				e = p.Check(r.Task.Operation)
 			}
+			if e == nil && p.Limited != nil {
+				e = p.Limited.CheckAuthorization()
+				if e == nil && p.Limited.AuthorizationSHA256() != r.CallAuthorizationSHA256 {
+					e = api.Failure(403, "policy_denied")
+				}
+				if e == nil && st.Counters["limited/"+p.Limited.RegistrationSHA256].Starts != 0 {
+					e = api.Failure(429, "budget_exhausted")
+				}
+			}
 			if e == nil && p.Binary != "" {
 				e = p.CheckBinary()
 			}
@@ -155,6 +164,9 @@ func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Drive
 			r.Task.Execution.State = "running"
 			r.Task.Budget.DispatchesConsumed = 1
 			r.Task.Budget.ProcessStartsConsumed = 1
+			if p.Limited != nil {
+				st.Counters["limited/"+p.Limited.RegistrationSHA256] = agentstore.Counter{Dispatches: 1, Starts: 1}
+			}
 			for _, k := range []string{"global/" + day, c.ID + "/" + day} {
 				x := st.Counters[k]
 				x.Dispatches++
@@ -229,6 +241,10 @@ func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Drive
 		return e
 	}
 	bound.Workspace, bound.OutputRoot, err = s.Store.Workspace(bound.SessionID, bound.TaskID)
+	if bound.Profile.Limited != nil {
+		bound.Workspace = bound.Profile.Limited.Workspace
+		bound.OutputRoot = ""
+	}
 	if err != nil {
 		return true, err
 	}
@@ -266,6 +282,9 @@ func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Drive
 			result = nativeadapter.TurnResult{Terminal: "unknown", Protocol: "unknown", Code: "execution_state_unknown"}
 			goto complete
 		case <-monitor.C:
+			if bound.Profile.Limited != nil && (bound.Profile.Limited.Check(bound.Profile.Native) != nil || bound.Profile.Limited.CheckAuthorization() != nil || bound.Profile.Limited.AuthorizationSHA256() != tr.CallAuthorizationSHA256) {
+				stop()
+			}
 			status, e := s.Store.TaskStatus(tr.Task.ID)
 			if e != nil || status == "cancel_requested" {
 				stop()

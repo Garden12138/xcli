@@ -1,0 +1,14 @@
+# Owner control-plane configuration. It DOES NOT authorize a model request.
+# Current native tool/auth isolation gate remains BLOCKED even if enabled=true.
+version: 1
+host: 127.0.0.1
+port: 0
+queue_limit: 1
+daily_dispatches: 1
+daily_process_starts: 1
+daily_execution_seconds: 120
+codex_limited:
+  enabled: false
+  client_id: codex-acceptance
+  purpose: personal_local_synthetic
+  provider_authorization_ref: ""
