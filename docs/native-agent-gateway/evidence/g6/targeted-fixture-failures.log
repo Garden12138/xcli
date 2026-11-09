@@ -1,0 +1,23 @@
+--- FAIL: TestAppServerHTTPFakePersistenceIdempotencyAndResume (0.54s)
+    app_server_test.go:224: 429
+    app_server_test.go:224: 429
+    app_server_test.go:224: 429
+    app_server_test.go:224: 429
+    app_server_test.go:224: 429
+    app_server_test.go:224: 429
+    app_server_test.go:224: 429
+    app_server_test.go:224: 429
+    app_server_test.go:224: 429
+    app_server_test.go:224: 429
+    app_server_test.go:224: 429
+    app_server_test.go:224: 429
+    app_server_test.go:224: 429
+    app_server_test.go:224: 429
+    app_server_test.go:224: 429
+    app_server_test.go:224: 429
+    app_server_test.go:224: 429
+    app_server_test.go:224: 429
+    app_server_test.go:280: profile_changed
+FAIL
+FAIL	github.com/Garden12138/xcli/internal/nativeadapter	8.937s
+FAIL

@@ -1,5 +1,9 @@
 # G5B：逐 CLI 的首次真实 HTTP 文本验收计划
 
+G6 更新（2026-11-09）：app-server Adapter 和假 HTTP 纵向路径已实现；真实无推理握手通过，当前决策 **ISOLATED_RUNTIME_REQUIRED**。本机 restricted access 字段缺失／请求拒绝、管理面可读假凭据、严格外层初始化失败的独立证据见 [G6_SECURITY_BOUNDARY](G6_SECURITY_BOUNDARY.md)。不能仅批准一次调用后执行 exec 或 app-server。下一授权入口与 --adapter codex-app-server-v1 的准确脚本形态见 [G6_DECISION](G6_DECISION.md)，当前只能 dry-run／前置阻断。
+
+首次文本仍最多 1 Task／1 顶层进程、并发 1、120s、无重试／fallback；真实 builtin 安全试验若有必要须另审另批，不占用或暗增首次文本预算。用户账号、计划、用途、云同意及费用风险要与新安装／策略／环境绑定，不能挪用旧 exec 声明；原生内部调用和费用不由进程次数精确限制。真实 Gate B 仍非 PASS。
+
 G5A.2 最终决定：Codex 当前 ENGINEERING_BLOCKED／USER_CONFIRMATION_REQUIRED；[独立隔离证据与替代路线](CODEX_ISOLATION_BOUNDARY.md)和[本人声明入口](CODEX_ACCOUNT_AND_USAGE_CONFIRMATION.md)为前置。脚本已实现新 generation、防陈旧端口及双轴门禁，dry-run／显式 execute 负向均零 Task。**本轮没有 G5B 推理授权，真实 Gate B 仍非 PASS。**
 
 G5A.1 已交付 [Codex 默认 dry-run 的独立脚本与准确参数](CODEX_FIRST_REAL_HTTP_TEST.md)，以及 [受限配置／控制面／隔离证据](CODEX_LIMITED_PROFILE.md)。首个文本仍未授权、未执行；全量工具／认证目录隔离与用途确认仍 BLOCKED，不能仅批准一次调用后直接运行。

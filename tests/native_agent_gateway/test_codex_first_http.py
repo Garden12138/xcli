@@ -28,6 +28,14 @@ class FirstCodexHTTPTest(unittest.TestCase):
             self.assertFalse(execute_gate({k: v for k, v in state.items() if k != field}, "new-ref"))
         self.assertFalse(execute_gate({**state, "engineering_state": "ENGINEERING_BLOCKED"}, "new-ref"))
         self.assertFalse(execute_gate({**state, "user_confirmation_state": "USER_CONFIRMATION_REQUIRED"}, "new-ref"))
+        self.assertFalse(execute_gate({**state, "state": "ISOLATED_RUNTIME_REQUIRED", "engineering_state": "ISOLATED_RUNTIME_REQUIRED"}, "new-ref"))
+
+    def test_app_server_does_not_fallback_to_exec(self):
+        caps = {"revision": "cap", "agents": [{"agent_id": "codex", "adapter_id": "codex-exec-v1"}]}
+        calls = []
+        with self.assertRaises(StopIteration):
+            one_task(lambda *args: calls.append(args), caps, "key", lambda _: None, "codex-app-server-v1")
+        self.assertEqual(calls, [])
 
     def test_one_post_success_and_failure_never_retry(self):
         for failure in (False, True):

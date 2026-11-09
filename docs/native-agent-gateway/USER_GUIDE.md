@@ -1,5 +1,20 @@
 # Native Agent Gateway V1 使用与接入
 
+G6 当前交付：默认关闭的 `codex-app-server-v1` stdio Adapter，HTTP→假 app-server 生命周期已验证；真实无推理握手通过，工程决策 **ISOLATED_RUNTIME_REQUIRED**。见 [实现](G6_APP_SERVER_IMPLEMENTATION.md)、[安全边界](G6_SECURITY_BOUNDARY.md)、[验收](G6_OFFLINE_ACCEPTANCE.md)、[下一步与准确命令](G6_DECISION.md)。没有真实 app-server enable/authorize，不因设置 Feature Flag 就启动推理；exec、Cursor、Agy 继续关闭。
+
+独立 YAML 可选 `codex_app_server_enabled: false`（缺省）。设 true 只列出 policy_unenforceable 的候选；`app-server readiness` 零 CLI 启动，`app-server disable` 可实时写关闭标记。配置修改需要重启，关闭标记在后续重启仍有效。当前解除标记也不能跨过 Native 的工程拒绝，不提供自动激活路径。
+
+```bash
+/tmp/xcli-nag agent-gateway --state-dir "$NAG_STATE" --gateway-config "$NAG_CONFIG" app-server readiness
+/tmp/xcli-nag agent-gateway --state-dir "$NAG_STATE" app-server disable
+python3 tests/native_agent_gateway/codex_first_http.py \
+  --binary /tmp/xcli-nag --adapter codex-app-server-v1 \
+  --state-dir "$NAG_STATE" --gateway-config "$NAG_CONFIG" \
+  --out /private/tmp/codex-app-server-dry-run.json
+```
+
+以上为已验证控制／默认 dry-run。显式 owner-only 非推理 `app-server probe --binary /绝对路径/codex` 只使用临时假 HOME/CODEX_HOME；`--outer-isolation` 当前在本机初始化失败。已有证据足够，恢复时不要无必要重跑，更不能把命令失败视作隔离 PASS。HTTP 没有 command/exec、fs、config、auth 或通用 RPC 路由。
+
 G5A.2 当前状态：**ENGINEERING_BLOCKED**；本人账号、用途、云发送与费用声明为 **USER_CONFIRMATION_REQUIRED**。见 [隔离边界与实际证据](CODEX_ISOLATION_BOUNDARY.md)及[本人确认步骤](CODEX_ACCOUNT_AND_USAGE_CONFIRMATION.md)。新增 `codex-limited boundary-probe`（只用假认证和 Canary）、`confirmation-template`（六项默认 false）、`confirm --file`（本人编写的私有 JSON）；readiness 零原生启动、分别报告工程／声明／调用授权状态。当前不能因确认用途或脚本存在就标 READY_FOR_AUTHORIZATION。
 
 G5A.1 新增 Codex-only 的 `codex-limited prepare/probe/readiness/enable/authorize/disable` 控制面，完整配置和实际验证范围见 [受限 Profile 手册](CODEX_LIMITED_PROFILE.md)。`prepare` 只建服务自己的合成 Git 项目；`probe` 是显式非模型检查；`readiness` 零原生启动。Profile 启用与一次推理许可独立，当前内置工具／认证目录隔离未证明，enable/authorize 均失败关闭。Cursor/Agy 保持关闭。

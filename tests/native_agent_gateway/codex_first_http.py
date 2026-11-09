@@ -21,7 +21,7 @@ EXPECTED = "XCLI_G5B_CODEX_SYNTHETIC_20261108"
 
 def execute_gate(readiness, authorization_ref):
     return (readiness.get("state") == "READY_FOR_AUTHORIZATION"
-            and readiness.get("engineering_state") == "ENGINEERING_READY"
+            and readiness.get("engineering_state") in ("ENGINEERING_READY", "APP_SERVER_ENGINEERING_READY")
             and readiness.get("user_confirmation_state") == "CONFIRMED"
             and bool(readiness.get("user_confirmation_sha256"))
             and readiness.get("enabled") is True
@@ -66,11 +66,13 @@ def validate_result(task, events):
     assert all(e["task_id"] == task["id"] for e in events)
 
 
-def one_task(request, caps, key, save):
-    agent = next(a for a in caps["agents"] if a["agent_id"] == "codex" and a["adapter_id"] == "codex-exec-v1")
+def one_task(request, caps, key, save, adapter="codex-exec-v1"):
+    policy = {"codex-exec-v1": "codex-limited-readonly-v1",
+              "codex-app-server-v1": "codex-app-server-readonly-v1"}[adapter]
+    agent = next(a for a in caps["agents"] if a["agent_id"] == "codex" and a["adapter_id"] == adapter)
     status, ses = request("POST", "/agent/v1/sessions", {
-        "agent_id": "codex", "adapter_id": "codex-exec-v1", "capability_revision": caps["revision"],
-        "policy_id": "codex-limited-readonly-v1",
+        "agent_id": "codex", "adapter_id": adapter, "capability_revision": caps["revision"],
+        "policy_id": policy,
         "budget": {"max_dispatches": 1, "max_process_starts": 1, "max_execution_seconds": 120},
         "context": {"app": "worklog", "workflow": "codex-first-http", "opaque_ref": "synthetic"}}, key + "-session")
     assert status == 201 and ses["profile_sha256"]
@@ -105,6 +107,7 @@ def one_task(request, caps, key, save):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", required=True)
+    parser.add_argument("--adapter", choices=("codex-exec-v1", "codex-app-server-v1"), default="codex-exec-v1")
     parser.add_argument("--state-dir", required=True)
     parser.add_argument("--gateway-config", required=True)
     parser.add_argument("--token-file")
@@ -132,7 +135,7 @@ def main():
             output.seek(0); json.dump(evidence, output, indent=2); output.truncate(); output.flush(); os.fsync(output.fileno())
         proc = None
         try:
-            readiness = json.loads(run("codex-limited", "readiness"))
+            readiness = json.loads(run("app-server" if args.adapter == "codex-app-server-v1" else "codex-limited", "readiness"))
             save({"readiness": readiness})
             if not args.execute:
                 save({"result": "DRY_RUN", "can_execute": execute_gate(readiness, args.authorization_ref)})
@@ -179,7 +182,7 @@ def main():
             def record(update):
                 if update.get("task_post_attempted"): update["model_task_posts"] = 1
                 save(update)
-            task = one_task(request, caps, evidence["idempotency_key"], record)
+            task = one_task(request, caps, evidence["idempotency_key"], record, args.adapter)
             run("stop"); proc.wait(timeout=7); proc = None
             address = start()
             status, restored = request("GET", "/agent/v1/tasks/" + task["id"])

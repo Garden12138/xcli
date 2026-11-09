@@ -1,0 +1,54 @@
+{
+  "real_model_requests": 0,
+  "real_turn_start_sent": 0,
+  "real_auth_material_used": false,
+  "top_level_native_metadata_or_probe_attempts": 7,
+  "entries": [
+    {
+      "count": 2,
+      "actions": [
+        "--version",
+        "app-server generate-json-schema"
+      ],
+      "evidence": "schema.json"
+    },
+    {
+      "count": 2,
+      "actions": [
+        "local app-server probe",
+        "whole-process offline Seatbelt app-server attempt"
+      ],
+      "evidence": [
+        "local-app-server.json",
+        "outer-app-server.json"
+      ]
+    },
+    {
+      "count": 1,
+      "actions": [
+        "initialize + fs/readFile synthetic only to inspect envelope keys"
+      ],
+      "evidence": "protocol-diagnostics.json"
+    },
+    {
+      "count": 1,
+      "actions": [
+        "whole-process offline Seatbelt initialize only, exited SIGABRT (-6)"
+      ],
+      "evidence": "protocol-diagnostics.json"
+    },
+    {
+      "count": 1,
+      "actions": [
+        "final local initialize + initialized, three synthetic fs/readFile, two restricted command/exec requests"
+      ],
+      "evidence": "local-app-server-final.json"
+    }
+  ],
+  "notes": [
+    "Counts are top-level CLI/launcher attempts, not model request counts or all child processes.",
+    "No thread/start, thread/resume, turn/start, login or account method sent to a real CLI.",
+    "No inference HTTP Task submitted to a real adapter.",
+    "Restricted command/exec candidates rejected; no broad sandbox fallback used."
+  ]
+}

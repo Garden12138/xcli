@@ -282,6 +282,9 @@ func (s *Service) ExecuteNext(parent context.Context, driver nativeadapter.Drive
 			result = nativeadapter.TurnResult{Terminal: "unknown", Protocol: "unknown", Code: "execution_state_unknown"}
 			goto complete
 		case <-monitor.C:
+			if bound.Profile.AppServer != nil && bound.Profile.Check(bound.Operation) != nil {
+				stop()
+			}
 			if bound.Profile.Limited != nil && (bound.Profile.Limited.Check(bound.Profile.Native) != nil || bound.Profile.Limited.CheckAuthorization() != nil || bound.Profile.Limited.AuthorizationSHA256() != tr.CallAuthorizationSHA256) {
 				stop()
 			}

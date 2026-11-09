@@ -43,6 +43,7 @@ func (a *app) newAgentGatewayCommand() *cobra.Command {
 		if e != nil {
 			return e
 		}
+		profiles = agentpolicy.BindAppServer(st.Root, cfg, profiles)
 		svc, e := agentservice.New(st, clients, cfg, profiles)
 		if e != nil {
 			return e
@@ -134,7 +135,7 @@ func (a *app) newAgentGatewayCommand() *cobra.Command {
 		return errors.New("registered --agent required")
 	}}
 	preflight.Flags().StringVar(&preflightAgent, "agent", "", "codex, cursor or antigravity")
-	group.AddCommand(refresh, preflight, agentClientCommand(&root), a.limitedCodexCommand(&root, &path))
+	group.AddCommand(refresh, preflight, agentClientCommand(&root), a.limitedCodexCommand(&root, &path), appServerCommand(&root, &path))
 	return group
 }
 func agentClientCommand(root *string) *cobra.Command {

@@ -31,6 +31,9 @@ func New(store *agentstore.Store, clients *agentstore.Clients, cfg agentpolicy.C
 	}
 	s := &Service{Store: store, Clients: clients, Config: cfg, wake: make(chan struct{}, 1), acceptedClocks: map[string]time.Time{}}
 	for _, p := range profiles {
+		if p.AdapterID == agentpolicy.AppServerAdapter && !cfg.CodexAppServerEnabled {
+			p.Blocker = "policy_unenforceable"
+		}
 		p.CapabilityRevision = api.Digest(profiles)
 		s.Profiles = append(s.Profiles, p.Freeze())
 	}

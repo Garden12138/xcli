@@ -52,6 +52,9 @@ func Specification(b BoundRequest) (agent.Definition, agent.CommandSpec, error) 
 	return d, spec, err
 }
 func (Exec) StartTurn(ctx context.Context, b BoundRequest, observe func(Observation) error) TurnResult {
+	if b.Profile.AdapterID == agentpolicy.AppServerAdapter {
+		return (AppServer{}).StartTurn(ctx, b, observe)
+	}
 	result := TurnResult{Terminal: "missing", Protocol: "not_started", LocalStopConfirmed: true, Usage: api.Usage{Source: "none", Scope: "unknown"}}
 	if e := b.Profile.Check(b.Operation); e != nil {
 		result.Code = e.Error()

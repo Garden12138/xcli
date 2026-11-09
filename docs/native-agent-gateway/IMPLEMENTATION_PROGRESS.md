@@ -4,7 +4,7 @@
 
 ## 当前入口
 
-当前阶段：**G5A.2 非推理工程检查及最小修复完成；ENGINEERING_BLOCKED，用户确认轴 USER_CONFIRMATION_REQUIRED。** 起点 `3494756`，实现 SHA 见末尾交接。本轮真实推理 0；仅 Codex、合成 Canary／假凭据和非推理探针。恢复先读文末 G5A.2 记录及新隔离／用户确认文档。G1–G4、G5A.1 的控制、预算和旧证据不重做、不覆盖；三家真实 Profile 继续关闭。
+当前阶段：**G6 app-server 最小集成；决策 ISOLATED_RUNTIME_REQUIRED**。起点 `15b608a`，真实推理 0；exec 的 ENGINEERING_BLOCKED 和旧证据保留。恢复先读本文件末尾 G6、G6_DECISION、G6_SECURITY_BOUNDARY，不重复 G5A.2 Canary 或执行真实 turn/start。
 
 最新恢复入口：[G5A 分项状态](G5A_PROFILE_READINESS.md) → [官方集成与授权](OFFICIAL_INTEGRATION_REVIEW.md) → [G5B 每家首次 1 次文本计划](G5B_REAL_HTTP_PLAN.md)。G5A 本地提交定位见本文件末尾；不得将审查完成解读为已具备直接推理条件。
 
@@ -223,3 +223,48 @@ GOCACHE=/tmp/xcli-nag-go-cache GOPROXY=off GOSUMDB=off go build -trimpath -o /tm
 ### G5A.2 最终提交定位
 
 代码、测试、隔离验证器与证据提交：`380559cdf9e82371bf36f256af52d8ea957f438b`。本节为仅文档的交接补记；当前文档提交用 `git log -1 -- docs/native-agent-gateway/IMPLEMENTATION_PROGRESS.md` 定位，避免自引用 SHA。最终源码清单仍为 184 文件／`bcbd8d5134bf6facd63a49c0db1f4ff929f6d649be46444380a3a9cb79b4962d`；交接不改变源码或测试结果，不重复启动原生探针。全部仅本地提交，未 Push／部署／发布；ENGINEERING_BLOCKED／USER_CONFIRMATION_REQUIRED、真实推理 0 和三家真实 Gate B 非 PASS 保持不变。
+
+## G6 实际交付（2026-11-09）
+
+本轮按用户新定义执行“Codex app-server 最小可行集成”，不是旧路线图中的四应用 G6。起点 HEAD `15b608a`，工作区干净；已完整恢复用户指定文档、现有 runtime/driver/worker/store 和官方协议。未改四应用、Model Gateway、Cursor/Agy 或原生登录配置。
+
+- 新 Adapter `codex-app-server-v1`，stdio JSON-RPC：initialize/initialized、thread/start/resume、turn/start/interrupt、agent message 通知及 turn/completed，复用现有 worker、Task/Session、journal、预算、幂等、取消和 SSE。每 Task 一个进程，ID 不公开，不自动重发／fallback，未知原生字段／事件不提供成功事实。
+- 默认关闭 Feature Flag `codex_app_server_enabled:false`；true 只列受阻候选。生产 Native=true，不能由配置／receipt／清空 Blocker 晋升；app-server disable 的私有 tombstone 可即时阻止新任务并由监督器停止活跃任务。没有真实 enable/authorize 入口。
+- 权限请求默认 decline／空 grant，未知 server request 回 -32601，不执行 command/config/auth；认证刷新拒绝为 native_auth_required。HTTP 原生方法／参数／Thread ID 注入拒绝。interrupted 仅记录原生终态，云停止确认保持 null；ACK 与晚到 success 不改写取消结果。
+- HTTP → 假 app-server → 持久结果/SSE → 状态根重开 → thread/resume 通过；20 并发同键唯一 Task，HTTP admission 429 不消耗新 dispatch；审批、坏 JSON、错 ID、quota、部分结果、超长流、崩溃、取消／超时／撤销／关闭／晚到事件均有回归。Fake 证据不代表真实模型。
+- 真实 Codex 0.167.0 的无推理 initialize/initialized、EOF exit 0、停止确认通过。重新生成 322 个 schema；本机 ReadOnly 变体没有 access/readableRoots/includePlatformDefaults，严格命令候选实际 RPC_REJECTED；官方文档不能替代安装证据。
+- 新路径实证：直接 fs/readFile 能读合成材料、工作区外假 auth.json 及 symlink 目标。这是本地管理面的特权能力，不是模型 builtin 已越权的证明；真实工具环境／网络／所有 builtin 与目录替换仍 NOT_TESTED。没有读取真实认证文件，没有把命令或管理面证据泛化到全部工具。
+- 优先实现并尝试了无认证、断网、覆盖全进程及后代的外层 OS 原型；严格规则下 app-server 在 initialize 前 SIGABRT（独立诊断 -6），没有阳性运行证明。因此不放宽个人目录、Keychain 或网络，也不叠加更多同类验证器。独立 VM／受控环境 + 环境外应用授权 broker 的最小范围及 5–9 人日估算见 G6_SECURITY_BOUNDARY；OAuth 若需另 3–5 人日和资格／用户授权等待。
+- 本轮 7 次顶层原生 metadata/probe/launcher 尝试，真实推理／turn/start 0、真实 Thread 创建 0、真实登录材料使用 0。[账本](evidence/g6/non-model-ledger.json)、[最终协议与文件读证据](evidence/g6/local-app-server-final.json)、[本机 schema](evidence/g6/schema-capabilities.json)、[外层失败](evidence/g6/outer-app-server.json)均保留。
+
+### G6 结论与后续入口
+
+**ISOLATED_RUNTIME_REQUIRED**，不标 APP_SERVER_ENGINEERING_READY；本人用途／云发送／费用声明仍未确认，本轮没有新的模型授权。三家真实 Gate B 及 NAG 首次真实 HTTP 文本均非 PASS；原 Gate A 只继承历史特定场景。
+
+恢复先读 G6_APP_SERVER_IMPLEMENTATION、G6_SECURITY_BOUNDARY、G6_OFFLINE_ACCEPTANCE、G6_DECISION。下一最小任务是独立执行环境和外部可信认证／目的地 broker、供应商对该集成的适用性，以及安装版本和严格策略可用性；不是增加本地 Canary 数量。当前真实请求命令不能执行成功，准确的默认 dry-run 和未来 --adapter codex-app-server-v1 调用形态已在 G6_DECISION 写明。
+
+```bash
+git status --short
+git log -6 --oneline
+bash tests/native_agent_gateway/verify-offline.sh
+```
+
+离线脚本只在源码更改或明确复验时运行。原生 probe 是显式非推理工具，不在离线门禁自动调用；不要自动重跑已有探针，不使用旧 native smoke --execute，不复用此前任何余额，不 Push／部署／发布。
+
+### G6 最终验证与可恢复现场
+
+最终 `bash tests/native_agent_gateway/verify-offline.sh` 退出 0：[offline.log](evidence/g6/offline.log)包含全量 Go race（-p 1 -count=1 -timeout 240s）、vet、build、两次服务生命周期、旧 Python 11/11 与新增 Python 6/6。中间全量 PASS 分别保存在 offline-initial.log 和 offline-before-cancel-review.log；最终审查将云停止字段收敛为 unknown 后重跑完整门禁。新增外层路径单元测试也已包含最终 race。没有修改旧生产安全条件、移除测试或伪造 native 结果。
+
+新代码／测试清单 194 文件，SHA256 `e3dca881a7f87940b8cffd015d81cd72d5dce32f98050ffb1abc2f527c269c3a`：[source-manifest.json](evidence/g6/source-manifest.json)、[验证索引](evidence/g6/validation.json)、[失败与修正](evidence/g6/failure-notes.json)。
+
+[真实 Gateway 的负向检查](evidence/g6/http-native-blocked.json)：从本轮真实版本/schema/hash 观测写入纯安装元数据（没有认证资料复制或额外 CLI 启动），配置 Flag=true、专用客户端和 1/1/120 预算均具备，新 app-server Profile 仍列 blocked，Session 返回 503 policy_unenforceable；撤销客户端后 401。没有提交真实 Task，没有启动原生推理进程。默认 dry-run 与 --execute 前置负向都为 0 Task，分别见 script-dry-run.json／script-execute-blocked.json。
+
+控制面现场：`/private/tmp/xcli-g6-http-6tvgtj5e/state`，配置位于其父目录 gateway.yaml，客户端 Token 在父目录 client-secrets 私有目录，已撤销；服务已停止，Feature Flag=false，disable tombstone 保留。这个根没有真实登录、没有真实 Session／Task，不作首次真实调用根复用。临时目录可能被清理，证据已保存入仓库；不要按历史 PID 发信号或重复探针。
+
+```bash
+GOCACHE=/tmp/xcli-nag-go-cache GOPROXY=off GOSUMDB=off go build -trimpath -o /tmp/xcli-g6 .
+/tmp/xcli-g6 agent-gateway --state-dir /private/tmp/xcli-g6-http-6tvgtj5e/state \
+  --gateway-config /private/tmp/xcli-g6-http-6tvgtj5e/gateway.yaml app-server readiness
+```
+
+当前返回 ISOLATED_RUNTIME_REQUIRED；恢复时源码不变无需重复完整回归／native probe。下一工程范围仅独立环境、外部认证 broker 和协议版本／严格策略验证；必须先形成可审查证据，再处理本人用途与一次新的真实调用授权，不能仅批准一次调用就跨过 B 决策。

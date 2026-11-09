@@ -1,5 +1,7 @@
 # Native Agent Gateway V1 SPEC
 
+G6 最新入口：[app-server 实现](G6_APP_SERVER_IMPLEMENTATION.md) → [安全边界](G6_SECURITY_BOUNDARY.md) → [离线证据](G6_OFFLINE_ACCEPTANCE.md) → [决策与恢复](G6_DECISION.md)。当前 ISOLATED_RUNTIME_REQUIRED，真实推理 0；旧阶段证据保留。
+
 G5A.2 当前结论：**ENGINEERING_BLOCKED / USER_CONFIRMATION_REQUIRED**，真实模型调用 0。恢复从 [IMPLEMENTATION_PROGRESS](IMPLEMENTATION_PROGRESS.md)、[Codex 隔离边界](CODEX_ISOLATION_BOUNDARY.md)、[本人确认](CODEX_ACCOUNT_AND_USAGE_CONFIRMATION.md)进入；不要将原生命令 Canary PASS 视作真实 HTTP Gate B PASS。
 
 日期：2026-11-06。状态：**G1–G4 离线实现交付；真实验收计划已备齐；真实原生 Gateway 仍 BLOCKED**。适用范围为本人控制的本机应用；不是共享推理服务或 OpenAI API 兼容层。

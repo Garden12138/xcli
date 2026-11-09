@@ -27,6 +27,7 @@ type Config struct {
 	DailyExecutionSeconds int           `yaml:"daily_execution_seconds" json:"daily_execution_seconds"`
 	QueueLimit            int           `yaml:"queue_limit" json:"queue_limit"`
 	CodexLimited          LimitedConfig `yaml:"codex_limited" json:"codex_limited"`
+	CodexAppServerEnabled bool          `yaml:"codex_app_server_enabled" json:"codex_app_server_enabled,omitempty"`
 }
 
 func DefaultConfig() Config {
@@ -85,7 +86,8 @@ type Profile struct {
 	Native             bool
 	Blocker            string
 	Operations         []string
-	Limited            *LimitedBinding `json:",omitempty"`
+	Limited            *LimitedBinding   `json:",omitempty"`
+	AppServer          *AppServerBinding `json:",omitempty"`
 }
 
 func (p Profile) Freeze() Profile {
@@ -101,6 +103,11 @@ func (p Profile) Check(operation string) error {
 	if p.Limited != nil {
 		if err := p.Limited.Check(p.Native); err != nil {
 			return err
+		}
+	}
+	if p.AppServer != nil {
+		if e := p.AppServer.Check(p.Native); e != nil {
+			return e
 		}
 	}
 	if p.Blocker != "" {

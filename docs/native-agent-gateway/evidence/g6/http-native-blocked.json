@@ -1,0 +1,19 @@
+{
+  "scope": "REAL_NAG_NATIVE_PROFILE_NEGATIVE_ONLY_NO_CLI_TURN",
+  "state_dir": "/private/tmp/xcli-g6-http-6tvgtj5e/state",
+  "metadata_source": "G6 measured version/schema + pinned binary hash; installation metadata only, no auth copy and no new CLI start",
+  "feature_flag_initial": true,
+  "candidate_adapter": "codex-app-server-v1",
+  "candidate_installed_version": "codex-cli 0.167.0",
+  "candidate_binary_sha256": "030316ecfbb41f4e7946e584b0063ef333b7a36cd312ba349f2f6869e39b62cc",
+  "candidate_availability": "blocked",
+  "http_session_status": 503,
+  "http_error": "policy_unenforceable",
+  "after_client_revoke_status": 401,
+  "profile_disable_tombstone": true,
+  "feature_flag_final": false,
+  "service_final_active": false,
+  "real_model_requests": 0,
+  "real_HTTP_task_posts": 0,
+  "native_process_starts_for_HTTP": 0
+}
