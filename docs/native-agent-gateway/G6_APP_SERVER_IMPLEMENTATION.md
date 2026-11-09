@@ -52,3 +52,5 @@ true 仅把 `codex-app-server-v1 / codex-app-server-readonly-v1` 候选加入目
 ## 本轮不是可运行的真实受限 Profile
 
 本机 0.167.0 的 schema 缺少候选 restricted access 字段；Adapter 固定的严格候选策略不自动降级为全目录可读。当前无已验证的凭据隔离和认证云传输。Fake peer 对新策略形状的响应不能升级为本机支持证据。实现完成的是协议和离线纵向链路；首次真实调用仍须先完成 [G6_DECISION](G6_DECISION.md) 的最小缺口。
+
+最终实现／测试／证据 SHA：`c9a8d8828f0b30dc81df45306b3c7b20aec71298`；后续交接提交仅更新文档。

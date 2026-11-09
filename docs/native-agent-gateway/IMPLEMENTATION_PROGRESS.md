@@ -268,3 +268,9 @@ GOCACHE=/tmp/xcli-nag-go-cache GOPROXY=off GOSUMDB=off go build -trimpath -o /tm
 ```
 
 当前返回 ISOLATED_RUNTIME_REQUIRED；恢复时源码不变无需重复完整回归／native probe。下一工程范围仅独立环境、外部认证 broker 和协议版本／严格策略验证；必须先形成可审查证据，再处理本人用途与一次新的真实调用授权，不能仅批准一次调用就跨过 B 决策。
+
+### G6 最终提交定位
+
+代码、测试、非推理证据与 G6 决策提交：`c9a8d8828f0b30dc81df45306b3c7b20aec71298`。最终 194 文件源码摘要 `e3dca881a7f87940b8cffd015d81cd72d5dce32f98050ffb1abc2f527c269c3a`；完整门禁之后仅 gofmt 展开 Exec 分派行，并重新 build，未改变语义。测试产物／最终构建摘要均保存在 validation.json。
+
+本节仅文档交接；文档提交以 `git log -1 -- docs/native-agent-gateway/IMPLEMENTATION_PROGRESS.md` 定位，避免自引用 SHA。当前 ISOLATED_RUNTIME_REQUIRED，真实推理 0，三家真实 Gate B 非 PASS；全部提交仅在本地，未 Push／部署／发布。
