@@ -13,12 +13,14 @@ import (
 
 	"github.com/Garden12138/xcli/internal/agent"
 	"github.com/Garden12138/xcli/internal/config"
+	"github.com/Garden12138/xcli/internal/launch"
 	"github.com/Garden12138/xcli/internal/runstore"
 	xruntime "github.com/Garden12138/xcli/internal/runtime"
 	"github.com/Garden12138/xcli/internal/worktree"
 )
 
 type StepResult struct {
+	LaunchID     string       `json:"launch_id,omitempty"`
 	RetryNotices int          `json:"retry_notices,omitempty"`
 	Diagnostics  string       `json:"-"`
 	Cwd          string       `json:"cwd,omitempty"`
@@ -190,6 +192,17 @@ func (r *Runner) Prepare(sourcePath string, workflow Workflow, options RunOption
 
 func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial *runstore.Record) (Execution, error) {
 	workflow := prepared.Definition
+	runID := prepared.ID
+	if runID == "" {
+		runID = runstore.NewID("workflow")
+	}
+	if initial != nil {
+		runID = initial.ID
+		if initial.LaunchRef.Window != "" && !launch.SameRef(initial.LaunchRef, launch.Reference(ctx)) {
+			return Execution{}, errors.New("workflow_launch_window_mismatch")
+		}
+	}
+	ctx = launch.WithMetadata(ctx, launch.Metadata{RunID: runID, Phase: "version"})
 	versionDetectionStarted := time.Now()
 	agentVersions := make(map[string]string)
 	versionChecks := make(map[string]bool)
@@ -214,10 +227,6 @@ func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial 
 			versionResults <- detectedVersion{agent: name, version: definition.Detect(ctx).Version}
 		}(step.Agent, definition)
 	}
-	runID := prepared.ID
-	if runID == "" {
-		runID = runstore.NewID("workflow")
-	}
 	startedAt := time.Now().UTC()
 	record := runstore.Record{}
 	liveProgress := true
@@ -237,6 +246,7 @@ func (r *Runner) RunPrepared(ctx context.Context, prepared PreparedRun, initial 
 		}
 	}
 	record.ID = runID
+	record.LaunchRef = launch.Reference(ctx)
 	record.Kind = "workflow"
 	record.Workflow = workflow.Name
 	record.WorkflowFile = prepared.SourcePath
@@ -507,8 +517,8 @@ func executionStepRecords(steps []StepResult, recordOutput bool) []runstore.Step
 			outputFile = step.OutputFile
 		}
 		records = append(records, runstore.StepRecord{
-			RetryNotices: step.RetryNotices,
-			ID:           step.ID, Agent: step.Agent, AgentVersion: step.AgentVersion,
+			LaunchID: step.LaunchID, RetryNotices: step.RetryNotices,
+			ID: step.ID, Agent: step.Agent, AgentVersion: step.AgentVersion,
 			Command: step.Command, Cwd: step.Cwd, ParseStatus: step.ParseStatus, ErrorKind: step.ErrorKind, Status: step.Status, ExitCode: step.ExitCode,
 			SessionID: step.SessionID, OutputFile: outputFile, StartedAt: step.StartedAt,
 			EndedAt: step.EndedAt, Attempts: step.Attempts, Error: step.Error, Usage: step.Usage,
@@ -693,13 +703,28 @@ func (r *Runner) runStep(ctx context.Context, workflowCwd, tempDir string, step 
 			}
 			rawWriter = raw
 		}
+		meta := launch.MetadataFrom(ctx)
+		meta.RunID = runID
+		meta.Phase = step.ID
+		meta.Retry = meta.Retry || attempt > 1
+		meta.SessionID = step.ResumeSession
+		stepContext = launch.WithMetadata(stepContext, meta)
 		attemptDefinition := definition
 		if commandStep {
 			attemptDefinition = agent.Definition{Name: step.Command, Config: config.AgentConfig{Adapter: "generic", Output: "text"}}
 		}
-		outcome, runErr := xruntime.Execute(stepContext, attemptDefinition, spec, xruntime.ProcessOptions{
-			Dir: directory, Env: environment, Stderr: r.Stderr, RawOutput: rawWriter, SeparateProcess: true,
-		}, runID, step.ID, attempt, r.Events, step.ResumeSession)
+		opts := xruntime.ProcessOptions{ToolCommand: commandStep, Dir: directory, Env: environment, Stderr: r.Stderr, RawOutput: rawWriter, SeparateProcess: true}
+		if commandStep {
+			if matched, ok := r.Registry.MatchCommand(spec.Command); ok {
+				meta.Agent = matched.Name
+				meta.Adapter = matched.Config.Adapter
+				meta.Kind = "workflow-command"
+				meta.Attempt = attempt
+				opts.Launch = &meta
+			}
+		}
+		outcome, runErr := xruntime.Execute(stepContext, attemptDefinition, spec, opts, runID, step.ID, attempt, r.Events, step.ResumeSession)
+
 		cancel()
 		if raw != nil {
 			if err := raw.Close(); err != nil {
@@ -711,6 +736,7 @@ func (r *Runner) runStep(ctx context.Context, workflowCwd, tempDir string, step 
 		result.Diagnostics = string(processResult.StderrTail)
 		parsed := outcome.Result
 		result.Output = parsed.Output
+		result.LaunchID = parsed.LaunchID
 		result.SessionID = parsed.SessionID
 		result.ParseStatus = parsed.ParseStatus
 		result.RetryNotices += parsed.RetryNotices

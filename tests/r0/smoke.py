@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Opt-in native smoke: at most six invocations, 120 seconds per invocation.
+"""Opt-in native smoke: up to six task attempts, 120 seconds each.
+All native probes and attempts require an explicit R4.1 ledger window.
 
 Only default native login environments are used. No login, credential copy,
 account rotation, native configuration changes, or retries are performed.
@@ -43,10 +44,26 @@ def main():
     output = Path(args.out).resolve()
     if output.exists():
         parser.error("use a fresh evidence path; existing evidence is never replaced")
+    if not os.environ.get("XCLI_LAUNCH_STORE") or not os.environ.get("XCLI_LAUNCH_WINDOW"):
+        parser.error("explicit XCLI_LAUNCH_STORE and XCLI_LAUNCH_WINDOW with a confirmed external baseline are required")
+
+    def budget_snapshot():
+        result = subprocess.run([binary, "launches", "budget"], capture_output=True, text=True, timeout=10)
+        if result.returncode:
+            raise ValueError("launch ledger query failed")
+        body = json.loads(result.stdout)
+        if not isinstance(body.get("remaining"), int):
+            raise ValueError("external launch baseline UNKNOWN")
+        return body
+
+    try:
+        ledger_before = budget_snapshot()
+    except (OSError, subprocess.TimeoutExpired, ValueError) as error:
+        parser.error(str(error))
     preflight = json.loads(Path(args.preflight).read_text()) if args.preflight else None
     report = {"kind": "real", "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
               "binary_sha256": digest(binary), "max_invocations": 6,
-              "timeout_seconds": 120, "invocations": 0, "tools": [], "calls": []}
+              "ledger_before": ledger_before, "timeout_seconds": 120, "invocations": 0, "counter_semantics": "legacy task attempts; authoritative total includes xcli probes in the launch ledger", "tools": [], "calls": []}
 
     def write_report():
         output.parent.mkdir(parents=True, exist_ok=True)
@@ -58,7 +75,19 @@ def main():
 
     def safe_probe(command):
         try:
-            return subprocess.run(command, capture_output=True, text=True, timeout=10)
+            agent = {"codex": "codex", "cursor-agent": "cursor", "agy": "antigravity"}[command[0]]
+            kind = "version" if command[1:] == ["--version"] else "status"
+            result = subprocess.run([binary, "launches", "probe", agent, "--kind", kind], capture_output=True, text=True, timeout=10)
+            if result.returncode:
+                return result
+            try:
+                body = json.loads(result.stdout)
+                if kind == "version":
+                    return subprocess.CompletedProcess(command, 0, body.get("version", ""), "")
+                authenticated = body.get("authenticated") is True
+                return subprocess.CompletedProcess(command, 0 if authenticated else 1, json.dumps({"isAuthenticated": authenticated}), "")
+            except (ValueError, TypeError):
+                return subprocess.CompletedProcess(command, 1, "", "invalid audited probe result")
         except (OSError, subprocess.TimeoutExpired):
             return None
 
@@ -204,6 +233,11 @@ def main():
             report["unverified"] = ["real native timeout/cancellation", "Claude/Gemini/OpenCode native compatibility", "non-macOS native behavior"]
             report["status"] = "passed_with_unverified" if all(t.get("status") == "passed" for t in report["tools"]) and all(c["status"] in ("success", "passed") for c in report["calls"]) else "partial_or_failed"
     finally:
+        try:
+            report["ledger_after"] = budget_snapshot()
+        except (OSError, subprocess.TimeoutExpired, ValueError):
+            report["ledger_after"] = {"status": "UNKNOWN", "remaining": None}
+            report["status"] = "blocked_ledger_unknown"
         report["ended_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         write_report()
     return 0 if report.get("status") == "passed_with_unverified" else 1

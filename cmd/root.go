@@ -12,11 +12,12 @@ import (
 
 	"github.com/Garden12138/xcli/internal/agent"
 	"github.com/Garden12138/xcli/internal/config"
+	"github.com/Garden12138/xcli/internal/launch"
 	"github.com/Garden12138/xcli/internal/runstore"
 	"github.com/spf13/cobra"
 )
 
-var Version = "0.5.0-r4-dev"
+var Version = "0.5.0-r4.1-dev"
 
 type ExitError struct {
 	Code    int
@@ -31,8 +32,9 @@ func (e *ExitError) Error() string {
 }
 
 type app struct {
-	configPath           string
-	experimentalGateways bool
+	configPath                              string
+	experimentalGateways                    bool
+	launchRoot, launchWindow, launchRequest string
 }
 
 func Execute() error {
@@ -51,7 +53,22 @@ func newRootCommand() *cobra.Command {
 	root.PersistentFlags().StringVar(&a.configPath, "config", "", "explicit configuration file")
 	root.PersistentFlags().BoolVar(&a.experimentalGateways, "experimental-gateways", false, "explicitly opt into frozen Gateway experiments; never enables native profiles or SIWC")
 	_ = root.PersistentFlags().MarkHidden("experimental-gateways")
-	root.AddCommand(
+	root.PersistentFlags().StringVar(&a.launchRoot, "launch-store", os.Getenv("XCLI_LAUNCH_STORE"), "shared private native launch ledger root")
+	root.PersistentFlags().StringVar(&a.launchWindow, "launch-window", os.Getenv("XCLI_LAUNCH_WINDOW"), "explicit process budget window; required for native starts")
+	root.PersistentFlags().StringVar(&a.launchRequest, "launch-request", "", "idempotency key for one direct run/resume/use launch")
+	root.PersistentPreRunE = func(c *cobra.Command, _ []string) error {
+		root := a.launchRoot
+		if root == "" {
+			var e error
+			root, e = launch.DefaultRoot()
+			if e != nil {
+				return e
+			}
+		}
+		c.SetContext(launch.WithRef(c.Context(), launch.Ref{Root: root, Window: a.launchWindow}))
+		return nil
+	}
+	root.AddCommand(a.newLaunchesCommand(),
 		a.newTaskCommand(),
 		a.newTaskWorkerCommand(), a.newTaskAttemptCommand(),
 		a.newAgentsCommand(),

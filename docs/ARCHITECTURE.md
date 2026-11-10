@@ -1,4 +1,4 @@
-# xcli 总体架构 · R4
+# xcli 总体架构 · R4 / R4.1
 
 2026-11-10 / CLI-First Product Realignment。xcli 统一调度 AI Coding Agent CLI，供应商原生 CLI 自管安装、登录、账号、权限、额度和模型授权。
 
@@ -8,7 +8,8 @@ flowchart LR
     D --> O[Task 编排 / Run / Session / Jobs]
     O --> A[CLI Adapter]
     A --> S[Execution Supervision]
-    S --> N[Codex / Cursor / Antigravity / 其他原生 CLI]
+    S --> L[Launch Ledger / 原子预算预留]
+    L --> N[Codex / Cursor / Antigravity / 其他原生 CLI]
     N --> V[厂商模型和原生工具]
     S --> R[Run 结果 / 检查点 / 审计]
     R --> F[真实文件 / 测试 / 摘要 / 复核 / 用户接收]
@@ -31,3 +32,7 @@ flowchart LR
 未来应用只讨论受限本机 Task API/IPC：用户选择 Agent、工作区、输入、输出和预算；状态、取消、证据与结果交付。不复用冻结 NAG 服务假装应用接口已可用，也不开放模型代理/订阅共享。详见 [R4 架构](product-realignment/ARCHITECTURE.md)、[模块处置](product-realignment/MODULE_DISPOSITION.md)与[应用接入](product-realignment/APPLICATION_INTEGRATION_GUIDE.md)。
 
 M0–M5、G1–G8 的代码及证据保持历史作用域。G7 仍为 PARTIAL_HOST_ISOLATION_ONLY；G8 仍为离线契约通过/生产 BLOCKED。这些实验结论不再阻塞核心 CLI 任务产品，也不被 R4 升级为真实服务验收。
+
+## R4.1 Process Launch Ledger
+
+原生 CLI 的 run/use/resume、Task/Workflow、后台 worker 和版本/help/status 探针统一在 `internal/launch` 中预留持久预算后启动。`internal/localstate` 提取并复用既有私有文件、OS 文件锁和原子替换设施；预算仅从一个持久账本推导，Task.Calls 仍是任务分派数。窗口必须有明确授权的外部基线；未知启动保守扣额。原生内部调用/工具后代及外部终端不伪称可精确监控。见 [R4.1 设计](product-realignment/R4_1_LAUNCH_LEDGER.md)。冻结模块与原生认证职责不变。

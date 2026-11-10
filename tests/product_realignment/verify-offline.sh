@@ -13,6 +13,12 @@ test -z "$(gofmt -l cmd internal tests/model_gateway)"
 artifact_dir="$(mktemp -d /tmp/xcli-r4-full.XXXXXX)"
 trap 'rm -rf "$artifact_dir"' EXIT
 go build -trimpath -o "$artifact_dir/xcli" .
+export XCLI_LAUNCH_STORE="$artifact_dir/launch-ledger"
+export XCLI_LAUNCH_WINDOW=offline-python
+"$artifact_dir/xcli" launches window create offline-python --limit 100000 --concurrency 256 \
+  --external-agent fake-controller --external-count 0 --external-scope excluded \
+  --external-source offline-regression-fixtures --confirm-external
+
 XCLI_R3_BINARY="$artifact_dir/xcli" python3 -m unittest discover -s tests/r3 -p 'test_*.py'
 python3 -m unittest discover -s tests/model_gateway -p 'test_*.py'
 python3 tests/model_gateway/lifecycle.py --binary "$artifact_dir/xcli"

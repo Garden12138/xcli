@@ -3,6 +3,7 @@ package agentpolicy
 import (
 	"context"
 	"errors"
+	"github.com/Garden12138/xcli/internal/launch"
 	"net"
 	"net/http"
 	"os"
@@ -92,7 +93,17 @@ func ProbeLimitedBoundary(ctx context.Context, root string) (LimitedBoundaryProb
 		if native {
 			out.NativeProcesses++
 		}
-		res, err := xr.RunProcess(c, agent.CommandSpec{Command: command, Args: args}, xr.ProcessOptions{Dir: r.Workspace, Env: env, CaptureStdout: true, SeparateProcess: true, BoundedCleanup: true})
+		opts := xr.ProcessOptions{}
+		if native {
+			opts.Launch = &launch.Metadata{Agent: "codex", Kind: "frozen-native"}
+		}
+		opts.Dir = r.Workspace
+		opts.Env = env
+		opts.CaptureStdout = true
+		opts.SeparateProcess = true
+		opts.BoundedCleanup = true
+		res, err := xr.RunProcess(c, agent.CommandSpec{Command: command, Args: args}, opts)
+
 		return res, err == nil && res.StopConfirmed && !res.TimedOut && !res.Canceled && !res.CaptureTruncated && !res.IOError && len(res.Stdout) <= 64<<10
 	}
 	control, valid := run("/bin/cat", []string{credential}, false)

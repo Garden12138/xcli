@@ -1,0 +1,41 @@
+{
+  "kind": "r4_1_source_launch_audit",
+  "base_commit": "ae0b4be",
+  "not_a_real_execution_report": true,
+  "direct_native_boundary": "internal/launch.Start",
+  "paths": {
+    "internal/launch/ledger.go": "c2e720db336b9d6e99ef506848ffcc697150a8aceb1dc620dc7fa1d5020ed300",
+    "internal/launch/process.go": "638ac0cb77a7876e2e6bc1ddb8ff60b67187a29eeb42905ced7bce41b9b749c2",
+    "internal/runtime/process.go": "5cf357dca324ac30d335437893e194e97be7c2cf0c45e1fd89c6057d4203fb69",
+    "internal/runtime/execution.go": "cfcb081f761bbd3a7d0b85a1ec1f02022ae8b8bb9230d21bf135b2edb920b967",
+    "internal/agent/agent.go": "33e0699c4918406199a5fe3c631bfecead0a193519fee635da5cda2753c9e140",
+    "internal/agent/probe.go": "a7711b28a589b1ad358ff1d18e1068cf054ebbe02fce812161e5c80356b344dc",
+    "internal/workflow/runner.go": "f1c0e87bf14f28ee75643a690a86f68d1b72e8597dce6fe8f5e3b0ade021922d",
+    "cmd/run_use.go": "07510df67509c0c92cadaf8eb434f47098127ebf110a06f09c9ce54c5609fa8c",
+    "cmd/resume.go": "5c19fb8835c20c0a16ca3e38cf538ea1b91be63bae74ef3f53b5ee9a2de0f476",
+    "cmd/run_exec.go": "e89ab5591fa5ae34cb769c1a049950ae1e2507e1a2ec2b84b2f0b5d94362d360",
+    "cmd/task_process.go": "c60b6a35b2e70e550b15a4c6bf524d0cdc595b35d568d9d324891916858a97b0",
+    "cmd/mcp.go": "5c1be724f0d2cad29bb2fcef3c100e037714cc3023356f939aafb3ce164db80a",
+    "internal/task/runner.go": "39b19d3c5f28a4ed5aecfeaa2c15a6e92601a92cbfcde13c82529545828b6fd6",
+    "internal/nativeadapter/exec.go": "94b18418bf1c4ece7e82a41add7faf35ce39b902fdf6de48dd10468c987c6c74",
+    "internal/codexrpc/stdio.go": "6a0ec6a8ffa0dd7239e7051b174db2db0e0c34c294479bd12fba4edbcdf3976d",
+    "internal/agentpolicy/cache.go": "c5c87931063fa9e57fceeca7086d0eb1f1b48ee03c96a9f235e91be53e349742",
+    "internal/agentpolicy/limited_probe.go": "76c1be22d26c62123405a9202af6f63aa33e92415f0308a9629eb35c765fde2b",
+    "internal/agentpolicy/limited_boundary_probe.go": "17af72b3ad77f6bee9f9dd4db558744f07e2fd2e9629a397ea7faefe1f92ec8c"
+  },
+  "non_native_spawn_exceptions": {
+    "cmd/task_process.go": "trusted xcli worker and attempt supervisor; native children separately charged",
+    "cmd/run_exec.go": "trusted xcli job worker; native children separately charged",
+    "cmd/model_service.go": "frozen xcli service worker, not a native Agent",
+    "internal/worktree/manager.go": "git only",
+    "internal/task/material.go": "git only",
+    "internal/isolatedruntime/docker.go": "frozen Docker controller; no claimed accounting of container internals"
+  },
+  "unobservable": [
+    "external controllers and terminals without owner baseline",
+    "vendor wrapper or arbitrary tool descendants",
+    "model requests, tokens and cost"
+  ],
+  "legacy_r4": "UNKNOWN",
+  "new_real_native_starts": 0
+}

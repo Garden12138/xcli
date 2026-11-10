@@ -1,0 +1,54 @@
+{
+  "stage": "R4.1",
+  "status": "OFFLINE_PASS",
+  "version": "0.5.0-r4.1-dev",
+  "base_commit": "ae0b4bee9498149b741756deb7a6213bd9c9f2a7",
+  "core_commit": "d247a9485b86eafe53b5b670fcbe862146847c4c",
+  "binary_sha256": "c2d7a445df8da0dc4613c1091971d133306b15482f7c5c8f1e8845d8e02efc6f",
+  "commands": {
+    "bash tests/product_realignment/verify-offline.sh": "PASS",
+    "go test -race -p 1 -count=1 -timeout 240s ./...": "PASS",
+    "go vet ./...": "PASS",
+    "go build -trimpath": "PASS",
+    "bash tests/product_realignment/verify-core.sh": "PASS",
+    "owner kill recovery repeated with -race -count=10": "PASS",
+    "go mod tidy -diff": "PASS",
+    "gofmt and git diff --check": "PASS",
+    "local documentation links (16 documents)": "PASS"
+  },
+  "python": {
+    "full": 54,
+    "core": 36
+  },
+  "installation_checks": 12,
+  "cross_builds": [
+    "darwin/amd64",
+    "darwin/arm64",
+    "linux/amd64",
+    "linux/arm64",
+    "windows/amd64"
+  ],
+  "all_xcli_direct_native_entry_paths_guarded": true,
+  "global_descendant_or_external_monitoring": false,
+  "old_r4_total_starts": "UNKNOWN",
+  "old_r4_remaining": "UNKNOWN",
+  "new_real_native_starts": 0,
+  "new_real_model_acceptance_requests": 0,
+  "vendor_model_requests": null,
+  "vendor_tokens": null,
+  "actual_cost": null,
+  "real_acceptance_status": "NEEDS_FIXES",
+  "resolved_findings": [
+    "Restored old RunStore write compatibility; strict ledger storage remains fail closed",
+    "Old owner-kill test now waits for attempt lease release before reconciliation; production gate unchanged"
+  ],
+  "evidence": {
+    "blackbox.json": "226d8a90ac502242f91b09521ce3166ec67afbf76a63de83cefcbd837c08a944",
+    "core-regression.log": "0ab89ffaf3d93475d38017220329646ac86b77e635fc4612ce8e4cfba57208ca",
+    "full-regression.log": "4b1967a5246803c5abc3604830063b5cdc46387b3c33f6814a24ead8029f52c3",
+    "initial-core-regression.log": "836b16039a74f053b074d6a58e61c451d24c0d5fc5dff1b0ebdcf0a2ccaf5b12",
+    "initial-regression.log": "d86007d8904eff38bc4a46502c1a5b79f95ae1ed24a62d3863154d8cde011590",
+    "owner-recovery-repeat.log": "4394a2d89e154cd1eaf20938921eff9a664bcf4d1e796ee58d1af9e0dbb89f69",
+    "source-audit.json": "be3d846d62558ea76a9504dde10922760b95d5accf7ce40554723b552955d9b3"
+  }
+}

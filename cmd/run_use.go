@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Garden12138/xcli/internal/agent"
+	"github.com/Garden12138/xcli/internal/launch"
 	"github.com/Garden12138/xcli/internal/runstore"
 	xruntime "github.com/Garden12138/xcli/internal/runtime"
 	"github.com/spf13/cobra"
@@ -57,7 +58,7 @@ func (a *app) newUseCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			record := runstore.Record{
+			record := runstore.Record{LaunchRef: launch.Reference(command.Context()),
 				ID: runstore.NewID("use"), Kind: "use", Agent: name, Cwd: cwd,
 				StartedAt: time.Now().UTC(), Status: "running",
 			}
@@ -77,7 +78,7 @@ func (a *app) newUseCommand() *cobra.Command {
 				}
 				return err
 			}
-			result, runErr := xruntime.RunProcess(ctx, spec, xruntime.ProcessOptions{Dir: cwd, Env: environment, Stdin: os.Stdin, Stdout: command.OutOrStdout(), Stderr: command.ErrOrStderr(), RawOutput: rawWriter})
+			result, runErr := xruntime.RunProcess(ctx, spec, xruntime.ProcessOptions{Launch: &launch.Metadata{Agent: name, Adapter: definition.Config.Adapter, Kind: "interactive", RunID: record.ID, RequestKey: a.launchRequest}, Dir: cwd, Env: environment, Stdin: os.Stdin, Stdout: command.OutOrStdout(), Stderr: command.ErrOrStderr(), RawOutput: rawWriter})
 			normalized, code := agent.Normalize(agent.RunResult{ParseStatus: "not_applicable"}, result.ExitCode, result.Canceled, result.TimedOut, runErr)
 			if result.IOError && code == 0 {
 				normalized.Status = "failed"
@@ -86,6 +87,7 @@ func (a *app) newUseCommand() *cobra.Command {
 				code = 1
 			}
 			record.EndedAt = time.Now().UTC()
+			normalized.LaunchID = result.LaunchID
 			applyResult(&record, normalized)
 			if raw != nil {
 				if err := raw.Close(); err != nil {
@@ -177,7 +179,7 @@ func (a *app) newRunCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			record := runstore.Record{
+			record := runstore.Record{LaunchRef: launch.Reference(command.Context()),
 				ID: runstore.NewID("run"), Kind: "run", Agent: name,
 				SelectionSource: selection.Source, RouteRule: selection.Rule, Cwd: cwd,
 				StartedAt: time.Now().UTC(), Status: "running",
@@ -187,7 +189,7 @@ func (a *app) newRunCommand() *cobra.Command {
 					return fmt.Errorf("agent command %q is not available: %w", spec.Command, err)
 				}
 				view, err := startDetachedRun(store, detachedRunOptions{
-					ConfigPath: configPath, Agent: name, Prompt: prompt, NativeArgs: nativeArgs,
+					LaunchRef: launch.Reference(command.Context()), RequestKey: a.launchRequest, ConfigPath: configPath, Agent: name, Prompt: prompt, NativeArgs: nativeArgs,
 					Cwd: cwd, Structured: structured, RecordOutput: cfg.Recording.Output, Record: record,
 				})
 				if err != nil {
@@ -216,6 +218,7 @@ func (a *app) newRunCommand() *cobra.Command {
 			if events {
 				activity = command.OutOrStdout()
 			}
+			ctx = launch.WithMetadata(ctx, launch.Metadata{Kind: "run", RequestKey: a.launchRequest})
 			outcome, runErr := executeNonInteractive(ctx, definition, spec, cwd, environment, stderr,
 				record.ID, raw, eventSink(activity, events))
 			record.EndedAt = time.Now().UTC()

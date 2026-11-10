@@ -16,10 +16,10 @@ def main():
     if not probe:
         if digest(native["command"]) != native["sha256"]:
             raise ValueError("native executable changed since study preparation")
-        version = __import__("subprocess").check_output(
-            [native["command"], "--version"], text=True, stderr=__import__("subprocess").DEVNULL).strip()
-        if version != native["version"]:
-            raise ValueError("native version changed since study preparation")
+        # Executable digest already pins this entry. Do not start an unbudgeted
+        # version subprocess inside an xcli-launched wrapper. Explicit probes
+        # go through xcli's common launch boundary; old study calls count only
+        # task dispatches, never total native starts.
         Ledger(root).reserve(adapter, os.environ["XCLI_R3_CASE"], os.environ.get("XCLI_R3_PHASE", "task"))
     os.execv(native["command"], [native["command"], *sys.argv[1:]])
 

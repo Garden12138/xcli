@@ -139,7 +139,19 @@ func TestTaskOwnerKillStopsNativeAndRequiresReconciliation(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertChildExited(t, nativePID)
-	lost := waitTask(t, first.ID, func(t task.Task) bool { return !t.OwnerActive && t.Status == "needs_reconcile" })
+	// Native exit precedes the supervisor's durable launch finish/receipt.
+	// Recovery must wait for the existing attempt lease, not infer it from PID.
+	store, err := task.NewStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	lost := waitTask(t, first.ID, func(state task.Task) bool {
+		active, err := store.Active(first.ID, "attempt.lock")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return !state.OwnerActive && state.Status == "needs_reconcile" && !active
+	})
 	if lost.Calls != 2 {
 		t.Fatal(lost.Calls)
 	}

@@ -15,6 +15,7 @@ import (
 	"github.com/Garden12138/xcli/internal/agent"
 	"github.com/Garden12138/xcli/internal/config"
 	"github.com/Garden12138/xcli/internal/jobs"
+	"github.com/Garden12138/xcli/internal/launch"
 	"github.com/Garden12138/xcli/internal/runstore"
 	xruntime "github.com/Garden12138/xcli/internal/runtime"
 	"github.com/Garden12138/xcli/internal/workflow"
@@ -58,6 +59,8 @@ func executeNonInteractive(
 }
 
 type detachedRunOptions struct {
+	LaunchRef    launch.Ref
+	RequestKey   string
 	ConfigPath   string
 	Agent        string
 	Prompt       string
@@ -69,6 +72,7 @@ type detachedRunOptions struct {
 }
 
 type detachedRunPayload struct {
+	RequestKey   string   `json:"request_key,omitempty"`
 	Agent        string   `json:"agent"`
 	Prompt       string   `json:"prompt"`
 	NativeArgs   []string `json:"native_args,omitempty"`
@@ -78,24 +82,31 @@ type detachedRunPayload struct {
 }
 
 type detachedJobPayload struct {
-	Kind     string                `json:"kind"`
-	Run      *detachedRunPayload   `json:"run,omitempty"`
-	Workflow *workflow.PreparedRun `json:"workflow,omitempty"`
+	LaunchRef launch.Ref            `json:"launch_ref"`
+	Kind      string                `json:"kind"`
+	Run       *detachedRunPayload   `json:"run,omitempty"`
+	Workflow  *workflow.PreparedRun `json:"workflow,omitempty"`
 }
 
 func startDetachedRun(store *runstore.Store, options detachedRunOptions) (jobs.View, error) {
-	payload := detachedJobPayload{Kind: "run", Run: &detachedRunPayload{
-		Agent: options.Agent, Prompt: options.Prompt, NativeArgs: options.NativeArgs,
+	payload := detachedJobPayload{LaunchRef: options.LaunchRef, Kind: "run", Run: &detachedRunPayload{
+		RequestKey: options.RequestKey, Agent: options.Agent, Prompt: options.Prompt, NativeArgs: options.NativeArgs,
 		Cwd: options.Cwd, Structured: options.Structured, RecordOutput: options.RecordOutput,
 	}}
 	return startDetachedJob(store, options.ConfigPath, options.Record, payload)
 }
 
 func startDetachedWorkflow(store *runstore.Store, configPath string, record runstore.Record, prepared workflow.PreparedRun) (jobs.View, error) {
-	return startDetachedJob(store, configPath, record, detachedJobPayload{Kind: "workflow", Workflow: &prepared})
+	return startDetachedJob(store, configPath, record, detachedJobPayload{LaunchRef: record.LaunchRef, Kind: "workflow", Workflow: &prepared})
 }
 
 func startDetachedJob(store *runstore.Store, configPath string, record runstore.Record, payload detachedJobPayload) (jobs.View, error) {
+	if payload.LaunchRef.Window == "" {
+		payload.LaunchRef = launch.Reference(context.Background())
+	}
+	if record.LaunchRef.Window == "" {
+		record.LaunchRef = payload.LaunchRef
+	}
 	if runtime.GOOS == "windows" {
 		return jobs.View{}, errors.New("background Agent jobs require Darwin/Linux; use foreground run or Model Gateway start on Windows")
 	}
@@ -126,6 +137,11 @@ func startDetachedJob(store *runstore.Store, configPath string, record runstore.
 	}
 	args := []string{"--config", configPath, "__job-worker", record.ID}
 	worker := detachedCommand(executable, args...)
+	baseEnvironment := worker.Env
+	if baseEnvironment == nil {
+		baseEnvironment = os.Environ()
+	}
+	worker.Env = launch.ChildEnvironment(launch.WithRef(context.Background(), payload.LaunchRef), baseEnvironment)
 	jobs.ConfigureDetached(worker)
 	worker.ExtraFiles = []*os.File{files.Lock, gateRead, payloadRead}
 	devNull, err := os.OpenFile(os.DevNull, os.O_RDWR, 0)
@@ -258,6 +274,9 @@ func (a *app) runJobWorker(command *cobra.Command, id string) error {
 		return fail(err)
 	}
 
+	if payload.LaunchRef.Window != "" {
+		ctx = launch.WithRef(ctx, payload.LaunchRef)
+	}
 	switch payload.Kind {
 	case "run":
 		if payload.Run == nil {
@@ -314,6 +333,7 @@ func (a *app) runDetachedRunWorker(
 	if err != nil {
 		return fail(err)
 	}
+	ctx = launch.WithMetadata(ctx, launch.Metadata{Kind: "run", RequestKey: payload.RequestKey})
 	outcome, runErr := executeNonInteractive(ctx, definition, spec, payload.Cwd, environment, logWriter, record.ID, raw, eventSink(logWriter, false))
 	if raw != nil {
 		if err := raw.Close(); err != nil {

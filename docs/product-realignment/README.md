@@ -21,3 +21,5 @@
 Model Gateway、Native Agent Gateway HTTP、SIWC/OAuth/Responses、Credential Manager 与通用媒体模型服务冻结、默认关闭，不作为核心可用性的前置条件。旧实验服务不自动停止或清理；状态查询、停止、撤销与 disable 仍可使用。
 
 核心产品检查为 `bash tests/product_realignment/verify-core.sh`。保留代码的全量离线检查为 `bash tests/product_realignment/verify-offline.sh`。二者都不调用真实模型；冻结实验的真实资格/隔离/账号门禁不再决定 CLI 产品能否使用。
+
+R4.1 当前补充：[启动账本](R4_1_LAUNCH_LEDGER.md)、[预算语义](R4_1_BUDGET_SEMANTICS.md)、[实现与离线验收](IMPLEMENTATION_PROGRESS.md)。所有原生进程入口必须先有明确持久预算窗口；旧 R4 真实验收 UNKNOWN 不重置。

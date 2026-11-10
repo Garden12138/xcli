@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Garden12138/xcli/internal/agent"
+	"github.com/Garden12138/xcli/internal/launch"
 	"github.com/Garden12138/xcli/internal/runstore"
 	"github.com/Garden12138/xcli/internal/workflow"
 	"github.com/Garden12138/xcli/internal/worktree"
@@ -51,7 +52,7 @@ func (r *Runner) Create(ctx context.Context, opts Options) (Task, error) {
 	}
 	opts.CallTimeout = callTimeout(opts.CallTimeout)
 	now := time.Now().UTC()
-	t := &Task{Version: 2, ID: runstore.NewID("task"), Goal: opts.Goal, OriginalGoal: opts.Goal, Kind: "work", Mode: "auto", Agent: opts.Agent, Status: "planning", StartedAt: now, MaxCalls: opts.MaxCalls, Options: opts, Candidates: []string{}, Bindings: map[string]string{}}
+	t := &Task{LaunchRef: launch.Reference(ctx), Version: 2, ID: runstore.NewID("task"), Goal: opts.Goal, OriginalGoal: opts.Goal, Kind: "work", Mode: "auto", Agent: opts.Agent, Status: "planning", StartedAt: now, MaxCalls: opts.MaxCalls, Options: opts, Candidates: []string{}, Bindings: map[string]string{}}
 	if opts.Agent != "" {
 		t.Mode = "single"
 	}
@@ -111,6 +112,14 @@ func (r *Runner) Continue(ctx context.Context, id string, u Update) (Task, error
 		defer lock.Close()
 	}
 	t, err := r.Store.Load(id)
+	if err == nil {
+		if t.LaunchRef.Window != "" && !launch.SameRef(t.LaunchRef, launch.Reference(ctx)) {
+			return t, errors.New("task_launch_window_mismatch")
+		}
+		if t.LaunchRef.Window == "" {
+			t.LaunchRef = launch.Reference(ctx)
+		}
+	}
 	if err != nil {
 		return Task{}, err
 	}

@@ -2,6 +2,7 @@ package nativeadapter
 
 import (
 	"context"
+	"github.com/Garden12138/xcli/internal/launch"
 	"os"
 	"path/filepath"
 
@@ -121,7 +122,7 @@ func (Exec) StartTurn(ctx context.Context, b BoundRequest, observe func(Observat
 		}
 		env = append(env, "CODEX_HOME="+b.Profile.Limited.AuthHome)
 	}
-	process, err := xruntime.RunProcess(ctx, spec, xruntime.ProcessOptions{Dir: b.Workspace, Env: env, Stdout: decoder, Stderr: diagnostics, SeparateProcess: true, BoundedCleanup: true})
+	process, err := xruntime.RunProcess(ctx, spec, xruntime.ProcessOptions{Launch: &launch.Metadata{Agent: b.Profile.AgentID, Adapter: d.Config.Adapter, Kind: "frozen-native", SessionID: b.NativeID}, Dir: b.Workspace, Env: env, Stdout: decoder, Stderr: diagnostics, SeparateProcess: true, BoundedCleanup: true})
 	if process.WaitIncomplete {
 		return TurnResult{Code: "execution_state_unknown", Terminal: "unknown", Protocol: "unknown"}
 	}

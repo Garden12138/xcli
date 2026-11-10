@@ -20,6 +20,13 @@ class SmokeHarnessTests(unittest.TestCase):
         launches = []
 
         def probe(argv, **kwargs):
+            if argv[-2:] == ["launches", "budget"]:
+                return subprocess.CompletedProcess(argv, 0, '{"remaining":6,"status":"READY"}', "")
+            if "launches" in argv and "probe" in argv:
+                agent = argv[argv.index("probe")+1]
+                if argv[-1] == "version":
+                    return subprocess.CompletedProcess(argv, 0, '{"version":"fixture-version"}', "")
+                return subprocess.CompletedProcess(argv, 0, '{"authenticated":true}', "")
             if argv[:2] == ["codex", "login"]:
                 return subprocess.CompletedProcess(argv, 0, "", "Logged in using ChatGPT")
             if argv[:2] == ["cursor-agent", "status"]:
@@ -57,10 +64,13 @@ class SmokeHarnessTests(unittest.TestCase):
                 preflight.write_text(json.dumps({"cli": {tool: {"version": "fixture-version"} for tool in ["codex", "cursor", "antigravity"]}}))
                 argv += ["--preflight", str(preflight)]
                 def no_probe(argv, **kwargs):
+                    if argv[-2:] == ["launches", "budget"]:
+                        return subprocess.CompletedProcess(argv, 0, '{"remaining":6,"status":"READY"}', "")
                     self.assertEqual(argv[0], "git", "reuse mode must not launch version/auth probes")
                     return subprocess.CompletedProcess(argv, 0, "", "")
                 probe = no_probe
-            with patch.object(sys, "argv", argv), \
+            with patch.dict(smoke.os.environ, {"XCLI_LAUNCH_STORE":str(root / "ledger"), "XCLI_LAUNCH_WINDOW":"offline"}), \
+                 patch.object(sys, "argv", argv), \
                  patch.object(smoke.shutil, "which", side_effect=lambda command: command if command in installed else None), \
                  patch.object(smoke.subprocess, "run", side_effect=probe), \
                  patch.object(smoke.subprocess, "Popen", Process), \

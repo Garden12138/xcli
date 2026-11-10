@@ -1,5 +1,7 @@
 # xcli
 
+R4.1 原生执行与版本/help 探针必须先建立明确的进程预算窗口，见[启动账本](docs/product-realignment/R4_1_LAUNCH_LEDGER.md)及[使用手册](docs/cli-first/XCLI_USER_MANUAL.md)。
+
 [English](README.md) | [简体中文](README.zh-CN.md)
 
 xcli 是统一 AI Coding Agent CLI 调度与编排工具。

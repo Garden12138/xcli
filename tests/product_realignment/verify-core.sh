@@ -7,7 +7,7 @@ export GOCACHE="${GOCACHE:-/tmp/xcli-nag-go-cache}"
 export GOPROXY=off GOSUMDB=off
 export GORACE="${GORACE:-atexit_sleep_ms=0}"
 core_packages=(. ./cmd ./internal/agent ./internal/config ./internal/jobs
-  ./internal/mcp ./internal/runstore ./internal/runtime ./internal/task
+  ./internal/launch ./internal/localstate ./internal/mcp ./internal/runstore ./internal/runtime ./internal/task
   ./internal/workflow ./internal/worktree ./tests/phase0)
 # These three archived CLI tests require experimental opt-in. R4 default-off
 # and cleanup tests remain part of cmd's core product contract.
@@ -18,6 +18,12 @@ go mod tidy -diff
 artifact_dir="$(mktemp -d /tmp/xcli-r4-core.XXXXXX)"
 trap 'rm -rf "$artifact_dir"' EXIT
 go build -trimpath -o "$artifact_dir/xcli" .
+export XCLI_LAUNCH_STORE="$artifact_dir/launch-ledger"
+export XCLI_LAUNCH_WINDOW=offline-python
+"$artifact_dir/xcli" launches window create offline-python --limit 100000 --concurrency 256 \
+  --external-agent fake-controller --external-count 0 --external-scope excluded \
+  --external-source offline-regression-fixtures --confirm-external
+
 python3 -m unittest discover -s tests/r0 -p 'test_*.py'
 XCLI_R3_BINARY="$artifact_dir/xcli" python3 -m unittest discover -s tests/r3 -p 'test_*.py'
 python3 tests/r3/install_acceptance.py --binary "$artifact_dir/xcli" --out "$artifact_dir/installation.json"

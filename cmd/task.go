@@ -102,7 +102,7 @@ func (a *app) newTaskCommand() *cobra.Command {
 		if detach {
 			t, err = r.Create(ctx, opts)
 			if err == nil {
-				t, err = startDetachedTask(r, t.ID, task.Update{})
+				t, err = startDetachedTask(ctx, r, t.ID, task.Update{})
 			}
 		} else {
 			t, err = r.Run(ctx, opts)
@@ -159,7 +159,7 @@ func (a *app) newTaskContinueCommand() *cobra.Command {
 		defer cancel()
 		var t task.Task
 		if detach {
-			t, err = startDetachedTask(r, args[0], u)
+			t, err = startDetachedTask(ctx, r, args[0], u)
 		} else {
 			t, err = r.Continue(ctx, args[0], u)
 		}

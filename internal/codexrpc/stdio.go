@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/Garden12138/xcli/internal/launch"
 	"os"
 	"sync"
 	"time"
@@ -64,7 +65,7 @@ func Start(ctx context.Context, spec agent.CommandSpec, dir string, env []string
 	processCtx, cancel := context.WithCancel(ctx)
 	c := &Client{Frames: make(chan Frame, 32), Done: make(chan Outcome, 1), input: inW, output: outR, cancel: cancel, pending: map[string]string{}, probe: probe, closed: make(chan struct{})}
 	go func() {
-		p, e := xr.RunProcess(processCtx, spec, xr.ProcessOptions{Dir: dir, Env: env, Stdin: inR, Stdout: outW, SeparateProcess: true, BoundedCleanup: true})
+		p, e := xr.RunProcess(processCtx, spec, xr.ProcessOptions{Launch: &launch.Metadata{Agent: "codex", Kind: "frozen-native"}, Dir: dir, Env: env, Stdin: inR, Stdout: outW, SeparateProcess: true, BoundedCleanup: true})
 		inR.Close()
 		outW.Close()
 		c.Done <- Outcome{p, e}

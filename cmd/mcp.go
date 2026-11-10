@@ -3,7 +3,9 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"github.com/Garden12138/xcli/internal/agent"
 	"github.com/Garden12138/xcli/internal/config"
+	"github.com/Garden12138/xcli/internal/launch"
 	"github.com/Garden12138/xcli/internal/mcp"
 	xruntime "github.com/Garden12138/xcli/internal/runtime"
 	"github.com/spf13/cobra"
@@ -59,10 +61,17 @@ func (a *app) newMCPServeCommand() *cobra.Command {
 			}
 			ctx, cancel := signalContext(command.Context())
 			defer cancel()
-			result, err := xruntime.RunProcess(ctx, spec.Command, xruntime.ProcessOptions{
-				Dir: spec.Dir, Env: spec.Env, Stdin: command.InOrStdin(),
-				Stdout: command.OutOrStdout(), Stderr: command.ErrOrStderr(),
-			})
+			opts := xruntime.ProcessOptions{}
+			if d, ok := agent.NewRegistry(cfg).MatchCommand(spec.Command.Command); ok {
+				opts.Launch = &launch.Metadata{Agent: d.Name, Adapter: d.Config.Adapter, Kind: "mcp-compat"}
+			}
+			opts.Dir = spec.Dir
+			opts.Env = spec.Env
+			opts.Stdin = command.InOrStdin()
+			opts.Stdout = command.OutOrStdout()
+			opts.Stderr = command.ErrOrStderr()
+			result, err := xruntime.RunProcess(ctx, spec.Command, opts)
+
 			if err != nil {
 				return err
 			}

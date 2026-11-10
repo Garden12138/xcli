@@ -15,6 +15,7 @@ import (
 
 	"github.com/Garden12138/xcli/internal/agent"
 	"github.com/Garden12138/xcli/internal/config"
+	"github.com/Garden12138/xcli/internal/launch"
 	"github.com/Garden12138/xcli/internal/runstore"
 	"github.com/Garden12138/xcli/internal/workflow"
 	"github.com/Garden12138/xcli/internal/worktree"
@@ -81,6 +82,7 @@ func (r *Runner) wait(reason string) error {
 
 func (r *Runner) prepare(ctx context.Context) error {
 	t, o := r.task, r.options
+	ctx = launch.WithMetadata(ctx, launch.Metadata{TaskID: t.ID, Phase: "discovery"})
 	names := r.Registry.Names()
 	if o.Agent != "" {
 		if !r.Registry.Has(o.Agent) {
@@ -261,12 +263,22 @@ func (r *Runner) call(ctx context.Context, name, role, cwd, prompt, snapshot str
 		return "", err
 	}
 	d, _ := r.Registry.Get(name)
+	id := runstore.NewID("run")
+	phaseAttempt := 1
+	for _, prior := range t.Attempts {
+		if prior.Role == role && prior.Agent == name {
+			phaseAttempt++
+		}
+	}
+	ctx = launch.WithMetadata(ctx, launch.Metadata{TaskID: t.ID, ParentTask: t.ID, RunID: id, Phase: role, Kind: "run", Attempt: phaseAttempt, Retry: phaseAttempt > 1 || role == "repair"})
 	installation := d.Detect(ctx)
 	if installation.Error != "" {
 		return "", fmt.Errorf("agent version probe failed: %s", installation.Error)
 	}
+	meta := launch.MetadataFrom(ctx)
+	meta.Version = installation.Version
+	ctx = launch.WithMetadata(ctx, meta)
 	t.Calls++
-	id := runstore.NewID("run")
 	inputs := []string{}
 	for _, h := range t.Handoffs {
 		inputs = append(inputs, h.RunID)
@@ -287,7 +299,7 @@ func (r *Runner) call(ctx context.Context, name, role, cwd, prompt, snapshot str
 		copySnapshot = hash
 	}
 	t.Attempts = append(t.Attempts, Attempt{CopySnapshot: copySnapshot, RunID: id, Role: role, Agent: name, Cwd: cwd, Inputs: inputs, Snapshot: snapshot})
-	record := runstore.Record{TaskID: t.ID, Role: role, ID: id, Kind: "run", Agent: name, AgentVersion: installation.Version, Cwd: cwd, StartedAt: time.Now().UTC(), Status: "running"}
+	record := runstore.Record{LaunchRef: launch.Reference(ctx), TaskID: t.ID, Role: role, ID: id, Kind: "run", Agent: name, AgentVersion: installation.Version, Cwd: cwd, StartedAt: time.Now().UTC(), Status: "running"}
 	if err := r.Runs.Save(record); err != nil {
 		return "", err
 	}
@@ -335,6 +347,7 @@ func (r *Runner) call(ctx context.Context, name, role, cwd, prompt, snapshot str
 	// Only a narrowly classified session rejection permits a new native session.
 	// Authentication, transport, parse and arbitrary CLI failures never retry.
 	if step.ResumeSession != "" && sessionUnavailable(res) && ctx.Err() == nil {
+		record.LaunchID = res.LaunchID
 		record.Status, record.ExitCode, record.Error = res.Status, res.ExitCode, res.Error
 		record.EndedAt, record.SessionID, record.Usage = time.Now().UTC(), res.SessionID, res.Usage
 		if err := r.Runs.Save(record); err != nil {
@@ -352,6 +365,8 @@ func (r *Runner) call(ctx context.Context, name, role, cwd, prompt, snapshot str
 	}
 	r.resume = false
 	t.Attempts[len(t.Attempts)-1].RetryNotices = res.RetryNotices
+	record.LaunchID = res.LaunchID
+	record.LaunchRef = launch.Reference(ctx)
 	record.RetryNotices = res.RetryNotices
 	record.EndedAt = time.Now().UTC()
 	record.Status, record.ExitCode, record.ParseStatus, record.ErrorKind, record.Error = res.Status, res.ExitCode, res.ParseStatus, res.ErrorKind, res.Error

@@ -2,6 +2,7 @@ package agentpolicy
 
 import (
 	"context"
+	"github.com/Garden12138/xcli/internal/launch"
 	"net"
 	"net/http"
 	"os"
@@ -52,7 +53,7 @@ func ProbeLimited(ctx context.Context, root string) (LimitedProbe, error) {
 		c, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 		out.NativeProcesses++
-		res, err := xr.RunProcess(c, agent.CommandSpec{Command: r.Binary, Args: args}, xr.ProcessOptions{Dir: r.Workspace, Env: env, CaptureStdout: true, SeparateProcess: true, BoundedCleanup: true})
+		res, err := xr.RunProcess(c, agent.CommandSpec{Command: r.Binary, Args: args}, xr.ProcessOptions{Launch: &launch.Metadata{Agent: "codex", Kind: "frozen-native"}, Dir: r.Workspace, Env: env, CaptureStdout: true, SeparateProcess: true, BoundedCleanup: true})
 		out.ExitCodes[name] = res.ExitCode
 		return res, err == nil && res.StopConfirmed && !res.TimedOut && !res.Canceled && !res.CaptureTruncated && !res.IOError && len(res.Stdout) <= 64<<10
 	}

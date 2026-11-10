@@ -15,6 +15,7 @@ import (
 	"github.com/Garden12138/xcli/internal/agent"
 	"github.com/Garden12138/xcli/internal/config"
 	"github.com/Garden12138/xcli/internal/jobs"
+	"github.com/Garden12138/xcli/internal/launch"
 	"github.com/Garden12138/xcli/internal/task"
 	"github.com/Garden12138/xcli/internal/workflow"
 	"github.com/spf13/cobra"
@@ -25,13 +26,13 @@ type taskWorkerPayload struct {
 	Update task.Update
 }
 
-func startDetachedTask(r *task.Runner, id string, u task.Update) (task.Task, error) {
+func startDetachedTask(ctx context.Context, r *task.Runner, id string, u task.Update) (task.Task, error) {
 	if runtime.GOOS == "windows" {
 		return task.Task{}, errors.New("background Agent Tasks require Darwin/Linux; use foreground Task or Model Gateway start on Windows")
 	}
 	lock, err := r.Store.Lock(id, "owner.lock", false)
 	if errors.Is(err, task.ErrOwned) {
-		return r.Continue(context.Background(), id, u)
+		return r.Continue(ctx, id, u)
 	}
 	if err != nil {
 		return task.Task{}, err
@@ -58,6 +59,11 @@ func startDetachedTask(r *task.Runner, id string, u task.Update) (task.Task, err
 		return t, err
 	}
 	worker := detachedCommand(executable, "__task-worker", id)
+	baseEnvironment := worker.Env
+	if baseEnvironment == nil {
+		baseEnvironment = os.Environ()
+	}
+	worker.Env = launch.ChildEnvironment(ctx, baseEnvironment)
 	jobs.ConfigureDetached(worker)
 	worker.ExtraFiles = []*os.File{lock, input}
 	log, err := os.OpenFile(filepath.Join(r.Store.Dir(id), "worker.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
@@ -128,6 +134,7 @@ func (a *app) newTaskWorkerCommand() *cobra.Command {
 }
 
 type taskAttemptPayload struct {
+	LaunchMeta   launch.Metadata `json:"launch_meta"`
 	Config       config.Config
 	TaskID       string
 	RunID        string
@@ -180,6 +187,11 @@ func supervisedAttempt(r *task.Runner) func(context.Context, string, string, str
 			return fail(err)
 		}
 		child := detachedCommand(executable, "__task-attempt")
+		baseEnvironment := child.Env
+		if baseEnvironment == nil {
+			baseEnvironment = os.Environ()
+		}
+		child.Env = launch.ChildEnvironment(ctx, baseEnvironment)
 		jobs.ConfigureDetached(child)
 		child.ExtraFiles = []*os.File{lease, liveR, dataR}
 		child.Stderr = r.Stderr
@@ -201,7 +213,7 @@ func supervisedAttempt(r *task.Runner) func(context.Context, string, string, str
 			}
 		}()
 		defer close(closed)
-		if err := json.NewEncoder(dataW).Encode(taskAttemptPayload{Config: r.Config, TaskID: record.TaskID, RunID: id, Cwd: cwd, Boundary: boundary, Step: step, RecordOutput: raw}); err != nil {
+		if err := json.NewEncoder(dataW).Encode(taskAttemptPayload{LaunchMeta: launch.MetadataFrom(ctx), Config: r.Config, TaskID: record.TaskID, RunID: id, Cwd: cwd, Boundary: boundary, Step: step, RecordOutput: raw}); err != nil {
 			dataW.Close()
 			liveW.Close()
 			_ = child.Wait()
@@ -282,6 +294,8 @@ func (a *app) newTaskAttemptCommand() *cobra.Command {
 			defer mu.Unlock()
 			return encoder.Encode(taskAttemptMessage{Event: &e})
 		}}
+		ctx = launch.WithMetadata(ctx, payload.LaunchMeta)
+		ctx = launch.WithMetadata(ctx, launch.Metadata{TaskID: payload.TaskID, ParentTask: payload.TaskID, RunID: payload.RunID, Phase: payload.Step.ID, Version: payload.LaunchMeta.Version, Attempt: payload.LaunchMeta.Attempt, Retry: payload.LaunchMeta.Retry})
 		res := wr.ExecuteAttempt(ctx, payload.RunID, payload.Cwd, payload.Boundary, payload.Step, payload.RecordOutput)
 		t, err := store.Load(payload.TaskID)
 		if err != nil {

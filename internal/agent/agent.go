@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"sort"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Garden12138/xcli/internal/config"
+	"github.com/Garden12138/xcli/internal/launch"
 )
 
 type CommandSpec struct {
@@ -40,6 +42,7 @@ type Info struct {
 }
 
 type RunResult struct {
+	LaunchID     string `json:"launch_id,omitempty"`
 	RetryNotices int    `json:"retry_notices,omitempty"`
 	RunID        string `json:"run_id,omitempty"`
 	ParseStatus  string `json:"parse_status,omitempty"`
@@ -266,7 +269,13 @@ func (d Definition) Detect(ctx context.Context) Installation {
 	var output probeOutput
 	command.Stdout = &output
 	command.Stderr = &output
-	err = command.Run()
+	probeMeta := launch.MetadataFrom(ctx)
+	probeMeta.Agent = d.Name
+	probeMeta.Adapter = d.Config.Adapter
+	probeMeta.Kind = "version"
+	probeMeta.RequestKey = ""
+	launchID, launchErr := launch.Run(versionCtx, command, probeMeta)
+	err = launchErr
 	if err != nil {
 		if versionCtx.Err() != nil {
 			result.Error = "version check timed out"
@@ -280,6 +289,10 @@ func (d Definition) Detect(ctx context.Context) Installation {
 		return result
 	}
 	result.Version = versionLine(string(output.data))
+	if err := launch.Annotate(launch.Reference(ctx), launchID, result.Version, "", ""); err != nil {
+		result.Error = "launch version evidence could not be saved"
+		return result
+	}
 	if result.Version == "" {
 		result.Error = "version check returned no version"
 	}
@@ -375,4 +388,28 @@ func captureOutput(event map[string]interface{}, pieces *[]string) {
 			}
 		}
 	}
+}
+
+// MatchCommand recognizes configured aliases and symlinks without executing a probe.
+func (r *Registry) MatchCommand(command string) (Definition, bool) {
+	path, err := exec.LookPath(command)
+	if err != nil {
+		return Definition{}, false
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return Definition{}, false
+	}
+	for _, name := range r.Names() {
+		d, _ := r.Get(name)
+		p, e := exec.LookPath(d.Config.Command)
+		if e != nil {
+			continue
+		}
+		other, e := os.Stat(p)
+		if e == nil && os.SameFile(info, other) {
+			return d, true
+		}
+	}
+	return Definition{}, false
 }

@@ -1,0 +1,37 @@
+?   	github.com/Garden12138/xcli	[no test files]
+ok  	github.com/Garden12138/xcli/cmd	35.016s
+ok  	github.com/Garden12138/xcli/internal/agent	1.453s
+ok  	github.com/Garden12138/xcli/internal/agentapi	0.441s
+ok  	github.com/Garden12138/xcli/internal/agentartifact	0.516s
+ok  	github.com/Garden12138/xcli/internal/agentgateway	4.669s
+ok  	github.com/Garden12138/xcli/internal/agentpolicy	6.797s
+ok  	github.com/Garden12138/xcli/internal/agentservice	4.482s
+ok  	github.com/Garden12138/xcli/internal/agentstore	1.318s
+ok  	github.com/Garden12138/xcli/internal/codexrpc	0.470s
+ok  	github.com/Garden12138/xcli/internal/config	0.480s
+ok  	github.com/Garden12138/xcli/internal/isolatedruntime	1.576s
+ok  	github.com/Garden12138/xcli/internal/jobs	0.559s
+ok  	github.com/Garden12138/xcli/internal/launch	1.659s
+?   	github.com/Garden12138/xcli/internal/launchtest	[no test files]
+?   	github.com/Garden12138/xcli/internal/localstate	[no test files]
+ok  	github.com/Garden12138/xcli/internal/mcp	0.469s
+?   	github.com/Garden12138/xcli/internal/media	[no test files]
+ok  	github.com/Garden12138/xcli/internal/model	0.467s
+ok  	github.com/Garden12138/xcli/internal/modelbackend	0.529s
+?   	github.com/Garden12138/xcli/internal/modelbackend/fake	[no test files]
+ok  	github.com/Garden12138/xcli/internal/modelgateway	0.537s
+ok  	github.com/Garden12138/xcli/internal/modelstore	1.056s
+ok  	github.com/Garden12138/xcli/internal/nativeadapter	37.899s
+--- FAIL: TestDeleteRemovesOnlyValidatedRecord (0.00s)
+    store_test.go:63: save run record: private state permissions must exclude group and other users
+FAIL
+FAIL	github.com/Garden12138/xcli/internal/runstore	0.481s
+ok  	github.com/Garden12138/xcli/internal/runtime	3.422s
+ok  	github.com/Garden12138/xcli/internal/siwc	0.835s
+ok  	github.com/Garden12138/xcli/internal/task	127.107s
+ok  	github.com/Garden12138/xcli/internal/workflow	8.808s
+ok  	github.com/Garden12138/xcli/internal/worktree	1.395s
+ok  	github.com/Garden12138/xcli/tests/model_gateway	0.763s
+?   	github.com/Garden12138/xcli/tests/native_agent_gateway/g7_peer	[no test files]
+ok  	github.com/Garden12138/xcli/tests/phase0	0.504s
+FAIL

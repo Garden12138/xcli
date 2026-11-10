@@ -10,7 +10,8 @@ flowchart TB
     Planner --> Materials[选定输入 / 交接摘要 / 固定复核材料]
     Materials --> Supervisor[owner / attempt / 预算 / 超时 / 取消]
     Supervisor --> Adapter[CLI argv 与原生事件适配]
-    Adapter --> Native[各自登录的原生 CLI]
+    Adapter --> Ledger[统一 Launch 预留 / 持久启动意图]
+    Ledger --> Native[各自登录的原生 CLI]
     Native --> Result[Session / Run / 真实产物]
     Result --> Checks[确定性检查 / 复核 / 用户接收]
     Supervisor --> Journal[Task 检查点 / 日志 / 状态]
@@ -32,7 +33,7 @@ flowchart TB
 
 ## 运行边界
 
-Task 的 `--agent` 锁定全部角色；自动模式从已安装结构化候选选择计划角色，不在失败后绕过原绑定换账号/工具。单 Task 默认 6 次进程调用、10 分钟累计执行、单次 120 秒；内部模型调用数不完全可见。
+Task 的 `--agent` 锁定全部角色；自动模式从已安装结构化候选选择计划角色，不在失败后绕过原绑定换账号/工具。单 Task 默认 6 次任务分派、10 分钟累计执行、单次 120 秒；内部模型调用数不完全可见。
 
 Work 只带选定材料进入工作目录；Project 从干净已提交仓库建 worktree。二者都是材料/工作目录约束，不是通用 sandbox。验证命令执行受信项目代码，复核绑定固定副本与内容摘要。
 
@@ -47,3 +48,7 @@ Work 只带选定材料进入工作目录；Project 从干净已提交仓库建 
 NAG 共享 `modelstore` 私有文件/锁工具及 `media`；`x/sys` 也供核心 Windows 进程/锁使用。物理拆分需先抽取中性存储/文件库、定义状态兼容与停止/回退方案。本轮不改用户状态 schema、不删除目录、不在运行时迁移服务。
 
 CI 的核心包列表覆盖 root/cmd/agent/config/jobs/mcp/runstore/runtime/task/workflow/worktree/phase0；cmd 中三个历史 Gateway 客户端功能测试单列到完整回归，新默认关闭/兼容性测试仍在核心门禁。源码构建仍须能编译保留包；这不是 Gateway 功能/资格就绪门禁。
+
+## R4.1 启动预算
+
+`internal/launch` 为唯一原生入口预算事实源，`internal/localstate` 从既有私有文件/OS 锁设施中提取，ModelStore 仍委托同一设施而保持冻结。Run/Task 增加可选 Launch 关联；探针、前后台执行、Session 与阶段重试共享窗口。完整口径见 [预算语义](R4_1_BUDGET_SEMANTICS.md)。这个账本不监控供应商内部模型请求、任意工具后代或外部控制器，未知来源必须显式记为 UNKNOWN。

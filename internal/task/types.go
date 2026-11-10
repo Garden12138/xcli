@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Garden12138/xcli/internal/agent"
+	"github.com/Garden12138/xcli/internal/launch"
 	"github.com/Garden12138/xcli/internal/worktree"
 )
 
@@ -31,6 +32,7 @@ type Options struct {
 }
 
 type Task struct {
+	LaunchRef       launch.Ref         `json:"launch_ref,omitempty"`
 	StopBaseline    uint64             `json:"stop_baseline"`
 	OwnerToken      string             `json:"owner_token,omitempty"`
 	UsageIncomplete bool               `json:"usage_incomplete,omitempty"`

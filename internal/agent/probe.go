@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"github.com/Garden12138/xcli/internal/launch"
 	"os/exec"
 	"strings"
 	"time"
@@ -23,7 +24,13 @@ func (d Definition) Probe(ctx context.Context) Installation {
 	var output probeOutput
 	command.Stdout = &output
 	command.Stderr = &output
-	err := command.Run()
+	probeMeta := launch.MetadataFrom(ctx)
+	probeMeta.Agent = d.Name
+	probeMeta.Adapter = d.Config.Adapter
+	probeMeta.Kind = "help"
+	probeMeta.RequestKey = ""
+	probeMeta.Version = result.Version
+	_, err := launch.Run(helpCtx, command, probeMeta)
 	if err != nil {
 		result.Error = "capability help check failed"
 		return result

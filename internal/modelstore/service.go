@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"github.com/Garden12138/xcli/internal/localstate"
 	"io"
 	"net"
 	"net/http"
@@ -15,7 +16,7 @@ import (
 	"time"
 )
 
-var ErrLocked = errors.New("gateway state is locked by another process")
+var ErrLocked = localstate.ErrLocked
 
 type ServiceState struct {
 	Schema       int        `json:"schema"`

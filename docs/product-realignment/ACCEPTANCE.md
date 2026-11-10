@@ -48,3 +48,11 @@ bash tests/product_realignment/verify-core.sh
 6. 下一步优先可审查阶段计划/显式角色绑定、统一任务时间线/恢复预览、统一真实产物验收；见[路线图](TASK_ORCHESTRATION_ROADMAP.md)。
 
 本轮真实模型调用、原生登录/配置修改、四应用修改、部署、Push 均为 0。M0–M5/G1–G8 原始证据不覆盖、不重写；不重启 G8.1 或 G7 实验。最终本地提交以包含本文与验收清单的提交定位，避免自引用 SHA。
+
+## R4.1 统一启动账本验收
+
+R4 原始验收如上保留。R4.1 在 `ae0b4be` 上增加统一持久启动预留与 OS spawn 入口，候选 `0.5.0-r4.1-dev`；没有继续 Gateway/OAuth 开发。离线全量及核心回归结果、证据和版本散列见 [IMPLEMENTATION_PROGRESS](IMPLEMENTATION_PROGRESS.md)。
+
+新门禁包括 100 并发预算竞争、100 并发槽竞争、100 幂等竞争、多 Task、retry/resume/后台窗口共享、取消/超时/立即退出、Start 失败与崩溃恢复、UNKNOWN 外部基线、校验损坏及旧数据字节保护。仅 Fake CLI；原生入口与未知后代/外部控制器范围严格分开，不把内部模型请求/费用写为已知。
+
+真实验收仍 **NEEDS_FIXES**：旧总数及余额 UNKNOWN，下一轮先重新授权并建立完整基线。账本不能追溯未观察过的历史进程，也不能自行批准新的原生调用预算。详见 [R4.1 预算语义](R4_1_BUDGET_SEMANTICS.md)。本轮不进入 R5。

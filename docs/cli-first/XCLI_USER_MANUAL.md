@@ -1,16 +1,12 @@
-# xcli 使用手册 · R4 CLI-First
+# xcli 使用手册 · R4.1 CLI-First
 
-2026-11-10，未发布源码候选 `0.5.0-r4-dev`。xcli 调度原生 AI Coding Agent CLI，厂商 CLI 自管安装、登录、账号、模型和额度。日常入口不需要 Gateway/OAuth/模型服务配置。旧验收手册完整保留在[2026-11-06 快照](XCLI_USER_MANUAL_20261106.md)。
+2026-11-10，未发布源码候选 `0.5.0-r4.1-dev`。xcli 调度原生 AI Coding Agent CLI，厂商 CLI 自管安装、登录、账号、模型和额度。日常入口不需要 Gateway/OAuth/模型服务配置。旧验收手册完整保留在[2026-11-06 快照](XCLI_USER_MANUAL_20261106.md)。
 
 ## 构建与原生前提
 
 ```bash
 go build -trimpath -o /tmp/xcli-r4 .
 /tmp/xcli-r4 --version
-/tmp/xcli-r4 agents --json
-/tmp/xcli-r4 doctor codex --json
-/tmp/xcli-r4 doctor cursor --json
-/tmp/xcli-r4 doctor antigravity --json
 ```
 
 以下 `xcli` 指该构建产物，请用完整路径或自行放入 PATH。内置映射是 Codex=`codex`、Cursor=`cursor-agent`、Antigravity=`agy`；可在自己的 xcli 配置中覆盖 command。其余已有 Adapter 继续保留。
@@ -18,6 +14,31 @@ go build -trimpath -o /tmp/xcli-r4 .
 用户通过原生 CLI 自行安装、登录和处理工作区信任。`agents`/`doctor` 只检查安装/版本/help；没有认证/额度保证。xcli 不调用登录，不提取凭据，不自动 trust/force 或改变原生规则。R3 和 CLI-first 的真实历史结果有具体版本与角色边界，见[支持矩阵](../r3/compatibility.zh-CN.md)。R4 产品收敛批次未执行新真实调用；单独的 [R4 真实验收](../product-realignment/R4_REAL_ACCEPTANCE.md)受新的预算与停止条件约束。
 
 严格按“原生 CLI 进程启动数”限额验收时，不要直接连续执行上面所有诊断命令。`agents` 会对已发现的配置 CLI 启动版本查询，`doctor <agent>` 最多执行版本与 help 两个原生进程；原生登录状态命令也会另起进程。必须先明确探针、验收控制器和任务的统一账本，计数不明时停在真实调用门槛前，不把只读理解成零启动。
+
+## 必需的原生启动预算窗口
+
+R4.1 所有原生 CLI 启动（含版本/help/status）先落盘预算；无窗口或外部基线不明会拒绝启动。`--version` 是 xcli 自己的版本，`config`、`runs`、Task 状态和 `launches` 查询不启动原生 CLI。以下所有 run/use/resume/task/agents/doctor 示例均要求已经导出同一个窗口，不能直接复制旧 R4 命令绕过门禁。
+
+```bash
+# 示例：仅在用户重新明确授权且确无 scoped 外部启动时，才可填写 none/0。
+# limit 是本次新授权的总启动数，必须计入探针；这里用 20 演示日常窗口。
+xcli launches window create daily-new --limit 20 --concurrency 1 \
+  --external-agent none --external-count 0 --external-scope included \
+  --external-source owner-verified-receipt --confirm-external
+export XCLI_LAUNCH_WINDOW=daily-new
+xcli launches budget
+# 选择需要的探针执行，每个 --version 都花一次，Doctor 最多两次。
+xcli agents --json
+xcli doctor codex --json
+xcli launches list
+xcli launches show launch-id
+```
+
+当前 Codex 控制器的外部累计启动数不能默认 0。`--external-count` 缺失保持 null/UNKNOWN，included 的 UNKNOWN 窗口拒绝派发；`--confirm-external` 是用户确认已审计证据，不是自动发现。跨终端通过 `XCLI_LAUNCH_STORE`（绝对私有目录）和 `XCLI_LAUNCH_WINDOW` 共用同一账本，或显式传 `--launch-store ... --launch-window ...`。旧 R4 验收仍 UNKNOWN，不推断剩余 5，不使用此例自动发起新验收。
+
+`xcli --launch-request unique-id run ...` 可防同一次直接请求被重复派发（也支持 use/resume/后台 run）；重放返回已有 Launch ID 错误，需查询原结果。取消、超时、退出失败也消耗启动额度；只有证明 OS 从未启动才释放。未知崩溃保守扣额并占并发，查明停止后 `launches confirm-stopped <id> --evidence <receipt> --confirm` 只清并发占位，不退预算。同 Task/Run/已知 Session 不可切换窗口清零。
+
+更多规则与统计字段见 [R4.1 账本](../product-realignment/R4_1_LAUNCH_LEDGER.md)、[预算语义](../product-realignment/R4_1_BUDGET_SEMANTICS.md)。
 
 ## 一次执行与 Session
 
@@ -58,9 +79,9 @@ xcli task "执行修复，并由另一个 CLI 复核当前结果" --project ./pr
 
 显式 `--agent` 将协调、执行、修复、自查全部锁定到该配置名称。自动模式由协调者在已安装结构化 Adapter 中分配阶段；计划分工不等于失败后 fallback。要求独立复核时必须不同 Adapter，别名不算。当前没有公开 `--worker/--reviewer` 或独立 workflow YAML 命令；具体角色要求写入目标并检查保存的计划/复核记录，不能声称已有强绑定参数。
 
-默认累计 10 分钟、最多 6 次 Agent CLI 调用、每次最多 120 秒、一次修复。使用 `--timeout 30m --call-timeout 8m --max-calls 8` 调整预算，不能把调用次数当作供应商内部模型轮数或收费上限。Project 测试按 argv 执行受信代码，未知验证入口用 `--verify`；没有有效验证进入 waiting_user，不虚构通过。
+默认累计 10 分钟、最多 6 次 Agent 任务分派、每次最多 120 秒、一次修复；独立的全局 launch 窗口还会计算发现与版本探针。使用 `--timeout 30m --call-timeout 8m --max-calls 8` 调整预算，不能把调用次数当作供应商内部模型轮数或收费上限。Project 测试按 argv 执行受信代码，未知验证入口用 `--verify`；没有有效验证进入 waiting_user，不虚构通过。
 
-`task --max-calls` 限制任务分派，不覆盖全部发现/版本/help 进程或外部验收控制器，不能充当全局原生启动硬上限。旧 `tests/r0/smoke.py` 的任务计数同样没有覆盖其 `safe_probe` 和控制器；严格总启动限额下不能只加 `--execute` 就运行，复用 `--preflight` 也不证明外部计数完整。直接 run/resume 没有 `--timeout 120s` 参数，需要受同一预算约束的外部监督；不能拿普通 API、冻结 Gateway 或换 CLI 补测试结果。
+`task --max-calls` 限制任务分派，不覆盖全部发现/版本/help 进程或外部验收控制器，不能充当全局原生启动硬上限。R4.1 的 `tests/r0/smoke.py` 要求显式账本环境，`safe_probe` 走 xcli 受控入口；其 `invocations` 仍仅指任务尝试，总启动数看 ledger。`--preflight` 仅省去探针，不证明外部计数完整。直接 run/resume 没有 `--timeout 120s` 参数，需要受同一预算约束的外部监督；不能拿普通 API、冻结 Gateway 或换 CLI 补测试结果。
 
 Work 验收非空产物、所需文本和来源；Project 保留 diff、文件摘要、测试和绑定当前内容的复核。输出图片等二进制可以作为文件保留，但没有统一视觉/工具来源自动验收。应打开真实图片核对格式和内容，明确区分文件存在、格式有效、来源可核实和用户接收。原生 CLI 未具备相应工具时如实失败，不换模型 API 补产物。
 

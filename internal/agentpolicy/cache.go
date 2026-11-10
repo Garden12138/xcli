@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/Garden12138/xcli/internal/launch"
 	"os"
 	"path/filepath"
 	"slices"
@@ -88,7 +89,7 @@ func Refresh(ctx context.Context, root, agentID, binary string) (CachedInstallat
 	defer os.RemoveAll(work)
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
-	result, e := xruntime.RunProcess(ctx, agent.CommandSpec{Command: resolved, Args: []string{"--version"}}, xruntime.ProcessOptions{Dir: work, Env: Environment(nil, work), CaptureStdout: true, SeparateProcess: true, BoundedCleanup: true})
+	result, e := xruntime.RunProcess(ctx, agent.CommandSpec{Command: resolved, Args: []string{"--version"}}, xruntime.ProcessOptions{Launch: &launch.Metadata{Agent: agentID, Kind: "version"}, Dir: work, Env: Environment(nil, work), CaptureStdout: true, SeparateProcess: true, BoundedCleanup: true})
 	// Fixed, non-sensitive failure codes: never print the native stderr tail.
 	switch {
 	case e != nil:

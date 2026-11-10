@@ -11,9 +11,12 @@ import (
 	"time"
 
 	"github.com/Garden12138/xcli/internal/agent"
+	"github.com/Garden12138/xcli/internal/launch"
 )
 
 type ProcessOptions struct {
+	Launch          *launch.Metadata
+	ToolCommand     bool
 	Dir             string
 	Env             []string
 	Stdin           io.Reader
@@ -26,6 +29,7 @@ type ProcessOptions struct {
 }
 
 type ProcessResult struct {
+	LaunchID         string
 	ExitCode         int
 	Stdout           []byte
 	Canceled         bool
@@ -37,7 +41,7 @@ type ProcessResult struct {
 	WaitIncomplete   bool
 }
 
-func RunProcess(ctx context.Context, spec agent.CommandSpec, options ProcessOptions) (ProcessResult, error) {
+func RunProcess(ctx context.Context, spec agent.CommandSpec, options ProcessOptions) (result ProcessResult, resultErr error) {
 	if ctx.Err() != nil {
 		return ProcessResult{StopConfirmed: true, ExitCode: -1, Canceled: !errors.Is(ctx.Err(), context.DeadlineExceeded), TimedOut: errors.Is(ctx.Err(), context.DeadlineExceeded)}, nil
 	}
@@ -90,7 +94,26 @@ func RunProcess(ctx context.Context, spec agent.CommandSpec, options ProcessOpti
 	tail := &tailWriter{writer: options.Stderr}
 	command.Stderr = tail
 
-	if err := command.Start(); err != nil {
+	var ticket *launch.Ticket
+	if options.Launch != nil || launch.KnownCLI(spec.Command) {
+		meta := launch.MetadataFrom(ctx)
+		if options.Launch != nil {
+			meta = *options.Launch
+		}
+		var err error
+		ticket, err = launch.Start(ctx, command, meta)
+		if err != nil {
+			id := ""
+			if ticket != nil {
+				id = ticket.ID
+			}
+			return ProcessResult{LaunchID: id, StopConfirmed: true, ExitCode: -1}, err
+		}
+		defer func() {
+			result.LaunchID = ticket.ID
+			resultErr = errors.Join(resultErr, ticket.Finish(result.ExitCode, result.Canceled, result.TimedOut, result.StopConfirmed))
+		}()
+	} else if err := command.Start(); err != nil {
 		return ProcessResult{StopConfirmed: true, ExitCode: -1}, err
 	}
 	cleanup, err := attachProcess(command, options.SeparateProcess)

@@ -13,9 +13,12 @@ import (
 	"time"
 
 	"github.com/Garden12138/xcli/internal/agent"
+	"github.com/Garden12138/xcli/internal/launch"
 )
 
 type Record struct {
+	LaunchRef       launch.Ref        `json:"launch_ref,omitempty"`
+	LaunchID        string            `json:"launch_id,omitempty"`
 	RetryNotices    int               `json:"retry_notices,omitempty"`
 	TaskID          string            `json:"task_id,omitempty"`
 	Role            string            `json:"role,omitempty"`
@@ -54,6 +57,7 @@ type Record struct {
 }
 
 type StepRecord struct {
+	LaunchID     string       `json:"launch_id,omitempty"`
 	RetryNotices int          `json:"retry_notices,omitempty"`
 	Cwd          string       `json:"cwd,omitempty"`
 	ParseStatus  string       `json:"parse_status,omitempty"`

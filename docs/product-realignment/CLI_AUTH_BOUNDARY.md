@@ -4,7 +4,7 @@
 
 ## 当前执行行为
 
-`agents` 读取配置/PATH 并执行版本查询；`doctor` 再执行有限时的 `--help`，只报告安装/版本/能力来源。它不调用 login，不遍历认证文件，也不据 help 推断登录、额度或 sandbox 已生效。xcli 可报告原生执行明确返回的认证、权限、额度错误；不为判断状态额外发小模型请求。
+`agents` 读取配置/PATH 并执行版本查询；`doctor` 再执行有限时的 `--help`，只报告安装/版本/能力来源。这些默认诊断不调用 login，不遍历认证文件，也不据 help 推断登录、额度或 sandbox 已生效。xcli 可报告原生执行明确返回的认证、权限、额度错误；不为判断状态额外发小模型请求。
 
 Task/Run 启动用户选择的原生 CLI，使用其现有登录入口和用户选择的环境。原生 CLI 自己读取本人的认证资料，不等于 xcli 从登录文件提取 Token。用户配置中的 env/network 仍由用户控制；R4 不修改它们，也不能从当前 argv/环境绑定推断用户未在原生应用中手动换过账号。
 
@@ -23,3 +23,7 @@ Task/Run 启动用户选择的原生 CLI，使用其现有登录入口和用户�
 未来本机 Task API/受限 IPC 可以有 xcli 自己的客户端 Token、OS peer identity、任务/工作区 scope、预算与撤销。这只表示“该本地应用可以请求这个受限任务”，不表示供应商登录或模型使用授权。
 
 已有 `modelstore.Clients` / `agentstore.Clients` 及其轮换/撤销机制保留冻结，用于兼容收尾或将来抽取中性组件。不能把这类 Token 放进供应商 Authorization，也不能把供应商 Token 返回给本地应用。当前没有新 Task API 或代管认证服务。
+
+## R4.1 显式只读状态与启动计账
+
+`launches probe codex|cursor --kind status` 是用户明确选择的只读状态查询：Codex 仅执行 `login status`，Cursor 仅执行 `status --format json`，均先预留统一启动预算。只返回有限认证布尔值与 Launch ID，不输出账号原文或读取凭据文件；Antigravity 无已确认的此类命令时直接拒绝。它不实现登录、刷新、切换或 Token 代理，也不证明模型额度/权限有效。默认 Doctor 仍只做版本/help，外部控制器计数必须另有明确基线。

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Garden12138/xcli/internal/agent"
+	"github.com/Garden12138/xcli/internal/launch"
 )
 
 type Outcome struct {
@@ -68,6 +69,29 @@ func Execute(ctx context.Context, definition agent.Definition, spec agent.Comman
 	} else {
 		options.Stderr = io.MultiWriter(diagnostics, options.Stderr)
 	}
+	if !options.ToolCommand {
+		meta := launch.MetadataFrom(ctx)
+		meta.Agent = definition.Name
+		meta.Adapter = definition.Config.Adapter
+		meta.RunID = runID
+		meta.Phase = stepID
+		if meta.Attempt < 1 {
+			meta.Attempt = 1
+		}
+		meta.Attempt += attempt - 1
+		meta.Retry = meta.Retry || attempt > 1
+		if meta.Agent == "" {
+			meta.Agent = definition.Config.Adapter
+		}
+		if meta.Kind == "" {
+			meta.Kind = "run"
+		}
+		if len(fallbackSession) > 0 && fallbackSession[0] != "" {
+			meta.SessionID = fallbackSession[0]
+			meta.Kind = "resume"
+		}
+		options.Launch = &meta
+	}
 	emit("started", "", nil)
 	process, runErr := RunProcess(ctx, spec, options)
 	parsed := diagnostics.Apply(decoder.Finish())
@@ -80,6 +104,16 @@ func Execute(ctx context.Context, definition agent.Definition, spec agent.Comman
 		result.ErrorKind = "process_failed"
 		result.Error = "native process I/O failed"
 		cliExit = 1
+	}
+	result.LaunchID = process.LaunchID
+	if process.LaunchID != "" {
+		if err := launch.Annotate(launch.Reference(ctx), process.LaunchID, "", result.SessionID, "run:"+runID); err != nil {
+			runErr = err
+			result.Status = "failed"
+			result.ErrorKind = "process_failed"
+			result.Error = "launch evidence persistence failed"
+			cliExit = 1
+		}
 	}
 	result.RunID = runID
 	result.Agent = definition.Name

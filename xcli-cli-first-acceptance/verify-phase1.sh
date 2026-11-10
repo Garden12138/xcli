@@ -12,7 +12,7 @@ for arg in "$@"; do
 Usage: bash verify-phase1.sh [--race] [--native-smoke]
   Default: Go tests, vet, build, CLI version discovery, xcli agents/doctor and gateway lifecycle.
   --race: additionally run go test -race ./...
-  --native-smoke: opt in to existing tests/r0/smoke.py --execute (up to 6 native CLI launches; may consume account quotas). No retries.
+  --native-smoke: opt in to existing tests/r0/smoke.py --execute (up to 6 task attempts plus budgeted probes; may consume account quotas). No retries.
 No Ollama, no external provider API keys, no login, no model Gateway native CLI bridge is assumed.
 EOF
       exit 0;;
@@ -49,7 +49,7 @@ for bin in codex agy cursor-agent agent; do
   if command -v "$bin" >/dev/null 2>&1; then
     printf '%s: installed\n' "$bin" | tee -a "$SUMMARY"
     # Avoid logging paths, account names or untrusted verbose help text.
-    if "$bin" --version >/dev/null 2>&1; then say "PASS $bin --version"; else say "WARN $bin --version failed"; fi
+    say "DISCOVERED $bin (filesystem only; no unaccounted version process)"
   else
     say "NOT_TESTED $bin: not found"
   fi
@@ -60,6 +60,7 @@ run_check 'go build' go build -trimpath -o "$BINARY" .
 if [[ $MODE_RACE -eq 1 ]]; then run_check 'go test -race ./...' go test -race ./...; fi
 if [[ -x "$BINARY" ]]; then
   run_check 'xcli --version' "$BINARY" --version
+  if [[ -n "${XCLI_LAUNCH_STORE:-}" && -n "${XCLI_LAUNCH_WINDOW:-}" ]]; then
   run_check 'xcli agents --json' "$BINARY" agents --json
   for name in codex cursor antigravity; do
     # Doctor diagnoses installation/help; failure does not mean model execution is impossible.
@@ -69,6 +70,9 @@ if [[ -x "$BINARY" ]]; then
       say "WARN doctor $name (possibly absent/configured differently; inspect locally)"
     fi
   done
+  else
+    say 'NOT_TESTED native agents/doctor: explicit confirmed launch window required'
+  fi
   if [[ -f tests/model_gateway/lifecycle.py ]]; then
     run_check 'Gateway lifecycle (fake upstream only)' python3 tests/model_gateway/lifecycle.py --binary "$BINARY"
   fi

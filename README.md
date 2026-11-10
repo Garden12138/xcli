@@ -1,5 +1,7 @@
 # xcli
 
+R4.1 requires an explicit process launch budget window before native CLI execution or probes; see [launch ledger](docs/product-realignment/R4_1_LAUNCH_LEDGER.md) and [user manual](docs/cli-first/XCLI_USER_MANUAL.md).
+
 [English](README.md) | [简体中文](README.zh-CN.md)
 
 xcli schedules and orchestrates native AI Coding Agent CLIs. Each native CLI owns installation, sign-in, accounts, permissions and model access. xcli discovers and selects the CLI, executes bounded tasks, supervises processes, preserves context, recovers interrupted work and delivers verifiable results.

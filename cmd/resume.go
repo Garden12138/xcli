@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Garden12138/xcli/internal/agent"
+	"github.com/Garden12138/xcli/internal/launch"
 	"github.com/Garden12138/xcli/internal/runstore"
 	xruntime "github.com/Garden12138/xcli/internal/runtime"
 	"github.com/spf13/cobra"
@@ -62,6 +63,12 @@ func (a *app) newResumeCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if target.ResumedFrom != "" {
+				old, loadErr := store.Load(target.ResumedFrom)
+				if loadErr == nil && old.LaunchRef.Window != "" && !launch.SameRef(old.LaunchRef, launch.Reference(command.Context())) {
+					return errors.New("resume_launch_window_mismatch")
+				}
+			}
 			definition, err := registry.Get(target.Agent)
 			if err != nil {
 				return fmt.Errorf("cannot resume session: %w", err)
@@ -98,13 +105,14 @@ func (a *app) newResumeCommand() *cobra.Command {
 				prefix = "use"
 				selectionSource = ""
 			}
-			record := runstore.Record{
+			record := runstore.Record{LaunchRef: launch.Reference(command.Context()),
 				ID: runstore.NewID(prefix), Kind: kind, Agent: target.Agent,
 				SelectionSource: selectionSource, Cwd: cwd, StartedAt: time.Now().UTC(), Status: "running",
 				SessionID: target.SessionID, ResumedFrom: target.ResumedFrom, ResumedStep: target.ResumedStep,
 			}
 
 			ctx, cancel := signalContext(command.Context())
+			ctx = launch.WithMetadata(ctx, launch.Metadata{Kind: "resume", SessionID: target.SessionID, RequestKey: a.launchRequest})
 			defer cancel()
 			if err := store.Save(record); err != nil {
 				return err
@@ -118,7 +126,7 @@ func (a *app) newResumeCommand() *cobra.Command {
 				if raw != nil {
 					rawWriter = raw
 				}
-				process, runErr := xruntime.RunProcess(ctx, spec, xruntime.ProcessOptions{Dir: cwd, Env: environment, Stdin: os.Stdin, Stdout: command.OutOrStdout(), Stderr: command.ErrOrStderr(), RawOutput: rawWriter})
+				process, runErr := xruntime.RunProcess(ctx, spec, xruntime.ProcessOptions{Launch: &launch.Metadata{Agent: target.Agent, Adapter: definition.Config.Adapter, Kind: "interactive_resume", RunID: record.ID, SessionID: target.SessionID, RequestKey: a.launchRequest}, Dir: cwd, Env: environment, Stdin: os.Stdin, Stdout: command.OutOrStdout(), Stderr: command.ErrOrStderr(), RawOutput: rawWriter})
 				normalized, code := agent.Normalize(agent.RunResult{SessionID: target.SessionID, ParseStatus: "not_applicable"}, process.ExitCode, process.Canceled, process.TimedOut, runErr)
 				if process.IOError && code == 0 {
 					normalized.Status = "failed"
@@ -127,6 +135,7 @@ func (a *app) newResumeCommand() *cobra.Command {
 					code = 1
 				}
 				record.EndedAt = time.Now().UTC()
+				normalized.LaunchID = process.LaunchID
 				applyResult(&record, normalized)
 				if raw != nil {
 					if err := raw.Close(); err != nil {
