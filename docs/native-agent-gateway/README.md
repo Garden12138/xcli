@@ -1,6 +1,8 @@
 # Native Agent Gateway V1 SPEC
 
-G6 最新入口：[app-server 实现](G6_APP_SERVER_IMPLEMENTATION.md) → [安全边界](G6_SECURITY_BOUNDARY.md) → [离线证据](G6_OFFLINE_ACCEPTANCE.md) → [决策与恢复](G6_DECISION.md)。当前 ISOLATED_RUNTIME_REQUIRED，真实推理 0；旧阶段证据保留。
+G7 最新入口：[隔离运行时实验](G7_ISOLATED_RUNTIME_EVALUATION.md) → [凭据边界](G7_CREDENTIAL_BOUNDARY.md) → [最终决策与操作](G7_DECISION.md)。当前 **PARTIAL_HOST_ISOLATION_ONLY**：Linux 宿主隔离通过，凭据/全工具分离未完成，真实推理 0，真实 Profile 继续关闭；本轮结束，不自动进入 G8。
+
+G6 历史入口：[app-server 实现](G6_APP_SERVER_IMPLEMENTATION.md) → [安全边界](G6_SECURITY_BOUNDARY.md) → [离线证据](G6_OFFLINE_ACCEPTANCE.md) → [G6 决策](G6_DECISION.md)。原 ISOLATED_RUNTIME_REQUIRED 的证据保留，不被 G7 假任务结果覆盖。
 
 G5A.2 当前结论：**ENGINEERING_BLOCKED / USER_CONFIRMATION_REQUIRED**，真实模型调用 0。恢复从 [IMPLEMENTATION_PROGRESS](IMPLEMENTATION_PROGRESS.md)、[Codex 隔离边界](CODEX_ISOLATION_BOUNDARY.md)、[本人确认](CODEX_ACCOUNT_AND_USAGE_CONFIRMATION.md)进入；不要将原生命令 Canary PASS 视作真实 HTTP Gate B PASS。
 

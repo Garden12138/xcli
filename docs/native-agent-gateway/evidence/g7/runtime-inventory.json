@@ -1,0 +1,25 @@
+{
+  "observed_at": "2026-11-09/10",
+  "host": "Darwin arm64",
+  "orbstack": {
+    "version": "2.2.5 (2020500)",
+    "commit": "bf842321",
+    "preexisting": true,
+    "global_settings_changed": false
+  },
+  "docker": {
+    "client": "29.8.2",
+    "engine": "29.8.2",
+    "os": "linux",
+    "arch": "arm64",
+    "kernel": "7.2.12-orbstack-00394-gbecdd6130068",
+    "already_running": true,
+    "config": "fresh empty HOME/DOCKER_CONFIG",
+    "endpoint": "explicit local unix socket",
+    "public_image_pulls": 1
+  },
+  "other_candidate_commands_found": [],
+  "credentials_read_or_copied": false,
+  "virtualization_software_installed": false,
+  "scope": "Observed inventory from bounded G7 commands; no personal Docker config or registry authentication read."
+}

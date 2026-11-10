@@ -4,7 +4,7 @@
 
 ## 当前入口
 
-当前阶段：**G6 app-server 最小集成；决策 ISOLATED_RUNTIME_REQUIRED**。起点 `15b608a`，真实推理 0；exec 的 ENGINEERING_BLOCKED 和旧证据保留。恢复先读本文件末尾 G6、G6_DECISION、G6_SECURITY_BOUNDARY，不重复 G5A.2 Canary 或执行真实 turn/start。
+当前阶段：**G7 已结束；决策 PARTIAL_HOST_ISOLATION_ONLY**。起点 `99786e2`，Linux arm64 独立环境已运行，宿主隔离通过；凭据与全部不可信工具分离未完成。真实推理 0，exec/app-server/Cursor/Agy 真实 Profile 保持关闭。先读本文件末尾 G7、G7_DECISION、G7_CREDENTIAL_BOUNDARY；下一步为产品路线决策，不自动进入 G8、不再叠加同域 Canary 或执行真实 turn/start。
 
 最新恢复入口：[G5A 分项状态](G5A_PROFILE_READINESS.md) → [官方集成与授权](OFFICIAL_INTEGRATION_REVIEW.md) → [G5B 每家首次 1 次文本计划](G5B_REAL_HTTP_PLAN.md)。G5A 本地提交定位见本文件末尾；不得将审查完成解读为已具备直接推理条件。
 
@@ -274,3 +274,54 @@ GOCACHE=/tmp/xcli-nag-go-cache GOPROXY=off GOSUMDB=off go build -trimpath -o /tm
 代码、测试、非推理证据与 G6 决策提交：`c9a8d8828f0b30dc81df45306b3c7b20aec71298`。最终 194 文件源码摘要 `e3dca881a7f87940b8cffd015d81cd72d5dce32f98050ffb1abc2f527c269c3a`；完整门禁之后仅 gofmt 展开 Exec 分派行，并重新 build，未改变语义。测试产物／最终构建摘要均保存在 validation.json。
 
 本节仅文档交接；文档提交以 `git log -1 -- docs/native-agent-gateway/IMPLEMENTATION_PROGRESS.md` 定位，避免自引用 SHA。当前 ISOLATED_RUNTIME_REQUIRED，真实推理 0，三家真实 Gate B 非 PASS；全部提交仅在本地，未 Push／部署／发布。
+
+## G7 恢复快照（2026-11-10，历史中断点；已由下节完成记录取代）
+
+起点 `99786e25f04494f6d63973cf0039160cb5e2c38e`，开始时工作区干净。已恢复 G6 文档／app-server／受限 Profile，并重新核查官方认证与执行环境文档。现有 OrbStack 2.2.5 / Docker 29.8.2 引擎为 Linux arm64；没有安装或更改虚拟化软件。使用空 HOME/DOCKER_CONFIG 与固定本地 socket，公共 Alpine 3.22 镜像已按 digest 固定，官方同版本 Linux Codex 包已验证发布的 SHA-512；没有原生登录资料复制。
+
+A0 实际 PASS：断网、只读、UID 65532、cap-drop 的容器能读合成材料并运行 codex --version 后 exit 0。A1 首次 initialize 提前 EOF，已确认本次容器停止，但尚未取得启动 stderr；不能标握手或隔离 PASS。一次诊断在执行前被自动审批审查额度错误阻断，未执行；这不是安全性否决。现已按用户“继续”重新恢复，仍使用正常审批，不绕过 socket 权限。
+
+临时资产／合成根见 evidence/g7/asset-and-runtime.json（不含凭据）；已有 A0 与初次失败保留。新 container transport、默认关闭的 IsolatedAppServer 和有界 spike 脚本尚未提交、未完成回归，不能作为启用依据。真实模型／turn 请求为 0，G1–G6 的生产 Native 拒绝不变。下一步仅一次启动诊断→有限 A1–A5→明确 G7 决策；不自动进入 G8。
+
+## G7 完成记录（2026-11-10）
+
+**最终决策 PARTIAL_HOST_ISOLATION_ONLY；本轮到此结束。** 运行时可用，宿主隔离通过，凭据/全工具执行分离未完成。路线 B 为 NOT_FEASIBLE_UNDER_CURRENT_CONSTRAINTS，不继续叠加同域探针、不自动进入 G8。真实推理请求、真实 turn/start、真实认证材料读取/复制/使用均 **0**。
+
+交付：[隔离运行时实验](G7_ISOLATED_RUNTIME_EVALUATION.md)、[凭据边界/官方依据](G7_CREDENTIAL_BOUNDARY.md)、[最终决策/产品路线/准确操作](G7_DECISION.md)。USER_GUIDE、G5B、README 已同步，历史 G1–G6 证据未覆盖。
+
+| 已完成部分 | 证据及范围 |
+| --- | --- |
+| 真实独立 Linux arm64 执行环境 | 现有 OrbStack 2.2.5 / Docker 29.8.2；一次公开 Alpine 拉取，固定 digest；[环境](evidence/g7/runtime-inventory.json)、[资产/hash](evidence/g7/asset-and-runtime.json) |
+| A0–A2 | 原生 --version、initialize/initialized、stdio、正常 exit 0 与 daemon 停止确认；只使用假 HOME/CODEX_HOME；[A0](evidence/g7/a0.json)、[A1–A4](evidence/g7/linux-isolation-final.json) |
+| A3–A4 宿主边界 | UID 65532、只读/断网、直接 fs 不读宿主假凭据/链接/候选宿主别名/socket，不能写/替换工作区；只证明所测外层边界，不推广全部 builtin |
+| 最小 transport | 默认关闭 Go owner 构造，生产不选择；固定 image/socket/payload/单只读挂载，环境白名单，单 workload；Docker 客户端退出不等于 workload 停止，daemon 不可确认则 execution_state_unknown |
+| A5 假 peer HTTP 链路 | 2 个合成任务，各一次启动：succeeded 与销毁后 failed；持久 Task/SSE、幂等重放、重启不重执行；[外部系统 race 测试](evidence/g7/a5-integration.log)。不是真实 Codex turn |
+| 全量回归 | [offline.log](evidence/g7/offline.log) exit 0：go test -race -p 1 -count=1 -timeout 240s ./...、go vet ./...、go build、两次服务生命周期/真实 Profile 拒绝、旧 Python 11/11、新 Python 9/9、diff check |
+
+完整源码 201 文件，摘要 `d89dae6e23c1adbc4d2f0f904904d789c52dce2eb711a78d8ead49c4a7c8345f`；[manifest](evidence/g7/source-manifest.json)、[validation](evidence/g7/validation.json)、[无推理启动账本](evidence/g7/non-model-ledger.json)。确认的 Linux 原生进程 4（1 version、3 app-server 启动含两次早期失败）；LLDB 仅 launcher 尝试、目标启动未确认；另外 2 个假 Linux peer。次数不等于内部模型请求或费用。
+
+### 剩余门禁与独立阻塞
+
+| 门禁 | 当前状态及原因 |
+| --- | --- |
+| 凭据与工具分离 | BLOCKED：单容器/同 UID 代表进程和直接 fs 可读模拟 Access Token 环境；不是全部内置工具被攻破的结论，也不是其安全证明 |
+| 正式全工具分离路径 | NOT_VERIFIED：官方 SIWC、ephemeral、remote Code Mode 各有文档，但无当前版本/全路径验证的组合；不采用自制 auth proxy 或真实 Bearer 注入 |
+| 云服务连通/真实权益 | NOT_TESTED：network none 刻意无云出口、未登录；model/list 不代替真实权益，未获真实推理授权 |
+| 本人账号/计划/用途/云发送/费用 | USER_CONFIRMATION_REQUIRED，六项仍未确认；VM/SIWC 文档不等于本项目/账号自动获准 |
+| G6 SIGABRT | 根因未定位、未修复；[原始信号](evidence/g6/protocol-diagnostics.json)保留，[LLDB](evidence/g7/g6-crash-lldb.log)被 OS attach 权限阻断；不改系统设置，Linux 通过不是 macOS 修复 |
+| 真实 Profile / Gate B | Codex exec/app-server、Cursor、Agy 均关闭，真实 Gate B NOT_PASSED；G7 不是 READY_FOR_AUTHORIZATION |
+| 生产容器集成/原生 Thread 持久化 | 本轮未实施，不把假 NAG 重启结果当作原生 resume 证据；后续先产品选择 |
+
+初次 A1 的不存在 CODEX_HOME、A5 multicall 入口失效、TLS 下载失败、审批额度中断及修复过程全部保留在 [failure-notes](evidence/g7/failure-notes.json)及对应原始输出。未删测试、未开 HOME/网络/Keychain、未降级 sandbox。审批额度问题已正常恢复；OS 调试权限仍是诊断限制，不是未获得模型授权的替代。
+
+### 恢复入口及停止点
+
+```bash
+git status --short
+git log -6 --oneline
+bash tests/native_agent_gateway/verify-offline.sh
+```
+
+先读 G7_DECISION，再读 G7_CREDENTIAL_BOUNDARY/G7_ISOLATED_RUNTIME_EVALUATION。当前推荐保留个人 xcli CLI Task/Run（路线 3）；若目标主要是四应用订阅文本，另行选择符合条件的独立 SIWC/Responses（路线 2），不是 CLI Adapter、不继承图片能力、不用普通计费 API 替代。路线 1 保留 NAG 协议，仅有正式且具体的全工具边界证据后再立项。未自动开发任一路线。
+
+实际 G7 workload 均已销毁，临时 Docker 配置删除、mock 停止。合成资产根 `/private/tmp/xcli-g7-runtime-frr74red` 和公开包 `/private/tmp/xcli-g7-assets-kego1d6s` 保留、无真实凭据；临时根可能被系统清理，复验命令以文档前提为准。没有全局服务停止/软件安装/系统安全更改，没有四应用改动、Cursor Trust、部署、Push、Tag、Release。最终代码/文档 SHA 将由下方交接段明确定位。

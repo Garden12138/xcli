@@ -1,0 +1,40 @@
+{
+  "stage": "G7_A1_A4_AND_SINGLE_SIMULATED_B_CHECK",
+  "result": "PARTIAL_HOST_ISOLATION_ONLY",
+  "real_model_requests": 0,
+  "real_credentials_used": false,
+  "sent_methods": [
+    "initialize",
+    "initialized",
+    "fs/readFile",
+    "fs/readFile",
+    "fs/readFile",
+    "fs/readFile",
+    "fs/readFile",
+    "fs/readFile",
+    "fs/readFile"
+  ],
+  "A1_initialize": "PASS",
+  "B_simulated_access_in_app_server_env_readable": true,
+  "B_same_uid_child_can_read_parent_simulated_access": true,
+  "checks": {
+    "material": "PASS",
+    "host_control": "PASS_DENIED_OR_ABSENT",
+    "symlink_host": "PASS_DENIED_OR_ABSENT",
+    "symlink_relative": "PASS_DENIED_OR_ABSENT",
+    "vm_host_alias": "PASS_DENIED_OR_ABSENT",
+    "daemon_socket": "PASS_DENIED_OR_ABSENT",
+    "untrusted_uid": "PASS",
+    "workspace_readonly": "PASS",
+    "untrusted_directory_replace_denied": "PASS",
+    "mock_control_network_denied": "PASS",
+    "mock_revocation": "PASS_SIMULATION_ONLY",
+    "kernel_container_constraints": "PASS"
+  },
+  "A3_A4": "PASS_HOST_ISOLATION_ONLY",
+  "A2_exit_code": 0,
+  "native_stderr_sha256": "09e52eaa3694c43e72259d5e27f7c492710f3f56f6e2792261d4f89413fc2034",
+  "native_exit_code": 0,
+  "native_stderr_excerpt": "",
+  "daemon_workload_stop_confirmed": true
+}

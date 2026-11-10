@@ -1,0 +1,23 @@
+{
+  "base": "/private/tmp/xcli-g7-runtime-frr74red",
+  "workspace": "/private/tmp/xcli-g7-runtime-frr74red/workspace",
+  "control_file": "/private/tmp/xcli-g7-runtime-frr74red/trusted-control/auth.json",
+  "version": "0.167.0-linux-arm64",
+  "linux_binaries": {
+    "codex": {
+      "sha256": "2fe94d848540ff2a6868c7ebcc494126a974aa409711676d14fa0379e49e6143",
+      "size": 278794648
+    },
+    "codex-code-mode-host": {
+      "sha256": "e7b772ff332c16ca2df587e99fe87f217e3ab3432a63846fb1ca1bccbaa24409",
+      "size": 71821664
+    }
+  },
+  "archive_sha512_integrity_verified": true,
+  "archive_size": 165851263,
+  "download_url": "https://registry.npmjs.org/@openai/codex/-/codex-0.167.0-linux-arm64.tgz",
+  "image": "sha256:49340b346798875b5592e5d420241f2f9cfba5f47e62ebb1446a1b34734e898f",
+  "model_requests": 0,
+  "real_credentials_used": false,
+  "asset_initial_failure": "No archive paths extracted on initial assertion: expected old codex/codex layout; actual verified package uses bin/codex. Extraction bound aligned with existing 512MiB executable bound; network archive bound remained 200MiB."
+}

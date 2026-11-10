@@ -1,5 +1,9 @@
 # G5B：逐 CLI 的首次真实 HTTP 文本验收计划
 
+G7 更新（2026-11-10）：**PARTIAL_HOST_ISOLATION_ONLY**，见[决策](G7_DECISION.md)。现有 Linux 隔离环境已运行，真实无推理握手和宿主文件/网络约束通过；认证与全工具分离仍未完成。容器 HTTP 假 peer 的 PASS 不能解锁真实 Profile。当前首个 HTTP→Codex 文本请求继续 BLOCKED，三家真实 Gate B 非 PASS。本轮推理 0，G7 到此结束；下一步为产品路线选择，不自动进入 G8 或继续添加同域安全探针。
+
+真实授权仍需：正式且已验证的认证/工具分离及模型出口、所选应用模式供应商适用性、本人账号/计划/用途/云发送/费用确认、显式 Profile 启用、另外一次 1 Task/1 native process/120s 的执行许可。没有可成功进行真实调用的新命令；现有脚本默认 dry-run，`--execute` 仍在 readiness 阻断。不得用 Native=false 的假测试注册方式启用真实 Codex。
+
 G6 更新（2026-11-09）：app-server Adapter 和假 HTTP 纵向路径已实现；真实无推理握手通过，当前决策 **ISOLATED_RUNTIME_REQUIRED**。本机 restricted access 字段缺失／请求拒绝、管理面可读假凭据、严格外层初始化失败的独立证据见 [G6_SECURITY_BOUNDARY](G6_SECURITY_BOUNDARY.md)。不能仅批准一次调用后执行 exec 或 app-server。下一授权入口与 --adapter codex-app-server-v1 的准确脚本形态见 [G6_DECISION](G6_DECISION.md)，当前只能 dry-run／前置阻断。
 
 首次文本仍最多 1 Task／1 顶层进程、并发 1、120s、无重试／fallback；真实 builtin 安全试验若有必要须另审另批，不占用或暗增首次文本预算。用户账号、计划、用途、云同意及费用风险要与新安装／策略／环境绑定，不能挪用旧 exec 声明；原生内部调用和费用不由进程次数精确限制。真实 Gate B 仍非 PASS。
@@ -26,7 +30,7 @@ G5A.1 已交付 [Codex 默认 dry-run 的独立脚本与准确参数](CODEX_FIRS
 
 | 项目 | 计划值／要求 |
 | --- | --- |
-| 首选入口 | codex-exec-v1；当前 0.167.0、hash 见 G5A。只有 exec 安全边界无法满足且新 adapter 经审查后才另选 app-server，不在失败后切换 |
+| 候选入口 | 历史 codex-exec-v1 继续 ENGINEERING_BLOCKED；G6 codex-app-server-v1 已实现但 G7 仅宿主隔离通过、真实 Profile 关闭。当前未选出可执行入口，不在失败后自动切换 |
 | 最小预算 | L01-a：1 dispatch、1 顶层 native 进程；Session/GET/幂等重放 0 新启动；全服务／安装域／Session 并发 1 |
 | 超时／清理 | 120s 含排队／启动／验证；本地清理另最多 5s。失败消耗次数，不退款、不重试 |
 | 实际前置缺口 | 受限 workspace／身份／固定文本／持久一次预算已实现；G5A.2 仍缺 exec 有效工具目录、builtin 独立 IO 边界、实际工具环境、当前登录及本人声明。当前仅有 app-server 握手/schema，没有运行 adapter。不能仅凭 Canary 或一次调用许可启用 exec |

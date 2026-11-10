@@ -1,0 +1,8 @@
+(lldb) target create "/usr/bin/sandbox-exec"
+Current executable set to '/usr/bin/sandbox-exec' (arm64e).
+(lldb) settings set -- target.run-args  "-f" "<SPIKE_ROOT>/profile.sb" "<PINNED_DARWIN_CODEX>" "app-server" "--listen" "stdio://"
+(lldb) settings set target.inherit-env false
+(lldb) settings set target.disable-aslr false
+(lldb) settings set target.env-vars HOME=<SPIKE_ROOT>/home CODEX_HOME=<SPIKE_ROOT>/home PATH=/usr/bin:/bin:/usr/sbin:/sbin LANG=C.UTF-8
+(lldb) process launch -i <SPIKE_ROOT>/initialize.jsonl
+error: process exited with status -1 (attach failed (Not allowed to attach to process.  Look in the console messages (Console.app), near the debugserver entries, when the attach failed.  The subsystem that denied the attach permission will likely have logged an informative message about why it was denied.))

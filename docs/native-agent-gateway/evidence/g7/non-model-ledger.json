@@ -1,0 +1,41 @@
+{
+  "real_model_requests": 0,
+  "real_turn_start_sent": 0,
+  "real_thread_methods_sent": 0,
+  "real_account_methods_sent": 0,
+  "real_authentication_material_used": false,
+  "confirmed_linux_native_processes": 4,
+  "entries": [
+    {
+      "count": 1,
+      "action": "A0 --version",
+      "evidence": "a0.json"
+    },
+    {
+      "count": 1,
+      "action": "A1 initial initialize, missing CODEX_HOME, before EOF",
+      "evidence": "linux-isolation-initial.json"
+    },
+    {
+      "count": 1,
+      "action": "A1 startup diagnostic, missing CODEX_HOME, exit 1",
+      "evidence": "linux-isolation-diagnostic.json"
+    },
+    {
+      "count": 1,
+      "action": "A1-A4 initialize/initialized and seven synthetic fs/readFile requests; no thread/turn/login",
+      "evidence": "linux-isolation-final.json"
+    }
+  ],
+  "debugger_launch_attempts": 1,
+  "debugger_target_launch_confirmed": false,
+  "fake_linux_peer_processes": 2,
+  "fake_peer_evidence": "a5-integration.log",
+  "failed_docker_multicall_invocations": 1,
+  "notes": [
+    "Review-quota rejection happened before diagnostic execution and is not counted as a process start.",
+    "A5 initial Docker argv[0] failure did not launch the fake peer.",
+    "Counts distinguish native CLI, debugger and fake processes, not all daemon/control/OS child processes.",
+    "No native inference authorization, prior model budget or internal model request/cost estimate was consumed."
+  ]
+}

@@ -15,7 +15,11 @@ import (
 	"github.com/Garden12138/xcli/internal/codexrpc"
 )
 
-type AppServer struct{}
+type AppServer struct {
+	// Only Go-owned runtime integrations can supply this hook. No wire/config
+	// field selects executables, runtime arguments or environment entries.
+	launch func(BoundRequest, string) (agent.CommandSpec, string, []string, error)
+}
 
 // These settings are reasserted on every resumed thread and every turn. They
 // remain candidate command policies, never an attestation for all builtins.
@@ -61,7 +65,7 @@ func nativeCode(raw json.RawMessage) string {
 	}
 	return "native_process_failed"
 }
-func (AppServer) StartTurn(ctx context.Context, b BoundRequest, observe func(Observation) error) TurnResult {
+func (adapter AppServer) StartTurn(ctx context.Context, b BoundRequest, observe func(Observation) error) TurnResult {
 	r := TurnResult{Terminal: "missing", Protocol: "not_started", LocalStopConfirmed: true, Usage: api.Usage{Source: "none", Scope: "unknown"}}
 	if e := b.Profile.Check(b.Operation); e != nil {
 		r.Code = e.Error()
@@ -82,9 +86,19 @@ func (AppServer) StartTurn(ctx context.Context, b BoundRequest, observe func(Obs
 		return r
 	}
 	env := append(agentpolicy.Environment(nil, home), "CODEX_HOME="+home)
+	spec := agent.CommandSpec{Command: b.Profile.Binary, Args: AppServerArgs()}
+	dir := b.Workspace
+	if adapter.launch != nil {
+		var e error
+		spec, dir, env, e = adapter.launch(b, home)
+		if e != nil {
+			r.Code = "policy_unenforceable"
+			return r
+		}
+	}
 	processCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	defer cancel()
-	c, e := codexrpc.Start(processCtx, agent.CommandSpec{Command: b.Profile.Binary, Args: AppServerArgs()}, b.Workspace, env, false)
+	c, e := codexrpc.Start(processCtx, spec, dir, env, false)
 	if e != nil {
 		r.Code = "start_failed"
 		return r

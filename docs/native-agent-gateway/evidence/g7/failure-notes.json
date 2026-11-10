@@ -1,0 +1,14 @@
+{
+  "download_tls": "Python urllib SSL trust-chain failure; used system curl HTTPS with normal TLS verification, no insecure flag or global trust changes.",
+  "archive_layout": "Old extraction path assertion failed; explicitly extracted actual regular bin paths; retained archive bound and existing 512MiB payload bound.",
+  "initial_initialize": "EOF due to nonexistent /home/xcli/codex; diagnostic exit 1 retained. Fixed CODEX_HOME to existing private /home/xcli tmpfs, no policy widening.",
+  "approval_review": "First diagnostic was not executed due to approval-review quota error; resumed through normal approval on 2026-11-10.",
+  "g6_crash": "Exact-policy LLDB target launch blocked by OS debugger attach permission; stack root cause unknown. No macOS safety settings changed.",
+  "a5_multicall": "Resolving registered OrbStack docker invocation to docker-tools changed dispatch name: exit127, needs_reconcile. Keep entry name, validate target identity and retarget regression. Final two fake tasks pass.",
+  "sandbox_loopback": "Early targeted local check lacked loopback permission; final full regression approved and passed. No security assertions relaxed.",
+  "initial_log_normalization": {
+    "action": "removed trailing whitespace only for Git diff check; outcome/task JSON unchanged",
+    "original_sha256": "f913321bc89c6fb53ffd9ede6de57ff987c3bf187ebdf6dc54c016960eaeb015",
+    "private_raw_copy": "/private/tmp/xcli-g7-a5-initial-raw.log"
+  }
+}

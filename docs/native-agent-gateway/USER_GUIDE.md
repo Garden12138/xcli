@@ -1,5 +1,18 @@
 # Native Agent Gateway V1 使用与接入
 
+G7 当前结论：**PARTIAL_HOST_ISOLATION_ONLY**。现有 OrbStack 中的真实 Linux arm64 Codex 已完成无推理握手及宿主隔离实验；HTTP→隔离容器的生命周期只用假 peer 验证。凭据与不可信工具尚未分离，真实 Profile 继续关闭；没有真实调用的新执行入口，不因一次授权就绕过工程阻断。见[实验](G7_ISOLATED_RUNTIME_EVALUATION.md)、[凭据边界](G7_CREDENTIAL_BOUNDARY.md)、[最终决策及已验证命令](G7_DECISION.md)。G7 到此结束，不自动进入 G8。
+
+新增 `g7_isolation_spike.py` 默认 dry-run，只生成报告，不打开资产、不启动引擎或 CLI：
+
+```bash
+python3 tests/native_agent_gateway/g7_isolation_spike.py \
+  --metadata docs/native-agent-gateway/evidence/g7/asset-and-runtime.json \
+  --socket unix:///Users/cengjiada/.orbstack/run/docker.sock \
+  --out /private/tmp/g7-isolation-dry-run.json
+```
+
+显式 `--execute-non-model` 只允许有限无推理实验，需原合成资产及本机权限；已有证据足够，不需重复探针。Go `IsolatedAppServer.Enabled` 只供 owner 测试构造，零值关闭，生产 serve 不选择它，HTTP/YAML 无容器控制参数。实际 A5 命令及清理边界见 G7_DECISION；不使用真实登录材料。
+
 G6 当前交付：默认关闭的 `codex-app-server-v1` stdio Adapter，HTTP→假 app-server 生命周期已验证；真实无推理握手通过，工程决策 **ISOLATED_RUNTIME_REQUIRED**。见 [实现](G6_APP_SERVER_IMPLEMENTATION.md)、[安全边界](G6_SECURITY_BOUNDARY.md)、[验收](G6_OFFLINE_ACCEPTANCE.md)、[下一步与准确命令](G6_DECISION.md)。没有真实 app-server enable/authorize，不因设置 Feature Flag 就启动推理；exec、Cursor、Agy 继续关闭。
 
 独立 YAML 可选 `codex_app_server_enabled: false`（缺省）。设 true 只列出 policy_unenforceable 的候选；`app-server readiness` 零 CLI 启动，`app-server disable` 可实时写关闭标记。配置修改需要重启，关闭标记在后续重启仍有效。当前解除标记也不能跨过 Native 的工程拒绝，不提供自动激活路径。
@@ -95,7 +108,7 @@ mkdir -p -m 700 "$NAG_SECRET_DIR"
 
 `--agent` 也可为 `cursor` 或 `antigravity`。报告分别列出配置、缓存、选中文件 hash、策略、认证环境、账号／应用授权及真实验收；Cursor 另列历史 Trust 阻塞。退出 0 表示报告生成，当前 `can_execute` 始终为 false。缓存／hash PASS 不证明 runtime 依赖、账号权益或沙箱有效；不支持通过 JSON/YAML 修改报告启用真实 Profile。
 
-三家的无 turn stdio 初始化已验证；Codex 的本机 schema 已生成。ACP/app-server 尚无生产运行 adapter，不能作为 serve 的可选开关；Cursor ACP 的 EOF 退出还有阻塞。详见 [G5A 启用前状态](G5A_PROFILE_READINESS.md)和[官方授权审查](OFFICIAL_INTEGRATION_REVIEW.md)。这些探针不是 HTTP 推理验收。
+三家的无 turn stdio 初始化已验证；Codex 的本机 schema 已生成。G6 已实现 Codex app-server stdio Adapter，但真实 Profile 没有激活路径；G7 实验 transport 也未接入生产。Cursor/Antigravity ACP 未接入生产 Adapter，Cursor ACP 的 EOF 退出还有阻塞。详见 [G5A 启用前状态](G5A_PROFILE_READINESS.md)和[官方授权审查](OFFICIAL_INTEGRATION_REVIEW.md)。这些探针不是 HTTP 推理验收。
 
 ## 实际 HTTP 路由
 
