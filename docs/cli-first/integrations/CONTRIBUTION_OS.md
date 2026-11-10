@@ -1,3 +1,15 @@
+# Contribution OS · R4 Agent Task 接入
+
+2026-11-10，仅设计；本轮未改业务代码或运行应用。当前方案：用户选定仓库/issue/变更范围 → Plan/实现/Review Task → 当前 diff/test/复核证据 → 用户接收；不新建容器模型桥接。
+
+用户必须明确发起或授权自动化任务，指定 Agent、已核准工作区、最小输入、产物目录、进程/时间预算、状态、取消和证据。只在厂商允许范围使用原生 CLI，不承诺无限制调用用户订阅，不读取或代管其凭据。
+
+统一合同与独立验收见 [R4 应用接入指南](../../product-realignment/APPLICATION_INTEGRATION_GUIDE.md)。未来仅讨论本机 Task API/受限 IPC；冻结的 NAG HTTP 和 Model Gateway 不作为现成推荐入口，没有本轮新路由。接入前重新检查应用实际 HEAD/diff，不回放历史整包补丁。
+
+## 历史设计与证据（冻结）
+
+以下为原 2026-11-06 静态核查与设计，不是当前推荐方案，保持原文供追溯。
+
 # Contribution OS 接入适配（Planned / Blocked）
 
 2026-11-06，只读核对 HEAD `8aa905151329f03e32397c3d1e057bf2a0ac2950`；已有 7 项用户修改，本轮保留。不修改源码、不启动 Docker/业务服务、不部署、不运行 UI。

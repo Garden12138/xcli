@@ -53,7 +53,7 @@ def run(args):
                 'capabilities': ['text.generate', 'tool_calls', 'json_schema'], 'verification': 'probe_verified',
                 'verified_at': '2026-10-26T00:00:00Z', 'evidence': 'synthetic-bridge-only'}}})
         def cli(*arguments):
-            return execute([args.binary, '--config', config_path, 'model', '--state-dir', state, *arguments], timeout=20)
+            return execute([args.binary, '--experimental-gateways', '--config', config_path, 'model', '--state-dir', state, *arguments], timeout=20)
         started = False
         try:
             token = root / 'application.token'

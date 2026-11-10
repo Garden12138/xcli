@@ -1,5 +1,7 @@
 # R3：对照实验与候选验收
 
+> R4 当前产品入口：[CLI-First Product Realignment](../product-realignment/README.md)。本页保留原阶段范围与证据，当前命令以 [R4 使用手册](../cli-first/XCLI_USER_MANUAL.md) 为准；Gateway/OAuth 不再是核心产品门禁，不自动继续旧实验。
+
 2026-10-24：[chat-insight 分阶段真实体验与修复记录](chat-insight-experience-20261024.zh-CN.md)保存了用户 R0、Work 超时、额度失败及恢复后的全部实际结果。单次时限、resume 参数与额度诊断已修复；沿原入口恢复后，R1 四条 Task、R2 实际中断/材料恢复/追加需求和 R3 原生对照均已完成，累计 36 次 Agent 执行调用，历史失败与产物另行保留。
 
 最新体验评审：[三个不同经验的 AI 角色独立试用已完成](persona-results-20261019.zh-CN.md)，未确认产品缺陷，提出接收步骤、错误示例和取消事件说明等建议。按用户最新要求，本轮采用角色模拟，不再等待真人招募；真实参与者记录保持零份。新增模型调用为零，协作收益仍未建立，正式发布评审尚未完成。下文保留此前各批次的历史状态。

@@ -1,5 +1,7 @@
 # xcli 模型服务化升级：现状审查与分阶段实现方案
 
+> R4 / 2026-11-10：此页是冻结实验的历史记录，不是当前实施路线。xcli 已收敛为 CLI/Task 编排，不继续 Gateway、隔离探针或 OAuth；参见 [R4 模块处置](../product-realignment/MODULE_DISPOSITION.md)。历史证据和未完成状态保留，不作为核心可用性门禁。
+
 > 版本：设计稿 v1.0  
 > 审查日期：2026-10-24  
 > 适用对象：xcli、GardenFlow、Worklog、Chat Insight、AI Open Source Contribution OS  

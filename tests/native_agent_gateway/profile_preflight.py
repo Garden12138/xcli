@@ -36,7 +36,7 @@ def main():
         # Nonzero budgets still cannot promote a real profile.
         config.write_text("version: 1\nhost: 127.0.0.1\nport: 0\nqueue_limit: 4\n"
                           "daily_dispatches: 1\ndaily_process_starts: 1\ndaily_execution_seconds: 120\n")
-        command = [binary, "agent-gateway", "--state-dir", str(state), "--gateway-config", str(config)]
+        command = [binary, "--experimental-gateways", "agent-gateway", "--state-dir", str(state), "--gateway-config", str(config)]
         env = {"HOME": tmp, "PATH": "/usr/bin:/bin:/usr/sbin:/sbin", "LANG": "C.UTF-8"}
         def run(*tail):
             return subprocess.run(command + list(tail), env=env, check=True, capture_output=True,

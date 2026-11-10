@@ -1,5 +1,7 @@
 # xcli Model Gateway（开发候选）
 
+> R4 / 2026-11-10：此模块冻结，默认关闭，不再作为 xcli 核心产品目标或可用性门禁。停止后续真实验收/OAuth/模型服务开发；下文仅保留历史方案和证据。当前入口见 [R4](../product-realignment/README.md) 和 [模块处置](../product-realignment/MODULE_DISPOSITION.md)，不按历史计划自动恢复实验。
+
 Model Gateway 与 Agent Runtime 同时存在：`task/run/use/resume` 保持原用途；`model` 提供受控模型HTTP API，不启动Coding Agent或复用会员登录。
 
 **当前仅离线工程验收完成。真实模型、四个桌面应用与异平台实机Gate仍开放，不能作为已正式发布/完整集成的版本。** 状态见[PROGRESS.md](PROGRESS.md)，合同见[api-contract.md](api-contract.md)，每阶段证据见acceptance目录。

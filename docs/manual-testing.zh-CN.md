@@ -1,5 +1,7 @@
 # xcli v0.4/R0 历史手工测试与体验指南
 
+> R4 当前产品入口：[CLI-First Product Realignment](product-realignment/README.md)。本页保留原阶段范围与证据，当前命令以 [R4 使用手册](cli-first/XCLI_USER_MANUAL.md) 为准；Gateway/OAuth 不再是核心产品门禁，不自动继续旧实验。
+
 当前测试与命令见 [R3 说明](r3/README.zh-CN.md)及[候选验收记录](r3/results.zh-CN.md)，后台生命周期见 [R2 说明](r2/README.zh-CN.md)。本文的安装、ACP、正则路由、MCP 同步与独立 workflow 等入口已在 R1 退役，仅适用于对应历史版本。
 
 # R0 源码补充

@@ -1,5 +1,7 @@
 # G8 — SIWC Model Access Gateway
 
+> R4 / 2026-11-10：此模块冻结，默认关闭，不再作为 xcli 核心产品目标或可用性门禁。停止后续真实验收/OAuth/模型服务开发；下文仅保留历史方案和证据。当前入口见 [R4](../product-realignment/README.md) 和 [模块处置](../product-realignment/MODULE_DISPOSITION.md)，不按历史计划自动恢复实验。
+
 2026-11-10，基线 `c03af29` / `e8cf6b4`。阶段结果：**OFFLINE_CONTRACTS_PASS / PRODUCTION_BLOCKED**。准确的生产门禁值为 `BLOCKED_ELIGIBILITY_AND_ARCHITECTURE`。
 
 目标路径是应用自身获得明确授权的 SIWC OAuth → 官方 Responses API → 本地 Model Access Gateway。G8 与 Native Agent Gateway 独立；G7 停在 `PARTIAL_HOST_ISOLATION_ONLY`，真实 Profile 继续默认关闭。本轮没有延续容器、Seatbelt 或普通安全探针实验。

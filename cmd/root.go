@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Version = "0.5.0-r3-dev"
+var Version = "0.5.0-r4-dev"
 
 type ExitError struct {
 	Code    int
@@ -31,7 +31,8 @@ func (e *ExitError) Error() string {
 }
 
 type app struct {
-	configPath string
+	configPath           string
+	experimentalGateways bool
 }
 
 func Execute() error {
@@ -48,6 +49,8 @@ func newRootCommand() *cobra.Command {
 		SilenceErrors: true,
 	}
 	root.PersistentFlags().StringVar(&a.configPath, "config", "", "explicit configuration file")
+	root.PersistentFlags().BoolVar(&a.experimentalGateways, "experimental-gateways", false, "explicitly opt into frozen Gateway experiments; never enables native profiles or SIWC")
+	_ = root.PersistentFlags().MarkHidden("experimental-gateways")
 	root.AddCommand(
 		a.newTaskCommand(),
 		a.newTaskWorkerCommand(), a.newTaskAttemptCommand(),

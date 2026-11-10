@@ -53,7 +53,7 @@ class Fixture(http.server.BaseHTTPRequestHandler):
 
 
 def command(binary, config, state, *args):
-    result = subprocess.run([str(binary), '--config', str(config), 'model', '--state-dir', str(state), *args],
+    result = subprocess.run([str(binary), '--experimental-gateways', '--config', str(config), 'model', '--state-dir', str(state), *args],
                             capture_output=True, text=True, timeout=20)
     if result.returncode:
         raise RuntimeError('Gateway baseline CLI failed: ' + result.stderr)

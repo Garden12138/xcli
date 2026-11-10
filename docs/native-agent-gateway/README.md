@@ -1,5 +1,7 @@
 # Native Agent Gateway V1 SPEC
 
+> R4 / 2026-11-10：此模块冻结，默认关闭，不再作为 xcli 核心产品目标或可用性门禁。停止后续真实验收/OAuth/模型服务开发；下文仅保留历史方案和证据。当前入口见 [R4](../product-realignment/README.md) 和 [模块处置](../product-realignment/MODULE_DISPOSITION.md)，不按历史计划自动恢复实验。
+
 G7 最新入口：[隔离运行时实验](G7_ISOLATED_RUNTIME_EVALUATION.md) → [凭据边界](G7_CREDENTIAL_BOUNDARY.md) → [最终决策与操作](G7_DECISION.md)。当前 **PARTIAL_HOST_ISOLATION_ONLY**：Linux 宿主隔离通过，凭据/全工具分离未完成，真实推理 0，真实 Profile 继续关闭；本轮结束，不自动进入 G8。
 
 G6 历史入口：[app-server 实现](G6_APP_SERVER_IMPLEMENTATION.md) → [安全边界](G6_SECURITY_BOUNDARY.md) → [离线证据](G6_OFFLINE_ACCEPTANCE.md) → [G6 决策](G6_DECISION.md)。原 ISOLATED_RUNTIME_REQUIRED 的证据保留，不被 G7 假任务结果覆盖。

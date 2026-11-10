@@ -1,5 +1,7 @@
 # Native Agent Gateway V1 使用与接入
 
+> R4 / 2026-11-10：此页是冻结实验的历史记录，不是当前实施路线。xcli 已收敛为 CLI/Task 编排，不继续 Gateway、隔离探针或 OAuth；参见 [R4 模块处置](../product-realignment/MODULE_DISPOSITION.md)。历史证据和未完成状态保留，不作为核心可用性门禁。
+
 G7 当前结论：**PARTIAL_HOST_ISOLATION_ONLY**。现有 OrbStack 中的真实 Linux arm64 Codex 已完成无推理握手及宿主隔离实验；HTTP→隔离容器的生命周期只用假 peer 验证。凭据与不可信工具尚未分离，真实 Profile 继续关闭；没有真实调用的新执行入口，不因一次授权就绕过工程阻断。见[实验](G7_ISOLATED_RUNTIME_EVALUATION.md)、[凭据边界](G7_CREDENTIAL_BOUNDARY.md)、[最终决策及已验证命令](G7_DECISION.md)。G7 到此结束，不自动进入 G8。
 
 新增 `g7_isolation_spike.py` 默认 dry-run，只生成报告，不打开资产、不启动引擎或 CLI：

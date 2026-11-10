@@ -1,5 +1,7 @@
 # G7 最终决策：PARTIAL_HOST_ISOLATION_ONLY
 
+> R4 / 2026-11-10：此页是冻结实验的历史记录，不是当前实施路线。xcli 已收敛为 CLI/Task 编排，不继续 Gateway、隔离探针或 OAuth；参见 [R4 模块处置](../product-realignment/MODULE_DISPOSITION.md)。历史证据和未完成状态保留，不作为核心可用性门禁。
+
 2026-11-10。**真实独立执行环境已运行、宿主文件隔离通过；凭据和不可信工具未完成可靠分离。真实 Profile 继续关闭。** G7 到此结束，不自动进入 G8，也不继续给当前同域 app-server 架构叠加验证器。
 
 ## 决策证据

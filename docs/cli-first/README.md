@@ -1,5 +1,7 @@
 # CLI-first 验收与接入交付
 
+> R4 当前产品入口：[CLI-First Product Realignment](../product-realignment/README.md)。本页保留原阶段范围与证据，当前命令以 [R4 使用手册](../cli-first/XCLI_USER_MANUAL.md) 为准；Gateway/OAuth 不再是核心产品门禁，不自动继续旧实验。
+
 核查日期：2026-11-06。离线基线：`f529e04`；本轮真实验收基线：`7e57c6774b4bcfd4735f0d4c35c7c7a3a58d2ac4`。
 
 **当前结论：离线门禁 PASS；Codex、Antigravity 原生文本/同 Session/图片生成与编辑 PASS；Cursor 因工作区 trust BLOCKED（未重试）；CLI → Model Gateway 为 BLOCKED（未实现）。四应用只完成接入设计，不能启用 CLI 模型配置。**

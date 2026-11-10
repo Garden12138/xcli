@@ -1,0 +1,54 @@
+{
+  "stage": "R4",
+  "baseline_commit": "a3e258e9275838d46c4aac878757e05ab7881180",
+  "core_internal_direct_imports": {
+    "agent": [
+      "config"
+    ],
+    "config": [],
+    "jobs": [
+      "agent",
+      "runstore"
+    ],
+    "mcp": [
+      "agent",
+      "config"
+    ],
+    "runstore": [
+      "agent"
+    ],
+    "runtime": [
+      "agent",
+      "config"
+    ],
+    "task": [
+      "agent",
+      "config",
+      "runstore",
+      "workflow",
+      "worktree"
+    ],
+    "workflow": [
+      "agent",
+      "config",
+      "runstore",
+      "runtime",
+      "worktree"
+    ],
+    "worktree": [
+      "runstore"
+    ]
+  },
+  "core_runtime_imports_frozen_modules": false,
+  "cmd_still_links_frozen_modules": true,
+  "new_dependencies": [],
+  "go_mod_and_sum_unchanged": true,
+  "manual_snapshot_matches_baseline": true,
+  "data_migrations": [],
+  "deleted_packages": [],
+  "deleted_user_data": false,
+  "vendor_auth_config_modified": false,
+  "real_business_apps_modified": false,
+  "gateway_default": "disabled; explicit argv opt-in only",
+  "historical_evidence": "preserved at original paths; historical hashes refer to their original commits"
+}

@@ -17,7 +17,7 @@ func TestAgentGatewayClientCLIIsolation(t *testing.T) {
 		var b bytes.Buffer
 		c.SetOut(&b)
 		c.SetErr(&b)
-		c.SetArgs(append([]string{"agent-gateway", "--state-dir", root}, args...))
+		c.SetArgs(append([]string{"--experimental-gateways", "agent-gateway", "--state-dir", root}, args...))
 		e := c.Execute()
 		return b.String(), e
 	}
@@ -51,7 +51,7 @@ func TestRevokedAgentClientNeedsExplicitReauthorization(t *testing.T) {
 		c := newRootCommand()
 		c.SetOut(&bytes.Buffer{})
 		c.SetErr(&bytes.Buffer{})
-		c.SetArgs(append([]string{"agent-gateway", "--state-dir", root}, args...))
+		c.SetArgs(append([]string{"--experimental-gateways", "agent-gateway", "--state-dir", root}, args...))
 		return c.Execute()
 	}
 	if e := run("client", "issue", "worklog", "--agent", "codex", "--policy", "synthetic-text-readonly-v1", "--token-file", initial); e != nil {

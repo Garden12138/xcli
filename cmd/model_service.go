@@ -66,7 +66,7 @@ func (a *app) newModelServiceCommands(stateDir *string) []*cobra.Command {
 		if err != nil {
 			return err
 		}
-		worker := exec.Command(binary, "--config", path, "model", "--state-dir", store.Root, "serve")
+		worker := exec.Command(binary, "--experimental-gateways", "--config", path, "model", "--state-dir", store.Root, "serve")
 		jobs.ConfigureDetached(worker)
 		null, err := os.OpenFile(os.DevNull, os.O_RDWR, 0)
 		if err != nil {

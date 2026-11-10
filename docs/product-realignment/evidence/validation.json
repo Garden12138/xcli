@@ -1,0 +1,62 @@
+{
+  "stage": "R4 CLI-First Product Realignment",
+  "date": "2026-11-10",
+  "baseline_commit": "a3e258e9275838d46c4aac878757e05ab7881180",
+  "candidate": "0.5.0-r4-dev",
+  "full_regression": {
+    "command": "bash tests/product_realignment/verify-offline.sh",
+    "exit_code": 0,
+    "go_race_all": "PASS",
+    "go_vet_all": "PASS",
+    "python_counts": [
+      11,
+      9,
+      25,
+      9
+    ],
+    "python_total": 54,
+    "installed_candidate_checks": 12,
+    "gateway_fixture_lifecycle": "PASS",
+    "cross_builds": [
+      "darwin/amd64",
+      "darwin/arm64",
+      "linux/amd64",
+      "linux/arm64",
+      "windows/amd64"
+    ]
+  },
+  "core_regression": {
+    "command": "bash tests/product_realignment/verify-core.sh",
+    "exit_code": 0,
+    "core_go_race_vet": "PASS",
+    "python_counts": [
+      11,
+      25
+    ],
+    "python_total": 36,
+    "installed_candidate_checks": 12,
+    "gateway_readiness_required": false
+  },
+  "configuration_compatibility": "PASS; generated fixtures, legacy fields, unchanged bytes, no schema migrations",
+  "dependencies_changed": false,
+  "core_internal_source_changed": false,
+  "historical_evidence_changed": false,
+  "manual_snapshot_preserved": true,
+  "gateways_default_enabled": false,
+  "siwc_provider_or_oauth_development": false,
+  "real_model_calls": 0,
+  "vendor_login_operations": 0,
+  "native_credentials_read_copied_or_exported": 0,
+  "vendor_config_changes": 0,
+  "real_business_apps_changed": 0,
+  "g7_new_experiments": 0,
+  "g8_1_research": false,
+  "deployed": false,
+  "pushed": false,
+  "remote_ci_run": false,
+  "cross_build_is_runtime_acceptance": false,
+  "log_sha256": {
+    "full-regression.log": "69edde1082b446cab14fc067444831d3afe4a8259bf547a664969640e45aa4b4",
+    "core-regression.log": "498543f20501b94957007cb29e65518618b31eeae3b8db2391501b8c5840d5e7"
+  }
+}

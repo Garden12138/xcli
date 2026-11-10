@@ -1,5 +1,7 @@
 # CLI-first 接入架构（Planned / Blocked）
 
+> R4 当前产品入口：[CLI-First Product Realignment](../product-realignment/README.md)。本页保留原阶段范围与证据，当前命令以 [R4 使用手册](../cli-first/XCLI_USER_MANUAL.md) 为准；Gateway/OAuth 不再是核心产品门禁，不自动继续旧实验。
+
 2026-11-10 / G8 状态入口：[总体架构](../ARCHITECTURE.md)、[SIWC Model Access Gateway](../model-access-gateway/README.md)。本文以下保留原验收阶段语境；Native Agent Gateway 已有离线实现但真实 Profile 仍关闭，G7 结束于 PARTIAL_HOST_ISOLATION_ONLY。G8 独立研究 OAuth → Responses，资格/多应用架构 BLOCKED，不延续 G7 隔离实验。
 
 **本文是设计，不是已实现接口。** 当前 xcli 没有本文中的 HTTP Agent 路由、NativeAgentBackend、媒体 Artifact 服务或原生 CLI 模型 alias。Gate B BLOCKED，四应用不能把现有 Model Gateway endpoint 当作 CLI 能力入口。依据见[报告](ACCEPTANCE_REPORT.md)和[官方资料](OFFICIAL_SOURCES.md)。

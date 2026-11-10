@@ -1,5 +1,7 @@
 # G8 实施与后续门禁
 
+> R4 / 2026-11-10：此页是冻结实验的历史记录，不是当前实施路线。xcli 已收敛为 CLI/Task 编排，不继续 Gateway、隔离探针或 OAuth；参见 [R4 模块处置](../product-realignment/MODULE_DISPOSITION.md)。历史证据和未完成状态保留，不作为核心可用性门禁。
+
 ## 已完成范围
 
 本轮仅完成官方研究、八份文档、总体架构更新、纯协议模块、Mock OAuth/Responses、离线安全及契约回归、生产禁用门禁。没有 G7 新隔离实验，没有真实 OAuth/Token/推理，没有改动业务应用、部署或 Push。

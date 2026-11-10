@@ -39,7 +39,7 @@ models:
 		var out bytes.Buffer
 		command.SetOut(&out)
 		command.SetErr(&out)
-		command.SetArgs(append([]string{"--config", path, "model", "--state-dir", state}, args...))
+		command.SetArgs(append([]string{"--experimental-gateways", "--config", path, "model", "--state-dir", state}, args...))
 		err := command.Execute()
 		return out.String(), err
 	}

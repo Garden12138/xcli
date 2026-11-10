@@ -22,7 +22,7 @@ def main():
         config.write_text("version: 1\nhost: 127.0.0.1\nport: 0\nqueue_limit: 4\n")
         state = base / "state"
         token_file = base / "token"
-        command = [binary, "agent-gateway", "--state-dir", str(state), "--gateway-config", str(config)]
+        command = [binary, "--experimental-gateways", "agent-gateway", "--state-dir", str(state), "--gateway-config", str(config)]
         def run(*tail):
             return subprocess.run(command + list(tail), check=True, text=True,
                                   capture_output=True, timeout=12).stdout

@@ -2,68 +2,66 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Give a Work or Project goal to native Agent CLIs, with bounded execution, explicit handoffs and verifiable results.
+xcli schedules and orchestrates native AI Coding Agent CLIs. Each native CLI owns installation, sign-in, accounts, permissions and model access. xcli discovers and selects the CLI, executes bounded tasks, supervises processes, preserves context, recovers interrupted work and delivers verifiable results.
 
-The current source is **R3 / `0.5.0-r3-dev`**, an unpublished candidate. Published v0.4.0 packages do not contain Task. See the [R3 experiments and installation guide](docs/r3/README.md), [candidate evidence](docs/r3/results.zh-CN.md), [R2 lifecycle guide](docs/r2/README.zh-CN.md), and [migration notes](docs/r3/release-notes.md).
+**R4 — CLI-First Product Realignment** is an unpublished `0.5.0-r4-dev` source candidate. Codex CLI, Cursor CLI and Antigravity CLI are explicit entrypoints; the existing Claude, Gemini, OpenCode and generic adapters remain. Published v0.4.0 archives do not contain Task. See the [product decision](docs/product-realignment/README.md), [user manual](docs/cli-first/XCLI_USER_MANUAL.md), and [measured support limits](docs/r3/compatibility.zh-CN.md).
 
-The source also includes an isolated, local-only **Model Gateway development candidate**: `xcli model serve/start/status/stop`, authenticated Chat Completions/SSE, verified image APIs and embedding passthrough. See the [gateway setup and limits](docs/model-gateway/README.md), [stage evidence/open acceptance gates](docs/model-gateway/PROGRESS.md), and [hands-on acceptance handoff](docs/model-gateway/REAL_ACCEPTANCE.md). Real providers, desktop application integration and other-platform runtime acceptance remain unverified; native CLI subscription credentials are not gateway API credentials.
+## Discover and run
 
-The source now also contains **Native Agent Gateway V1**: independent `/agent/v1` tasks, client authorization, durable budgets/events and reviewed artifact delivery. Offline HTTP→fixture CLI acceptance passes; all real native profiles remain blocked pending policy and separately authorized validation. See the [implementation report](docs/native-agent-gateway/IMPLEMENTATION_REPORT.md) and [setup/API guide](docs/native-agent-gateway/USER_GUIDE.md). It is separate from Model Gateway and does not provide an OpenAI-compatible native backend.
-
-**G8 SIWC Model Access Gateway** adds offline OAuth/Responses contracts and mock acceptance. Production remains blocked pending confirmation of the multi-application architecture and secure credential integration; `siwc-responses` cannot be enabled. G7 remains `PARTIAL_HOST_ISOLATION_ONLY`, with real native profiles closed. See the [G8 review](docs/model-access-gateway/README.md) and [overall architecture and media boundaries](docs/ARCHITECTURE.md).
-
-## Start a task
-
-Install and authenticate your preferred CLI using its native instructions. xcli reuses existing authentication and tool configuration; it does not require a model API account.
+Install and sign in through each vendor's own CLI first. Build with Go 1.26. The `xcli` examples below refer to this built binary; use its full path or put it on your PATH yourself.
 
 ```bash
-go build -o xcli .
-./xcli agents
-./xcli doctor codex
+go build -trimpath -o /tmp/xcli-r4 .
+/tmp/xcli-r4 --version
+/tmp/xcli-r4 agents --json
+/tmp/xcli-r4 doctor codex --json
 
-# Work: produce a document from selected files, with Codex self-check
-./xcli task "Read the materials and write report.md with conclusions and sources" \
-  --input ./materials --output ./deliverables --agent codex
-
-# Automatic collaboration; a request for another CLI requires another adapter
-./xcli task "Prepare a report and have another CLI check the conclusions" \
-  --input ./materials --output ./deliverables
-
-# Project: isolated worktree from a clean local Git repository
-./xcli task "Fix the cache invalidation bug and pass project tests" \
-  --project . --agent codex
-
-# Explicit argv overrides discovered validation commands; repeat as needed
-./xcli task "Fix the bug and have another CLI review it" --project . \
-  --verify '["go","test","-count=1","./..."]' --json
-
-# Run independently of this terminal, then stop or continue the same Task
-./xcli task "Finish the project change and verify it" --project . --detach
-./xcli task status <task-id> --json
-./xcli task status <task-id> --events --follow
-./xcli task stop <task-id>
-./xcli task continue <task-id> --detach
+xcli run --agent codex --cwd ./project "Explain this project" --json
+xcli run --agent cursor --cwd ./project "Review this change" --json
+xcli run --agent antigravity --cwd ./project "Analyze these materials" --json
 ```
 
-`--agent` locks all xcli Agent invocations to the configured CLI, including planning, repair and self-check. It never silently falls back to another CLI. Without it, available structured adapters are selected using the configured default preference and deterministic candidate ordering; the coordinator assigns roles. Different aliases of the same adapter do not count as cross-CLI review.
+`agents` discovers installations and versions. `doctor` checks versions/help and declared capabilities; it does not prove authentication, quota or permission enforcement. Native trust or permission failures remain failures. xcli never signs in, switches vendor accounts, exports credentials or changes persistent native permissions.
 
-Default bounds are 10 minutes of cumulative execution time (excluding pauses and waiting), 6 Agent CLI invocations, 120 seconds per invocation, and one repair followed by revalidation. Change total limits with `--timeout` and `--max-calls`, and each Agent invocation's limit with `--call-timeout`. Increasing the total budget does not extend individual calls, and the remaining total budget still bounds every call. For substantial source reviews, explicitly use `--call-timeout 8m --timeout 30m`. Native internal model calls and subagents may not be observable; invocation counts are not model request counts.
+## Sessions and bounded tasks
 
-## Results and verification
+```bash
+xcli use codex --cwd ./project
+xcli resume <run-id> "Continue the review" --json
+xcli resume <native-session-id> "Continue" --agent cursor --cwd ./project --json
 
-A Task has its own ID, linked Runs and native Sessions, plan versions, handoffs, artifact hashes, actual command checks and reviews. Runtime acceptance, Agent execution and user acceptance are separate. A successful native process or an Agent saying “done” cannot bypass output checks.
+# Work: selected inputs, output files and review
+xcli task "Read the materials, write report.md and check its sources" \
+  --agent codex --input ./materials --output ./deliverables
 
-Project tasks preserve a managed worktree, baseline diff, untracked files and validation evidence. Command verification runs argv directly. Known local test families can be discovered automatically; unsupported entrypoints need explicit `--verify`. Missing Project validation produces `waiting_user`, not completion. Tests and reviewers are associated with a content snapshot; changed source invalidates old evidence. Reviewers receive fixed material copies.
+# Project: clean committed local repository, managed worktree and actual tests
+xcli task "Fix the bug and have another CLI review the result" --project ./project \
+  --verify '["go","test","-count=1","./..."]'
 
-Tests execute trusted project code. Argument checks, Git worktrees and native permission flags are not a general OS sandbox. xcli does not automatically install tools, change persistent permissions or publish results. Failures retain material for inspection. Review the worktree and complete diff, then commit or copy changes using your normal Git process.
+xcli task "Review the selected materials and produce report.md" \
+  --agent antigravity --input ./materials --output ./deliverables --detach --json
+xcli task status <task-id> --json
+xcli task status <task-id> --events --follow
+xcli task stop <task-id> --json
+xcli task continue <task-id> --detach --json
 
-Progress goes to stderr and a human result summary to stdout. `--json` emits one Task object; `--events` emits sequenced JSONL events with the final result. The flags are mutually exclusive. `task status` checks ownership and checkpoints, conservatively reconciling inactive owners.
+xcli runs list
+xcli runs show <run-id>
+xcli jobs list
+xcli jobs logs <run-id> --follow
+```
 
-Task supports background execution, stop/continue, checkpoints and inactive-owner recovery. Ctrl-C cancels the current execution while retaining materials. Supply missing `waiting_user` requirements through the same Task’s continue command. Continuation preserves the mode, candidate pool and cumulative budget. Uncertain operations require inspection and explicit `--reconcile`; unavailable native sessions can recover from Task materials.
+Only records with a valid native Session ID can be resumed by Run ID; interactive `use` records may not contain one.
 
-## Configuration and adapters
+`--agent` locks every Task role to that configured CLI. Without it, the planner assigns work among installed structured adapters; requesting cross-CLI review requires different adapters, not aliases of one adapter. Inspect the recorded plan and review identities. Explicit role-binding flags are a future improvement. Failure never triggers an account or CLI switch to evade quota or permissions.
 
-No xcli configuration is required for built-in defaults. Optional configuration uses `~/.config/xcli/config.yaml`, `XDG_CONFIG_HOME`, or `--config`:
+Default Task limits are 6 Agent invocations, 10 minutes of cumulative execution and 120 seconds per invocation, with one bounded repair. `--max-calls`, `--timeout` and `--call-timeout` adjust those limits. Continuation preserves the candidate pool, bindings and cumulative budget. A missing native session can recover from retained materials; uncertain side effects require inspection and explicit `--reconcile`. See the [manual](docs/cli-first/XCLI_USER_MANUAL.md) and [R2 lifecycle](docs/r2/README.zh-CN.md).
+
+Agent execution, output validation and user acceptance are separate. Task retains real files, hashes, tests, handoffs and reviews; Project retains its worktree, diff and untracked files. Images produced by a native CLI remain native files and need format/source/visual acceptance. xcli does not supply an image-generation API. No automatic commit, merge, deployment or publication occurs.
+
+## Configuration and retained data
+
+Built-in defaults need no configuration. Optional configuration uses `~/.config/xcli/config.yaml`, `XDG_CONFIG_HOME`, or `--config`:
 
 ```yaml
 version: 1
@@ -82,42 +80,20 @@ recording:
   output: false
 ```
 
-Adapters exist for Codex, Cursor, Antigravity, Claude Code, Gemini and OpenCode. Generic aliases require an explicitly configured structured output format for Task participation. Availability, authentication, quota and native permission enforcement are separate; see the recorded validation matrix instead of assuming every adapter was tested live. Task native role policies currently map Codex read-only/workspace-write, Cursor ask/sandbox enabled and Antigravity plan/accept-edits. xcli does not automatically trust new workspaces.
+`config path/init/validate` manages xcli configuration. Legacy fields remain readable; retired login/routing/workflow-management commands do not return. `mcp serve` remains a compatibility launcher for existing native configurations. R4 does not delete or migrate configuration, Task/Run/Jobs, worktrees, native sessions or artifacts.
 
-`config path/init/validate`, `agents` and `doctor` remain available. Agent `args`, `env`, network configuration and native credentials remain under user control. `doctor` reports observed installation/version/help capabilities and leaves unknown authentication or enforcement unverified.
+Task and Run records live under `${XDG_DATA_HOME:-$HOME/.local/share}/xcli`, with private directories/files. Raw output is off by default; selected inputs, final results and necessary validation diagnostics are still private retained material. Verification runs trusted project commands as argv. Worktrees and native permission flags are not a general OS sandbox.
 
-## Data and retained execution commands
-
-Task goals, selected inputs and artifact hashes, plans, handoffs, fixed review material and bounded validation diagnostics persist in the private XDG data directory (`~/.local/share/xcli` by default). Directories use 0700 and files 0600. Native raw output is off by default and controlled by `recording.output`; verification diagnostics are necessary private repair material. Credentials and arbitrary tool payloads are not automatically added to handoffs.
+## Development
 
 ```bash
-./xcli run "Explain this project" --agent codex --cwd . --json
-./xcli use codex
-./xcli resume <run-id-or-native-session> "Continue checking compatibility"
-./xcli runs list
-./xcli runs show <run-id>
-./xcli jobs list
+# Core product: CLI/Task/configuration/recovery fixtures, zero model calls
+bash tests/product_realignment/verify-core.sh
+
+# Full retained-source regression, including frozen experiment fixtures
+bash tests/product_realignment/verify-offline.sh
 ```
 
-`run/use/resume`, `jobs`, `runs`, Agent discovery and configuration remain lower-level tools. Run selection uses an explicit Agent or `default_agent`; legacy prompt-routing rules are ignored.
+Core CI and packaging use the CLI/Task gate. Frozen experiment regression is separately available by manual workflow. Cross-builds do not establish native runtime support on another platform; Windows background Agent Task/jobs remain unsupported. Historical native evidence and collaboration-benefit limitations remain unchanged.
 
-R1 removes `install`, `auth`, `default`, `acp`, `route`, standalone `workflow`, `usage` and MCP import/plan/sync. R0 commit `5a2a676` was the last source milestone retaining them. Use native installation/login, Task, configuration and Task/Run usage instead. Existing configurations, MCP ownership, historical Runs and native files are not deleted. **`xcli mcp serve` remains compatible** for existing native launcher references; follow the [migration notes](docs/r0/README.zh-CN.md) before replacing those launchers.
-
-## Development and validation
-
-Go 1.26 is required. Release checks include formatting, `go mod tidy -diff`, `go vet ./...`, `go test -race ./...`, and Darwin/Linux amd64/arm64 builds. CI also runs a GoReleaser snapshot before release.
-
-```bash
-go test -race ./...
-go vet ./...
-go mod tidy -diff
-
-# Deterministic R3 fixtures, no model calls
-XCLI_R3_BINARY=./xcli python3 -m unittest discover -s tests/r3 -v
-
-# Opt-in R3 study: shared campaign limit of 48 native invocations
-python3 tests/r3/experiment.py prepare --study /tmp/r3-study --binary ./xcli --budget 48
-python3 tests/r3/experiment.py run --study /tmp/r3-study --out /tmp/r3-comparison.json --execute
-```
-
-The live harness uses existing Codex/Cursor logins and temporary project/data directories. Cursor trust applies only to generated workspaces. Raw failure evidence stays private; use the [R3 export workflow](docs/r3/README.md) for public summaries. Independent user observations and formal release remain separate from candidate engineering checks. Historical R0–R2 evidence retains its original scope.
+Model Gateway, Native Agent Gateway HTTP, SIWC/OAuth/Responses and generic Media Gateway are **frozen non-core experiments, disabled by default**. They are not requirements for using or accepting xcli. Source, configurations and evidence remain for compatibility review; see [module disposition](docs/product-realignment/MODULE_DISPOSITION.md). xcli's product goal excludes subscription sharing and a general OpenAI-compatible proxy around CLIs. Application integration is limited to [explicit Agent Tasks](docs/product-realignment/APPLICATION_INTEGRATION_GUIDE.md).

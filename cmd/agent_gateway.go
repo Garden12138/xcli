@@ -136,6 +136,7 @@ func (a *app) newAgentGatewayCommand() *cobra.Command {
 	}}
 	preflight.Flags().StringVar(&preflightAgent, "agent", "", "codex, cursor or antigravity")
 	group.AddCommand(refresh, preflight, agentClientCommand(&root), a.limitedCodexCommand(&root, &path), appServerCommand(&root, &path))
+	a.freezeGateway(group)
 	return group
 }
 func agentClientCommand(root *string) *cobra.Command {

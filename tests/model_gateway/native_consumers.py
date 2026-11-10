@@ -149,7 +149,7 @@ def run(args):
         config.write_text(json.dumps(configuration))  # JSON is valid YAML.
         config.chmod(0o600)
         def cli(*arguments):
-            return execute([binary, "--config", config, "model", "--state-dir", state, *arguments], timeout=20)
+            return execute([binary, "--experimental-gateways", "--config", config, "model", "--state-dir", state, *arguments], timeout=20)
         started = False
         try:
             base_environment = {key: value for key, value in os.environ.items()

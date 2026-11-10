@@ -1,5 +1,7 @@
 # R3 experiments and candidate installation
 
+> R4 当前产品入口：[CLI-First Product Realignment](../product-realignment/README.md)。本页保留原阶段范围与证据，当前命令以 [R4 使用手册](../cli-first/XCLI_USER_MANUAL.md) 为准；Gateway/OAuth 不再是核心产品门禁，不自动继续旧实验。
+
 The latest requested usability review is complete: [three independent AI personas](persona-results-20261019.zh-CN.md) exercised beginner, regular and expert workflows. No product defect was confirmed; feedback covers accepting project changes, error examples and cancellation events. This round follows the user's request for simulations instead of participant recruitment. It adds zero model calls and makes no human-observation or retention claim. Collaboration benefit remains unestablished and formal release review is pending. Earlier batch statuses below are historical.
 
 See the [quota-restored recovery follow-up](cursor-restored-20261019.zh-CN.md) for the latest native evidence: cross-CLI worker recovery passed, completing both background recovery checks alongside the earlier single-Codex result. The supplemental budget now uses 10/12 invocations, preserving prior ledgers and failures. Independent user observation and collaboration benefit remain pending.

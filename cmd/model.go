@@ -129,5 +129,6 @@ func (a *app) newModelCommand() *cobra.Command {
 	doctor.Flags().Bool("no-billable-requests", true, "configuration-only diagnostics; never sends model requests")
 	group.AddCommand(serve, list, doctor, a.newModelClientCommand(&stateDir))
 	group.AddCommand(a.newModelServiceCommands(&stateDir)...)
+	a.freezeGateway(group)
 	return group
 }

@@ -1,68 +1,69 @@
 # xcli
 
-源码新增独立的 **Model Gateway 开发候选**：`xcli model serve/start/status/stop`，提供本机鉴权的文本/SSE、能力门控图片和Embedding转发。见[配置与部署](docs/model-gateway/README.md)、[阶段记录/未完成验收](docs/model-gateway/PROGRESS.md)及[真实应用与实机验收交接](docs/model-gateway/REAL_ACCEPTANCE.md)。真实模型、四应用正式联调和异平台实机Gate仍开放；不复用原生CLI会员登录为模型API。
-
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-把 Work 或 Project 目标交给原生 Agent CLI，在有界执行、可追溯交接和真实验证后交付结果。
+xcli 是统一 AI Coding Agent CLI 调度与编排工具。
 
-当前源码为 **R3 / `0.5.0-r3-dev` 候选版**，尚未正式发布。已发布的 v0.4.0 不包含 Task。实验、安装和阶段边界见 [R3 使用说明](docs/r3/README.zh-CN.md)与[候选验收记录](docs/r3/results.zh-CN.md)；后台恢复见 [R2 说明](docs/r2/README.zh-CN.md)，升级见[迁移说明](docs/r3/release-notes.md)。
+**各原生 CLI 自行安装、登录、维护账户与模型授权；xcli 只负责发现、选择、执行、编排、监控、恢复和交付任务结果。**
 
-源码已新增独立 **Native Agent Gateway V1**：`/agent/v1` 单 turn 任务、客户端授权、持久预算/事件和复核后产物交付。HTTP→假 CLI 离线验收通过，真实 native profile 仍因权限与新授权验收关闭。见[实施报告](docs/native-agent-gateway/IMPLEMENTATION_REPORT.md)和[安装/API 手册](docs/native-agent-gateway/USER_GUIDE.md)；不接 Model Gateway 或伪装 OpenAI 模型接口。
+当前为未发布的 **R4 — CLI-First Product Realignment / `0.5.0-r4-dev`** 源码候选。明确支持 Codex CLI、Cursor CLI、Antigravity CLI，保留 Claude、Gemini、OpenCode 和 generic Adapter。已发布 v0.4.0 不含 Task；本轮不发布新包。见[定位与范围](docs/product-realignment/README.md)、[当前使用手册](docs/cli-first/XCLI_USER_MANUAL.md)和[历史实测支持范围](docs/r3/compatibility.zh-CN.md)。
 
-**G8 — SIWC Model Access Gateway** 已新增独立 OAuth/Responses 离线契约和模拟验收。多应用资格/架构及安全凭据生产集成尚未确认，`siwc-responses` 不能启用。G7 保持 `PARTIAL_HOST_ISOLATION_ONLY`，真实 Profile 继续关闭。见 [G8 审查](docs/model-access-gateway/README.md)和[总体架构/媒体边界](docs/ARCHITECTURE.md)。
+## 发现与单次运行
 
-## 快速开始
-
-先按原生工具的方式安装并登录，xcli 复用已有认证、工具和 MCP 配置，不要求另开模型 API 账号。
+先按各厂商原生方式安装并登录，再构建 xcli。以下示例的 `xcli` 指本轮构建的二进制；用户可自行放入 PATH，或使用完整路径。
 
 ```bash
-go build -o xcli .
-./xcli agents
-./xcli doctor codex
+go build -trimpath -o /tmp/xcli-r4 .
+/tmp/xcli-r4 --version
+/tmp/xcli-r4 agents --json
+/tmp/xcli-r4 doctor codex --json
 
-# Work：指定单 CLI，产出文件并自查
-./xcli task "读取材料，生成 report.md，覆盖关键结论并列出来源" \
-  --input ./materials --output ./deliverables --agent codex
-
-# Work：自动组织，另一 CLI 复核
-./xcli task "整理材料形成报告，并由另一个 CLI 核对结论" \
-  --input ./materials --output ./deliverables
-
-# Project：从干净 Git 基线建立受管理 worktree
-./xcli task "修复缓存失效问题并通过项目测试" --project . --agent codex
-
-# 显式 argv 覆盖自动发现的验证命令，可重复传入
-./xcli task "修复问题并由另一个 CLI 审查" --project . \
-  --verify '["go","test","-count=1","./..."]' --json
-
-# 后台执行、跨终端观察和同 Task 继续
-./xcli task "继续完成项目并验证" --project . --detach
-./xcli task status <task-id> --json
-./xcli task status <task-id> --events --follow
-./xcli task stop <task-id>
-./xcli task continue <task-id> --detach
+xcli run --agent codex --cwd ./project "说明这个项目的结构" --json
+xcli run --agent cursor --cwd ./project "复核这次改动" --json
+xcli run --agent antigravity --cwd ./project "分析这份材料" --json
 ```
 
-`--agent` 是整个任务的执行约束：协调、执行、修复和自查都使用指定 CLI，失败不会静默换工具。自动模式按配置默认偏好及稳定候选顺序过滤可用能力，由协调 CLI 提出分工。明确要求跨 CLI 复核时必须使用不同 Adapter，同 Adapter 的两个别名不算跨 CLI。
+`agents` 检查安装和版本，`doctor` 读取版本/help 与已声明能力；不据此推断账号、额度、工具权限或模型可用。原生登录、工作区信任和权限不足交由用户在原生 CLI 处理；xcli 不主动登录、切换账号、读取/复制/导出原生凭据或扩大长期权限。
 
-默认累计执行时间 10 分钟（不计暂停/等待）、最多 6 次 Agent CLI 调用、每次最多 120 秒，允许一次修复后重验。用 `--timeout`、`--max-calls` 修改总预算，`--call-timeout` 单独设置每次 Agent 调用的时限；增大总预算不会自动延长单次调用，单次时限也不能绕过剩余总预算。大型源码阅读任务可显式使用 `--call-timeout 8m --timeout 30m`。原生内部模型轮次和子 Agent 用量可能不可观测，进程调用次数不能当成模型请求数。
+## Session、Task 与后台恢复
 
-## 结果与验收
+```bash
+xcli use codex --cwd ./project
+xcli resume <run-id> "继续检查" --json
+xcli resume <native-session-id> "继续" --agent cursor --cwd ./project --json
 
-Task 保存独立任务 ID、关联 Run/原生 Session、计划版本、交接包、产物摘要、真实命令验证和复核。运行成功、验收通过与用户接收分别表达；Agent 自称完成和原生退出 0 不能替代实际文件或测试证据。
+# Work：选定材料 → 文件产物 → 自查
+xcli task "阅读材料生成 report.md 并核对来源" \
+  --agent codex --input ./materials --output ./deliverables
 
-Project 保留隔离 worktree、基线 diff、未跟踪文件及验证证据。协调者可以从项目配置发现本地测试，运行时检查 argv 和目录后直接执行；未知入口通过 `--verify` 显式提供。没有真实验证则进入 `waiting_user`。测试修改源码会使本轮证据过期，复核使用固定材料副本。
+# Project：干净且已有提交的本地仓库 → worktree → 实际验证 → 跨 CLI 复核
+xcli task "修复问题并由另一个 CLI 复核" --project ./project \
+  --verify '["go","test","-count=1","./..."]'
 
-项目测试执行用户信任的代码。argv 检查、Git worktree 和原生权限参数均不等于通用操作系统沙箱。任务不会自动安装工具、修改长期权限或外部发布。失败后保留工作区与材料；检查完整 diff 和未跟踪文件，再通过正常 Git 流程人工接收。
+xcli task "整理材料形成报告" --agent antigravity \
+  --input ./materials --output ./deliverables --detach --json
+xcli task status <task-id> --json
+xcli task status <task-id> --events --follow
+xcli task stop <task-id> --json
+xcli task continue <task-id> --detach --json
 
-进度写 stderr，最终摘要写 stdout。`--json` 输出一个 Task 对象；`--events` 输出带单调序号和最终结果的 JSONL，两者互斥。`task status` 检查 owner 与检查点，发现失活时保守更新状态。
+xcli runs list
+xcli runs show <run-id>
+xcli jobs list
+xcli jobs logs <run-id> --follow
+```
 
-Task 支持后台、stop/continue、检查点和失活恢复。Ctrl-C 取消当前执行并保留材料；`waiting_user` 可通过原 Task 的 continue 补充条件。continue 保留模式、候选池和累计预算；未知副作用进入 `needs_reconcile`，经检查后用 `--reconcile` 确认恢复。原生 session 不可用时可从材料新建 session。
+只有包含有效原生 Session ID 的记录可以按 Run ID 续接；交互 `use` 记录不保证包含该 ID。
 
-## 配置与 Adapter
+`--agent` 将协调、执行、修复和自查锁到同一 CLI。不指定时，协调者在已安装且有结构化能力的候选中安排分工；跨 CLI 复核要求不同 Adapter，别名不算。应检查计划与复核记录；当前没有 `--worker/--reviewer` 固定角色参数。认证、额度或权限失败不会触发换账号/换 CLI 绕过限制。
 
-内置默认配置可以直接使用。可选配置文件为 `~/.config/xcli/config.yaml`，支持 `XDG_CONFIG_HOME` 和 `--config`：
+Task 默认最多 6 次 Agent CLI 调用、累计执行 10 分钟、每次 120 秒及一次修复；分别通过 `--max-calls`、`--timeout`、`--call-timeout` 调整。继续不清零预算，不更换候选池和既定绑定。Session 丢失可从材料恢复，未知副作用先检查，再显式 `--reconcile`。详见[手册](docs/cli-first/XCLI_USER_MANUAL.md)与 [R2 生命周期](docs/r2/README.zh-CN.md)。
+
+Agent 执行成功、文件验收通过和用户接收是不同状态。Task 保留真实文件、摘要、验证、交接与复核；Project 保留 worktree、diff 和未跟踪文件。图片可作为原生 CLI 的真实文件产物收集，但格式、来源和视觉接收仍需独立确认，不能把文本路径当图片。xcli 不提供图片模型服务，不自动提交、合并、部署或发布。
+
+## 配置与数据
+
+默认无需配置；可选 `~/.config/xcli/config.yaml`，支持 `XDG_CONFIG_HOME` 与 `--config`：
 
 ```yaml
 version: 1
@@ -81,42 +82,20 @@ recording:
   output: false
 ```
 
-现有 Adapter 包括 Codex、Cursor、Antigravity、Claude Code、Gemini、OpenCode；generic 别名参与 Task 需显式配置结构化输出。工具可发现、账号可用、额度可用和权限生效分别判断，实际支持范围以验收记录为准。Task 对 Codex 映射 read-only/workspace-write，对 Cursor 映射 ask/sandbox enabled，对 Antigravity 映射 plan/accept-edits；不自动信任新工作区。
+保留 `config path/init/validate`、旧配置字段和已有 Task/Run/Jobs、工作区、Session 与产物。旧 auth/routing/独立 workflow 管理命令不恢复，`mcp serve` 继续作为已有原生配置的兼容 launcher；不代管供应商登录。
 
-保留 `config path/init/validate`、`agents`、`doctor`。Agent 的 `args`、`env`、网络和原生认证由用户配置。doctor 区分安装、版本和帮助能力，不把未知登录/执行策略写成通过。
+私有数据位于 `${XDG_DATA_HOME:-$HOME/.local/share}/xcli`。原始输出默认关闭，但目标、选定材料、最终结果和必要验证诊断仍会保存。验证以 argv 执行受信项目代码；worktree 和原生权限标志不是通用 OS 沙箱。
 
-## 私有数据与底层命令
-
-Task 目标、输入/产物摘要、计划、交接、固定复核材料和有界验证诊断保存在 XDG 私有数据目录，默认 `~/.local/share/xcli`，目录 0700、文件 0600。原始 Agent 输出由 `recording.output` 控制且默认关闭；验证诊断是修复所需的私有材料。凭据和任意原始工具载荷不自动加入交接包。
+## 开发验收
 
 ```bash
-./xcli run "解释这个项目" --agent codex --cwd . --json
-./xcli use codex
-./xcli resume <run-id或原生session> "继续检查兼容性"
-./xcli runs list
-./xcli runs show <run-id>
-./xcli jobs list
+# 核心产品：CLI / Task / 配置 / 恢复，零模型调用
+bash tests/product_realignment/verify-core.sh
+
+# 保留源码的完整回归，额外覆盖冻结实验
+bash tests/product_realignment/verify-offline.sh
 ```
 
-保留 `run/use/resume`、`jobs`、`runs` 和发现/配置入口；底层 run 使用显式 Agent 或 `default_agent`，不再使用正则提示词路由。
+核心 CI/打包使用 CLI/Task 门禁；冻结实验的回归单独手动触发。交叉构建不等于异平台原生实测，Windows 后台 Agent Task/jobs 仍不支持。R0–R3 的真实验证范围、权限/额度失败和协作收益未证实结论均保留。
 
-R1 移除 `install`、`auth`、`default`、`acp`、`route`、独立 `workflow`、`usage` 和 MCP import/plan/sync。R0 提交 `5a2a676` 是最后保留这些入口的源码里程碑。替代路径为原生安装/登录、Task、配置和 Task/Run 用量；不删除旧配置、ownership、历史 Run 或原生文件。**`xcli mcp serve` 继续兼容旧 launcher 引用**，替换前按 [迁移说明](docs/r0/README.zh-CN.md)操作。
-
-## 开发与验证
-
-要求 Go 1.26。发布门禁包含格式、模块、vet、race、Darwin/Linux × amd64/arm64 构建；CI 另运行 GoReleaser snapshot。
-
-```bash
-go test -race ./...
-go vet ./...
-go mod tidy -diff
-
-# R3 确定性夹具，不调用模型
-XCLI_R3_BINARY=./xcli python3 -m unittest discover -s tests/r3 -v
-
-# 显式真实对照：整批累计最多 48 次原生调用
-python3 tests/r3/experiment.py prepare --study /tmp/r3-study --binary ./xcli --budget 48
-python3 tests/r3/experiment.py run --study /tmp/r3-study --out /tmp/r3-comparison.json --execute
-```
-
-真实脚本沿用已有 Codex/Cursor 登录环境，创建临时项目/数据目录，只对生成的目录设置 Cursor trust。原始失败证据保留在私有目录；公开报告按 [R3 导出流程](docs/r3/README.zh-CN.md)脱敏。独立用户观察和正式发布与工程候选验收分别判断，历史 R0–R2 证据保留原范围。
+Model Gateway、Native Agent Gateway HTTP、SIWC/OAuth/Responses 和通用 Media Gateway **冻结、默认关闭**，不再作为 xcli 产品目标或可用性前置门禁。代码、配置和证据保留，处置见[模块审查](docs/product-realignment/MODULE_DISPOSITION.md)。应用只按[明确授权的 Agent Task](docs/product-realignment/APPLICATION_INTEGRATION_GUIDE.md)设计接入，不把 CLI 订阅包装成通用模型 API。
