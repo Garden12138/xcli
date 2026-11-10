@@ -30,7 +30,10 @@
 | G4 真实 / 用户 F | 计划交付；执行 BLOCKED | `8526361` | [真实计划/每 CLI 最小预算](REAL_HTTP_ACCEPTANCE_PLAN.md)，未执行 |
 | G5A | PASS（审查／最小修复／非推理范围） | 见末尾提交定位 | [就绪审查与实际证据](G5A_PROFILE_READINESS.md)；三个真实 Profile 仍关闭 |
 | G5A.1 | 控制工程／离线交付完成；全部启用 Gate BLOCKED | `e742590` | [受限工程与剩余验证器](CODEX_LIMITED_PROFILE.md)、[完整离线](evidence/g5a1/offline.log)；不标 READY |
-| G5B / G5 transport / G6 | 后续独立范围 | — | 真实调用 / app-server、ACP 晋升 / 四应用 |
+| G5A.2 | ENGINEERING_BLOCKED；离线增量通过 | `380559c` / `15b608a` | [exec 隔离结论](CODEX_ISOLATION_BOUNDARY.md) |
+| G6 | ISOLATED_RUNTIME_REQUIRED；stdio Adapter / 离线完成 | `c9a8d88` / `99786e2` | [G6 决策](G6_DECISION.md) |
+| G7 | PARTIAL_HOST_ISOLATION_ONLY；有界实验结束 | `c03af29` | [G7 决策](G7_DECISION.md)、[完整回归](evidence/g7/offline.log) |
+| G5B / 四应用 | 仍 BLOCKED／后续独立范围 | — | 真实调用与外部应用均未执行，不自动进入 G8 |
 
 ## 门禁
 
@@ -325,3 +328,9 @@ bash tests/native_agent_gateway/verify-offline.sh
 先读 G7_DECISION，再读 G7_CREDENTIAL_BOUNDARY/G7_ISOLATED_RUNTIME_EVALUATION。当前推荐保留个人 xcli CLI Task/Run（路线 3）；若目标主要是四应用订阅文本，另行选择符合条件的独立 SIWC/Responses（路线 2），不是 CLI Adapter、不继承图片能力、不用普通计费 API 替代。路线 1 保留 NAG 协议，仅有正式且具体的全工具边界证据后再立项。未自动开发任一路线。
 
 实际 G7 workload 均已销毁，临时 Docker 配置删除、mock 停止。合成资产根 `/private/tmp/xcli-g7-runtime-frr74red` 和公开包 `/private/tmp/xcli-g7-assets-kego1d6s` 保留、无真实凭据；临时根可能被系统清理，复验命令以文档前提为准。没有全局服务停止/软件安装/系统安全更改，没有四应用改动、Cursor Trust、部署、Push、Tag、Release。最终代码/文档 SHA 将由下方交接段明确定位。
+
+### G7 最终提交定位
+
+代码、测试、脱敏证据及三份 G7 决策文档：`c03af297e71a6c3c13ee50b5779c99fdeeb6d80a`。源码摘要 `d89dae6e23c1adbc4d2f0f904904d789c52dce2eb711a78d8ead49c4a7c8345f`，测试构建 SHA256 `2f4725f8e3ab1e9728e0c5f9f5b759f837867f61823289f3ba7e3f1a461552c4`；完整门禁和独立 A5 均通过。
+
+本节为仅文档交接；该提交用 `git log -1 -- docs/native-agent-gateway/IMPLEMENTATION_PROGRESS.md` 定位，避免自引用 SHA。完成后工作区干净，所有提交只在本地。真实 Gate B NOT_PASSED、真实推理 0、真实 Profile 关闭；下一会话应从产品路线决策开始，不重复 G7 探针或自动进入 G8。
