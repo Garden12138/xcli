@@ -1,0 +1,48 @@
+{
+  "phase": "G8",
+  "date": "2026-11-10",
+  "baseline_commit": "e8cf6b4ae04bc55e52def82020c100f0894ea71a",
+  "command": "bash tests/model_access_gateway/verify-offline.sh",
+  "exit_code": 0,
+  "offline_acceptance": "PASS",
+  "production_status": "BLOCKED_ELIGIBILITY_AND_ARCHITECTURE",
+  "provider_enabled": false,
+  "tests": {
+    "siwc_top_level_race_contract_tests": 10,
+    "go_race_all": "PASS",
+    "go_vet_all": "PASS",
+    "go_mod_tidy_diff": "PASS",
+    "gofmt": "PASS",
+    "git_diff_check": "PASS",
+    "python_suites": {
+      "r0": 11,
+      "native_agent_gateway": 9,
+      "r3": 25,
+      "model_gateway": 9
+    },
+    "python_total": 54,
+    "gateway_control_smoke": "PASS",
+    "gateway_built_binary_lifecycle": "PASS",
+    "cross_builds": [
+      "darwin/amd64",
+      "darwin/arm64",
+      "linux/amd64",
+      "linux/arm64",
+      "windows/amd64"
+    ]
+  },
+  "real_oauth_logins": 0,
+  "real_tokens_acquired": 0,
+  "real_model_requests": 0,
+  "real_keychain_operations": 0,
+  "real_business_apps_modified": 0,
+  "g7_opt_in_experiment": false,
+  "deployed": false,
+  "pushed": false,
+  "logs": {
+    "final": "offline.log",
+    "superseded": "offline-initial.log",
+    "failures": "failure-notes.json"
+  },
+  "log_sha256": "b64ca945969c1511fb96c8fbafd29a14f6483bee7e0b00bf82a34fc587b8d83d"
+}

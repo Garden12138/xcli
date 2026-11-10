@@ -10,6 +10,8 @@
 
 源码已新增独立 **Native Agent Gateway V1**：`/agent/v1` 单 turn 任务、客户端授权、持久预算/事件和复核后产物交付。HTTP→假 CLI 离线验收通过，真实 native profile 仍因权限与新授权验收关闭。见[实施报告](docs/native-agent-gateway/IMPLEMENTATION_REPORT.md)和[安装/API 手册](docs/native-agent-gateway/USER_GUIDE.md)；不接 Model Gateway 或伪装 OpenAI 模型接口。
 
+**G8 — SIWC Model Access Gateway** 已新增独立 OAuth/Responses 离线契约和模拟验收。多应用资格/架构及安全凭据生产集成尚未确认，`siwc-responses` 不能启用。G7 保持 `PARTIAL_HOST_ISOLATION_ONLY`，真实 Profile 继续关闭。见 [G8 审查](docs/model-access-gateway/README.md)和[总体架构/媒体边界](docs/ARCHITECTURE.md)。
+
 ## 快速开始
 
 先按原生工具的方式安装并登录，xcli 复用已有认证、工具和 MCP 配置，不要求另开模型 API 账号。

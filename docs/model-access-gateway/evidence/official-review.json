@@ -1,0 +1,49 @@
+{
+  "reviewed_on": "2026-11-10",
+  "method": "opened official documentation pages; no authorization, token, models or inference endpoint contacted",
+  "sources": [
+    {
+      "title": "Overview",
+      "url": "https://developers.openai.com/siwc/token-sharing-open-source"
+    },
+    {
+      "title": "Preview limitations",
+      "url": "https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations"
+    },
+    {
+      "title": "Codex app-server",
+      "url": "https://developers.openai.com/siwc/token-sharing-open-source/codex-app-server"
+    },
+    {
+      "title": "Registration and sign-in",
+      "url": "https://developers.openai.com/siwc/token-sharing-open-source/sign-in"
+    },
+    {
+      "title": "Accounts and sessions",
+      "url": "https://developers.openai.com/siwc/token-sharing-open-source/profiles-and-sessions"
+    },
+    {
+      "title": "Models and inference",
+      "url": "https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference"
+    },
+    {
+      "title": "Token reference",
+      "url": "https://developers.openai.com/siwc/token-sharing-open-source/token-reference"
+    },
+    {
+      "title": "Errors and recovery",
+      "url": "https://developers.openai.com/siwc/token-sharing-open-source/errors-and-recovery"
+    },
+    {
+      "title": "UI/UX guidelines",
+      "url": "https://developers.openai.com/siwc/ui-ux-guidelines"
+    }
+  ],
+  "direct_responses_documented": true,
+  "vision_conditional_on_model": true,
+  "siwc_image_generation_supported": false,
+  "multi_product_gateway_eligibility": "NOT_CONFIRMED",
+  "registration_topology": "NOT_CONFIRMED",
+  "official_integration_approval_received": false,
+  "production_status": "BLOCKED_ELIGIBILITY_AND_ARCHITECTURE"
+}

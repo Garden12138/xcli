@@ -16,6 +16,7 @@ import (
 
 	"github.com/Garden12138/xcli/internal/config"
 	"github.com/Garden12138/xcli/internal/model"
+	"github.com/Garden12138/xcli/internal/siwc"
 	"gopkg.in/yaml.v3"
 )
 
@@ -99,6 +100,11 @@ func Decode(b []byte) (Config, error) {
 		return Config{}, fmt.Errorf("invalid gateway server limits")
 	}
 	for _, b := range c.Backends {
+		// Reserved G8 protocol, intentionally unavailable even with a valid
+		// endpoint/key. Eligibility and production OAuth/storage are unresolved.
+		if b.Type == siwc.ProviderType {
+			return Config{}, fmt.Errorf("siwc_eligibility_blocked: %s; production provider is disabled", siwc.ProductionStatus)
+		}
 		if b.Type != "openai-compatible" && b.Type != "openai-images" && b.Type != "openai-compatible-embeddings" {
 			return Config{}, fmt.Errorf("unsupported backend type (native CLI bridge is disabled)")
 		}

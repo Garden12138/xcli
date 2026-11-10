@@ -10,6 +10,8 @@ The source also includes an isolated, local-only **Model Gateway development can
 
 The source now also contains **Native Agent Gateway V1**: independent `/agent/v1` tasks, client authorization, durable budgets/events and reviewed artifact delivery. Offline HTTP→fixture CLI acceptance passes; all real native profiles remain blocked pending policy and separately authorized validation. See the [implementation report](docs/native-agent-gateway/IMPLEMENTATION_REPORT.md) and [setup/API guide](docs/native-agent-gateway/USER_GUIDE.md). It is separate from Model Gateway and does not provide an OpenAI-compatible native backend.
 
+**G8 SIWC Model Access Gateway** adds offline OAuth/Responses contracts and mock acceptance. Production remains blocked pending confirmation of the multi-application architecture and secure credential integration; `siwc-responses` cannot be enabled. G7 remains `PARTIAL_HOST_ISOLATION_ONLY`, with real native profiles closed. See the [G8 review](docs/model-access-gateway/README.md) and [overall architecture and media boundaries](docs/ARCHITECTURE.md).
+
 ## Start a task
 
 Install and authenticate your preferred CLI using its native instructions. xcli reuses existing authentication and tool configuration; it does not require a model API account.

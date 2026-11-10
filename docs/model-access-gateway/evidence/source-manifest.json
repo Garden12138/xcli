@@ -1,0 +1,127 @@
+{
+  "phase": "G8",
+  "baseline_commit": "e8cf6b4ae04bc55e52def82020c100f0894ea71a",
+  "meaning": "Final delivered files, excluding this self-referential manifest; local commit is the commit containing this manifest",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "ba8b185f4f43e98d0baf92dd5f4a017317e4ea506eee8caa96a7b89f7e8185f3"
+    },
+    {
+      "path": "README.zh-CN.md",
+      "sha256": "3cada7f3374cebe6a85c8ffc280699417e87c4438a58ceb904f4f573c95f5677"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "sha256": "03d5a7c79658d67f02d4c42db5226bc2cd589fe9bd90bd9174838d31a0034e98"
+    },
+    {
+      "path": "docs/cli-first/INTEGRATION_ARCHITECTURE.md",
+      "sha256": "aadac6dbe02553fcf6991f5dbe0ebd3da904712b3858893f8103ac9a81a934e9"
+    },
+    {
+      "path": "docs/model-access-gateway/ACCEPTANCE.md",
+      "sha256": "ed33b472df338382482195deacd778ab8d917f78e53552ab2d507f7fa67afe73"
+    },
+    {
+      "path": "docs/model-access-gateway/ARCHITECTURE.md",
+      "sha256": "720b30644e016b6b4d716076117c48e6a31432616d2055c4f3c27451c5f4b3c9"
+    },
+    {
+      "path": "docs/model-access-gateway/IMPLEMENTATION_PLAN.md",
+      "sha256": "1ec3c836a82ea312792f2f8741a04489f10fe91633935c56da5a1a10e4cf917f"
+    },
+    {
+      "path": "docs/model-access-gateway/OAUTH_DESIGN.md",
+      "sha256": "4eaeaf424cda2a3432b2e0e86a4c6f0f67e913c035b1a4031d4e31be7617f18e"
+    },
+    {
+      "path": "docs/model-access-gateway/README.md",
+      "sha256": "782414c20eb5b33f0a4c953ba88c2425ae9b8cf552a039f346cad9fa4ab89120"
+    },
+    {
+      "path": "docs/model-access-gateway/RESPONSES_PROVIDER.md",
+      "sha256": "cf76f0ea5e95e33f86f2a80224f122a5b9b8a9a000cad96f35743a80be26b3c8"
+    },
+    {
+      "path": "docs/model-access-gateway/SECURITY_BOUNDARY.md",
+      "sha256": "3e452ea51d9aa2f0a486ee41558db67d55be1b33e4dff8653ef7b2e1d2b05cda"
+    },
+    {
+      "path": "docs/model-access-gateway/SIWC_ELIGIBILITY.md",
+      "sha256": "b24bdb497a4454118ecd7c0e5f311781dc706f70746311c783e3432a20e37c77"
+    },
+    {
+      "path": "docs/model-access-gateway/evidence/failure-notes.json",
+      "sha256": "18dc40e05d4dafc950ee7a750bd0dde549cbe6d5d3ecf1c78334750c2f4578f1"
+    },
+    {
+      "path": "docs/model-access-gateway/evidence/non-model-ledger.json",
+      "sha256": "96bcc48e971f7b5d315f88b3c1bd3414c37123b4585e863cde6beadc15515471"
+    },
+    {
+      "path": "docs/model-access-gateway/evidence/official-review.json",
+      "sha256": "3c6d98f23270606d6c6e7a5740e8341099ea1f30fe0b246bae511bc78cd3846c"
+    },
+    {
+      "path": "docs/model-access-gateway/evidence/offline-initial.log",
+      "sha256": "22afc6d5a29c2fc2ff389ed8068aafccaff113fabbc18e4df8c867fb8c911298"
+    },
+    {
+      "path": "docs/model-access-gateway/evidence/offline.log",
+      "sha256": "b64ca945969c1511fb96c8fbafd29a14f6483bee7e0b00bf82a34fc587b8d83d"
+    },
+    {
+      "path": "docs/model-access-gateway/evidence/validation.json",
+      "sha256": "8e4e4d3a5d7314bb093433695414b812a496602f3613032588d1116d4802f9c4"
+    },
+    {
+      "path": "internal/modelgateway/siwc_test.go",
+      "sha256": "44234689a0c510f14026c48a7d0f9ef21218b11b8ab7946d8730dea325bb3990"
+    },
+    {
+      "path": "internal/modelstore/config.go",
+      "sha256": "eea0e0c533a13ecaf443ed2d612d30819627970f5db05e460b97074ba47a8684"
+    },
+    {
+      "path": "internal/modelstore/siwc_test.go",
+      "sha256": "f0278f29aaa2d87296739acfc77cf5e56aaa9edf642dd0299e61fc52fe9173e6"
+    },
+    {
+      "path": "internal/siwc/history.go",
+      "sha256": "5db9fb267d2a4eed816aa204940587e35ea2661f29ee9790285a5492e8822765"
+    },
+    {
+      "path": "internal/siwc/identity.go",
+      "sha256": "b39b8dc8c6f71c156fb89947b4c2f30dbe1ac3b6464d41f84e3a8f5e848cd5d9"
+    },
+    {
+      "path": "internal/siwc/oauth.go",
+      "sha256": "26032a520ab5bed4fd315307469c4b9e613563e93bfb3a660a150f258aa27283"
+    },
+    {
+      "path": "internal/siwc/oauth_test.go",
+      "sha256": "a0575ad6f7d0aec06c5f0188e0a0a4efce465483845f81830249611f5f93135a"
+    },
+    {
+      "path": "internal/siwc/offline_server_test.go",
+      "sha256": "5128be5a4bd9aba8a17faa51de3381cd0e843e2e46b51ef1d8f964276bb2fa41"
+    },
+    {
+      "path": "internal/siwc/policy.go",
+      "sha256": "8ad16c29907c322d30da3b1cec9b53fb5f9c0692388dbef6d82f90fe7a95a062"
+    },
+    {
+      "path": "internal/siwc/responses.go",
+      "sha256": "615d12d50a6ed9a87bd502c1e583c26a46604ef1899b96a8f4e6a3950ceff19e"
+    },
+    {
+      "path": "internal/siwc/responses_test.go",
+      "sha256": "ebc3e7433c367cffea2e74fd0a2e907a0df732b0e690956949de2e631cb84d1a"
+    },
+    {
+      "path": "tests/model_access_gateway/verify-offline.sh",
+      "sha256": "54b3b4ff82169b2152c3d93e82bfac7c18732e6af27b5be80e92b48a6cae9340"
+    }
+  ]
+}
