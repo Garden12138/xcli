@@ -1,0 +1,42 @@
+{
+  "stage": "R4 Native CLI Acceptance",
+  "binary": {
+    "path": "/private/tmp/xcli-r4-native-b8tl3i5g/bin/xcli",
+    "sha256": "c356dbc8c076260a3999c7e8b1848e5a016f340626c7641a5509daf605b4ef8d",
+    "version": "xcli version 0.5.0-r4-dev",
+    "source_commit": "d247a9485b86eafe53b5b670fcbe862146847c4c",
+    "dirty_before_build": false
+  },
+  "baseline_worktree_clean": true,
+  "offline_core": {
+    "result": "PASS",
+    "exit_code": 0,
+    "go_race": "PASS: core package list with real-native deny guard",
+    "go_vet_core": "PASS",
+    "go_vet_all": "PASS",
+    "build": "PASS",
+    "r0_python": 11,
+    "r3_python": 25,
+    "installed_candidate_checks": 12,
+    "frozen_default_off_tests": "PASS"
+  },
+  "native_acceptance": {
+    "decision": "NEEDS_FIXES",
+    "gate": "BLOCKED_NATIVE_START_ACCOUNTING_UNVERIFIED",
+    "text": "NOT_TESTED",
+    "sessions": "NOT_TESTED",
+    "events": "NOT_TESTED",
+    "cancellation": "NOT_TESTED",
+    "task_orchestration": "NOT_TESTED"
+  },
+  "source_code_changes": false,
+  "synthetic_workspaces_unchanged": true,
+  "new_native_process_starts": 0,
+  "known_existing_controller_lower_bound": 1,
+  "exact_remaining_budget": null,
+  "new_probes": 0,
+  "no_gateway_runtime_or_real_provider_tests": true,
+  "raw_private_root": "/private/tmp/xcli-r4-native-b8tl3i5g",
+  "native_auth_probe_result": "BLOCKED, not a claim that the user is logged out",
+  "log_sha256": "61645a7a682681122ec506e848365c0dc1a7763b16aadb8002741a023a37e715"
+}

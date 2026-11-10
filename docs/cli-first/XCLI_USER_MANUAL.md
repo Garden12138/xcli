@@ -15,7 +15,9 @@ go build -trimpath -o /tmp/xcli-r4 .
 
 以下 `xcli` 指该构建产物，请用完整路径或自行放入 PATH。内置映射是 Codex=`codex`、Cursor=`cursor-agent`、Antigravity=`agy`；可在自己的 xcli 配置中覆盖 command。其余已有 Adapter 继续保留。
 
-用户通过原生 CLI 自行安装、登录和处理工作区信任。`agents`/`doctor` 只检查安装/版本/help；没有认证/额度保证。xcli 不调用登录，不提取凭据，不自动 trust/force 或改变原生规则。R3 和 CLI-first 的真实历史结果有具体版本与角色边界，见[支持矩阵](../r3/compatibility.zh-CN.md)；R4 不执行新的真实模型调用。
+用户通过原生 CLI 自行安装、登录和处理工作区信任。`agents`/`doctor` 只检查安装/版本/help；没有认证/额度保证。xcli 不调用登录，不提取凭据，不自动 trust/force 或改变原生规则。R3 和 CLI-first 的真实历史结果有具体版本与角色边界，见[支持矩阵](../r3/compatibility.zh-CN.md)。R4 产品收敛批次未执行新真实调用；单独的 [R4 真实验收](../product-realignment/R4_REAL_ACCEPTANCE.md)受新的预算与停止条件约束。
+
+严格按“原生 CLI 进程启动数”限额验收时，不要直接连续执行上面所有诊断命令。`agents` 会对已发现的配置 CLI 启动版本查询，`doctor <agent>` 最多执行版本与 help 两个原生进程；原生登录状态命令也会另起进程。必须先明确探针、验收控制器和任务的统一账本，计数不明时停在真实调用门槛前，不把只读理解成零启动。
 
 ## 一次执行与 Session
 
@@ -57,6 +59,8 @@ xcli task "执行修复，并由另一个 CLI 复核当前结果" --project ./pr
 显式 `--agent` 将协调、执行、修复、自查全部锁定到该配置名称。自动模式由协调者在已安装结构化 Adapter 中分配阶段；计划分工不等于失败后 fallback。要求独立复核时必须不同 Adapter，别名不算。当前没有公开 `--worker/--reviewer` 或独立 workflow YAML 命令；具体角色要求写入目标并检查保存的计划/复核记录，不能声称已有强绑定参数。
 
 默认累计 10 分钟、最多 6 次 Agent CLI 调用、每次最多 120 秒、一次修复。使用 `--timeout 30m --call-timeout 8m --max-calls 8` 调整预算，不能把调用次数当作供应商内部模型轮数或收费上限。Project 测试按 argv 执行受信代码，未知验证入口用 `--verify`；没有有效验证进入 waiting_user，不虚构通过。
+
+`task --max-calls` 限制任务分派，不覆盖全部发现/版本/help 进程或外部验收控制器，不能充当全局原生启动硬上限。旧 `tests/r0/smoke.py` 的任务计数同样没有覆盖其 `safe_probe` 和控制器；严格总启动限额下不能只加 `--execute` 就运行，复用 `--preflight` 也不证明外部计数完整。直接 run/resume 没有 `--timeout 120s` 参数，需要受同一预算约束的外部监督；不能拿普通 API、冻结 Gateway 或换 CLI 补测试结果。
 
 Work 验收非空产物、所需文本和来源；Project 保留 diff、文件摘要、测试和绑定当前内容的复核。输出图片等二进制可以作为文件保留，但没有统一视觉/工具来源自动验收。应打开真实图片核对格式和内容，明确区分文件存在、格式有效、来源可核实和用户接收。原生 CLI 未具备相应工具时如实失败，不换模型 API 补产物。
 

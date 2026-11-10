@@ -1,0 +1,54 @@
+{
+  "stage": "R4 Native CLI Acceptance",
+  "recorded_at": "2026-11-10T09:06:01Z",
+  "source_commit": "d247a9485b86eafe53b5b670fcbe862146847c4c",
+  "authorized_total_native_starts": 6,
+  "authorized_max_per_cli": {
+    "codex": 2,
+    "antigravity": 2,
+    "cursor": 2
+  },
+  "new_acceptance_native_process_starts": 0,
+  "new_version_help_login_probes": 0,
+  "new_real_task_or_run_starts": 0,
+  "observed_existing_codex_controller_count": 1,
+  "controller_count_included_in_budget": true,
+  "controller_duration_seconds": null,
+  "controller_starts_complete_audit": false,
+  "total_starts_lower_bound": 1,
+  "total_starts_exact": null,
+  "remaining_global_budget_exact": null,
+  "remaining_global_budget_upper_bound": 5,
+  "remaining_budget_authorized_for_dispatch": 0,
+  "test_slots_not_executed": {
+    "codex": [
+      "text",
+      "same-session-resume"
+    ],
+    "antigravity": [
+      "text",
+      "same-session-resume"
+    ],
+    "cursor": [
+      "text",
+      "same-session-resume"
+    ]
+  },
+  "calls": [],
+  "gate": "BLOCKED_NATIVE_START_ACCOUNTING_UNVERIFIED",
+  "reason": "Current acceptance controller is a terminal Codex process; no authoritative complete startup ledger exists for the controller chain. Ancestor snapshots and the historical smoke counter do not prove the global six-process cap.",
+  "automatic_retry": false,
+  "cross_cli_fallback": false,
+  "max_concurrency_observed_new_tests": 0,
+  "max_concurrency_limit": 1,
+  "per_call_deadline_seconds": 120,
+  "internal_model_requests": "NOT_OBSERVABLE; includes controller work and native internals; not inferred from process counts",
+  "actual_cost": "UNKNOWN; no zero-cost claim for the active controller",
+  "native_login_config_modified": false,
+  "native_credentials_read_or_exported": false,
+  "real_business_material_read": false,
+  "frozen_gateway_services_started": false,
+  "ordinary_model_api_used": false,
+  "ollama_used": false,
+  "image_generation_executed": false
+}

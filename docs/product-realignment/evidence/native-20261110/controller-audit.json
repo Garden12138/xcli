@@ -1,0 +1,15 @@
+{
+  "observed_controller": {
+    "pid": 91960,
+    "parent": "zsh / login / Ghostty",
+    "executable": "codex"
+  },
+  "snapshot_proves_current_controller": true,
+  "snapshot_proves_historical_start_total": false,
+  "native_starts_by_this_acceptance_agent": 0,
+  "new_native_version_help_auth_probes": 0,
+  "total_native_starts_lower_bound": 1,
+  "exact_total_including_controller_lifecycle": "UNVERIFIED",
+  "gate": "BLOCKED_PENDING_RELIABLE_ACCOUNTING",
+  "no_argv_environment_or_credentials_read": true
+}
