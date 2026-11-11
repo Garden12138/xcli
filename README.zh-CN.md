@@ -6,7 +6,7 @@
 
 当前源码版本 **`0.5.0-r4.1-dev`**，尚未发布。Codex CLI、Cursor CLI、Antigravity CLI 各自维护安装、登录、账号、权限、模型和额度；xcli 负责发现、执行、Task 编排、Session、恢复、监控和结果交付。
 
-**从 [本次统一交付入口](docs/release-handoff/README.md) 开始。** 已发布 v0.4.0 和未推送的远程 main 快照不含本次完整成果。
+**从 [本次统一交付入口](docs/release-handoff/README.md) 开始。** 完整成果位于已推送的 `feature/upgrade-chatgpt` 分支；默认远程 main 和已发布 v0.4.0 不含本次完整成果。
 
 | 目的 | 文档 |
 | --- | --- |

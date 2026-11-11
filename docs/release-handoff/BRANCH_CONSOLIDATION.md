@@ -1,5 +1,7 @@
 # 分支整合与最终 Git 状态
 
+> 最新状态：用户在整理交付后明确授权提交推送及删除无用分支。已联网复核服务器引用，发布目标为 origin/feature/upgrade-chatgpt；没有满足安全删除条件的其他分支。下文前半部分保留原整理阶段事实，最新操作见末尾“授权后的推送与清理”。
+
 2026-11-11。实际默认主分支 main，`origin/HEAD -> origin/main`。整合从含 R0–R4.1 全部已提交升级成果的 `665ec15b512f54145df3bf34417d21fd0c73861f` 创建，没有从旧远程 main 重建，没有 rebase/reset/squash。
 
 ## 整合前后分支
@@ -31,7 +33,7 @@
 | `v0.3.0` | `97329c56c7bc671725549d323c7f2450735a79e1` | `0ba098a688bf691d5323cee188bcde9b6fb5d024` |
 | `v0.4.0` | `7742b564088503782003ce6ff245a5a360134623` | `70d8644f9daeb7f19d29c40a16a41bfcf1de7cfb` |
 
-## 远程后续建议
+## 原整理阶段的远程后续建议
 
 本轮不删除、不推送任何远程引用。origin/main 保留主线；origin/v.0.5.0 有独有历史，当前**没有可直接建议删除的远程分支**。后续若清理，应先单独审查/保留该独有提交及其功能，再向用户列出准确远程名称 `origin/v.0.5.0`（服务器分支 `v.0.5.0`）与删除影响，取得另行批准。本地 remote-tracking 状态不是服务器实时状态，本轮未联网 fetch。
 
@@ -45,7 +47,7 @@
 
 ## 最终 HEAD SHA 与本机收据
 
-**最终完整 HEAD SHA 见 [FINAL_STATE.json](FINAL_STATE.json) 的 `head` 字段**；终端可直接核对：
+**最终完整 HEAD SHA 以 `git rev-parse HEAD` 为准**；本机忽略的 `FINAL_STATE.json` 同时记录 `head`，该收据不上传。终端可直接核对：
 
 ```bash
 git branch --show-current
@@ -59,3 +61,26 @@ git worktree list
 FINAL_STATE.json 在提交完成后生成并明确忽略于 Git，记录最终 SHA、分支、状态、Tag/历史核对与最终二进制 SHA。这样不会把“包含自身 SHA 的报告”再次提交而改变该 SHA；所有要求的 Markdown 报告和结构化验收/差异摘要均已提交。它是本机交付收据，不依赖历史临时日志；复制源码到另一台机器后可用上述 Git 命令核对，完整 SHA 也在本次最终交付消息给出。
 
 最终工作树应干净；忽略的 bin/xcli 和该收据是有意保留的本地交付资产。未 Push、force push、删除远程、删除 Tag、reset 或重写历史。本轮到此完成，不启动 R5。
+
+## 授权后的推送与清理
+
+用户最新授权：“授权你执行提交推送，删除没用的分支”。该授权替代原整理阶段“不 Push/不删远程”的执行限制；主分支、Tag、独有历史保护及不重写历史的要求继续保留。
+
+联网执行 `git ls-remote --symref origin HEAD 'refs/heads/*' 'refs/tags/*'`：服务器默认仍为 main；推送前只有 main=`7e57c6774b4bcfd4735f0d4c35c7c7a3a58d2ac4`、v.0.5.0=`6d59f7fa2b3e83a89e9450927b507320f44264f7`，4个 Tag 对象及解引用 commit 与原记录一致。对象本地均已具备，无需 fetch 或改写 Tag。
+
+逐分支用 rev-list/merge-base 对照整合分支、main 及全部 Tag；另外 `git cherry feature/upgrade-chatgpt origin/v.0.5.0` 返回 `+ 6d59f7f...`，确认该提交既不是祖先，也未按 patch-id 等价合入。它修改46个源码/测试/发布文件，保留完整历史；不能因旧功能退役或分支陈旧而删除。
+
+| 范围 | 最终分支 | 结果 |
+| --- | --- | --- |
+| 本地 | main、feature/upgrade-chatgpt | 均保留；无其他本地开发分支可删 |
+| origin | main、v.0.5.0、feature/upgrade-chatgpt | main/版本历史保留；正常推送整合分支并建立 upstream |
+| Tag | v0.1.0、v0.2.0、v0.3.0、v0.4.0 | 全部原样保留；不新增/删除/改写 |
+| 清理 | 本地删除0、远程删除0 | 没有无独有代码、可安全删除的非保护分支 |
+
+将当前发布/获取源码说明以独立文档提交封存，随后执行：
+
+```bash
+git push --set-upstream origin feature/upgrade-chatgpt
+```
+
+仅推送该分支，不推送 main，不使用 --force、--mirror、--all 或 --tags，不合并或改写历史。服务器拒绝非 fast-forward 时先停下复核，不覆盖远程提交。推送后再次查询服务器分支/Tag，与本机 HEAD 和初始引用逐项核对；工作区保持干净。完整 Go/race/核心验收已通过，本次后续只改文档，验证文档链接、shell/JSON及 diff。最终 SHA 与真实推送核验结果写入本机 FINAL_STATE.json 和最终交付消息。

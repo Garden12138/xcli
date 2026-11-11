@@ -6,7 +6,7 @@
 
 Current source version: **`0.5.0-r4.1-dev`**, an unpublished development build. Codex CLI, Cursor CLI and Antigravity CLI keep their own installation, login, accounts, permissions, models and quotas. xcli discovers and executes CLIs, orchestrates Tasks, retains Sessions, monitors background work and delivers inspectable results.
 
-Start with the **[release handoff](docs/release-handoff/README.md)** for the current version, offline acceptance, local installation, first task and Git state. Published v0.4.0 and the unpushed remote main snapshot do not contain this complete candidate.
+Start with the **[release handoff](docs/release-handoff/README.md)** for the current version, offline acceptance, local installation, first task and Git state. The complete candidate is available on `feature/upgrade-chatgpt`; the default remote `main` and published v0.4.0 do not contain it.
 
 | Need | Current documentation |
 | --- | --- |

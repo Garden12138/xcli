@@ -909,12 +909,23 @@
   "handoff": {
     "base": "665ec15b512f54145df3bf34417d21fd0c73861f",
     "branch": "feature/upgrade-chatgpt",
-    "head": "See post-commit FINAL_STATE.json or git rev-parse HEAD",
+    "head": "2ca75c4e5ad41a8737fb03cee1ca53cfeceddda7",
     "statistics": {
       "main": "24 files changed, 3025 insertions(+), 171 deletions(-)",
       "origin/main": "430 files changed, 39182 insertions(+), 701 deletions(-)",
       "v0.4.0": "797 files changed, 87783 insertions(+), 7597 deletions(-)"
     },
     "scope": "cleanup ignored regenerable artifacts; one test synchronization fix; documentation; preserve initial frozen recovery notes; no production Go code/dependency changes"
+  },
+  "publication": {
+    "branch": "feature/upgrade-chatgpt",
+    "scope": "user-authorized normal push; documentation-only follow-up; no product/test/dependency changes",
+    "remote_verified_before_push": {
+      "main": "7e57c6774b4bcfd4735f0d4c35c7c7a3a58d2ac4",
+      "v.0.5.0": "6d59f7fa2b3e83a89e9450927b507320f44264f7"
+    },
+    "deleted_branches": [],
+    "protected_unique_commit": "6d59f7fa2b3e83a89e9450927b507320f44264f7",
+    "original_handoff_statistics": "Pinned above to 2ca75c4; publication follow-up changes documentation only."
   }
 }

@@ -19,7 +19,7 @@ command -v codex
 
 应看到 `xcli version 0.5.0-r4.1-dev`。配置默认可用，无需初始化或启动后台服务。若不想覆盖 PATH 中的 xcli，可将下面命令的 xcli 替换为本仓库二进制的绝对路径。
 
-本次未 push，GitHub 新克隆的 main 不等于此版本；源码获取、PATH 持久化和其他平台见 [安装说明](LOCAL_INSTALLATION.md)。
+本次成果已在用户后续授权后推送；GitHub 默认 main 不等于此版本。尚无本地源码时先执行 `git clone --branch feature/upgrade-chatgpt https://github.com/Garden12138/xcli.git`，再进入 xcli 目录构建。源码获取、PATH 持久化和其他平台见 [安装说明](LOCAL_INSTALLATION.md)。
 
 ## 2. 从你自己的独立终端建立新体验窗口
 

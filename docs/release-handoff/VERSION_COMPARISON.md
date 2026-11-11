@@ -11,9 +11,9 @@
 | 最近稳定 Tag `v0.4.0^{commit}` | `70d8644f9daeb7f19d29c40a16a41bfcf1de7cfb` | U 超前 43、落后 0 | 724/33/26 |
 | 额外分支 `origin/v.0.5.0` | `6d59f7fa2b3e83a89e9450927b507320f44264f7` | 对 U 有 1 个独有提交；U 有 42 个独有提交 | 721/37/38 |
 
-`origin/HEAD -> origin/main` 确认默认主线；未 fetch，远程信息是本机已有快照，不声称服务器此刻最新。`origin/v.0.5.0` 是分支，不是发布 Tag。v0.4.0 是 annotated tag，其 Tag 对象 SHA 为 `7742b564088503782003ce6ff245a5a360134623`，比较使用解引用后的 commit；其他 Tag 原样保留。
+`origin/HEAD -> origin/main` 确认默认主线；原差异分析没有 fetch，使用当时本机快照。用户后续授权推送后，已通过 `git ls-remote --symref origin` 确认服务器 main、v.0.5.0 与4个 Tag 均与这些快照一致。后续提交只更新发布/分支记录和源码获取说明，不改产品或测试源码。`origin/v.0.5.0` 是分支，不是发布 Tag。v0.4.0 是 annotated tag，其 Tag 对象 SHA 为 `7742b564088503782003ce6ff245a5a360134623`，比较使用解引用后的 commit；其他 Tag 原样保留。
 
-实际执行 `git diff --name-status/--shortstat BASE U`、`git rev-list --left-right --count BASE...U`、`git log BASE..U` 和源码检查。结构化列表见 [version-diff.json](version-diff.json)，不复制巨型 patch。U 对 origin/main：**411 文件，+36,280/-653 行**；U 对 v0.4.0：**783 文件，+84,884/-7,552 行**。其中源码/测试（cmd/internal/tests 下 .go/.py/.sh）相对 origin/main 为160文件 +17,220/-248行，相对 Tag 为291文件 +35,431/-6,809行。总体统计包含历史证据和冻结实验，不能视为全部核心功能增量。本次追加交付的变化另在该 JSON 的 handoff 字段列出，与已有升级统计区分。最终交付树统计：相对本地 main 为 24 files changed, 3025 insertions(+), 171 deletions(-)；相对 origin/main 为 430 files changed, 39182 insertions(+), 701 deletions(-)；相对稳定 Tag 为 797 files changed, 87783 insertions(+), 7597 deletions(-)。相对本地 main 只有整理/文档及测试修复，无产品代码增量。
+实际执行 `git diff --name-status/--shortstat BASE U`、`git rev-list --left-right --count BASE...U`、`git log BASE..U` 和源码检查。结构化列表见 [version-diff.json](version-diff.json)，不复制巨型 patch。U 对 origin/main：**411 文件，+36,280/-653 行**；U 对 v0.4.0：**783 文件，+84,884/-7,552 行**。其中源码/测试（cmd/internal/tests 下 .go/.py/.sh）相对 origin/main 为160文件 +17,220/-248行，相对 Tag 为291文件 +35,431/-6,809行。总体统计包含历史证据和冻结实验，不能视为全部核心功能增量。本次追加交付的变化另在该 JSON 的 handoff 字段列出，与已有升级统计区分。原整理交付提交 `2ca75c4e5ad41a8737fb03cee1ca53cfeceddda7` 的树统计：相对本地 main 为 24 files changed, 3025 insertions(+), 171 deletions(-)；相对 origin/main 为 430 files changed, 39182 insertions(+), 701 deletions(-)；相对稳定 Tag 为 797 files changed, 87783 insertions(+), 7597 deletions(-)。相对本地 main 只有整理/文档及测试修复，无产品代码增量。
 
 ## 架构、源码与依赖
 

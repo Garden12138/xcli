@@ -30,7 +30,7 @@ go build -trimpath -o bin/xcli .
 
 应显示 `xcli version 0.5.0-r4.1-dev`。本轮已生成可直接运行的 `./bin/xcli`，该文件忽略于 Git；源码重建不依赖旧根目录二进制。
 
-本轮没有 push。**从 GitHub 新 clone 不能获得本地未推送的 21 个升级提交和本次交付提交。** 在另一目录体验可克隆当前本地仓库（将 `/path/to/existing/xcli` 替换为原仓库）：
+用户后续授权推送，完整升级历史和交付文档已发布到 `origin/feature/upgrade-chatgpt`。**默认 main 仍是旧版，请明确选择 feature/upgrade-chatgpt。** 在另一目录也可以克隆当前本地仓库（将 `/path/to/existing/xcli` 替换为原仓库）：
 
 ```bash
 git clone --branch feature/upgrade-chatgpt /path/to/existing/xcli xcli-local
@@ -38,13 +38,13 @@ cd xcli-local
 go build -trimpath -o bin/xcli .
 ```
 
-远程源码的获取命令如下，仅用于后续分支已实际分享的情况；本次不要把旧远程 main 当作相同版本：
+从 GitHub 获取本次完整版本：
 
 ```bash
-git clone https://github.com/Garden12138/xcli.git xcli-remote
+git clone --branch feature/upgrade-chatgpt https://github.com/Garden12138/xcli.git xcli-remote
 cd xcli-remote
-git branch -a
-# 确认含本次提交的分支/补丁已交付，再选择对应源码构建。
+go build -trimpath -o bin/xcli .
+./bin/xcli --version
 ```
 
 ## 安装到个人 PATH

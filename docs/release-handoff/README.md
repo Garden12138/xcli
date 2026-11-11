@@ -15,8 +15,8 @@
 | 第一个任务 | [QUICK_START](QUICK_START.md)：独立小项目 → 用户主动调用自己的 Codex → 查看 Run/Session；可替换 Cursor/Antigravity |
 | 三 CLI 与长任务 | [USER_MANUAL](USER_MANUAL.md)：分析/复核、单 CLI 修 Bug、多 CLI 分工、后台 Task、停止/继续、媒体文件与排障 |
 | 文件清理 | [CLEANUP_REPORT](CLEANUP_REPORT.md)：删除55个可再生成文件，保留真实数据、历史证据和冻结代码 |
-| Git 状态 | 整合到 feature/upgrade-chatgpt，保留 main、4个原Tag及2个远程跟踪分支；无可删的其他本地开发分支。见 [BRANCH_CONSOLIDATION](BRANCH_CONSOLIDATION.md) |
-| 最终完整 SHA | [FINAL_STATE.json](FINAL_STATE.json) 是提交后生成的本机收据；也可运行 `git rev-parse feature/upgrade-chatgpt`，完整 SHA 同时在最终交付消息提供 |
+| Git 状态 | 整合并推送 feature/upgrade-chatgpt，保留 main、4个原Tag及原有远程分支；v.0.5.0 有独有提交受保护，无可删的其他本地开发分支。见 [BRANCH_CONSOLIDATION](BRANCH_CONSOLIDATION.md) |
+| 最终完整 SHA | 运行 `git rev-parse feature/upgrade-chatgpt`；本机可查提交后生成且忽略于 Git 的 `FINAL_STATE.json`，该收据不上传，完整 SHA 同时在最终交付消息提供 |
 
 ## 最短构建入口
 
@@ -37,6 +37,6 @@ go build -trimpath -o bin/xcli .
 - 仓库保留 10-15 三 CLI 图片和 R1–R3 Codex/Cursor Task/恢复的真实历史，11-06 Codex/agy 文本、Session/图片通过及 Cursor Trust 受阻；R4 真实验收的 NEEDS_FIXES/UNKNOWN 结论保持不变。
 - macOS arm64 有本轮离线运行证据；Intel Mac/Linux 仅编译，Windows 后台 Task/Jobs 不支持。没有固定 worker/reviewer 参数、无限任务或自动 commit/merge/deploy。
 - Model Gateway、Native Agent Gateway、SIWC/OAuth/Responses 是冻结实验，默认关闭。本轮保留源码、配置兼容和历史材料，未继续实验或启动服务。处置见 [MODULE_DISPOSITION](../product-realignment/MODULE_DISPOSITION.md)。
-- 本轮没有 push、删远程分支、改 Tag 或重写历史。从 GitHub 新 clone 的旧 main 不含本次未推送成果；请用当前本地分支或其本地副本体验。
+- 用户后续已授权提交推送及清理无用分支；完整成果推送到 feature/upgrade-chatgpt。联网复核没有可安全删除的分支，v.0.5.0 的独有提交保留；main、Tag 及历史未改。新 clone 应显式选择 feature/upgrade-chatgpt，默认 main 仍为旧版。
 
 离线结果支持开始本地体验；尚不构成本轮真实模型验收或正式稳定发布。完成本次交付后停止，不进入 R5。
