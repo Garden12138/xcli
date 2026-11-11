@@ -1,101 +1,45 @@
 # xcli
 
-R4.1 requires an explicit process launch budget window before native CLI execution or probes; see [launch ledger](docs/product-realignment/R4_1_LAUNCH_LEDGER.md) and [user manual](docs/cli-first/XCLI_USER_MANUAL.md).
+[简体中文](README.zh-CN.md)
 
-[English](README.md) | [简体中文](README.zh-CN.md)
+**A unified scheduler and orchestrator for native AI coding agent CLIs.**
 
-xcli schedules and orchestrates native AI Coding Agent CLIs. Each native CLI owns installation, sign-in, accounts, permissions and model access. xcli discovers and selects the CLI, executes bounded tasks, supervises processes, preserves context, recovers interrupted work and delivers verifiable results.
+Current source version: **`0.5.0-r4.1-dev`**, an unpublished development build. Codex CLI, Cursor CLI and Antigravity CLI keep their own installation, login, accounts, permissions, models and quotas. xcli discovers and executes CLIs, orchestrates Tasks, retains Sessions, monitors background work and delivers inspectable results.
 
-**R4 — CLI-First Product Realignment** is an unpublished `0.5.0-r4-dev` source candidate. Codex CLI, Cursor CLI and Antigravity CLI are explicit entrypoints; the existing Claude, Gemini, OpenCode and generic adapters remain. Published v0.4.0 archives do not contain Task. See the [product decision](docs/product-realignment/README.md), [user manual](docs/cli-first/XCLI_USER_MANUAL.md), and [measured support limits](docs/r3/compatibility.zh-CN.md).
+Start with the **[release handoff](docs/release-handoff/README.md)** for the current version, offline acceptance, local installation, first task and Git state. Published v0.4.0 and the unpushed remote main snapshot do not contain this complete candidate.
 
-## Discover and run
+| Need | Current documentation |
+| --- | --- |
+| Install and run a first task | [Quick start](docs/release-handoff/QUICK_START.md) |
+| macOS Apple Silicon / Intel / Linux setup | [Local installation](docs/release-handoff/LOCAL_INSTALLATION.md) |
+| Codex / Cursor / Antigravity, Tasks, Sessions, Jobs, media | [User manual](docs/release-handoff/USER_MANUAL.md) |
+| Main / stable Tag changes and migration | [Version comparison](docs/release-handoff/VERSION_COMPARISON.md) |
+| Test results and limits | [Automated acceptance](docs/release-handoff/AUTOMATED_ACCEPTANCE.md) |
+| Repository and branch audit | [Cleanup](docs/release-handoff/CLEANUP_REPORT.md), [branches](docs/release-handoff/BRANCH_CONSOLIDATION.md) |
 
-Install and sign in through each vendor's own CLI first. Build with Go 1.26. The `xcli` examples below refer to this built binary; use its full path or put it on your PATH yourself.
-
-```bash
-go build -trimpath -o /tmp/xcli-r4 .
-/tmp/xcli-r4 --version
-/tmp/xcli-r4 agents --json
-/tmp/xcli-r4 doctor codex --json
-
-xcli run --agent codex --cwd ./project "Explain this project" --json
-xcli run --agent cursor --cwd ./project "Review this change" --json
-xcli run --agent antigravity --cwd ./project "Analyze these materials" --json
-```
-
-`agents` discovers installations and versions. `doctor` checks versions/help and declared capabilities; it does not prove authentication, quota or permission enforcement. Native trust or permission failures remain failures. xcli never signs in, switches vendor accounts, exports credentials or changes persistent native permissions.
-
-## Sessions and bounded tasks
+Build from this local checkout:
 
 ```bash
-xcli use codex --cwd ./project
-xcli resume <run-id> "Continue the review" --json
-xcli resume <native-session-id> "Continue" --agent cursor --cwd ./project --json
-
-# Work: selected inputs, output files and review
-xcli task "Read the materials, write report.md and check its sources" \
-  --agent codex --input ./materials --output ./deliverables
-
-# Project: clean committed local repository, managed worktree and actual tests
-xcli task "Fix the bug and have another CLI review the result" --project ./project \
-  --verify '["go","test","-count=1","./..."]'
-
-xcli task "Review the selected materials and produce report.md" \
-  --agent antigravity --input ./materials --output ./deliverables --detach --json
-xcli task status <task-id> --json
-xcli task status <task-id> --events --follow
-xcli task stop <task-id> --json
-xcli task continue <task-id> --detach --json
-
-xcli runs list
-xcli runs show <run-id>
-xcli jobs list
-xcli jobs logs <run-id> --follow
+go build -trimpath -o bin/xcli .
+./bin/xcli --version
+./bin/xcli --help
 ```
 
-Only records with a valid native Session ID can be resumed by Run ID; interactive `use` records may not contain one.
+R4.1 requires an explicitly confirmed native process launch window before execution or version/help probes. Follow the quick start to create one for your own scope; old UNKNOWN histories do not supply a usable balance. No background service is needed. Do not reuse historical examples without checking the current help and window requirements.
 
-`--agent` locks every Task role to that configured CLI. Without it, the planner assigns work among installed structured adapters; requesting cross-CLI review requires different adapters, not aliases of one adapter. Inspect the recorded plan and review identities. Explicit role-binding flags are a future improvement. Failure never triggers an account or CLI switch to evade quota or permissions.
+Core entries are `agents`, `doctor`, `run`, `use`, `resume`, `task`, `runs`, `jobs`, `config`, `launches` and the compatibility launcher `mcp serve`. Task supports Work/Project, validation, handoffs, bounded repair, background execution and checkpoint recovery. `--agent` locks all roles to one CLI; automatic cross-CLI planning has no fixed worker/reviewer flags. Worktrees are not an OS sandbox. xcli does not automatically commit, merge, deploy or publish.
 
-Default Task limits are 6 Agent invocations, 10 minutes of cumulative execution and 120 seconds per invocation, with one bounded repair. `--max-calls`, `--timeout` and `--call-timeout` adjust those limits. Continuation preserves the candidate pool, bindings and cumulative budget. A missing native session can recover from retained materials; uncertain side effects require inspection and explicit `--reconcile`. See the [manual](docs/cli-first/XCLI_USER_MANUAL.md) and [R2 lifecycle](docs/r2/README.zh-CN.md).
-
-Agent execution, output validation and user acceptance are separate. Task retains real files, hashes, tests, handoffs and reviews; Project retains its worktree, diff and untracked files. Images produced by a native CLI remain native files and need format/source/visual acceptance. xcli does not supply an image-generation API. No automatic commit, merge, deployment or publication occurs.
-
-## Configuration and retained data
-
-Built-in defaults need no configuration. Optional configuration uses `~/.config/xcli/config.yaml`, `XDG_CONFIG_HOME`, or `--config`:
-
-```yaml
-version: 1
-default_agent: codex
-agents:
-  codex:
-    adapter: codex
-    command: codex
-  cursor:
-    adapter: cursor
-    command: cursor-agent
-  antigravity:
-    adapter: antigravity
-    command: agy
-recording:
-  output: false
-```
-
-`config path/init/validate` manages xcli configuration. Legacy fields remain readable; retired login/routing/workflow-management commands do not return. `mcp serve` remains a compatibility launcher for existing native configurations. R4 does not delete or migrate configuration, Task/Run/Jobs, worktrees, native sessions or artifacts.
-
-Task and Run records live under `${XDG_DATA_HOME:-$HOME/.local/share}/xcli`, with private directories/files. Raw output is off by default; selected inputs, final results and necessary validation diagnostics are still private retained material. Verification runs trusted project commands as argv. Worktrees and native permission flags are not a general OS sandbox.
-
-## Development
+Offline developer gates:
 
 ```bash
-# Core product: CLI/Task/configuration/recovery fixtures, zero model calls
 bash tests/product_realignment/verify-core.sh
-
-# Full retained-source regression, including frozen experiment fixtures
-bash tests/product_realignment/verify-offline.sh
+go test ./...
+go test -race ./...
+go vet ./...
 ```
 
-Core CI and packaging use the CLI/Task gate. Frozen experiment regression is separately available by manual workflow. Cross-builds do not establish native runtime support on another platform; Windows background Agent Task/jobs remain unsupported. Historical native evidence and collaboration-benefit limitations remain unchanged.
+Tests use fake native processes; HTTP unit fixtures need local loopback access. Cross-builds do not prove runtime support on other devices; Windows background Tasks/Jobs remain unsupported. Native model availability and historical real acceptance are reported separately.
 
-Model Gateway, Native Agent Gateway HTTP, SIWC/OAuth/Responses and generic Media Gateway are **frozen non-core experiments, disabled by default**. They are not requirements for using or accepting xcli. Source, configurations and evidence remain for compatibility review; see [module disposition](docs/product-realignment/MODULE_DISPOSITION.md). xcli's product goal excludes subscription sharing and a general OpenAI-compatible proxy around CLIs. Application integration is limited to [explicit Agent Tasks](docs/product-realignment/APPLICATION_INTEGRATION_GUIDE.md).
+Model Gateway, Native Agent Gateway HTTP, SIWC/OAuth/Responses and generic Media Gateway are **frozen experiments, disabled by default**. They are not installation requirements or promoted product features. Source, configuration compatibility and historical evidence remain; see [module disposition](docs/product-realignment/MODULE_DISPOSITION.md). The old full offline scripts also explicitly start synthetic experimental services and are not part of this handoff's permitted runtime checks.
+
+Historical R0–R4 material remains under `docs/`; current user instructions are centralized in `docs/release-handoff/`.

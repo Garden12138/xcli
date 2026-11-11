@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -40,6 +41,10 @@ func TestNativeHelper(t *testing.T) {
 	case "fail":
 		os.Exit(7)
 	case "wait":
+		time.Sleep(10 * time.Second)
+		os.Exit(0)
+	case "probe-wait":
+		fmt.Fprintln(os.Stdout, "ready")
 		time.Sleep(10 * time.Second)
 		os.Exit(0)
 	}
@@ -230,17 +235,34 @@ func TestOnlyProvedNonStartCanRelease(t *testing.T) {
 func TestProbeTimeoutAndCancellationAreCharged(t *testing.T) {
 	r := fixture(t, 2, 1)
 	for _, canceled := range []bool{false, true} {
-		ctx, cancel := context.WithTimeout(WithRef(context.Background(), r), 80*time.Millisecond)
-		c := fake(t, "wait")
+		// Reservation fsync and process startup are part of Run. A 20ms
+		// cancellation could precede Start, correctly earning a refund instead
+		// of testing cancellation of a running probe. Observe the child first.
+		ctx, cancel := context.WithTimeout(WithRef(context.Background(), r), 3*time.Second)
+		c := fake(t, "probe-wait")
 		c.Cancel = nil
 		// Use CommandContext to get a cancellation-aware probe, as agent.Probe does.
 		c = exec.CommandContext(ctx, c.Path, c.Args[1:]...)
-		c.Env = append(os.Environ(), "XCLI_LEDGER_NATIVE_HELPER=wait")
-		if canceled {
-			go func() { time.Sleep(20 * time.Millisecond); cancel() }()
+		c.Env = append(os.Environ(), "XCLI_LEDGER_NATIVE_HELPER=probe-wait")
+		ready, err := c.StdoutPipe()
+		if err != nil {
+			t.Fatal(err)
 		}
+		observed := make(chan error, 1)
+		go func() {
+			var marker [1]byte
+			_, err := io.ReadFull(ready, marker[:])
+			observed <- err
+			if err == nil && canceled {
+				cancel()
+			}
+		}()
 		id, e := Run(ctx, c, Metadata{Agent: "fake", Kind: "help"})
 		cancel()
+		_ = ready.Close()
+		if err := <-observed; err != nil {
+			t.Fatalf("probe did not reach its running state: %v", err)
+		}
 		if e == nil || id == "" {
 			t.Fatal("probe did not fail/capture", e)
 		}

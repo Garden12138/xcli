@@ -1,0 +1,555 @@
+{
+  "review": "删除前逐文件建立清单；仅仓库内已确认可再生成且未跟踪文件",
+  "files": [
+    {
+      "path": ".DS_Store",
+      "bytes": 6148,
+      "sha256": "4aa006c69e6e0207291cefcbc3861690b8dcd221e114f6e40d7ef6d0a2f89084",
+      "reason": "Finder缓存",
+      "referenced": "无运行/测试依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "xcli",
+      "bytes": 10902146,
+      "sha256": "5f210523dc68566ea978795dffbc5581e3c5538f8e15e293966db19aadf9c3a2",
+      "reason": "过期根目录编译产物",
+      "referenced": "文档中的构建目标；不会作为源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "dist/xcli_0.5.0-r3-dev-1bde501_linux_amd64.tar.gz",
+      "bytes": 3388145,
+      "sha256": "c2976def66c672e34b8fa01f71e79624573048fba4fcfe5924ba9d7f95f33c34",
+      "reason": "R3旧快照构建/压缩包/元数据，可用源码重新生成",
+      "referenced": "package.py仅在显式选择dist时读取；本轮在临时目录重新打包",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "dist/metadata.json",
+      "bytes": 234,
+      "sha256": "673ee6b6d40ee6ba471d35b29ac99f8e6f2639f9fd1e9fe2e969622bacb1040d",
+      "reason": "R3旧快照构建/压缩包/元数据，可用源码重新生成",
+      "referenced": "package.py仅在显式选择dist时读取；本轮在临时目录重新打包",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "dist/config.yaml",
+      "bytes": 4216,
+      "sha256": "22cf94d81dd32c72a4cbaea34fffb3a88a6d6b15653cc696024eb864127c6285",
+      "reason": "R3旧快照构建/压缩包/元数据，可用源码重新生成",
+      "referenced": "package.py仅在显式选择dist时读取；本轮在临时目录重新打包",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "dist/xcli_0.5.0-r3-dev-1bde501_darwin_arm64.tar.gz",
+      "bytes": 3165168,
+      "sha256": "6908700e22f814b266e85de98e233ba24b4fbef352f8e9c3cc7778b2173841bf",
+      "reason": "R3旧快照构建/压缩包/元数据，可用源码重新生成",
+      "referenced": "package.py仅在显式选择dist时读取；本轮在临时目录重新打包",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "dist/checksums.txt",
+      "bytes": 446,
+      "sha256": "101eb79f0a2108620beb6f68ba0085963f0ba5d54ba27bff163ec5a55c3ed3f2",
+      "reason": "R3旧快照构建/压缩包/元数据，可用源码重新生成",
+      "referenced": "package.py仅在显式选择dist时读取；本轮在临时目录重新打包",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "dist/xcli_0.5.0-r3-dev-1bde501_darwin_amd64.tar.gz",
+      "bytes": 3424074,
+      "sha256": "cb30fc3f96e817fba46e9e1a04e0dad5564c49a4e39231b8614499516042990a",
+      "reason": "R3旧快照构建/压缩包/元数据，可用源码重新生成",
+      "referenced": "package.py仅在显式选择dist时读取；本轮在临时目录重新打包",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "dist/xcli_0.5.0-r3-dev-1bde501_linux_arm64.tar.gz",
+      "bytes": 3071914,
+      "sha256": "b5f910289b1412c2c19259b15aaf5a1c6258feae30d189277827822bb1cacc95",
+      "reason": "R3旧快照构建/压缩包/元数据，可用源码重新生成",
+      "referenced": "package.py仅在显式选择dist时读取；本轮在临时目录重新打包",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "dist/artifacts.json",
+      "bytes": 2866,
+      "sha256": "dff33cd0704c5540f08fbaf8f58ce35faaa21b1718b085ea3add4251fb54e208",
+      "reason": "R3旧快照构建/压缩包/元数据，可用源码重新生成",
+      "referenced": "package.py仅在显式选择dist时读取；本轮在临时目录重新打包",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "dist/xcli_linux_amd64_v1/xcli",
+      "bytes": 8036514,
+      "sha256": "ec22f20c1345614ed06ce6b5e130cd59b5c90c0e0a5c659a07e5745845cbaca5",
+      "reason": "R3旧快照构建/压缩包/元数据，可用源码重新生成",
+      "referenced": "package.py仅在显式选择dist时读取；本轮在临时目录重新打包",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "dist/xcli_darwin_amd64_v1/xcli",
+      "bytes": 8177200,
+      "sha256": "a93aa2e4214ee1cfff27ab98eb7d83fd3f5fe37d87c15ff8978be427d057139c",
+      "reason": "R3旧快照构建/压缩包/元数据，可用源码重新生成",
+      "referenced": "package.py仅在显式选择dist时读取；本轮在临时目录重新打包",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "dist/xcli_linux_arm64_v8.0/xcli",
+      "bytes": 7405730,
+      "sha256": "283a87110853fd8d86677f0e34047e0dc265d9c53e703e0a7650d61f237fd678",
+      "reason": "R3旧快照构建/压缩包/元数据，可用源码重新生成",
+      "referenced": "package.py仅在显式选择dist时读取；本轮在临时目录重新打包",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "dist/xcli_darwin_arm64_v8.0/xcli",
+      "bytes": 7551346,
+      "sha256": "c046e749984ae36c659725231c82d8489e6203be5c36ed648361c46c6f5607cb",
+      "reason": "R3旧快照构建/压缩包/元数据，可用源码重新生成",
+      "referenced": "package.py仅在显式选择dist时读取；本轮在临时目录重新打包",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/native_agent_gateway/__pycache__/control_smoke.cpython-310.pyc",
+      "bytes": 4518,
+      "sha256": "17da1a21fa402c6aa31979011380003dcf1c58f28b8d3ba645cb06886f3ca5a7",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/native_agent_gateway/__pycache__/test_codex_first_http.cpython-310.pyc",
+      "bytes": 4992,
+      "sha256": "e89e17abc1e8e7dd0b26273ffa8996a617ec04889be642f22ba1483d8c0bd426",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/native_agent_gateway/__pycache__/test_g7_isolation_spike.cpython-310.pyc",
+      "bytes": 3332,
+      "sha256": "53e31874bc39e08028e87aad57abe2409ba40af113d1ecd8399f842800b09f8d",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/native_agent_gateway/__pycache__/test_probe_protocol.cpython-310.pyc",
+      "bytes": 1470,
+      "sha256": "6c0296e3845fc104ac141d709a866c4b2c59a72b1a245d6b2635cf155f30cd73",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/native_agent_gateway/__pycache__/g7_isolation_spike.cpython-310.pyc",
+      "bytes": 11206,
+      "sha256": "758cdaa6363bda04b39ce1ad23868e47087bb937f92d56d212a8dc26d7493d35",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/native_agent_gateway/__pycache__/probe_protocol.cpython-310.pyc",
+      "bytes": 5830,
+      "sha256": "150eaa713153f1d9c9e49042187f8a348e2a83a5fe66b27984b53b9ad526c2e5",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/native_agent_gateway/__pycache__/codex_first_http.cpython-310.pyc",
+      "bytes": 10143,
+      "sha256": "aec12804730f1b8f54240c9003ac1fc108cf0ac814ffd952ec77c1dae362bee8",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r0/__pycache__/native_media.cpython-310.pyc",
+      "bytes": 11614,
+      "sha256": "88c50b34915dbe7e9c2470be39be87c4e811c2ed044918e2ed5416fb7afda9d5",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r0/__pycache__/smoke.cpython-310.pyc",
+      "bytes": 11076,
+      "sha256": "405d8e2dbdf0205f1e831f7278d64d665b23ef305152835a2c2e43c9ce7f769f",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r0/__pycache__/test_smoke.cpython-310.pyc",
+      "bytes": 8130,
+      "sha256": "05e10391b08afb075b3f260e8b6df61c14cf027ef9a67675592ca4b3020b0a13",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r0/__pycache__/test_native_media.cpython-310.pyc",
+      "bytes": 3614,
+      "sha256": "c54d14d17d9826a86a7759585225371fea06b88bf0790a356810ff4e6c9a4b9a",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r0/__pycache__/native_audit.cpython-310.pyc",
+      "bytes": 2936,
+      "sha256": "3f8fca226b036f7cce9c1558891a0a897baca82790e60fe37fcaf21fb6b6ced7",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r1/__pycache__/native.cpython-310.pyc",
+      "bytes": 10882,
+      "sha256": "69fd8b7fc0aafccf662451f0b3b1dfa3772d7b64a375c371700ab512e7173fa8",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/model_gateway/probes/__pycache__/contribution_os.cpython-310.pyc",
+      "bytes": 3779,
+      "sha256": "d1a8bb96d1b30b4c6441171346770a77942d96f4d39eada96dedcebe2c45d1e5",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/model_gateway/probes/__pycache__/contribution_os_bridge.cpython-310.pyc",
+      "bytes": 5217,
+      "sha256": "852952f799590067169f8682b6127ebb0e5335f520fe7b78f1d1e7039379df1c",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/model_gateway/__pycache__/test_workspace.cpython-310.pyc",
+      "bytes": 5738,
+      "sha256": "f5a7dc1ac765d202ffcc1fe09092e169f975007593c0ed477cd480b920e4d924",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/model_gateway/__pycache__/test_client.cpython-310.pyc",
+      "bytes": 3606,
+      "sha256": "52d0e8288730b81aa753b1660a91a3bb7e37d47210e4f31b2317ff1b27c1aa3b",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/model_gateway/__pycache__/native_consumers.cpython-310.pyc",
+      "bytes": 11074,
+      "sha256": "d62cff212afa565cf9cae74f78590acddc46671a8d19a9e1fe1c344fdb77bcfb",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/model_gateway/__pycache__/native_consumers.cpython-312.pyc",
+      "bytes": 18003,
+      "sha256": "21ecb6f055ecbaee0e5b0509fce383934eaafd1a00222ed2a03acbdd45d09ecd",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/model_gateway/__pycache__/performance.cpython-310.pyc",
+      "bytes": 8285,
+      "sha256": "d6b3040908d3d97e165bbaf78198ff777fe43ea2adcab045afc3b6b0ed3f0c75",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/model_gateway/__pycache__/host_bridge.cpython-310.pyc",
+      "bytes": 7933,
+      "sha256": "b941ac20a1aaab1b4db5728a88f35b62dde0f2e0aa7fa699985aee43bfcca092",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/model_gateway/__pycache__/integration_workspace.cpython-310.pyc",
+      "bytes": 8860,
+      "sha256": "3356dcdea4b9dfb47c163d4adca1cc6adf138c216235a231b3d6f3162699a3f3",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/model_gateway/__pycache__/integration_workspace.cpython-312.pyc",
+      "bytes": 16726,
+      "sha256": "96e940bf578878479bc09c00ec65336677bd67165a6ef11bb9205abde0a767f7",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r3/__pycache__/evidence.cpython-310.pyc",
+      "bytes": 2310,
+      "sha256": "084cdd9c2837b644d1c142d084bfe62e0cc38032b42cbbe33163bf50079feb86",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r3/__pycache__/test_package.cpython-310.pyc",
+      "bytes": 3226,
+      "sha256": "ce7d1f97672fec904494f7d67d6e9a30389095b6d933f3be567606a4fc426109",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r3/__pycache__/common.cpython-310.pyc",
+      "bytes": 5857,
+      "sha256": "c7b3142ac4cff74ba58321759e2d78234a56b8cdd9c21953587825781b5915ad",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r3/__pycache__/test_value.cpython-310.pyc",
+      "bytes": 5445,
+      "sha256": "92c59a043c2af0b1dc2c52032eefdebb62d781813f9310a4e37fc9c8af3c1a3c",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r3/__pycache__/revalidate.cpython-310.pyc",
+      "bytes": 13757,
+      "sha256": "188c328420c004abe11ade5fa95a5aa3567d24ef2d5309df566c14ba1c071587",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r3/__pycache__/observe.cpython-310.pyc",
+      "bytes": 7109,
+      "sha256": "9d306e9f63b5f49ba774cfa086007de741afb5c09336a532ae1e196c829ad8d5",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r3/__pycache__/fixtures.cpython-310.pyc",
+      "bytes": 7397,
+      "sha256": "0347584bc27a4812d6acebe3819b466f19ec960145f447c0f8dd42c7755d1479",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r3/__pycache__/test_experiment.cpython-310.pyc",
+      "bytes": 16934,
+      "sha256": "d328eb73f6972b9ff84437cd7161fd976538051482b53ffbe116fdbc018624af",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r3/__pycache__/package.cpython-310.pyc",
+      "bytes": 4380,
+      "sha256": "dd24fceb71e532cb5e11bf2dc7e9c457d37eeaad4b039f3f77cbab6442b71690",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r3/__pycache__/value.cpython-310.pyc",
+      "bytes": 5775,
+      "sha256": "51ccd40152462be5fb03397629844f0bd63ac8fed455ec315304ca35105f2ad1",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r3/__pycache__/experiment.cpython-310.pyc",
+      "bytes": 20628,
+      "sha256": "a9bcc7feb115f9eba411b7a4e80c650bb9fb573c590d6cf119dcd06584c0572a",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r3/__pycache__/value_fixtures.cpython-310.pyc",
+      "bytes": 8566,
+      "sha256": "6e69e8cbd56b63b69dedbde2ddf6b5abe844a5fdd1e66031d2a962a9a41f8350",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r3/__pycache__/test_evidence.cpython-310.pyc",
+      "bytes": 2256,
+      "sha256": "db32e16b310999848b3662ed4f1d6aa80fb3a51b36217738dc64c069c7bd9805",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r3/__pycache__/compatibility.cpython-310.pyc",
+      "bytes": 10353,
+      "sha256": "c44daac5ec8fe6f68992c6a463bffc947aeddd9ce9d4dc9c2a28177a7fb3af4a",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r3/__pycache__/clarify.cpython-310.pyc",
+      "bytes": 5585,
+      "sha256": "5b93f38ac5eb2d6a06ec6ed564de8c4dec5b0789b8ba502b03c483e56cfb1c75",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "tests/r2/__pycache__/native.cpython-310.pyc",
+      "bytes": 14003,
+      "sha256": "6639c94f911119ac2e8a849acd78ccda538d48fc51d50757649d39a24d971d3c",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "docs/.DS_Store",
+      "bytes": 6148,
+      "sha256": "1ee684d18506ca99233e747646cdafa516390ed5483b3bdd08aea8fdbea32560",
+      "reason": "Finder缓存",
+      "referenced": "无运行/测试依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    },
+    {
+      "path": "examples/model-gateway/__pycache__/client.cpython-310.pyc",
+      "bytes": 8060,
+      "sha256": "c5099bbba0f0190b3f21cd02ef11a3abede377b941f12e74e5ddc92e9d6da070",
+      "reason": "Python字节码缓存",
+      "referenced": "Python自动生成，无源码依赖",
+      "regenerable": true,
+      "test_impact": "无；将运行现有测试与重新打包验证",
+      "result": "已删除（校验大小/摘要后逐文件unlink）"
+    }
+  ]
+}

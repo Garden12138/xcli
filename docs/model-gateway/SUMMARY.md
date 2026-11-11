@@ -1,5 +1,7 @@
 # Model Gateway升级交付总结
 
+> R4.1 / 2026-11-11：本页是冻结实验的历史交付总结。当前产品以CLI/Task编排为准，Model Gateway默认关闭，不继续旧升级任务或自动执行下文验收/部署。参见[R4模块处置](../product-realignment/MODULE_DISPOSITION.md)和[最新恢复结论](PROGRESS.md)。冻结未关闭历史真实验收缺口，两份未写回的桥接补丁均已与当前Contribution OS源码漂移。
+
 2026-10-26：本仓库M0–M5工程实现与四消费端接入源码均已交付；四应用实际原生客户端代码的离线HTTP联通通过。**整体真实验收仍未完成**，不能作为正式发布、模型效果或实际应用UI验收声明。恢复入口为[PROGRESS.md](PROGRESS.md)，最新证据为[closeout-20261026.md](acceptance/closeout-20261026.md)。
 
 2026-10-27：用户接手后续真实验收。[操作步骤与通过标准](REAL_ACCEPTANCE.md)、[验收记录模板](acceptance/real-acceptance-record.template.md)已整理；本仓库实现、接入补丁和证据按用户授权集中提交推送。实际应用安装、桥接启用和真实调用不在本次提交操作中执行。

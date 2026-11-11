@@ -1,0 +1,570 @@
+{
+  "date": "2026-11-11",
+  "source_head": "665ec15b512f54145df3bf34417d21fd0c73861f",
+  "version": "0.5.0-r4.1-dev",
+  "environment": {
+    "os": "26.5.1",
+    "platform": "darwin/arm64",
+    "go": "go version go1.26.4 darwin/arm64",
+    "python": "Python 3.10.9",
+    "git": "git version 2.48.1"
+  },
+  "new_real_native_cli_starts": 0,
+  "new_real_model_requests": 0,
+  "static": [
+    {
+      "name": "gofmt",
+      "argv": [
+        "gofmt",
+        "-l",
+        "<all tracked Go files>"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "seconds": 0.05
+    },
+    {
+      "name": "vet",
+      "argv": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "seconds": 0.48
+    },
+    {
+      "name": "mod-tidy",
+      "argv": [
+        "go",
+        "mod",
+        "tidy",
+        "-diff"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "seconds": 0.08
+    },
+    {
+      "name": "mod-verify",
+      "argv": [
+        "go",
+        "mod",
+        "verify"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "seconds": 0.18
+    },
+    {
+      "name": "diff-check",
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "seconds": 0.01
+    }
+  ],
+  "python": [
+    {
+      "suite": "r0",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests/r0",
+        "-p",
+        "test_*.py"
+      ],
+      "exit_code": 0,
+      "tests": 11,
+      "status": "PASS",
+      "seconds": 0.24
+    },
+    {
+      "suite": "r3",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests/r3",
+        "-p",
+        "test_*.py"
+      ],
+      "exit_code": 0,
+      "tests": 25,
+      "status": "PASS",
+      "seconds": 50.15
+    },
+    {
+      "suite": "model_gateway",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests/model_gateway",
+        "-p",
+        "test_*.py"
+      ],
+      "exit_code": 0,
+      "tests": 9,
+      "status": "PASS",
+      "seconds": 0.85
+    },
+    {
+      "suite": "native_agent_gateway",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests/native_agent_gateway",
+        "-p",
+        "test_*.py"
+      ],
+      "exit_code": 0,
+      "tests": 9,
+      "status": "PASS",
+      "seconds": 0.09
+    },
+    {
+      "suite": "installed-candidate",
+      "command": [
+        "python3",
+        "tests/r3/install_acceptance.py",
+        "--binary",
+        "<temporary>/xcli",
+        "--out",
+        "<temporary>/installation.json"
+      ],
+      "exit_code": 0,
+      "status": "PASS"
+    }
+  ],
+  "installation": {
+    "kind": "r3_installed_candidate_acceptance",
+    "binary_sha256": "1846d9fbb57e4542009e736e9a0014ce9fffc8ad529b2567fbd113f0e7c00dd2",
+    "source_commit": "665ec15b512f54145df3bf34417d21fd0c73861f",
+    "native_model_invocations": 0,
+    "independent_participant": false,
+    "checks": [
+      {
+        "check": "version_from_installed_binary",
+        "status": "passed"
+      },
+      {
+        "check": "unicode_and_space_xdg_path",
+        "status": "passed"
+      },
+      {
+        "check": "defaults_do_not_create_config",
+        "status": "passed"
+      },
+      {
+        "check": "isolated_config_creation",
+        "status": "passed"
+      },
+      {
+        "check": "existing_config_not_overwritten",
+        "status": "passed"
+      },
+      {
+        "check": "config_validation_preserves_bytes",
+        "status": "passed"
+      },
+      {
+        "check": "explicit_config_overrides_xdg",
+        "status": "passed"
+      },
+      {
+        "check": "missing_cli_doctor_fails_truthfully",
+        "status": "passed"
+      },
+      {
+        "check": "missing_cli_task_failed_without_dispatch",
+        "status": "passed"
+      },
+      {
+        "check": "missing_cli_failure_remains_inspectable",
+        "status": "passed"
+      },
+      {
+        "check": "malformed_config_rejected_and_preserved",
+        "status": "passed"
+      },
+      {
+        "check": "config_and_inputs_unchanged_after_errors",
+        "status": "passed"
+      }
+    ],
+    "historical_tasks": [],
+    "status": "passed",
+    "version": "xcli version 0.5.0-r4.1-dev"
+  },
+  "help": {
+    "checks": 31,
+    "status": "PASS",
+    "native_starts": 0
+  },
+  "packaging": {
+    "kind": "cross_build_and_archive",
+    "publishes": false,
+    "targets": [
+      {
+        "os": "darwin",
+        "arch": "amd64",
+        "status": "passed",
+        "archive_sha256": "7b930487266eb45bda0541a4bd6df10112d1b729292fd82679ca6be98ba3ff03",
+        "binary_sha256": "20b9c7ff602b0c287a45e63a86128654be1390fd5ccf6d07d21d284434faa347",
+        "members": [
+          "xcli",
+          "LICENSE",
+          "README.md",
+          "README.zh-CN.md"
+        ],
+        "native_runtime": "NOT_TESTED"
+      },
+      {
+        "os": "darwin",
+        "arch": "arm64",
+        "status": "passed",
+        "archive_sha256": "22cd3fd574bfb0997cce7b15d8827f0710058a878207fee2a79995eac6f7bd41",
+        "binary_sha256": "cc961eaee910b32f786627a29a2eea855a107123fd5f322ce550d7523c7f6555",
+        "members": [
+          "xcli",
+          "LICENSE",
+          "README.md",
+          "README.zh-CN.md"
+        ],
+        "native_version": "xcli version 0.5.0-r4.1-dev",
+        "native_runtime": "PASS (version)"
+      },
+      {
+        "os": "linux",
+        "arch": "amd64",
+        "status": "passed",
+        "archive_sha256": "c8ec096502f549312132469a5df7ca2eaa4fef55e97388f77aaeafa90527928e",
+        "binary_sha256": "82acfbedab3c059437201ba8a5acab305d545e136265ebe3a330d38f1eefdfbf",
+        "members": [
+          "xcli",
+          "LICENSE",
+          "README.md",
+          "README.zh-CN.md"
+        ],
+        "native_runtime": "NOT_TESTED"
+      },
+      {
+        "os": "linux",
+        "arch": "arm64",
+        "status": "passed",
+        "archive_sha256": "e17cdbcb66d75ebb4ac533ace2ac3352079206e74c134a6f0e074645c3e71500",
+        "binary_sha256": "077a3b63d16da0f865d4d05ade554a85ac9b9156366ba1d2b81fae418fecc3b5",
+        "members": [
+          "xcli",
+          "LICENSE",
+          "README.md",
+          "README.zh-CN.md"
+        ],
+        "native_runtime": "NOT_TESTED"
+      }
+    ],
+    "status": "passed",
+    "goreleaser": "not run locally; CI uses the pinned snapshot workflow"
+  },
+  "windows_amd64_cross_build": "PASS",
+  "goreleaser": "NOT_TESTED (not installed; existing R0 packaging and R3 archive tests used)",
+  "explicit_frozen_service_smokes": "NOT_TESTED (forbidden in this handoff; Go HTTP fixtures only)",
+  "initial_failures": [
+    {
+      "test": "go test ./... under sandbox",
+      "result": "BLOCKED",
+      "reason": "httptest loopback bind operation not permitted; launch probe timing also failed"
+    },
+    {
+      "test": "host go test before fix",
+      "result": "FAIL",
+      "reason": "20ms cancellation could occur before OS Start; correct not_started refund contradicted the test premise"
+    }
+  ],
+  "fix": {
+    "file": "internal/launch/ledger_test.go",
+    "scope": "test-only; observe child stdout readiness before cancellation, retain all budget/state assertions and bounded timeout",
+    "repeat_race": "PASS count=3"
+  },
+  "historical_data_copy_checks": "NOT_TESTED (no user historical state accessed; legacy synthetic Go fixtures exercised)",
+  "go": {
+    "go-test-final": {
+      "tests_including_subtests": {
+        "pass": 560,
+        "skip": 1
+      },
+      "top_level_tests": {
+        "pass": 303,
+        "skip": 1
+      },
+      "packages": {
+        "skip": 6,
+        "pass": 27
+      },
+      "failures": [],
+      "skips": [
+        {
+          "test": "TestG7ContainerHTTPFakePeerAndRuntimeLoss",
+          "package": "github.com/Garden12138/xcli/internal/nativeadapter"
+        }
+      ]
+    },
+    "go-race-final": {
+      "tests_including_subtests": {
+        "pass": 560,
+        "skip": 1
+      },
+      "top_level_tests": {
+        "pass": 303,
+        "skip": 1
+      },
+      "packages": {
+        "skip": 6,
+        "pass": 27
+      },
+      "failures": [],
+      "skips": [
+        {
+          "test": "TestG7ContainerHTTPFakePeerAndRuntimeLoss",
+          "package": "github.com/Garden12138/xcli/internal/nativeadapter"
+        }
+      ]
+    }
+  },
+  "media_files": {
+    "checks": [
+      {
+        "path": "docs/r0/artifacts/media-20261015/codex-generated.png",
+        "sha256": "05a6cb7115f7621c500f358f009a1334080b0430bf53e01c940927f3fef55277",
+        "hash": "PASS",
+        "nonempty": true,
+        "decode": {
+          "format": "PNG",
+          "mime": "image/png",
+          "width": 1254,
+          "height": 1254,
+          "byte_length": 1669453,
+          "sha256": "05a6cb7115f7621c500f358f009a1334080b0430bf53e01c940927f3fef55277"
+        },
+        "status": "PASS"
+      },
+      {
+        "path": "docs/r0/artifacts/media-20261015/codex-edited.png",
+        "sha256": "245d0fc314748e7cbce8f5860dd341c5ece6717888bc61469ef434190567342c",
+        "hash": "PASS",
+        "nonempty": true,
+        "decode": {
+          "format": "PNG",
+          "mime": "image/png",
+          "width": 1254,
+          "height": 1254,
+          "byte_length": 1887101,
+          "sha256": "245d0fc314748e7cbce8f5860dd341c5ece6717888bc61469ef434190567342c"
+        },
+        "status": "PASS"
+      },
+      {
+        "path": "docs/r0/artifacts/media-20261015/cursor-generated.jpg",
+        "sha256": "e773a7780029b8d0fb745a2486cec44a3f61c04a894877129d7222ea433adf12",
+        "hash": "PASS",
+        "nonempty": true,
+        "decode": {
+          "format": "JPEG",
+          "mime": "image/jpeg",
+          "width": 1024,
+          "height": 1024,
+          "byte_length": 220259,
+          "sha256": "e773a7780029b8d0fb745a2486cec44a3f61c04a894877129d7222ea433adf12"
+        },
+        "status": "PASS"
+      },
+      {
+        "path": "docs/r0/artifacts/media-20261015/cursor-edited.png",
+        "sha256": "4a631ec901ba5dd66f5aa9b6f34f25f551aa166097c63d92873aa69d7cb74db7",
+        "hash": "PASS",
+        "nonempty": true,
+        "decode": {
+          "format": "PNG",
+          "mime": "image/png",
+          "width": 1024,
+          "height": 1024,
+          "byte_length": 794513,
+          "sha256": "4a631ec901ba5dd66f5aa9b6f34f25f551aa166097c63d92873aa69d7cb74db7"
+        },
+        "status": "PASS"
+      },
+      {
+        "path": "docs/r0/artifacts/media-20261015/antigravity-video-edited.mp4",
+        "sha256": "4be6eb39ee6caaaf8b8a39cceb17352ca2e6e9427c46fe046953b4308099bdf5",
+        "hash": "PASS",
+        "nonempty": true,
+        "status": "PASS_HASH_ONLY",
+        "decode": "NOT_TESTED (historical audio/video)"
+      },
+      {
+        "path": "docs/r0/artifacts/media-20261015/antigravity-music-edited.wav",
+        "sha256": "039cdc60e9d786dd1d19218d9d6a9e2a53b4dc87a80aba2872646cc423be6bd3",
+        "hash": "PASS",
+        "nonempty": true,
+        "status": "PASS_HASH_ONLY",
+        "decode": "NOT_TESTED (historical audio/video)"
+      },
+      {
+        "path": "docs/r0/artifacts/media-20261015/video-edit-frames.png",
+        "sha256": "2af8fbe91406c248c623bfe6c75ab17c0875992398b5d458b5bc1e50caad84fc",
+        "hash": "PASS",
+        "nonempty": true,
+        "decode": {
+          "format": "PNG",
+          "mime": "image/png",
+          "width": 960,
+          "height": 240,
+          "byte_length": 45187,
+          "sha256": "2af8fbe91406c248c623bfe6c75ab17c0875992398b5d458b5bc1e50caad84fc"
+        },
+        "status": "PASS"
+      },
+      {
+        "path": "docs/r0/artifacts/media-20261015/antigravity-generated.jpg",
+        "sha256": "b9f96fc78bb73e8f3627d3d250386e688ebceebc72368b95570a5fb920e578ed",
+        "hash": "PASS",
+        "nonempty": true,
+        "decode": {
+          "format": "JPEG",
+          "mime": "image/jpeg",
+          "width": 1024,
+          "height": 1024,
+          "byte_length": 568160,
+          "sha256": "b9f96fc78bb73e8f3627d3d250386e688ebceebc72368b95570a5fb920e578ed"
+        },
+        "status": "PASS"
+      },
+      {
+        "path": "docs/r0/artifacts/media-20261015/antigravity-edited.jpg",
+        "sha256": "ebeab0e60043f9379ef47128e23fd0f24079841138fb891782b1c96eefefbd0b",
+        "hash": "PASS",
+        "nonempty": true,
+        "decode": {
+          "format": "JPEG",
+          "mime": "image/jpeg",
+          "width": 1024,
+          "height": 1024,
+          "byte_length": 542102,
+          "sha256": "ebeab0e60043f9379ef47128e23fd0f24079841138fb891782b1c96eefefbd0b"
+        },
+        "status": "PASS"
+      },
+      {
+        "path": "docs/cli-first/evidence/native-20261106/artifacts/codex-generate.png",
+        "sha256": "cf2638ab84bd063c83805ac5ff03d593ae5f6e81c31e7c36da511b39db969436",
+        "hash": "PASS",
+        "nonempty": true,
+        "decode": {
+          "format": "PNG",
+          "mime": "image/png",
+          "width": 1254,
+          "height": 1254,
+          "byte_length": 1959177,
+          "sha256": "cf2638ab84bd063c83805ac5ff03d593ae5f6e81c31e7c36da511b39db969436"
+        },
+        "status": "PASS"
+      },
+      {
+        "path": "docs/cli-first/evidence/native-20261106/artifacts/antigravity-generate.jpg",
+        "sha256": "a7ea7e3ae25038643d8b8f2e11fd1498242b58943dccc7e1d92dca3ebc81694e",
+        "hash": "PASS",
+        "nonempty": true,
+        "decode": {
+          "format": "JPEG",
+          "mime": "image/jpeg",
+          "width": 1024,
+          "height": 1024,
+          "byte_length": 470653,
+          "sha256": "a7ea7e3ae25038643d8b8f2e11fd1498242b58943dccc7e1d92dca3ebc81694e"
+        },
+        "status": "PASS"
+      },
+      {
+        "path": "docs/cli-first/evidence/native-20261106/artifacts/codex-edit.png",
+        "sha256": "ea5568fa8213b14a75f21f05c34581252ae1290ea640c992de19cebb66515285",
+        "hash": "PASS",
+        "nonempty": true,
+        "decode": {
+          "format": "PNG",
+          "mime": "image/png",
+          "width": 1254,
+          "height": 1254,
+          "byte_length": 2073699,
+          "sha256": "ea5568fa8213b14a75f21f05c34581252ae1290ea640c992de19cebb66515285"
+        },
+        "status": "PASS"
+      },
+      {
+        "path": "docs/cli-first/evidence/native-20261106/artifacts/antigravity-edit.jpg",
+        "sha256": "9e852c568ed988cea9ee050a8c0d7d871aa07133ec568c6c5575e8c56a55fb41",
+        "hash": "PASS",
+        "nonempty": true,
+        "decode": {
+          "format": "JPEG",
+          "mime": "image/jpeg",
+          "width": 1024,
+          "height": 1024,
+          "byte_length": 541008,
+          "sha256": "9e852c568ed988cea9ee050a8c0d7d871aa07133ec568c6c5575e8c56a55fb41"
+        },
+        "status": "PASS"
+      }
+    ],
+    "image_decode_count": 11,
+    "model_calls": 0,
+    "visual_reacceptance": "NOT_TESTED"
+  },
+  "temporary_log_digests": {
+    "core-final.log": "d3db0905a24e6487762462760b506a0a884a65136acc094aca4b7215ebd6d4d6",
+    "diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "go-race-final.jsonl": "bb9604ebc597da9a81dce27b24becbee1446806b5b26b10c1c94fd1d6cf8cc68",
+    "go-test-final.jsonl": "99e62b2b2ab5f032c1a3f7bf1aa56150ff6bc94bb22baef20907d45aac9e3047",
+    "go-test-host.jsonl": "1a204a7ec24adf275b1f50a23f38204448ad6737e7f1c53977a73986f88c049d",
+    "go-test.log": "ad138b0260f9fd8cd5f04efaaffc2349f1795d3462aeeddf300354c90c3d7bca",
+    "gofmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "installation.log": "41b37e5376e6d37804d2a20fecbc05b8495934cde8142fbc967e2612560a96c5",
+    "launch-fixed.log": "bbd147b71197c0414df52bd66756997a0e660705b03864769b3650a82dbc551f",
+    "mod-tidy.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "mod-verify.log": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+    "package.log": "430c02a7de2ea90f3bea6d4384aed60d57850a9df83ed775b8a437c1afd5d32b",
+    "python-model_gateway.log": "93f31b101fe4fb623282544b2dae9757d14a7e8ce8f28a9636ebec9daafd01a5",
+    "python-native_agent_gateway.log": "603db52fd0016ca5cdcf83b2588160ae92bde08c66ba4c61dfc8a2a74cdb95c9",
+    "python-r0.log": "a2f57519f4f72409c2619dfc44fc440a877c7551da90722d6f2905dd70749eb4",
+    "python-r3.log": "7aee4784ffbed5000bc8fc6445b2b8b3adb276888e44ca5301bb6caeca40f6ab",
+    "vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "windows-build.log": "6e4ee67f8aa44148c2f0f388e9387501297b9fab9bdf1f563c8b4cc3300105f5"
+  },
+  "core_gate": {
+    "command": "bash tests/product_realignment/verify-core.sh",
+    "status": "PASS",
+    "exit_code": 0,
+    "terminal_marker": "R4_CORE_REGRESSION_PASS",
+    "log_sha256": "d3db0905a24e6487762462760b506a0a884a65136acc094aca4b7215ebd6d4d6",
+    "python_r0": 11,
+    "python_r3": 25,
+    "installation_checks": 12,
+    "no_new_real_native_starts": true
+  },
+  "result": "PASS_OFFLINE_READY_FOR_LOCAL_TRIAL"
+}

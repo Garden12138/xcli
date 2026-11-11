@@ -1,5 +1,7 @@
 # xcli 使用手册 · R4.1 CLI-First
 
+> 2026-11-11 交付入口已统一到 [release-handoff 使用手册](../release-handoff/USER_MANUAL.md) 和 [快速开始](../release-handoff/QUICK_START.md)。本页保留 R4.1 初始说明；新安装以统一交付为准。
+
 2026-11-10，未发布源码候选 `0.5.0-r4.1-dev`。xcli 调度原生 AI Coding Agent CLI，厂商 CLI 自管安装、登录、账号、模型和额度。日常入口不需要 Gateway/OAuth/模型服务配置。旧验收手册完整保留在[2026-11-06 快照](XCLI_USER_MANUAL_20261106.md)。
 
 ## 构建与原生前提

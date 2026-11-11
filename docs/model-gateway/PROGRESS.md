@@ -2,6 +2,17 @@
 
 > R4 / 2026-11-10：此页是冻结实验的历史记录，不是当前实施路线。xcli 已收敛为 CLI/Task 编排，不继续 Gateway、隔离探针或 OAuth；参见 [R4 模块处置](../product-realignment/MODULE_DISPOSITION.md)。历史证据和未完成状态保留，不作为核心可用性门禁。
 
+## 2026-11-11 中断恢复结论
+
+- 当前恢复基线为R4.1 `665ec15`，工作区初始干净。依照当前升级方案页首和R4处置，保持Model Gateway冻结、默认关闭；不自动继续旧M0–M5开发、桥接写回或真实验收。已向用户确认旧任务与当前产品范围的冲突，尚未收到重新开启网关的明确答复。
+- 四应用早期基础接入记录保持历史事实，不重复应用。Contribution OS当前HEAD为`884d015`，已有其他工作的暂存和未跟踪材料，本轮未修改这些文件。
+- 两份未写回的认证桥接补丁摘要均完整，但都不适用当前源码：原补丁有8个前置文件漂移，`contribution-os-host-bridge-20261106.patch`有3个前置文件漂移，HEAD均不匹配且`git apply --check`均失败。禁止忽略侧车或强行回放；详见[只读复核记录](acceptance/recovery-20261111.json)。
+- 11月6日隔离合并保留了DeepSeek支持及较新的独立密钥切换规则，已归档为13文件补丁；临时副本和兼容性JUnit现已不存在，不能推断中断测试通过。当前源码mTLS/完整回归未执行，10月26日历史通过结果不升级为当前结果。
+- 本轮仅补齐文档状态与只读漂移证据，真实模型请求、原生CLI启动、外部源码写入、部署与发布均为0。整体真实验收保持未完成；冻结不等于验收通过。
+- 文档验证：5个Markdown文件的47个本地链接有效，恢复JSON有效，`git diff --check`通过。本轮未改运行代码，未重跑运行测试。
+
+后续入口：核心CLI/Task工作以[R4.1实现进度](../product-realignment/IMPLEMENTATION_PROGRESS.md)为准。如用户另行明确重新开启网关，应先核对最新仓库、重新合并并完成离线门槛，再单独处理真实模型预算、证书信任与部署授权；不从下文历史步骤自动恢复。
+
 2026-11-06 设计交接：[Native Agent Gateway V1 SPEC](../native-agent-gateway/README.md)基于本轮真实 CLI 验收与当前源码完成，验收证据/Smoke 修复独立提交 `864a6b1`。新 Agent 服务尚未实现，不增加 Native CLI Model Backend；原 Gate B 继续 BLOCKED，四应用原生接入仍 Planned/BLOCKED。本阶段无新模型调用、四应用写入、部署、发布或 Push；下文授权/部署/测试均保留各自历史范围。
 
 基线：`8833d241c03c4a5040297f06cfa88540511dcce6`；2026-10-24；macOS arm64，Go 1.26.4。初始工作区干净。完整阅读 UPGRADE_PLAN.md；审查 README、R0–R3、配置、命令、Agent/Task/Runtime、MCP 与现有测试。仓库及父目录无 AGENTS.md。

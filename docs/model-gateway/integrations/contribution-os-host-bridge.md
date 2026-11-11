@@ -1,5 +1,7 @@
 # Contribution OS 认证宿主桥接
 
+> R4.1 / 2026-11-11：桥接是冻结实验，尚未写回或启用，不继续生产登记与部署。下文保留10月26日历史证据。11月6日另有[兼容DeepSeek的13文件合并补丁](contribution-os-host-bridge-20261106.patch)和[侧车](contribution-os-host-bridge-20261106.patch.json)，但其兼容回归结果未留存；两份桥接补丁的HEAD与前置文件均已漂移，当前源码dry-run失败。详见[只读复核](../acceptance/recovery-20261111.json)及[R4处置](../../product-realignment/MODULE_DISPOSITION.md)，禁止强行回放。
+
 状态：**隔离副本中已实现并通过 macOS arm64/OrbStack 合成验收，尚未写回应用仓库或启用现有部署**。独立 provider 为 `xcli_bridge`；原来的 `xcli_local` 继续拒绝容器。完整补丁和前置摘要分别见 [13 文件补丁](contribution-os-host-bridge.patch)及[防漂移清单](contribution-os-host-bridge.patch.json)。
 
 ## 已实现的通道

@@ -4,3 +4,20 @@
 *.out
 .DS_Store
 __pycache__/
+
+# Local build/test caches and machine-specific private configuration
+/bin/
+/build/
+/.cache/
+/.pytest_cache/
+*.py[cod]
+/coverage/
+/coverage*.txt
+/.env
+/.env.*
+!/.env.example
+/config.local.yaml
+/config.local.json
+
+# Post-commit local handoff receipt (avoids embedding a commit hash in itself)
+/docs/release-handoff/FINAL_STATE.json

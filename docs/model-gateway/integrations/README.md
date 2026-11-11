@@ -1,5 +1,7 @@
 # 四应用接入补丁
 
+> R4.1 / 2026-11-11：本目录保留历史接入证据，当前不回放补丁或继续通用模型接入。当前四应用方向为[Agent Task设计](../../product-realignment/APPLICATION_INTEGRATION_GUIDE.md)。两份未写回的认证桥接补丁均与当前Contribution OS源码漂移，不能直接应用；见[复核记录](../acceptance/recovery-20261111.json)。
+
 完整补丁与同名`.patch.json`侧车共同交付。侧车记录源码HEAD、补丁摘要和每个源文件的前置摘要。历史验收见[续轮记录](../acceptance/integrations-20261025.md)，最新验收见[2026-10-26记录](../acceptance/closeout-20261026.md)，整体状态见[PROGRESS](../PROGRESS.md)。
 
 2026-10-27交接：后续由用户按[真实验收步骤](../REAL_ACCEPTANCE.md)完成应用安装、实际流程、真实模型与目标机验收；本仓库提交补丁不等于替外部应用仓库提交、安装或部署。
