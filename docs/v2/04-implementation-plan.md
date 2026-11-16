@@ -1227,11 +1227,11 @@ func FakeCalls(t *testing.T) []FakeCall
 
 fakecli 行为：从 `XCLI_FAKE_SCRIPT` 读剧本，用 `filepath.Base(os.Args[0])` 选出自己的步骤列表；用 `XCLI_FAKE_STATE` 目录下 `<name>.count` 文件计数（加 flock），调用次数 n 从 0 开始，第 n 次调用执行下标为 `min(n, len-1)` 的步骤（剧本用完后重复最后一步）；把 `{name, args, cwd}` 追加写入 `XCLI_FAKE_LOG`；stdout 中的 `{{CWD}}` 替换为当前目录；`--version` 参数直接输出 `fake 1.0` 并退出 0；`login status` / `status` 输出 `ok` 并退出 0。
 
-- [ ] **步骤 1：测试**
+- [x] **步骤 1：测试**
 
 `TestFakeCLIRunsScriptInOrder`：剧本让 codex 第一次输出 `a`、退出 0，第二次输出 `b`、退出 3；用 `exec.Command` 调用两次，检查输出和退出码；`FakeCalls` 有 2 条记录且 Args 正确。`TestFakeCLIWritesPNG`：提示词参数中包含 `输出目录：/tmp/x`（用 t.TempDir），`WritePNG: "{{OUT}}/img.png"` → 文件存在且能被 `png.DecodeConfig` 解码。
 
-- [ ] **步骤 2：实现并提交**
+- [x] **步骤 2：实现并提交**
 
 编译用 `go build -o <dir>/codex ./internal/testutil/fakecli`（在 `InstallFakeCLIs` 中用 `sync.Once` 缓存编译结果到 `os.MkdirTemp`），再复制成 `cursor-agent` 和 `agy`。
 
