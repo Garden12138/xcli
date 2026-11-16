@@ -1381,7 +1381,7 @@ func RemoveWorktree(repo, path, branch string) error
 func Listing(dir string, max int) []string // 顶层条目，给 planner 用
 ```
 
-- [ ] **步骤 1：写测试**（用 `git init` 的临时仓库，测试里设置 `GIT_AUTHOR_NAME` 等环境变量）
+- [x] **步骤 1：写测试**（用 `git init` 的临时仓库，测试里设置 `GIT_AUTHOR_NAME` 等环境变量）
 
 - `TestPrepareTemp`：没有 workdir → `Dir == <task>/work`，`Isolation == "temp"`。
 - `TestPrepareInPlace`：有 workdir 且不隔离 → `Dir == workdir`，`Isolation == "none"`，`Git` 判断正确。
@@ -1393,9 +1393,9 @@ func Listing(dir string, max int) []string // 顶层条目，给 planner 用
 - `TestRunVerify`：`["true", "echo boom; exit 3"]` → 第一条通过，第二条 `ExitCode == 3`、日志包含 boom；超时的命令（`sleep 5`，timeout 200ms）判失败。
 - `TestApply`：在 worktree 中修改并生成 patch，`Apply` 到原仓库后文件内容一致。
 
-- [ ] **步骤 2：实现并提交**
+- [x] **步骤 2：实现并提交**
 
-变更检测严格按 02 架构文档 7.2 节：基线用 `git stash create`（输出为空则用 `git rev-parse HEAD`），记录基线时的未跟踪文件集合；diff 用 `git diff --binary <基线>`，新增的未跟踪文件逐个用 `git diff --no-index --binary /dev/null <file>`（该命令有差异时退出码为 1，属于正常情况）。全程不执行 `git add`、`git reset`、`git stash push`。
+`Baseline()` 在同一 Workspace 内只记录一次，确保多个代码步骤的最终 patch 累计包含本任务的全部改动。变更检测严格按 02 架构文档 7.2 节：基线用 `git stash create`（输出为空则用 `git rev-parse HEAD`），记录基线时的未跟踪文件集合；diff 用 `git diff --binary <基线>`，新增的未跟踪文件逐个用 `git diff --no-index --binary /dev/null <file>`（该命令有差异时退出码为 1，属于正常情况）。全程不执行 `git add`、`git reset`、`git stash push`。
 
 ```bash
 go test ./internal/workspace/ -race -v
