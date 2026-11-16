@@ -1069,7 +1069,7 @@ antigravity 期望：
 ```go
 {"read", Invocation{Prompt: "hi", Workdir: "/w", Permission: api.PermRead},
 	[]string{"--output-format", "stream-json", "--print-timeout", "0", "--sandbox", "--settings",
-		`{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"deny":["write_file(*)","command(*)","mcp(*)"]}}`, "--print", "hi"}},
+		`{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"allow":["command(ls)","command(pwd)"],"ask":[],"deny":["write_file(*)","mcp(*)"]}}`, "--print", "hi"}},
 {"write all options", Invocation{Prompt: "p", Workdir: "/w", Permission: api.PermWrite, Model: "m", SchemaFile: "/s.json", AddDirs: []string{"/in"}},
 	[]string{"--output-format", "stream-json", "--print-timeout", "0", "--dangerously-skip-permissions", "--sandbox",
 		"--model", "m", "--json-schema", "/s.json", "--add-dir", "/in", "--print", "p"}},
@@ -1077,7 +1077,7 @@ antigravity 期望：
 	[]string{"--output-format", "stream-json", "--print-timeout", "0", "--dangerously-skip-permissions", "--print", "p"}},
 {"resume", Invocation{Prompt: "p", Workdir: "/w", Permission: api.PermRead, SessionID: "sid"},
 	[]string{"--output-format", "stream-json", "--print-timeout", "0", "--sandbox", "--settings",
-		`{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"deny":["write_file(*)","command(*)","mcp(*)"]}}`, "--conversation", "sid", "--print", "p"}},
+		`{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"allow":["command(ls)","command(pwd)"],"ask":[],"deny":["write_file(*)","mcp(*)"]}}`, "--conversation", "sid", "--print", "p"}},
 ```
 
 两个驱动都忽略 `Images`（参考图通过提示词里的路径和 `AddDirs` 传递，由 step runner 负责）。cursor 忽略 `SchemaFile` 和 `Network`。
@@ -1575,7 +1575,7 @@ Router：
 - `TestValidatePlan`：ID 重复、依赖不存在、有环（a→b→a）、agent 不可用、步数超限、`permission=read` 时出现 code 或 image 步骤、`review_by` 出现在非 code 步骤上，都报错；合法计划通过。
 
 执行器（fakecli）：
-- `TestExecuteParallel`：两个互不依赖的 ask 步骤，fakecli 各休眠 500ms → 总耗时小于 900ms；两个都 completed。
+- `TestExecuteParallel`：两个互不依赖的 ask 步骤，fakecli 各休眠 500ms → 两个都 completed，两个 PID 文件的写入时间差小于 400ms，证明休眠区间重叠；避免把操作系统进程启动延迟算入并行断言（任务 17 更新）。
 - `TestExecuteDependencyHandoff`：`b` 依赖 `a` → b 的 `prompt.md` 中包含 a 的最终文本。
 - `TestExecuteSkipsDependents`：a 失败（非可切换错误）→ 依赖 a 的 b 为 `skipped`，与 a 无关的 c 为 completed，任务状态 `failed`。
 - `TestExecuteSerializesCodeOnSameWorkdir`：两个互不依赖的 code 步骤，同一工作目录 → 按时间不重叠（用 fakecli 记录调用时间，或休眠 300ms 后检查总耗时 ≥ 600ms）。
@@ -1655,7 +1655,7 @@ func (e *ExitError) Error() string
 - [x] **步骤 2：写 engine 测试（fakecli）**
 
 - `TestEngineRunAsk`：Create + Run → Result `completed`；`task.json` 中保存了 Result；`events.jsonl` 第一条是 `task.started`、最后一条是 `task.finished`，中间有 `plan.ready`。
-- `TestEnginePlanOnly`：`plan_only=true` → 状态 `planned`，fakecli 没有被调用。
+- `TestEnginePlanOnly`：`plan_only=true` → 状态 `planned`，fakecli 没有被调用（任务 17 接入规划器后，更新为只调用规划 CLI 一次，不执行计划步骤）。
 - `TestEngineDetachAndWait`：`Detach` 启动后台 worker（测试中用 `os.Args[0]` 无法作为 xcli，改为先 `go build -o <tmp>/xcli .`，并通过 `XCLI_SELF` 环境变量告诉 engine 用哪个可执行文件启动 worker）；`Wait` 拿到 completed 的 Result。
 - `TestEngineCancel`：fakecli 休眠 10 秒；后台运行后调用 `Cancel` → 5 秒内状态变为 `cancelled`，fakecli 进程不存在。
 - `TestEngineWorkerLost`：手动把 task.json 设为 running、PID 设为一个不存在的进程 → `Status` 返回 failed，`error.kind == "worker_lost"`。
@@ -1727,8 +1727,12 @@ git add internal/engine cmd && git commit -m "feat: add engine and task commands
 
 **文件：**
 - 新建：`internal/orchestrator/planner.go`
-- 修改：`internal/engine/engine.go`（capability auto 时调用规划器）
-- 测试：`internal/orchestrator/planner_test.go`
+- 修改：`internal/driver/antigravity.go`、`scripts/probe/main.go`、`scripts/probe/main_test.go`（根据实测调整会话级 read 设置，并保留原有权限拒绝判定）
+- 修改：`internal/recipe/prompts/plan.md`、`docs/v2/driver-notes.md`、`docs/v2/02-architecture.md` 第 4.2/4.3 节（根据实测明确步骤权限与交接）
+- 新增实测样本：`internal/driver/testdata/antigravity/ask_read_probe_denied.jsonl`、`.stderr`（成功回复文本，但旧会话规则拒绝附带 ls；保留旧样本，用户选择原生放行读取命令）
+- 新增原生配置验证样本：`internal/driver/testdata/antigravity/native_allow_read_ok.jsonl`、`native_allow_write_checks.jsonl`、`native_allow_ls_redirect_denied.jsonl` 及对应 `.stderr`；原生放行 ls/pwd，原生文件写入、未放行的 printf 及 ls 重定向已验证为拒绝；采用该会话设置，命令组合尚无实测结果。
+- 修改：`internal/engine/engine.go`（capability auto 时调用规划器）、`internal/orchestrator/router.go`（抽取内部候选过滤，复用于规划提示词）
+- 测试：`internal/orchestrator/planner_test.go`、`internal/engine/engine_test.go`、`cmd/run_test.go`；修改 `internal/orchestrator/execute_test.go` 的并行断言及只读失败时的图片保留用例；`internal/driver/antigravity_test.go` 补充空文本与多种权限拒绝的解析用例
 
 **接口：**
 - 消费：`recipe.RenderPlanner`、`recipe.PlanSchema`、`recipe.ExtractJSON`、`recipe.Validate`、`ValidatePlan`、`RulesPlan`、`Env.invoke`。
@@ -1739,7 +1743,7 @@ git add internal/engine cmd && git commit -m "feat: add engine and task commands
 func (e *Env) Plan(ctx context.Context) api.Plan
 ```
 
-- [ ] **步骤 1：写测试（fakecli）**
+- [x] **步骤 1：写测试（fakecli）**
 
 - `TestPlannerSuccess`：codex 回放一个合法计划（两个并行步骤 + 一个依赖它们的 code 步骤）→ `Source == "planner"`，步骤与回放内容一致；fakecli 参数包含 `--output-schema` 和 `-s read-only`。
 - `TestPlannerInvalidFallsBack`：codex 返回有环的计划 → `Source == "rules"`，有 notice 事件，内容包含"计划校验失败"。
@@ -1747,15 +1751,20 @@ func (e *Env) Plan(ctx context.Context) api.Plan
 - `TestPlannerTimeout`：所有规划 CLI 都超时（`planner_timeout = 300ms`）→ `Source == "rules"`。
 - `TestPlannerPromptContents`：`prompt.md` 中包含需求、可用 CLI 列表及 strengths、`max_steps`、workdir 顶层条目。
 
-- [ ] **步骤 2：实现**
+- [x] **步骤 2：实现**
 
 要点：
 - 规划 CLI 的候选：先 `cfg.Defaults.Planner`，再按 plan 分数排序的其他可用 CLI；`Req.Agent` 非空时只用它；最多尝试 2 个。
+- 每次规划前刷新可用 CLI 集合；前次调用进入 auth/quota 冷却后，后续提示词和 Schema 同步排除它。plan 分数为 0 的 CLI 仍可作为执行步骤的候选。
+- 原生调用失败时最多换一个规划 CLI；JSON/Schema/DAG 校验失败按 02 第 6.3 节直接退回规则。后续规划日志保存在 `steps/plan-r1/fallback-<次数>-<agent>/`，保留首个 CLI 的输出。
+- 规划结束后，engine 持久化实际执行步骤；只规划任务的最终 Steps 为空。测试覆盖 do/plan 命令接入和显式计划跳过规划器。
+- 根据实测调整规划模板：ask/review 只读，ask 文案直接回复并由下游 code 落盘；产物 output 是子目录名；文案、配图、项目写入在 max_steps ≥ 3 时拆为并行 ask/image 和依赖两者的 code。
+- 用户选择原生权限配置方向：read 通过会话设置放行 ls/pwd，原生文件写入和 MCP 使用 deny，其他终端命令按 request-review 处理；同步参数拼装测试及所有计划参数示例。
 - 规划调用：权限 read，工作目录为 `WS.Dir`（没有 workdir 时用任务临时目录），步骤 ID 固定为 `plan`，round 为 1，超时 `planner_timeout`。
 - engine 中 capability auto 的分支改为调用 `Env.Plan`（工作区在规划前已经准备好，见任务 16 步骤 3 的第 3 点）。
 - `AgentInfo.Note` 默认值：codex `OpenAI Codex：擅长编码、规划，内置 image_gen 可生图`；cursor `Cursor Agent：擅长编码与代码审查`；antigravity `Google Antigravity：擅长长文本、资料分析，内置 image-generator 子代理可生图`。
 
-- [ ] **步骤 3：真实冒烟（征得用户同意，约 4～6 次调用）**
+- [x] **步骤 3：真实冒烟（征得用户同意，约 4～6 次调用）**
 
 ```bash
 go build -o bin/xcli .
@@ -1766,7 +1775,9 @@ D=$(mktemp -d) && git -C "$D" init -q && echo '# demo' > "$D/README.md" && git -
 
 期望：计划中有一个文案步骤和一个生图步骤（并行），以及一个依赖两者的 code 步骤；执行后 README 有新内容，`docs/cover.png` 是合法图片。
 
-- [ ] **步骤 4：提交**
+2026-11-16：原生会话权限调整后完整 do 复测通过。Codex 规划、Antigravity 并行文案/生图、Codex 整合、Cursor 审查共 5 次 CLI；三个执行步骤均 completed，审查 pass，README 引用有效的 1376×768 PNG。生成图片、原始事件及 task.json 保存在独立临时 home，仓库中保存对应行为说明与回放样本。
+
+- [x] **步骤 4：提交**
 
 ```bash
 go test ./... -race

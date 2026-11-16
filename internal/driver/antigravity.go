@@ -10,8 +10,8 @@ import (
 	"github.com/Garden12138/xcli/internal/config"
 )
 
-// 根据 docs/v2/driver-notes.md 的六次只读实测，用默认模式和原生 deny 规则直接执行。
-const antigravityReadSettings = `{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"deny":["write_file(*)","command(*)","mcp(*)"]}}`
+// 根据 docs/v2/driver-notes.md 的原生配置实测，定向放行 ls/pwd，写入和其他终端操作由原生权限规则处理。
+const antigravityReadSettings = `{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"allow":["command(ls)","command(pwd)"],"ask":[],"deny":["write_file(*)","mcp(*)"]}}`
 
 type antigravity struct{ cfg config.AgentConfig }
 

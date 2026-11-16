@@ -96,7 +96,13 @@ func (e *Engine) Run(ctx context.Context, t *store.Task, sink func(api.Event)) (
 		result.TaskID, result.Capability, result.Metadata = t.ID(), req.Capability, req.Metadata
 		result.StartedAt, result.FinishedAt = started, time.Now().UTC()
 		result.DurationMS = result.FinishedAt.Sub(started).Milliseconds()
-		if err := t.Update(func(r *store.Record) { r.Status = result.Status; r.Result = &result; r.Plan = result.Plan; r.PID = 0 }); err != nil {
+		if err := t.Update(func(r *store.Record) {
+			r.Status = result.Status
+			r.Result = &result
+			r.Plan = result.Plan
+			r.Steps = result.Steps
+			r.PID = 0
+		}); err != nil {
 			result.Status = api.StatusFailed
 			result.Error = &api.Error{Kind: "failed", Message: "请检查任务目录写入权限：" + err.Error()}
 		}
@@ -133,6 +139,8 @@ func (e *Engine) Run(ctx context.Context, t *store.Task, sink func(api.Event)) (
 	if req.Plan != nil {
 		plan = *req.Plan
 		plan.Source = "explicit"
+	} else if req.Capability == api.CapAuto {
+		plan = env.Plan(ctx)
 	}
 	if err := orchestrator.ValidatePlan(plan, req, e.available(req), e.Config.Defaults.MaxSteps); err != nil {
 		result.Error = &api.Error{Kind: "invalid_request", Message: err.Error()}

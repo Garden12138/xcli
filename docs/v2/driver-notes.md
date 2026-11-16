@@ -153,3 +153,41 @@ agy --output-format stream-json --print-timeout 0 --sandbox --settings '{"agentM
 依据：[原生 settings Schema](https://antigravity.google/schemas/v1/settings.json)、[执行模式](https://antigravity.google/docs/cli/modes/)、[权限规则](https://antigravity.google/docs/permissions)。本节行为以追加六次实测为准。
 
 后续健康探测（2026-11-16，仅版本与登录状态）：Codex `0.169.0`、Cursor `2026.11.13-eacade1`、Antigravity `1.5.9`；Codex/Cursor 登录状态为 ok，Antigravity 为 unknown。上文保留各次实测时的参数和结果。
+
+### 任务 17：多 CLI 编排冒烟（2026-11-16）
+
+在独立 xcli home 和只有 README 的临时 Git 仓库执行 `plan`、`do`，请求为“给 README 写一段项目介绍，并生成一张封面图放到 docs/cover.png，最后在 README 里引用它”。两条命令均加 `--no-fallback --max-fix-rounds 0`；原生参数沿用 02 第 4.2 节。
+
+首次 Codex 规划返回 `image → code` 两步，plan-only 保持仓库原样。补充并行拆分提示后，do 的 Codex 规划返回并行 `ask intro`、`image cover`，以及依赖两者的 `code integrate`，审查者为 Cursor。
+
+规划器给 intro 的 instruction 要求把文案保存为 intro.md，与 ask 的只读约定冲突。Antigravity 尝试终端命令以及额外路径的 `read_file`，原生权限规则拒绝这些动作；最后仍输出 `status=SUCCESS`、空 `response`，`denied_actions=[{"action":"read_file","display_name":"ReadFile"}]`。驱动按工具事件和 result 合并得到 `command/read_file` 拒绝，将 intro 判为 `permission_denied`。
+
+cover 分支完成，产出 1376×768 的 PNG 和 JPEG；PNG 通过签名、chunk CRC 和 IDAT 解压校验。integrate 因上游失败被跳过。此轮共启动四次原生 CLI：两次 Codex 规划、一次 Antigravity 文案、一次 Antigravity 生图。
+
+根据实测调整规划模板：明确 ask/review 只读、ask 直接回复文本并由下游 code 落盘；output 表示产物子目录；文案与生图并行、code 负责复制产物到目标位置。同步补充 02 第 4.2/4.3 节以及解析、产物保留、依赖跳过的测试。完整 do 复测结果见下段。
+
+复测：规划器已给出正确的只读文案指令。Antigravity 的 `read_file` 成功读取 README，然后尝试 `ls -la /TMP/repo-retry`，该命令命中 `command(*)` deny 规则。最终 `result.status=SUCCESS`，`response` 为完整文案“本项目是一个用于演示与测试的基础示例项目（Demo）。”，没有 `denied_actions`。按当前 02 第 4.3 节规则，工具级拒绝仍使步骤成为 `permission_denied`，code 因而跳过；并行图片步骤成功，产出 PNG/JPEG。样本为 `ask_read_probe_denied.jsonl/.stderr`，回放测试固定当前判定。
+
+用户选择原生会话权限配置方向：驱动保留权限拒绝判定，通过 Agy 原生规则放行读取命令。后续配置和验证见下节。
+
+### 原生定向放行候选验证（2026-11-16）
+
+用户选择先验证原生会话配置，候选 settings 为：
+
+```json
+{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"allow":["command(ls)","command(pwd)"],"ask":[],"deny":["write_file(*)","mcp(*)"]}}
+```
+
+通过 `agy --sandbox --settings '<JSON>' --output-format stream-json --print-timeout 0 --print '<提示词>'` 在独立临时目录运行。`native_allow_read_ok` 样本中，`pwd`、`ls -la <repo>` 和 `read_file(<repo>/README.md)` 都为 DONE，终端退出码为 0，最终 SUCCESS 且回复非空。目录内容保持原样。
+
+`native_allow_write_checks` 样本中，`write_file` 创建新文件被显式 deny 拒绝；随后 `printf shell-write > <repo>/shell-write.txt` 需要审批，headless 模式直接拒绝并结束会话。最终 SUCCESS、response 为空、denied_actions 含 command；这两个文件都未创建。提示词中后续的 ls/pwd 重定向、命令拼接、管道和命令替换均未执行，需调整验证顺序后继续核实。两次调用前后的全局 settings 文件摘要相同。
+
+补充 `native_allow_ls_redirect_denied` 样本：首先执行 `ls -la <repo> > <repo>/ls-redirect.txt`。工具事件为 DONE，最终 SUCCESS、response 为空、denied_actions 含 command；目标文件未创建，README 内容保持原样，全局 settings 文件摘要保持相同。CLI 在该次拒绝后结束会话，pwd 重定向、命令拼接、管道和命令替换均未执行。
+
+根据实测调整 read 适配与 probe 参数为本节会话设置：原生放行 ls/pwd，文件写入与 MCP 由 deny 规则限制，其他终端操作按 request-review 处理。参数测试先更新并确认失败，再更新实现；解析器继续将实际权限拒绝判为 permission_denied。
+
+### 原生配置接入后的完整 do 复测（2026-11-16）
+
+在新临时仓库使用同一需求，原生 read 会话设置放行 ls/pwd，完整流程返回 completed：Codex 规划 → Antigravity 文案与生图并行 → Codex 整合 → Cursor 审查。共启动五次 CLI，文案、图片、代码三个步骤全部 completed，审查 verdict 为 pass、issues 为空。
+
+本次生图调用了 image-generator 子代理，原生图片写入当前会话 brain 目录，再由 Agy 转为 PNG 放入约定输出目录；前期有较长的工具调用查找过程。Codex 将交接文案写入 README，并把 PNG 复制为 docs/cover.png。目标图片为 1376×768、1345864 字节，通过 PNG 签名、全部 chunk CRC 与 IDAT 解压检查，且与上游产物逐字节一致。最终变更仅含 README.md、docs/cover.png；临时仓库仍只有最初的基线提交。

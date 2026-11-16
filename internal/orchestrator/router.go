@@ -14,7 +14,7 @@ type Router struct{ env *Env }
 
 func NewRouter(e *Env) *Router { return &Router{env: e} }
 
-func (r *Router) Candidates(kind api.Kind, exclude ...string) []string {
+func (r *Router) eligible() []string {
 	e := r.env
 	allowed := e.Req.Agents
 	if len(allowed) == 0 {
@@ -26,7 +26,7 @@ func (r *Router) Candidates(kind api.Kind, exclude ...string) []string {
 	choices := []string{}
 	for _, name := range allowed {
 		d := e.Drivers[name]
-		if d == nil || !e.Config.Enabled(name) || slices.Contains(exclude, name) || slices.Contains(choices, name) || e.Config.Strength(name, string(kind)) <= 0 {
+		if d == nil || !e.Config.Enabled(name) || slices.Contains(choices, name) {
 			continue
 		}
 		if e.Health != nil && !e.Health.Available(name, e.now()) {
@@ -37,6 +37,14 @@ func (r *Router) Candidates(kind api.Kind, exclude ...string) []string {
 		}
 		choices = append(choices, name)
 	}
+	return choices
+}
+
+func (r *Router) Candidates(kind api.Kind, exclude ...string) []string {
+	e := r.env
+	choices := slices.DeleteFunc(r.eligible(), func(name string) bool {
+		return slices.Contains(exclude, name) || e.Config.Strength(name, string(kind)) <= 0
+	})
 	sort.SliceStable(choices, func(i, j int) bool {
 		return e.Config.Strength(choices[i], string(kind)) > e.Config.Strength(choices[j], string(kind))
 	})

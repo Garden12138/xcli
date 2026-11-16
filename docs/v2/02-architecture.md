@@ -153,7 +153,7 @@ type Parser interface {
 | 场景 | 参数 |
 | --- | --- |
 | 公共部分 | `--output-format stream-json --print-timeout 0`，可选 `--model <model>`、`--json-schema <file>`、`--add-dir <dir>`，最后 `--print <prompt>`；cwd 设为 workdir |
-| read | `--sandbox --settings '<下方只读 JSON>'`；使用默认执行模式和内置文件读取工具 |
+| read | `--sandbox --settings '<下方只读 JSON>'`；使用默认执行模式，优先内置读取工具，原生放行 ls/pwd |
 | write | `--dangerously-skip-permissions --sandbox` |
 | full | `--dangerously-skip-permissions` |
 | 续接 | 公共部分加 `--conversation <id>` |
@@ -163,10 +163,14 @@ type Parser interface {
 2026-11-16 根据实测调整：`--mode plan` 会添加原生规划指令，可能要求点击 Proceed。只读调用改为以下会话级 `--settings`，用默认模式直接作答；权限规则由 Antigravity 自己执行，持久配置保持原值：
 
 ```json
-{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"deny":["write_file(*)","command(*)","mcp(*)"]}}
+{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"allow":["command(ls)","command(pwd)"],"ask":[],"deny":["write_file(*)","mcp(*)"]}}
 ```
 
-只读提示词引导使用 `view_file`、`list_dir`、`find_by_name`、`grep_search` 等内置工具。终端命令和 MCP 调用统一被原生 deny 规则阻止。追加六次实测覆盖直接回答、Schema、续接、两类写入拒绝、规划 JSON；六次工作区内容均保持原样。具体 argv 和事件见 `driver-notes.md`。
+只读提示词优先引导使用 `view_file`、`list_dir`、`find_by_name`、`grep_search` 等内置工具。根据任务 17 追加实测，原生会话设置定向放行 ls/pwd，文件写入和 MCP 使用 deny；其他终端操作按 request-review 处理，headless 审批拒绝结束当前会话。早期六次只读实测使用全禁终端规则，原始参数和结果保存在 `driver-notes.md`。
+
+ask 文案通过最终回复交接，由下游 code 步骤写入文件。规划指令按此区分只读步骤和写入步骤；读取文件使用工作目录内的绝对路径。
+
+已实测 ls/pwd 和文件读取成功；原生文件写入、未放行的 printf 写入、ls 输出重定向均被拒绝，工作目录内容保持原样。pwd 重定向、命令拼接、管道及命令替换尚无实测结果，覆盖范围见 `driver-notes.md`。
 
 ### 4.3 事件解析要点（来自旧版 `stream.go` 的经验）
 
@@ -179,6 +183,12 @@ type Parser interface {
 用量：Codex 从 `turn.completed.usage.input_tokens/output_tokens` 提取；Cursor 从 `result.usage.inputTokens/outputTokens` 提取；Antigravity 从 `result.usage.input_tokens/output_tokens/total_tokens` 提取。Antigravity 的 `denied_actions` 实测为对象数组，元素含 `action`、`display_name`；驱动的 `Denied []string` 提取 `action`，同时兼容字符串元素。Antigravity 工具进度从 `step_update.tool_name` 和 `tool_info` 提取。
 
 Antigravity 显式 deny 规则命中时，`denied_actions` 可能为空：读取 `step_update.state == "ERROR"` 下的 `tool_info.error.message`，匹配 `permission check failed` 或 `Permission denied`。`tool_name=write_file` 映射到 Denied 的 `write_file`，`run_command` 映射到 `command`；只记录明确的权限拒绝，其他可恢复工具错误继续由原生 CLI 处理。
+
+任务 17 的真实文案步骤同时出现 `command` 和 `read_file` 拒绝，最终 `result.status=SUCCESS`、`response` 为空、`denied_actions` 含 `read_file`。驱动合并并去重这些 action，步骤判为 `permission_denied`；并行生图分支的产物照常保留，依赖失败步骤的 code 标为 `skipped`。
+
+任务 17 复测还观察到：`read_file` 已成功读取 README，附带 `ls -la` 被拒，最终 SUCCESS 且有完整文案、没有 `denied_actions`。当前工具级拒绝规则仍将该步骤判为 `permission_denied`；该样本来自调整前的 read 设置；当前映射原生放行 ls/pwd，驱动继续按实际权限拒绝事件判为 permission_denied。详见 `driver-notes.md` 的 `ask_read_probe_denied` 样本。
+
+原生定向放行设置验证中，未放行的终端命令触发 headless 审批拒绝后，CLI 立即结束当前会话，输出 SUCCESS、空 response 和 denied_actions；后续操作按未执行记录。驱动按权限拒绝处理，实测样本为 `native_allow_write_checks`。
 
 进度事件归一化成 `message`（助手文本片段）、`tool`（工具名）、`notice`（重连等），只用于展示，不影响结果判定。运行错误先按 4.4 分类；没有明确运行错误且缺少结束标志时判 `protocol` 错误。
 

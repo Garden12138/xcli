@@ -93,14 +93,41 @@ func TestEngineRunAsk(t *testing.T) {
 }
 
 func TestEnginePlanOnly(t *testing.T) {
-	e := testEngine(t, testutil.FakeScript{})
+	planned := `{"reasoning":"只规划","steps":[{"id":"main","kind":"ask","agent":"auto","instruction":"总结文档","depends_on":[],"review_by":null,"output":null}]}`
+	e := testEngine(t, testutil.FakeScript{"codex": {{Stdout: nativeOK(planned)}}})
 	task := create(t, e, api.Request{Goal: "总结文档", PlanOnly: true, Isolate: true, Workdir: t.TempDir()})
 	r := e.Run(context.Background(), task, nil)
-	if r.Status != api.StatusPlanned || r.Plan == nil || len(testutil.FakeCalls(t)) != 0 {
+	if r.Status != api.StatusPlanned || r.Plan == nil || r.Plan.Source != "planner" || len(testutil.FakeCalls(t)) != 1 || len(task.Snapshot().Steps) != 0 {
 		t.Fatalf("plan only: %+v", r)
 	}
 	if _, err := os.Stat(task.Path("worktree")); !os.IsNotExist(err) {
 		t.Fatal("plan created worktree")
+	}
+}
+
+func TestEngineAutoPlansAndRuns(t *testing.T) {
+	planned := `{"reasoning":"先分析再总结","steps":[{"id":"a","kind":"ask","agent":"codex","instruction":"分析","depends_on":[],"review_by":null,"output":null},{"id":"b","kind":"ask","agent":"codex","instruction":"总结","depends_on":["a"],"review_by":null,"output":null}]}`
+	e := testEngine(t, testutil.FakeScript{"codex": {{Stdout: nativeOK(planned)}, {Stdout: nativeOK("upstream")}, {Stdout: nativeOK("terminal")}}})
+	task := create(t, e, api.Request{Capability: api.CapAuto, Goal: "分析并总结", Agent: "codex"})
+	r := e.Run(context.Background(), task, nil)
+	calls := testutil.FakeCalls(t)
+	if r.Status != api.StatusCompleted || r.Plan == nil || r.Plan.Source != "planner" || r.Summary != "terminal" || len(r.Steps) != 2 || len(task.Snapshot().Steps) != 2 || len(calls) != 3 {
+		t.Fatalf("auto: %+v calls=%+v", r, calls)
+	}
+	data, _ := os.ReadFile(task.Path("steps", "b-r1", "prompt.md"))
+	if !strings.Contains(string(data), "upstream") {
+		t.Fatal(string(data))
+	}
+}
+
+func TestEngineExplicitPlanSkipsPlanner(t *testing.T) {
+	e := testEngine(t, testutil.FakeScript{"codex": {{Stdout: nativeOK("explicit")}}})
+	plan := api.Plan{Steps: []api.Step{{ID: "main", Kind: api.KindAsk, Agent: "codex", Instruction: "answer", DependsOn: []string{}}}}
+	task := create(t, e, api.Request{Capability: api.CapAuto, Goal: "answer", Plan: &plan})
+	r := e.Run(context.Background(), task, nil)
+	calls := testutil.FakeCalls(t)
+	if r.Status != api.StatusCompleted || r.Plan == nil || r.Plan.Source != "explicit" || len(calls) != 1 || strings.Contains(strings.Join(calls[0].Args, " "), "--output-schema") {
+		t.Fatalf("explicit: %+v calls=%+v", r, calls)
 	}
 }
 

@@ -21,7 +21,7 @@ import (
 )
 
 const probeSchema = `{"type":"object","additionalProperties":false,"required":["answer"],"properties":{"answer":{"type":"string"}}}`
-const antigravityReadSettings = `{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"deny":["write_file(*)","command(*)","mcp(*)"]}}`
+const antigravityReadSettings = `{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"allow":["command(ls)","command(pwd)"],"ask":[],"deny":["write_file(*)","mcp(*)"]}}`
 const antigravityReadHint = "你正在被 xcli 调度执行只读任务。请直接完成，用中文回复；使用 view_file、list_dir、find_by_name、grep_search 等内置只读工具读取文件，不要调用 run_command，不要修改文件，不要制定实现计划，不要请求确认。"
 
 var probeCases = []string{"ask_ok", "schema_ok", "resume_ok", "write_ok", "image_ok", "error_bad_model"}

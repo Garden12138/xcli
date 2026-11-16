@@ -16,10 +16,15 @@ import (
 
 func commandHome(t *testing.T) {
 	t.Helper()
+	commandHomeScript(t, testutil.FakeScript{"codex": {{Stdout: []string{`{"type":"thread.started","thread_id":"s"}`, `{"type":"item.completed","item":{"type":"agent_message","text":"hello"}}`, `{"type":"turn.completed"}`}, WriteFiles: map[string]string{"new.txt": "new"}}}})
+}
+
+func commandHomeScript(t *testing.T, script testutil.FakeScript) {
+	t.Helper()
 	home := t.TempDir()
 	t.Setenv("XCLI_HOME", home)
 	cfg := config.Default()
-	cfg.Path = testutil.InstallFakeCLIs(t, testutil.FakeScript{"codex": {{Stdout: []string{`{"type":"thread.started","thread_id":"s"}`, `{"type":"item.completed","item":{"type":"agent_message","text":"hello"}}`, `{"type":"turn.completed"}`}, WriteFiles: map[string]string{"new.txt": "new"}}}})
+	cfg.Path = testutil.InstallFakeCLIs(t, script)
 	for name, a := range cfg.Agents {
 		a.ArtifactDirs = []string{}
 		cfg.Agents[name] = a
@@ -167,5 +172,27 @@ func TestResultExitCodes(t *testing.T) {
 		if code != tc.code || !json.Valid(out.Bytes()) {
 			t.Fatalf("%s: code=%d output=%s", tc.status, code, out.String())
 		}
+	}
+}
+
+func TestDoAndPlanUsePlanner(t *testing.T) {
+	plan := `{"reasoning":"简单需求","steps":[{"id":"main","kind":"ask","agent":"codex","instruction":"回答问题","depends_on":[],"review_by":null,"output":null}]}`
+	message, _ := json.Marshal(map[string]any{"type": "item.completed", "item": map[string]string{"type": "agent_message", "text": plan}})
+	for _, name := range []string{"do", "plan"} {
+		t.Run(name, func(t *testing.T) {
+			commandHomeScript(t, testutil.FakeScript{"codex": {{Stdout: []string{string(message), `{"type":"turn.completed"}`}}, {Stdout: []string{`{"type":"item.completed","item":{"type":"agent_message","text":"done"}}`, `{"type":"turn.completed"}`}}}})
+			out, _, err := runCommand([]string{name, "回答问题", "-a", "codex", "--json"}, "")
+			var r api.Result
+			if err != nil || json.Unmarshal([]byte(out), &r) != nil || r.Plan == nil || r.Plan.Source != "planner" {
+				t.Fatalf("%s: %s %v", name, out, err)
+			}
+			wantStatus, wantCalls := api.StatusCompleted, 2
+			if name == "plan" {
+				wantStatus, wantCalls = api.StatusPlanned, 1
+			}
+			if r.Status != wantStatus || len(testutil.FakeCalls(t)) != wantCalls {
+				t.Fatalf("%s: %+v", name, r)
+			}
+		})
 	}
 }

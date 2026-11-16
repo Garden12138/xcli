@@ -37,6 +37,47 @@ func TestAntigravityPermissionsAndStructuredOutput(t *testing.T) {
 	}
 }
 
+func TestAntigravityEmptyTextWithReadDenial(t *testing.T) {
+	// 任务17实测：命令拒绝与额外路径读取拒绝可以同时出现，最终 response 为空。
+	d, _ := New("antigravity", config.Default().Agents["antigravity"])
+	p := d.NewParser()
+	for _, line := range []string{
+		`{"event":"step_update","step_update":{"conversation_id":"s","state":"ERROR","tool_name":"run_command","tool_info":{"error":{"message":"permission check failed for command: Permission denied"}}}}`,
+		`{"event":"step_update","step_update":{"conversation_id":"s","state":"ERROR","tool_name":"read_file","tool_info":{"error":{"message":"permission check failed for read_file: user denied permission"}}}}`,
+		`{"event":"result","result":{"conversation_id":"s","status":"SUCCESS","response":"","denied_actions":[{"action":"read_file","display_name":"ReadFile"}]}}`,
+	} {
+		p.Feed([]byte(line))
+	}
+	r := p.Finish(0, "")
+	if r.ErrorKind != ErrPermissionDenied || r.Text != "" || r.SessionID != "s" || !reflect.DeepEqual(r.Denied, []string{"command", "read_file"}) {
+		t.Fatalf("read denial: %+v", r)
+	}
+}
+
+func TestAntigravityReadProbeDeniedWithAnswer(t *testing.T) {
+	// 任务17复测：原生读取成功、有最终文案，但附带 ls 被拒；记录当前设计的判定。
+	r := replayFixture(t, "antigravity", "ask_read_probe_denied", 0)
+	if r.ErrorKind != ErrPermissionDenied || r.Text != "本项目是一个用于演示与测试的基础示例项目（Demo）。\n" || !reflect.DeepEqual(r.Denied, []string{"command"}) {
+		t.Fatalf("read probe denial: %+v", r)
+	}
+}
+
+func TestAntigravityNativeAllowFixtures(t *testing.T) {
+	// 原生候选设置只放行 ls/pwd；两个样本分别覆盖读取成功和写入拒绝。
+	read := replayFixture(t, "antigravity", "native_allow_read_ok", 0)
+	if read.ErrorKind != ErrNone || read.Text == "" || len(read.Denied) != 0 || read.SessionID == "" {
+		t.Fatalf("native allow read: %+v", read)
+	}
+	write := replayFixture(t, "antigravity", "native_allow_write_checks", 0)
+	if write.ErrorKind != ErrPermissionDenied || !reflect.DeepEqual(write.Denied, []string{"write_file", "command"}) {
+		t.Fatalf("native allow writes: %+v", write)
+	}
+	redirect := replayFixture(t, "antigravity", "native_allow_ls_redirect_denied", 0)
+	if redirect.ErrorKind != ErrPermissionDenied || redirect.Text != "" || !reflect.DeepEqual(redirect.Denied, []string{"command"}) {
+		t.Fatalf("native allow redirect: %+v", redirect)
+	}
+}
+
 func TestAllDriversRegistered(t *testing.T) {
 	cfg := config.Default()
 	all := All(cfg)
@@ -65,7 +106,7 @@ func TestAntigravityBuild(t *testing.T) {
 	}{
 		{"read", Invocation{Prompt: "hi", Workdir: "/w", Permission: api.PermRead},
 			[]string{"--output-format", "stream-json", "--print-timeout", "0", "--sandbox", "--settings",
-				`{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"deny":["write_file(*)","command(*)","mcp(*)"]}}`, "--print", "hi"}},
+				`{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"allow":["command(ls)","command(pwd)"],"ask":[],"deny":["write_file(*)","mcp(*)"]}}`, "--print", "hi"}},
 		{"write all options", Invocation{Prompt: "p", Workdir: "/w", Permission: api.PermWrite, Model: "m", SchemaFile: "/s.json", AddDirs: []string{"/in"}},
 			[]string{"--output-format", "stream-json", "--print-timeout", "0", "--dangerously-skip-permissions", "--sandbox",
 				"--model", "m", "--json-schema", "/s.json", "--add-dir", "/in", "--print", "p"}},
@@ -73,7 +114,7 @@ func TestAntigravityBuild(t *testing.T) {
 			[]string{"--output-format", "stream-json", "--print-timeout", "0", "--dangerously-skip-permissions", "--print", "p"}},
 		{"resume", Invocation{Prompt: "p", Workdir: "/w", Permission: api.PermRead, SessionID: "sid"},
 			[]string{"--output-format", "stream-json", "--print-timeout", "0", "--sandbox", "--settings",
-				`{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"deny":["write_file(*)","command(*)","mcp(*)"]}}`, "--conversation", "sid", "--print", "p"}},
+				`{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"allow":["command(ls)","command(pwd)"],"ask":[],"deny":["write_file(*)","mcp(*)"]}}`, "--conversation", "sid", "--print", "p"}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

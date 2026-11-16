@@ -18,7 +18,16 @@ func TestExecuteParallel(t *testing.T) {
 	p := api.Plan{Steps: []api.Step{{ID: "a", Kind: api.KindAsk, Agent: "codex"}, {ID: "b", Kind: api.KindAsk, Agent: "codex"}}}
 	start := time.Now()
 	r := Execute(context.Background(), e, p)
-	if r.Status != api.StatusCompleted || len(r.Steps) != 2 || time.Since(start) >= 900*time.Millisecond {
+	started0, err0 := os.Stat(os.Getenv("XCLI_FAKE_STATE") + "/codex-0.pid")
+	started1, err1 := os.Stat(os.Getenv("XCLI_FAKE_STATE") + "/codex-1.pid")
+	if err0 != nil || err1 != nil {
+		t.Fatalf("fake process start: %v %v", err0, err1)
+	}
+	delta := started1.ModTime().Sub(started0.ModTime())
+	if delta < 0 {
+		delta = -delta
+	}
+	if r.Status != api.StatusCompleted || len(r.Steps) != 2 || delta >= 400*time.Millisecond {
 		t.Fatalf("parallel: elapsed=%s result=%+v", time.Since(start), r)
 	}
 }
@@ -30,6 +39,22 @@ func TestExecuteDependencyHandoff(t *testing.T) {
 	prompt, _ := os.ReadFile(e.Task.Path("steps", "b-r1", "prompt.md"))
 	if r.Status != api.StatusCompleted || r.Summary != "terminal result" || !strings.Contains(string(prompt), "upstream result") {
 		t.Fatalf("handoff: %+v, prompt=%s", r, prompt)
+	}
+}
+
+func TestExecuteRetainsImageWhenReadStepDenied(t *testing.T) {
+	e := stepEnv(t, testutil.FakeScript{
+		"agy":   {{Stdout: []string{`{"event":"result","result":{"status":"SUCCESS","response":"","denied_actions":[{"action":"read_file","display_name":"ReadFile"}]}}`}}},
+		"codex": {{Stdout: codexOK(`{"files":[]}`), WritePNG: "{{OUT}}/cover.png"}},
+	}, api.Request{})
+	p := api.Plan{Steps: []api.Step{
+		{ID: "intro", Kind: api.KindAsk, Agent: "antigravity"},
+		{ID: "cover", Kind: api.KindImage, Agent: "codex"},
+		{ID: "apply", Kind: api.KindCode, Agent: "cursor", DependsOn: []string{"intro", "cover"}},
+	}}
+	r := Execute(context.Background(), e, p)
+	if r.Status != api.StatusFailed || r.Error == nil || r.Error.Kind != "permission_denied" || len(r.Artifacts) != 1 || r.Artifacts[0].MIME != "image/png" || r.Steps[1].Status != api.StatusCompleted || r.Steps[2].Status != api.StatusSkipped || len(testutil.FakeCalls(t)) != 2 {
+		t.Fatalf("read denial: %+v", r)
 	}
 }
 

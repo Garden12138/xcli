@@ -22,7 +22,7 @@ func TestProbeArgs(t *testing.T) {
 		{"codex", "ask_ok", "", []string{"exec", "--json", "--skip-git-repo-check", "-C", "/repo", "-s", "read-only", "--", "用一句话说明 add.go 中 Add 函数的作用。"}},
 		{"codex", "resume_ok", "sid", []string{"exec", "resume", "--json", "--skip-git-repo-check", "-c", `sandbox_mode="read-only"`, "--", "sid", "我上一个问题问的是哪个函数？只回答函数名。"}},
 		{"cursor", "write_ok", "", []string{"-p", "--output-format", "stream-json", "--trust", "--workspace", "/repo", "--force", "--sandbox", "enabled", "在当前目录创建 hello.txt，内容为 hi，不要做其他修改。"}},
-		{"antigravity", "schema_ok", "", []string{"--output-format", "stream-json", "--print-timeout", "0", "--sandbox", "--settings", `{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"deny":["write_file(*)","command(*)","mcp(*)"]}}`, "--json-schema", "/schema.json", "--print", "你正在被 xcli 调度执行只读任务。请直接完成，用中文回复；使用 view_file、list_dir、find_by_name、grep_search 等内置只读工具读取文件，不要调用 run_command，不要修改文件，不要制定实现计划，不要请求确认。用一句话说明 add.go 的作用，按 JSON Schema 输出。"}},
+		{"antigravity", "schema_ok", "", []string{"--output-format", "stream-json", "--print-timeout", "0", "--sandbox", "--settings", `{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"allow":["command(ls)","command(pwd)"],"ask":[],"deny":["write_file(*)","mcp(*)"]}}`, "--json-schema", "/schema.json", "--print", "你正在被 xcli 调度执行只读任务。请直接完成，用中文回复；使用 view_file、list_dir、find_by_name、grep_search 等内置只读工具读取文件，不要调用 run_command，不要修改文件，不要制定实现计划，不要请求确认。用一句话说明 add.go 的作用，按 JSON Schema 输出。"}},
 	} {
 		t.Run(tc.agent+"/"+tc.name, func(t *testing.T) {
 			got := probeArgs(tc.agent, tc.name, "/repo", "/out", "/schema.json", tc.sid)
