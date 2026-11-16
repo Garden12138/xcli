@@ -934,7 +934,7 @@ func All(cfg config.Config) map[string]Driver                  // 为全部已�
 func ClassifyText(stderrTail string, text string) ErrorKind    // 通用关键词：auth / quota / trust
 ```
 
-- [ ] **步骤 1：写参数拼装测试（codex）**
+- [x] **步骤 1：写参数拼装测试（codex）**
 
 ```go
 func TestCodexBuild(t *testing.T) {
@@ -970,7 +970,7 @@ func TestCodexBuild(t *testing.T) {
 
 如果任务 2 的实测要求改映射，以 `driver-notes.md` 为准修改期望值，并在测试旁边注释引用对应小节。续接时 `AddDirs` 被忽略（codex resume 不支持）。
 
-- [ ] **步骤 2：写解析测试（codex）**
+- [x] **步骤 2：写解析测试（codex）**
 
 用 `internal/driver/testdata/codex/` 中的样本（找不到真实样本时读 `synthetic-` 版本）：
 - `ask_ok`：`Text` 非空，`SessionID` 非空，`ErrorKind == ErrNone`，Usage 的 input/output 非零（样本里有 usage 时）。
@@ -1012,7 +1012,7 @@ func TestCodexParserEdgeCases(t *testing.T) {
 }
 ```
 
-- [ ] **步骤 3：写分类测试**
+- [x] **步骤 3：写分类测试**
 
 `TestClassifyText` 表驱动：`"Not logged in. Run codex login"` → auth；`"401 Unauthorized"` → auth；`"429 Too Many Requests"`、`"rate limit exceeded"`、`"quota exceeded"` → quota；`"Workspace Trust Required"` → trust；`"something else"` → ErrNone。`TestSwitchable`：auth / quota / trust / not_installed 对所有 kind 为 true；no_artifact 只对 `KindImage` 为 true；permission_denied、timeout、schema_mismatch 为 false。
 
@@ -1020,16 +1020,16 @@ func TestCodexParserEdgeCases(t *testing.T) {
 go test ./internal/driver/ -race     # 期望失败
 ```
 
-- [ ] **步骤 4：实现**
+- [x] **步骤 4：实现**
 
 要点：
 - 参数顺序严格按测试；`ExtraArgs` 放在 `--` 之前。
 - 解析器：`thread.started` → session 事件；`item.completed` 且 `item.type == "agent_message"` → 记录为最终文本并产生 message 事件；其他 `item.*` 中带 `command` 或工具名的产生 tool 事件；`turn.completed` → 结束，读取 usage；`error` 匹配 `^Reconnecting\.\.\. \d+/\d+` → notice；其余 `error` 或 `turn.failed` → 失败，先判断额度（`usage_limit_exceeded`、`quota_exceeded`、"hit your usage limit"），再用 `ClassifyText` 判断，都不是则为 `ErrFailed`。
-- `Finish`：没有结束事件 → `ErrProtocol`；`exitCode != 0` 且尚无错误 → `ClassifyText(stderrTail, "")`，仍无结果则为 `ErrFailed`；错误信息用中文写清楚，并给出下一步建议（例如 auth："请在终端运行 codex login 登录后重试"）。
+- `Finish`：原生错误事件优先；`exitCode != 0` 且尚无错误 → `ClassifyText(stderrTail, "")`，仍无结果则为 `ErrFailed`；没有明确运行错误且缺少结束事件 → `ErrProtocol`。按 02 第 4.4 节优先识别 stderr 中的 auth/quota，保证原生 CLI 在认证失败时只写 stderr 也能触发切换。错误信息用中文给出下一步建议（例如 auth："请在终端运行 codex login 登录后重试"）。
 - `Probe`：`<exe> --version`（5 秒超时）取最后一个非空行作为版本；`<exe> login status` 退出码 0 → `ok`，非 0 → `missing`，执行失败 → `unknown`。
 - `NativeSchema()` 返回 true。
 
-- [ ] **步骤 5：运行测试并提交**
+- [x] **步骤 5：运行测试并提交**
 
 ```bash
 go test ./internal/driver/ -race -v

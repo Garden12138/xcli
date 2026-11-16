@@ -180,7 +180,7 @@ type Parser interface {
 
 Antigravity 显式 deny 规则命中时，`denied_actions` 可能为空：读取 `step_update.state == "ERROR"` 下的 `tool_info.error.message`，匹配 `permission check failed` 或 `Permission denied`。`tool_name=write_file` 映射到 Denied 的 `write_file`，`run_command` 映射到 `command`；只记录明确的权限拒绝，其他可恢复工具错误继续由原生 CLI 处理。
 
-进度事件归一化成 `message`（助手文本片段）、`tool`（工具名）、`notice`（重连等），只用于展示，不影响结果判定。没有结束标志时判 `protocol` 错误。
+进度事件归一化成 `message`（助手文本片段）、`tool`（工具名）、`notice`（重连等），只用于展示，不影响结果判定。运行错误先按 4.4 分类；没有明确运行错误且缺少结束标志时判 `protocol` 错误。
 
 ### 4.4 错误分类
 
