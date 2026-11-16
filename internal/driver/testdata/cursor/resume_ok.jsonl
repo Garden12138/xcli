@@ -1,0 +1,7 @@
+{"type":"system","subtype":"init","apiKeySource":"login","cwd":"/TMP/repo","session_id":"d66f83b8-0f2d-4f64-a16e-6aed571f6ff1","model":"Auto","permissionMode":"default"}
+{"type":"user","message":{"role":"user","content":[{"type":"text","text":"我上一个问题问的是哪个函数？只回答函数名。"}]},"session_id":"d66f83b8-0f2d-4f64-a16e-6aed571f6ff1"}
+{"type":"thinking","subtype":"delta","text":"The","session_id":"d66f83b8-0f2d-4f64-a16e-6aed571f6ff1","timestamp_ms":1794795972554}
+{"type":"thinking","subtype":"delta","text":" user is asking which function they asked about in their previous question.\n\nAdd","session_id":"d66f83b8-0f2d-4f64-a16e-6aed571f6ff1","timestamp_ms":1794795976080}
+{"type":"thinking","subtype":"completed","session_id":"d66f83b8-0f2d-4f64-a16e-6aed571f6ff1","timestamp_ms":1794795976081}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Add"}]},"session_id":"d66f83b8-0f2d-4f64-a16e-6aed571f6ff1"}
+{"type":"result","subtype":"success","duration_ms":7602,"duration_api_ms":7602,"is_error":false,"result":"Add","session_id":"d66f83b8-0f2d-4f64-a16e-6aed571f6ff1","request_id":"b0f9950f-78ba-47b3-bc76-2b63c56913b6","usage":{"inputTokens":240,"outputTokens":38,"cacheReadTokens":13696,"cacheWriteTokens":0,"reasoningTokens":37}}

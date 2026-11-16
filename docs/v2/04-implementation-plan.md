@@ -193,7 +193,7 @@ git add -A && git commit -m "chore: reset v2 branch to minimal skeleton"
 **接口：**
 - 产出：每个 CLI 的样本文件，供任务 7、8 的解析测试使用，文件名固定为：`ask_ok`、`schema_ok`、`resume_ok`、`write_ok`、`image_ok`、`error_bad_model`（后缀 `.jsonl` 为 stdout，`.stderr` 为 stderr）。
 
-- [ ] **步骤 1：写实测程序**
+- [x] **步骤 1：写实测程序**
 
 `scripts/probe/main.go`（`package main`，不超过 300 行）。用法：`go run ./scripts/probe -agent codex -out internal/driver/testdata`。逻辑：
 
@@ -210,12 +210,12 @@ git add -A && git commit -m "chore: reset v2 branch to minimal skeleton"
 | `image_ok` | write | 按 02 架构文档第 11 节的生图约定：使用该 CLI 的内置生图能力，生成一张"米白背景上的绿色植物插画，方形，无文字"，保存到 `<out>/image_ok-1.<ext>`，最终回复 `{"files":["<绝对路径>"]}` |
 | `error_bad_model` | read | 与 `ask_ok` 相同，但加上模型参数 `nonexistent-model-xyz` |
 
-3. 每个用例记录：argv、耗时、退出码，stdout 写入 `<agent>/<case>.jsonl`，stderr 写入 `<agent>/<case>.stderr`。写入前把字符串中的 `$HOME` 替换成 `/HOME`、临时目录替换成 `/TMP`。
+3. 每个用例记录：argv、耗时、退出码，stdout 写入 `<agent>/<case>.jsonl`，stderr 写入 `<agent>/<case>.stderr`。写入前把字符串中的 `$HOME` 替换成 `/HOME`、临时目录及其规范路径替换成 `/TMP`，原生 `CODEX_HOME` 替换成 `/CODEX_HOME`。
 4. 会话 ID 从 stdout 中按 02 架构文档 4.3 节的字段提取（codex `thread_id`、cursor `session_id`、antigravity `conversation_id`），用于 `resume_ok`。
 5. `write_ok` 结束后检查 `repo/hello.txt` 是否存在；`image_ok` 结束后列出 `out/` 里的新文件，并在 `$HOME/.codex`、`$HOME/.gemini`、`$HOME/.cursor` 下查找 10 分钟内新建的图片文件（最多 3 层），把找到的路径打印出来。
 6. 每个用例超时 10 分钟。CLI 未安装时跳过并提示。
 
-- [ ] **步骤 2：征得用户同意后运行**
+- [x] **步骤 2：征得用户同意后运行**
 
 ```bash
 go run ./scripts/probe -agent codex -out internal/driver/testdata
@@ -223,12 +223,14 @@ go run ./scripts/probe -agent cursor -out internal/driver/testdata
 go run ./scripts/probe -agent antigravity -out internal/driver/testdata
 ```
 
-- [ ] **步骤 3：追加核实三个参数细节**（每项 1 次调用，同样需要同意）
+- [x] **步骤 3：追加核实三个参数细节**（每项 1 次调用，同样需要同意）
   - `codex exec resume ... -- <sid> <prompt>` 中的 `--` 能否被正确识别；
   - `cursor-agent` 位置参数前加 `--` 是否可用；
   - `agy --print-timeout 0` 是否表示不限时（`agy --help` 中写的是 "0 waits until the turn completes"，确认即可）。
 
-- [ ] **步骤 4：写 `docs/v2/driver-notes.md`**
+2026-11-16：Codex 的 `resume_ok` 已核实 `--`；另调用一次 Cursor 核实 `--`。Antigravity 的 help 已确认 timeout 语义，另调用一次 `--mode plan --sandbox` 核实只读适配问题。本轮共 20 次模型调用；行为差异详见 `driver-notes.md`。
+
+- [x] **步骤 4：写 `docs/v2/driver-notes.md`**
 
 每个 CLI 一节，包含：版本号；6 个用例实际使用的 argv；观察到的事件 `type` 列表；会话 ID、最终文本、用量分别在哪个字段；错误输出的格式（`error_bad_model` 的 stdout / stderr 关键行）；write 模式是否出现 `denied_actions` 或审批卡住；生成图片实际落在哪里（据此填写配置默认值 `artifact_dirs`）；需要修改 02 架构文档 4.2 节参数映射的地方。若映射需要改，同步修改 02 架构文档。
 
@@ -260,7 +262,7 @@ antigravity 合成样本示例：
 {"event":"result","result":{"conversation_id":"a-synthetic","status":"SUCCESS","response":"Add 返回两个整数之和。","usage":{"input_tokens":100,"output_tokens":10,"total_tokens":110}}}
 ```
 
-- [ ] **步骤 6：提交**
+- [x] **步骤 6：提交**
 
 ```bash
 git add scripts/probe internal/driver/testdata docs/v2
@@ -1078,7 +1080,9 @@ antigravity 期望：
 
 - [ ] **步骤 2：写解析测试**
 
-用样本文件测试 `ask_ok` / `schema_ok` / `resume_ok` / `error_bad_model`（规则同任务 7）。内联用例：
+Cursor 用样本文件测试 `ask_ok` / `schema_ok` / `resume_ok` / `error_bad_model`（规则同任务 7）；用量读取 `result.usage.inputTokens/outputTokens`。
+
+根据 2026-11-16 实测调整：Antigravity 的 `ask_ok`、`schema_ok` 录制了 plan 模式的 command 权限拒绝，期望 `ErrPermissionDenied`、`Denied == ["command"]`；`resume_ok` 期望文本 `Add` 且 SessionID 与 ask 一致；`image_ok` 优先读取 `result.structured_output`，Text 为包含 files 的合法 JSON；`error_bad_model` 从 `result.error` 识别失败。只读模式的适配问题见 `driver-notes.md`。内联用例：
 
 ```go
 // cursor：最后一条 assistant 消息胜出；result 的 subtype 非 success 判失败
@@ -1094,6 +1098,12 @@ antigravity 期望：
 // antigravity：denied_actions 非空时即使 SUCCESS 也判 permission_denied
 `{"event":"result","result":{"conversation_id":"a1","status":"SUCCESS","response":"ok","denied_actions":["run_command"]}}`
 // 期望 ErrorKind == ErrPermissionDenied，Denied == ["run_command"]，Text == "ok"
+
+`{"event":"result","result":{"conversation_id":"a1","status":"SUCCESS","response":"","denied_actions":[{"action":"command","display_name":"RunCommand"}]}}`
+// 期望 ErrorKind == ErrPermissionDenied，Denied == ["command"]
+
+`{"event":"result","result":{"conversation_id":"a1","status":"SUCCESS","response":"说明文字和 JSON","structured_output":{"files":["/out/a.jpg"]}}}`
+// 期望 Text == `{"files":["/out/a.jpg"]}`
 
 `{"event":"result","result":{"conversation_id":"a1","status":"ERROR","response":"quota exceeded"}}`
 // 期望 ErrorKind == ErrQuota

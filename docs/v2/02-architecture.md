@@ -119,7 +119,7 @@ type Parser interface {
 
 `Result` 包含最终文本、会话 ID、用量（若有）、`ErrorKind`、错误信息、被拒绝的工具动作列表。
 
-### 4.2 参数映射（初始版本，第 0 阶段实测后以 `driver-notes.md` 为准）
+### 4.2 参数映射（2026-11-16 实测，详见 `driver-notes.md`）
 
 **codex**（命令 `codex`）
 
@@ -146,25 +146,31 @@ type Parser interface {
 
 `--trust` 是必须的：不传时新目录会卡在工作区信任确认，历史实测因此全部 BLOCKED。默认权限是"工作区内可写"，信任调用方指定的工作区与该决定一致。
 
+2026-11-16 实测：Cursor 位置提示词之前加 `--` 也能正常执行；当前参数映射沿用表中形式。
+
 **antigravity**（命令 `agy`）
 
 | 场景 | 参数 |
 | --- | --- |
 | 公共部分 | `--output-format stream-json --print-timeout 0`，可选 `--model <model>`、`--json-schema <file>`、`--add-dir <dir>`，最后 `--print <prompt>`；cwd 设为 workdir |
-| read | `--mode plan` |
+| read | 初始映射 `--mode plan`；当前版本的 headless 行为见下方实测说明 |
 | write | `--dangerously-skip-permissions --sandbox` |
 | full | `--dangerously-skip-permissions` |
 | 续接 | 公共部分加 `--conversation <id>` |
 
 `--print-timeout 0` 表示不限时，由 xcli 自己控制超时（旧版硬编码 120 秒是长任务失败的原因之一）。print 模式没有人能点审批，write 模式必须自动批准，否则会出现 `denied_actions`；用 `--sandbox` 限制终端命令的范围。
 
+2026-11-16 实测：Antigravity 1.5.2 的 `--mode plan` 在读取文件时会触发 command 权限拒绝，结果仍可能是 `SUCCESS`、空正文和非空 `denied_actions`。增加 `--sandbox` 后能读取文件，但本次回复生成了实现计划并要求点击 Proceed 批准执行。此映射存在无交互只读任务的适配问题；同类任务可用 Codex 或 Cursor 完成，详见 `driver-notes.md`。
+
 ### 4.3 事件解析要点（来自旧版 `stream.go` 的经验）
 
 | CLI | 会话 ID | 最终文本 | 结束标志 | 失败信号 |
 | --- | --- | --- | --- | --- |
 | codex | `thread.started` 的 `thread_id` | 最后一个 `item.completed` 且 `item.type == "agent_message"` 的 `item.text` | `turn.completed`（带 usage） | `turn.failed`；`error` 事件——但匹配 `^Reconnecting\.\.\. n/m` 的是重连通知，不算失败；`usage_limit_exceeded` / `quota_exceeded` / "hit your usage limit" 归为 `quota` |
-| cursor | `system` 或 `result` 的 `session_id` | 最后一条 `assistant` 消息的 `message.content[].text`；`result.result` 兜底 | `type == "result"` | `result.subtype != "success"` 或 `is_error == true` |
-| antigravity | `step_update.conversation_id` / `result.conversation_id` | `result.response` | `event == "result"` | `result.status != "SUCCESS"`；`result.denied_actions` 非空时即使状态是 SUCCESS 也判为 `permission_denied` |
+| cursor | `system` 或 `result` 的 `session_id` | 最后一条 `assistant` 消息的 `message.content[].text`；`result.result` 兜底（实测会拼接中间说明） | `type == "result"` | `result.subtype != "success"` 或 `is_error == true`；错误模型也可能只输出 stderr 并非零退出 |
+| antigravity | `step_update.conversation_id` / `result.conversation_id` | 有 `result.structured_output` 时使用该 JSON，否则取 `result.response` | `event == "result"` | `result.status != "SUCCESS"`，错误详情在 `result.error`；`result.denied_actions` 非空时即使状态是 SUCCESS 也判为 `permission_denied` |
+
+用量：Codex 从 `turn.completed.usage.input_tokens/output_tokens` 提取；Cursor 从 `result.usage.inputTokens/outputTokens` 提取；Antigravity 从 `result.usage.input_tokens/output_tokens/total_tokens` 提取。Antigravity 的 `denied_actions` 实测为对象数组，元素含 `action`、`display_name`；驱动的 `Denied []string` 提取 `action`，同时兼容字符串元素。Antigravity 工具进度从 `step_update.tool_name` 和 `tool_info` 提取。
 
 进度事件归一化成 `message`（助手文本片段）、`tool`（工具名）、`notice`（重连等），只用于展示，不影响结果判定。没有结束标志时判 `protocol` 错误。
 
@@ -453,15 +459,19 @@ agents:
     max_concurrency: 2
     env: {}
     extra_args: []
-    artifact_dirs: []      # 该 CLI 默认保存生成图片的目录（第 0 阶段实测后填入默认值）
+    artifact_dirs: ["~/.codex/generated_images"]
     strengths: {code: 3, review: 2, ask: 2, image: 2, plan: 3}
   cursor:
     command: cursor-agent
+    artifact_dirs: ["~/.cursor/projects"]
     strengths: {code: 3, review: 3, ask: 2, image: 1, plan: 1}
   antigravity:
     command: agy
+    artifact_dirs: ["~/.gemini/antigravity-cli/brain"]
     strengths: {code: 2, review: 2, ask: 3, image: 3, plan: 2}
 ```
+
+`artifact_dirs` 来自第 0 阶段实测。原生环境变量 `CODEX_HOME` 非空时，Codex 默认目录改用该目录下的 `generated_images`；其余使用上面的常规路径。
 
 合并规则：用户配置逐字段覆盖默认值；`agents` 下出现的字段覆盖同名 agent 的对应字段；未知字段报错（YAML `KnownFields`）。`xcli config show` 输出生效后的配置。
 
