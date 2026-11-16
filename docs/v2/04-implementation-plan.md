@@ -1307,7 +1307,7 @@ func PlanSchema(agents []string, maxSteps int) []byte
 func ImageHint(agent string) string
 ```
 
-- [ ] **步骤 1：写模板**
+- [x] **步骤 1：写模板**
 
 所有模板第一行都是 `# xcli 任务`（保证提示词不以 `-` 开头），统一包含：
 
@@ -1316,7 +1316,7 @@ func ImageHint(agent string) string
 ```
 
 各模板的关键内容：
-- `ask.md`：只读，不要修改任何文件；列出输入文件路径；有 InlineSchema 时追加"最终回复只能是一个符合下面 JSON Schema 的 JSON 对象，不要包含解释或代码块标记"并附上 Schema。
+- `ask.md`：只读，保持文件原样；列出输入文件路径；有 InlineSchema 时追加"最终回复只能是一个符合下面 JSON Schema 的 JSON 值，请直接输出 JSON"并附上 Schema。
 - `code.md`：在工作目录中完成需求；完成后在最终回复中说明修改了哪些文件、为什么这样改、如何验证。
 - `fix.md`：说明这是第 N 轮修复，下面是验证失败的输出或审查意见；逐条处理，不采纳的说明理由；最终回复说明这轮改了什么。
 - `review.md`：只读审查，不要修改文件；给出原始需求、实现者总结、diff 文件路径（`DiffFile`）；只有确实影响正确性、安全或需求达成的问题才标 blocker / major；按审查 Schema 输出。
@@ -1327,7 +1327,7 @@ func ImageHint(agent string) string
 
 `ImageHint`：codex → `请使用你内置的图片生成工具（image_gen）生成图片。`；antigravity → `请调用内置的 image-generator 子代理生成图片（通过子代理调用，不要使用 --agent 参数）。`；cursor → `请使用内置的 GenerateImage 工具生成图片。`
 
-- [ ] **步骤 2：写测试**
+- [x] **步骤 2：写测试**
 
 - `TestRenderAskWithInlineSchema`：结果以 `# xcli 任务` 开头，包含 Schema 文本和输入路径。
 - `TestRenderFixUsedForRound2`：`Kind=code, Round=2, Feedback="go test failed"` → 包含"第 2 轮"和反馈文本。
@@ -1337,9 +1337,9 @@ func ImageHint(agent string) string
 - `TestBuiltinSchemasStrict`：遍历 `ReviewSchema()`、`ImageResultSchema()`、`PlanSchema([]string{"codex"}, 6)` 中的每个 object，断言都有 `additionalProperties:false`，且 `required` 覆盖全部 `properties` 键（这是 codex 严格模式的要求）。
 - `TestPlanSchemaAgentsEnum`：`PlanSchema([]string{"codex","cursor"}, 4)` 中 agent 的 enum 为 `["auto","codex","cursor"]`，`maxItems` 为 4。
 
-- [ ] **步骤 3：实现并提交**
+- [x] **步骤 3：实现并提交**
 
-`Validate` 和 `CheckSchema` 使用 `github.com/santhosh-tekuri/jsonschema/v6` 编译 Schema。`ExtractJSON`：先去掉代码块围栏，再找第一个 `{` 或 `[` 与最后一个对应的 `}` 或 `]`，用 `json.Valid` 判断。
+`Validate` 和 `CheckSchema` 使用 `github.com/santhosh-tekuri/jsonschema/v6` 编译 Schema。`ExtractJSON`：去掉外围代码块围栏后，先保留完整合法 JSON（包括标量与大整数）；带说明文字时，按 `{`/`[` 起点使用 JSON decoder 提取第一个有效对象或数组，保留字符串内的括号和原始数字精度。提示词要求只返回符合 Schema 的 JSON 值，支持 Schema 指定的对象、数组或标量。
 
 ```bash
 go get github.com/santhosh-tekuri/jsonschema/v6
