@@ -39,6 +39,9 @@ func newRootCommand() *cobra.Command {
 	root.InitDefaultVersionFlag()
 	root.CompletionOptions.DisableDefaultCmd = true
 	root.AddCommand(newAgentsCommand(), newConfigCommand())
+	root.AddCommand(taskCommands()...)
+	root.AddCommand(lifecycleCommands()...)
+	root.AddCommand(newWorkerCommand())
 	return root
 }
 

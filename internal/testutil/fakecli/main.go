@@ -55,6 +55,11 @@ func run(args []string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	// 测试直接读取子进程 PID，兼容无法枚举系统进程的运行环境。
+	pidFile := filepath.Join(os.Getenv("XCLI_FAKE_STATE"), fmt.Sprintf("%s-%d.pid", name, index))
+	if err := os.WriteFile(pidFile, []byte(strconv.Itoa(os.Getpid())), 0600); err != nil {
+		return 0, err
+	}
 	cwd, err := os.Getwd()
 	if err != nil {
 		return 0, err

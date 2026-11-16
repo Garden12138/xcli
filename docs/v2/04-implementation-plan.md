@@ -1604,6 +1604,7 @@ git add internal/orchestrator && git commit -m "feat(orchestrator): add router, 
 ### 任务 16：engine 与命令行
 
 **文件：**
+- 修改：`cmd/root.go`、`main.go`（按 03 第 1.3 节传递协议退出码）、`internal/testutil/fakecli/main.go`（测试 PID 文件）
 - 新建：`internal/engine/engine.go`、`internal/engine/normalize.go`、`internal/engine/lifecycle.go`
 - 新建：`cmd/request_flags.go`、`cmd/run.go`、`cmd/tasks.go`、`cmd/worker.go`、`cmd/output.go`
 - 测试：`internal/engine/engine_test.go`、`internal/engine/normalize_test.go`、`cmd/run_test.go`
@@ -1634,9 +1635,13 @@ func (e *Engine) Resume(parentID, instruction string) (api.Request, error)
 func (e *Engine) Apply(id string, removeWorktree bool) error
 func (e *Engine) GC(olderThan time.Duration) (int, error)
 func InvalidResult(err error) api.Result // status=invalid，error.kind=invalid_request
+
+// cmd/output.go：main.go 根据 Code 退出；空 Message 表示结果已输出。
+type ExitError struct { Code int; Message string }
+func (e *ExitError) Error() string
 ```
 
-- [ ] **步骤 1：写 Normalize 测试**
+- [x] **步骤 1：写 Normalize 测试**
 
 `TestNormalize` 表驱动：
 - 默认值：`{"goal":"x"}` → capability auto、permission write、version 1。
@@ -1647,7 +1652,7 @@ func InvalidResult(err error) api.Result // status=invalid，error.kind=invalid_
 - `schema_file` 被读入 `Schema` 并清空 `schema_file`；不合法的 Schema 报错（`recipe.CheckSchema`）。
 - `timeout_sec == 0` 时取配置的 task_timeout。
 
-- [ ] **步骤 2：写 engine 测试（fakecli）**
+- [x] **步骤 2：写 engine 测试（fakecli）**
 
 - `TestEngineRunAsk`：Create + Run → Result `completed`；`task.json` 中保存了 Result；`events.jsonl` 第一条是 `task.started`、最后一条是 `task.finished`，中间有 `plan.ready`。
 - `TestEnginePlanOnly`：`plan_only=true` → 状态 `planned`，fakecli 没有被调用。
@@ -1657,7 +1662,7 @@ func InvalidResult(err error) api.Result // status=invalid，error.kind=invalid_
 - `TestEngineResume`：父任务是 image 任务且有一张图 → `Resume(parent, "改成蓝色")` 返回的 Request：capability image、agent 为父任务最后一步的 agent、images 包含父任务的图片、output_dir 与父任务相同、`parent_task` 已设置；运行后 fakecli 的参数包含父任务的会话 ID（codex `resume`）。
 - `TestEngineGC`：结束 8 天的任务被删除，运行中的任务保留。
 
-- [ ] **步骤 3：实现 engine**
+- [x] **步骤 3：实现 engine**
 
 要点：
 - `New`：`config.Load`、`store.Open`、`health.Open`、`driver.All`、`proc.SearchPath(cfg.Path, <home>/cache/env.json)`。
@@ -1670,13 +1675,15 @@ func InvalidResult(err error) api.Result // status=invalid，error.kind=invalid_
   6. 填 Result 的 TaskID、Capability、Plan、Metadata、时间；ctx 被取消时 status 为 cancelled；
   7. `Update` 写入 Result 和最终状态；发 `task.finished`（data 为 Result）。
   - 通过 `Env.Sink` 将每个持久化后的事件交给 sink；engine 自身事件也走相同的串行发出路径。
+- 测试先于实现；额外覆盖真实 xcli 进程的 0/1/2/3 退出码、等待超时保留任务、任务超时、隔离改动的 apply/GC、续接跳过未执行步骤。取消测试读取 fakecli 写入的 `<XCLI_FAKE_STATE>/<name>-<n>.pid`，再用 `kill(pid, 0)` 核验退出，兼容无法枚举系统进程的环境。
+- `Detach` 启动失败时保存 failed Result 和 `task.finished`，供 status/wait 查询。
 - `Detach`：可执行文件取 `XCLI_SELF` 环境变量，否则 `os.Executable()`；`exec.Command(self, "--home", e.Home, "__worker", id)`，`SysProcAttr{Setsid: true}`，stdin 为 `/dev/null`，stdout/stderr 写 `worker.log`；`Start` 后 `Release`。
 - `Cancel`：读 PID，向它发 SIGTERM；任务已结束时返回提示"任务已结束"。worker 和前台命令都用 `signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)` 把信号转成 ctx 取消。
 - `Status`：running 且 `syscall.Kill(pid, 0)` 失败 → 写入 failed + worker_lost。
 - `Wait`：每 500ms 调用一次 `Status`，直到状态结束。
 - `GC`：删除结束时间早于阈值的任务；如果任务有 worktree，先 `workspace.RemoveWorktree`。
 
-- [ ] **步骤 4：实现命令**
+- [x] **步骤 4：实现命令**
 
 - `request_flags.go`：按 03 接口规范 1.2 节定义参数，`func (f *requestFlags) Request(cap api.Capability, goal string) api.Request`；`--model codex=gpt-5.5` 解析成 map；`--review` / `--no-review` 都没给时 `Review == nil`。
 - `run.go`：`do`、`plan`（设置 `PlanOnly`）、`ask`、`code`、`review`、`image` 共用一个构造函数；goal 取全部位置参数用空格拼接。`submit --request <file|->` 解析 JSON（`DisallowUnknownFields`），之后的流程与其他命令相同；命令行参数不覆盖 JSON。
@@ -1685,7 +1692,7 @@ func InvalidResult(err error) api.Result // status=invalid，error.kind=invalid_
 - `tasks.go`：`status`（人类可读摘要，`--json` 输出 Record）、`wait`（`--timeout`，超时退出码 1 但不取消任务）、`logs`（`-f` 跟随，`--after N`）、`result`、`cancel`、`list`（表格：ID、状态、能力、目标前 40 字、创建时间；`--json`）、`resume <id> <指令…>`（同样支持 `--json` / `--events` / `--detach`）、`apply <id> [--remove-worktree]`、`gc --older-than 7d`。
 - `worker.go`：隐藏命令 `__worker <id>`：Load 任务后 Run，sink 为 nil。
 
-- [ ] **步骤 5：写命令行测试**
+- [x] **步骤 5：写命令行测试**
 
 `cmd/run_test.go`：设置 `XCLI_HOME=t.TempDir()`，写入 `config.yaml`（`path: <fake 目录>:/bin:/usr/bin`），通过 `newRootCommand()` + `SetArgs` + 捕获 stdout 执行：
 - `ask hello --json` → stdout 是合法 JSON，`status == "completed"`。
@@ -1693,7 +1700,7 @@ func InvalidResult(err error) api.Result // status=invalid，error.kind=invalid_
 - `ask --json`（缺少 goal）→ status invalid，退出码 2。
 - `code fix -C <非 git 临时目录> --no-review --json` → completed，`changes.files` 非空。
 
-- [ ] **步骤 6：手动冒烟（真实 CLI，征得用户同意，约 2 次调用）**
+- [x] **步骤 6：手动冒烟（真实 CLI，征得用户同意，约 2 次调用）**
 
 ```bash
 go build -o bin/xcli .
@@ -1701,7 +1708,9 @@ go build -o bin/xcli .
 ./bin/xcli ask "用一句话介绍你自己" -a antigravity
 ```
 
-- [ ] **步骤 7：提交**
+2026-11-16：用户批准的两次冒烟均为 completed：独立临时 home、未写配置；默认路由选择 Antigravity，指定 Antigravity 的人类可读输出也成功；事件序号连续、结束事件携带 Result。两次均加 `--no-fallback` 控制调用次数。
+
+- [x] **步骤 7：提交**
 
 ```bash
 go test ./... -race
