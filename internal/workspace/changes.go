@@ -82,6 +82,9 @@ func (w *Workspace) Changes(patchPath string) (*api.Changes, error) {
 		return nil, err
 	}
 	changes := &api.Changes{Workdir: w.Dir, Isolation: w.Isolation, Branch: w.Branch, Files: []string{}}
+	if changes.Isolation == "temp" {
+		changes.Isolation = "none"
+	}
 	files := map[string]bool{}
 	if !w.Git {
 		now, err := snapshot(w.Dir)

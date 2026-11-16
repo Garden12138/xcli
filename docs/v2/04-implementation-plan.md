@@ -1470,6 +1470,7 @@ type Env struct {
 	LockDir       string      // <home>/locks
 	ResumeSession string      // resume 时第一个步骤续接的会话
 	Now           func() time.Time
+	Sink          func(api.Event) // 内部事件回调；与持久化按 seq 串行执行
 }
 
 type StepOutcome struct {
@@ -1490,7 +1491,7 @@ func (e *Env) invoke(ctx context.Context, agent string, stepID string, round int
 func (e *Env) RunStep(ctx context.Context, s api.Step, agent string, up []recipe.Handoff) StepOutcome
 ```
 
-- [ ] **步骤 1：写测试（全部使用 fakecli）**
+- [x] **步骤 1：写测试（全部使用 fakecli）**
 
 每个测试：`pathList := testutil.InstallFakeCLIs(t, script)`；`cfg := config.Default(); cfg.Path = pathList`；用 `store.Open(t.TempDir())` 创建任务；`workspace.Prepare` 准备工作区；构造 `Env`。
 
@@ -1505,7 +1506,7 @@ func (e *Env) RunStep(ctx context.Context, s api.Step, agent string, up []recipe
 - `TestRunStepCodeMaxRounds`：verify 永远失败，`max_fix_rounds = 1` → 状态 `needs_attention`，`Rounds == 2`。
 - `TestRunStepTimeout`：fakecli 休眠 5 秒，`step_timeout = 300ms` → `Error.Kind == "timeout"`。
 
-- [ ] **步骤 2：实现**
+- [x] **步骤 2：实现**
 
 要点：
 - `invoke`：
@@ -1513,18 +1514,21 @@ func (e *Env) RunStep(ctx context.Context, s api.Step, agent string, up []recipe
   2. `proc.LookPath(driver.Command(), PathList)`，找不到 → `ErrNotInstalled`；
   3. `Invocation.Model` 优先取 `Req.Models[agent]`，再取配置的 model；`ExtraArgs` 取配置；`Network` 取 `cfg.Defaults.Network`；
   4. `proc.Run`，超时取 `cfg.Defaults.StepTimeout`；stdout 每一行交给 Parser，Parser 返回的 message / tool 事件转成 `step.progress`（文本截断到 500 字）；
-  5. 把 prompt、stdout、stderr、`result.json` 写进 `StepDir(stepID, round)`；
+  5. 把 prompt、stdout、stderr、`result.json` 写进 `StepDir(stepID, round)`；code 循环中的 review 使用该目录的 `review/` 子目录，保留实现者和审查者各自的日志；原生 Schema 文件放在实际调用目录的 `schema.json`，确保并行步骤各自使用对应 Schema；
   6. Outcome 中的超时和取消优先于 Parser 结果；
   7. 结果为 auth / quota 时调用 `Health.Cooldown`。
+  8. Codex 用户 Schema 先检查严格模式兼容性；普通 Schema 直接使用提示词约束。原生 Schema 被明确拒绝时，保留 `schema-failed-*` 日志并重试一次提示词约束；续接失效则保留 `resume-failed-*` 日志。
 - `RunStep` 按 kind 分派：
-  - ask：权限固定 read；Schema 来自 `Req.Schema`（写到 `<task>/schema.json`）；驱动有原生 Schema 时传 `SchemaFile`，否则用 `InlineSchema`；拿到文本后 `ExtractJSON` + `Validate`，失败则在同一会话中发一次修正请求（提示词："你上一次的输出不符合 JSON Schema，错误如下：…… 请只输出修正后的 JSON。"），仍失败则 `schema_mismatch`。
+  - ask：权限固定 read；Schema 来自 `Req.Schema`（写到本次调用目录的 `schema.json`）；驱动有原生 Schema 时传 `SchemaFile`，否则用 `InlineSchema`；拿到文本后 `ExtractJSON` + `Validate`，失败则在同一会话中发一次修正请求（提示词："你上一次的输出不符合 JSON Schema，错误如下：…… 请只输出修正后的 JSON。"），仍失败则 `schema_mismatch`。
   - image：输出目录 = `Req.OutputDir`（多步骤时加 `/<step.Output 或 step.ID>`），否则 `<task>/out/<step.ID>`；不在工作目录内时加入 `AddDirs`；codex 把参考图放进 `Images`，其他 CLI 把参考图所在目录加入 `AddDirs`；有原生 Schema 时用 `ImageResultSchema`；然后 `artifact.CollectImages`，每张图发一个 `artifact` 事件。
   - review：权限 read，审查 Schema；审查对象为工作目录。独立的 review 步骤（不是 code 循环里的审查）在 git 仓库中把 `git diff HEAD` 写进 `review.diff` 供审查者参考。
   - code：按 02 架构文档 6.5 节实现循环。第 1 轮之前调用 `WS.Baseline()`；每轮之后调用 `WS.Changes(<task>/changes.patch)`；修复轮续接同一会话，续接失败（ErrorKind 为 protocol / failed 且 stderr 包含 "session" 或 "not found"）时开新会话，提示词附上原需求和上一轮总结；`review_by == "auto"` 时用 Router 选审查者（Router 在任务 15 实现，本任务先只支持显式指定 agent 名，`auto` 时取 `cfg.Agents` 中 review 分数最高、且不是当前 agent 的已安装 CLI）；`ReviewBy == nil` 时不审查。
   - `Env.ResumeSession` 非空时，第一个步骤的第 1 轮用它续接。
+- `Env.Sink` 将持久化后的事件交给 engine/cmd，使用 Env 内部共享锁保证并行调用时的序号和回调顺序；这属于编排上下文，Request/Result/Event 字段沿用协议 v1。
+- 上游产物位于工作区之外时，把其所在目录加入 `AddDirs`。验证命令继承生效的 PATH，`VerifyResult.command` 保持调用方的原始命令；临时工作目录的 `Changes.isolation` 按 03 输出 `none`。
 - 每一轮发出 `step.started`（data 含 round）、`verify.result`、`review.result`；步骤结束发 `step.finished`。
 
-- [ ] **步骤 3：运行测试并提交**
+- [x] **步骤 3：运行测试并提交**
 
 ```bash
 go test ./internal/orchestrator/ -race -v
@@ -1664,7 +1668,7 @@ func InvalidResult(err error) api.Result // status=invalid，error.kind=invalid_
   5. `orchestrator.Execute`；
   6. 填 Result 的 TaskID、Capability、Plan、Metadata、时间；ctx 被取消时 status 为 cancelled；
   7. `Update` 写入 Result 和最终状态；发 `task.finished`（data 为 Result）。
-  - 每个事件同时写 store 和调用 sink。
+  - 通过 `Env.Sink` 将每个持久化后的事件交给 sink；engine 自身事件也走相同的串行发出路径。
 - `Detach`：可执行文件取 `XCLI_SELF` 环境变量，否则 `os.Executable()`；`exec.Command(self, "--home", e.Home, "__worker", id)`，`SysProcAttr{Setsid: true}`，stdin 为 `/dev/null`，stdout/stderr 写 `worker.log`；`Start` 后 `Release`。
 - `Cancel`：读 PID，向它发 SIGTERM；任务已结束时返回提示"任务已结束"。worker 和前台命令都用 `signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)` 把信号转成 ctx 取消。
 - `Status`：running 且 `syscall.Kill(pid, 0)` 失败 → 写入 failed + worker_lost。

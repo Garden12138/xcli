@@ -435,7 +435,8 @@ macOS 上从 Dock 启动的桌面应用不会继承终端里的 PATH，xcli 和�
     out/<step-id>/             默认产物目录
     worktree/                  isolate 时的 git worktree
     changes.patch              代码改动
-    steps/<step-id>-r<round>/  prompt.md、stdout.jsonl、stderr.log、result.json、verify-<k>.log、review.diff
+    steps/<step-id>-r<round>/  prompt.md、schema.json、stdout.jsonl、stderr.log、result.json、verify-<k>.log、review.diff
+      review/                  代码循环中审查者的 prompt、schema、stdout、stderr、result
 ```
 
 任务 ID 格式：`t-20261113-170102-a3f9`（时间 + 4 位随机十六进制）。`xcli gc --older-than 7d` 清理已结束的旧任务（会先删除对应的 worktree 和 `xcli/<task-id>` 分支）。
