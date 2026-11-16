@@ -70,7 +70,7 @@ cursor-agent -p --output-format stream-json --trust --workspace /TMP/repo --mode
 
 版本：`1.5.2`。
 
-- 六个基线用例均已录制。`ask_ok`、`schema_ok`、`resume_ok`、`write_ok`、`image_ok` 进程退出 0；错误模型退出 1。ask/schema 的原生结果携带权限拒绝，驱动应返回 `permission_denied`。
+- 当前 `ask_ok/schema_ok/resume_ok` 采用追加实测验证的会话级只读设置，三者均直接完成且退出 0；`write_ok/image_ok` 也完成，错误模型退出 1。初始 plan 模式的权限失败保存在 `error_plan_permission`，原始六组基线样本还可从提交 `2c774a7` 查看。
 - 会话 ID：`step_update.conversation_id`、`result.conversation_id`；续接成功并回复 `Add`。
 - 最终文本：普通结果在 `result.response`；有原生 Schema 时优先使用 `result.structured_output`。image 的 response 包含一段解释和 JSON，structured_output 则是完整 `{"files":[...]}` 对象。
 - 结束：`event=result`；正常状态为 `result.status=SUCCESS`。用量：`result.usage.input_tokens`、`output_tokens`、`total_tokens`，另有 `thinking_tokens`、`cache_read_tokens`。
@@ -79,7 +79,7 @@ cursor-agent -p --output-format stream-json --trust --workspace /TMP/repo --mode
 - write、生图使用 `--dangerously-skip-permissions --sandbox`，均完成，没有出现 denied_actions。图片先保存到 `~/.gemini/antigravity-cli/brain/<conversation>/image_ok_1_<timestamp>.jpg`，再复制到 `/TMP/out/image_ok-1.jpg`。默认 `artifact_dirs` 使用 `~/.gemini/antigravity-cli/brain`。
 - `agy --help` 明确说明 `--print-timeout 0` 为 `0 waits until the turn completes`，沿用该映射。
 
-### 只读模式的实测问题
+### 初始 plan 模式的实测问题
 
 `--mode plan` 在 ask/schema 中尝试执行 `find . -name "add.go"`。headless 模式自动拒绝 command 权限；最终仍输出 SUCCESS、空正文：
 
@@ -95,9 +95,9 @@ stderr 提示 `no output produced`、`headless mode cannot prompt`。`denied_act
 agy --output-format stream-json --print-timeout 0 --mode plan --sandbox --print '用一句话说明 add.go 中 Add 函数的作用。'
 ```
 
-该调用退出 0，能读取文件，但最终回复“已针对任务制定了实现计划”并要求“点击 Proceed 批准执行”。`--mode plan --sandbox` 的当前行为需要交互确认。使用 `xcli ask -a codex` 或 `-a cursor` 可以直接完成同类只读任务。
+该调用退出 0，能读取文件，但最终回复“已针对任务制定了实现计划”并要求“点击 Proceed 批准执行”。后续六次实测确认了下方的默认模式与会话级权限方案。
 
-### 六个基线用例的 argv
+### 初始六个基线用例的 argv（历史样本）
 
 ```sh
 # ask_ok；耗时 11.045s；退出码 0
@@ -113,3 +113,41 @@ agy --output-format stream-json --print-timeout 0 --dangerously-skip-permissions
 # error_bad_model；耗时 5.69s；退出码 1
 agy --output-format stream-json --print-timeout 0 --mode plan --model nonexistent-model-xyz --print '用一句话说明 add.go 中 Add 函数的作用。'
 ```
+
+### 追加六次：会话级只读设置
+
+使用原生 `--sandbox --settings '<JSON>'`，settings 内容为：
+
+```json
+{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"deny":["write_file(*)","command(*)","mcp(*)"]}}
+```
+
+`agentMode` 空字符串为默认执行模式。提示词引导使用 `view_file/list_dir/find_by_name/grep_search` 等内置工具，直接完成任务。成功的读取在事件中显示为 `tool_name=read_file`。六次均检查了临时工作区的文件列表和 SHA-256，内容保持原样；检查持久 settings 后，会话级覆盖键和 deny 规则均未写入。
+
+| 用例 | 结果 | 文件变化 |
+| --- | --- | --- |
+| ask_ok | 直接说明 Add 作用 | 无 |
+| schema_ok | structured_output.answer 为中文说明 | 无 |
+| resume_ok | 同一 conversation_id，回复 Add | 无 |
+| error_write_denied | write_file 被显式 deny 规则拒绝 | 无，native-write.txt 未创建 |
+| error_command_denied | run_command 被显式 deny 规则拒绝 | 无，shell-write.txt 未创建 |
+| plan_ok | structured_output 包含 ask → review 两步计划 | 无 |
+
+两类显式规则拒绝的 result 仍为 SUCCESS，且没有 denied_actions；拒绝发生在 `step_update.state=ERROR` 的 `tool_info.error.message`：包含 `Permission denied`、`Matches user-configured deny rule`。因此驱动还要读取工具级明确权限错误，映射到 `permission_denied`，Denied 为 `write_file` 或 `command`。原生 CLI 在其他工具错误后可以自行恢复，解析器只对明确权限拒绝作这一处理。
+
+```sh
+# ask_ok；耗时 27.8s；退出码 0
+agy --output-format stream-json --print-timeout 0 --sandbox --settings '{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"deny":["write_file(*)","command(*)","mcp(*)"]}}' --print '你正在被 xcli 调度执行只读任务。请直接完成，用中文回复；使用 view_file、list_dir、find_by_name、grep_search 等内置只读工具读取文件，不要调用 run_command，不要修改文件，不要制定实现计划，不要请求确认。用一句话说明 /TMP/repo/add.go 中 Add 函数的作用。'
+# schema_ok；耗时 20.703s；退出码 0
+agy --output-format stream-json --print-timeout 0 --sandbox --settings '{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"deny":["write_file(*)","command(*)","mcp(*)"]}}' --json-schema /TMP/schema.json --print '你正在被 xcli 调度执行只读任务。请直接完成，用中文回复；使用 view_file、list_dir、find_by_name、grep_search 等内置只读工具读取文件，不要调用 run_command，不要修改文件，不要制定实现计划，不要请求确认。读取 add.go 并按指定 Schema 输出作用说明，answer 使用中文。'
+# resume_ok；耗时 23.341s；退出码 0
+agy --output-format stream-json --print-timeout 0 --sandbox --settings '{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"deny":["write_file(*)","command(*)","mcp(*)"]}}' --conversation df25ea9f-fc40-4bdd-a6b2-5e75c54888e8 --print '你正在被 xcli 调度执行只读任务。请直接完成，用中文回复；使用 view_file、list_dir、find_by_name、grep_search 等内置只读工具读取文件，不要调用 run_command，不要修改文件，不要制定实现计划，不要请求确认。我上一个问题问的是哪个函数？只回答函数名。'
+# write_denied；耗时 18.847s；退出码 0
+agy --output-format stream-json --print-timeout 0 --sandbox --settings '{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"deny":["write_file(*)","command(*)","mcp(*)"]}}' --print '这是临时测试目录中的权限负向验证。请使用 write_to_file 工具在当前目录创建 native-write.txt，内容为 native-write。不要使用命令行或其他替代工具，若权限拒绝则直接说明并停止。'
+# command_denied；耗时 31.653s；退出码 0
+agy --output-format stream-json --print-timeout 0 --sandbox --settings '{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"deny":["write_file(*)","command(*)","mcp(*)"]}}' --print '这是临时测试目录中的权限负向验证。请使用 run_command 执行 printf shell-write > shell-write.txt。不要使用文件编辑工具或其他替代方式，若权限拒绝则直接说明并停止。'
+# plan_ok；耗时 97.572s；退出码 0
+agy --output-format stream-json --print-timeout 0 --sandbox --settings '{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"deny":["write_file(*)","command(*)","mcp(*)"]}}' --json-schema /TMP/plan-schema.json --print '你正在被 xcli 调度执行只读任务。请直接完成，用中文回复；使用 view_file、list_dir、find_by_name、grep_search 等内置只读工具读取文件，不要调用 run_command，不要修改文件，不要制定实现计划，不要请求确认。请读取 add.go，为“说明 Add 函数作用并审查其实现”生成包含一个 ask 步骤与一个依赖该步骤的 review 步骤的 xcli 计划。只返回符合指定 Schema 的 JSON；生成这份 JSON 就完成本次任务。'
+```
+
+依据：[原生 settings Schema](https://antigravity.google/schemas/v1/settings.json)、[执行模式](https://antigravity.google/docs/cli/modes/)、[权限规则](https://antigravity.google/docs/permissions)。本节行为以追加六次实测为准。

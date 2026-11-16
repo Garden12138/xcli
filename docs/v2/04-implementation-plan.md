@@ -230,6 +230,8 @@ go run ./scripts/probe -agent antigravity -out internal/driver/testdata
 
 2026-11-16：Codex 的 `resume_ok` 已核实 `--`；另调用一次 Cursor 核实 `--`。Antigravity 的 help 已确认 timeout 语义，另调用一次 `--mode plan --sandbox` 核实只读适配问题。本轮共 20 次模型调用；行为差异详见 `driver-notes.md`。
 
+用户另行批准的六次 Antigravity 调用已完成：默认执行模式加会话级只读 settings，直接回答、Schema、续接、规划 JSON 均成功，原生写文件和终端命令被显式 deny 规则阻止。当前 `ask_ok/schema_ok/resume_ok` 使用这组新样本；追加 `error_plan_permission`、`error_write_denied`、`error_command_denied`、`plan_ok`（均含 `.jsonl/.stderr`）。只读参数、提示词和解析期望按 02 第 4.2/4.3 节更新；流式 `text_delta` 中的临时路径片段也要脱敏。
+
 - [x] **步骤 4：写 `docs/v2/driver-notes.md`**
 
 每个 CLI 一节，包含：版本号；6 个用例实际使用的 argv；观察到的事件 `type` 列表；会话 ID、最终文本、用量分别在哪个字段；错误输出的格式（`error_bad_model` 的 stdout / stderr 关键行）；write 模式是否出现 `denied_actions` 或审批卡住；生成图片实际落在哪里（据此填写配置默认值 `artifact_dirs`）；需要修改 02 架构文档 4.2 节参数映射的地方。若映射需要改，同步修改 02 架构文档。
@@ -1066,14 +1068,16 @@ antigravity 期望：
 
 ```go
 {"read", Invocation{Prompt: "hi", Workdir: "/w", Permission: api.PermRead},
-	[]string{"--output-format", "stream-json", "--print-timeout", "0", "--mode", "plan", "--print", "hi"}},
+	[]string{"--output-format", "stream-json", "--print-timeout", "0", "--sandbox", "--settings",
+		`{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"deny":["write_file(*)","command(*)","mcp(*)"]}}`, "--print", "hi"}},
 {"write all options", Invocation{Prompt: "p", Workdir: "/w", Permission: api.PermWrite, Model: "m", SchemaFile: "/s.json", AddDirs: []string{"/in"}},
 	[]string{"--output-format", "stream-json", "--print-timeout", "0", "--dangerously-skip-permissions", "--sandbox",
 		"--model", "m", "--json-schema", "/s.json", "--add-dir", "/in", "--print", "p"}},
 {"full", Invocation{Prompt: "p", Workdir: "/w", Permission: api.PermFull},
 	[]string{"--output-format", "stream-json", "--print-timeout", "0", "--dangerously-skip-permissions", "--print", "p"}},
 {"resume", Invocation{Prompt: "p", Workdir: "/w", Permission: api.PermRead, SessionID: "sid"},
-	[]string{"--output-format", "stream-json", "--print-timeout", "0", "--mode", "plan", "--conversation", "sid", "--print", "p"}},
+	[]string{"--output-format", "stream-json", "--print-timeout", "0", "--sandbox", "--settings",
+		`{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"deny":["write_file(*)","command(*)","mcp(*)"]}}`, "--conversation", "sid", "--print", "p"}},
 ```
 
 两个驱动都忽略 `Images`（参考图通过提示词里的路径和 `AddDirs` 传递，由 step runner 负责）。cursor 忽略 `SchemaFile` 和 `Network`。
@@ -1082,7 +1086,7 @@ antigravity 期望：
 
 Cursor 用样本文件测试 `ask_ok` / `schema_ok` / `resume_ok` / `error_bad_model`（规则同任务 7）；用量读取 `result.usage.inputTokens/outputTokens`。
 
-根据 2026-11-16 实测调整：Antigravity 的 `ask_ok`、`schema_ok` 录制了 plan 模式的 command 权限拒绝，期望 `ErrPermissionDenied`、`Denied == ["command"]`；`resume_ok` 期望文本 `Add` 且 SessionID 与 ask 一致；`image_ok` 优先读取 `result.structured_output`，Text 为包含 files 的合法 JSON；`error_bad_model` 从 `result.error` 识别失败。只读模式的适配问题见 `driver-notes.md`。内联用例：
+根据 2026-11-16 追加六次实测调整：Antigravity 当前 `ask_ok/schema_ok/resume_ok` 按任务 7 的成功规则断言，`resume_ok` 文本为 `Add` 且 SessionID 与 ask 一致；`image_ok` 优先读取 `result.structured_output`，Text 为包含 files 的合法 JSON；`error_bad_model` 从 `result.error` 识别失败。`error_plan_permission` 期望 `ErrPermissionDenied`、`Denied == ["command"]`；`error_write_denied`、`error_command_denied` 通过 `step_update` 中的明确权限错误返回 `ErrPermissionDenied`，Denied 分别为 `["write_file"]`、`["command"]`，即使最终 SUCCESS 且没有 denied_actions。只读方案详见 `driver-notes.md`。内联用例：
 
 ```go
 // cursor：最后一条 assistant 消息胜出；result 的 subtype 非 success 判失败
@@ -1319,6 +1323,7 @@ func ImageHint(agent string) string
 - `image.md`：包含 `ImageHint(agent)`；"输出目录：<OutputDir>"（这一行的格式固定，fakecli 依赖它）；文件名以步骤 ID 开头；参考图路径与"不要覆盖原图"；最终回复 `{"files": [...]}`。
 - `plan.md`：02 架构文档 6.3 节列出的输入和规则。
 - 所有模板都渲染 `Upstream`：每个上游步骤一段"上游步骤 <id>（<agent>，<kind>）的结果"，包含摘要、产物路径、变更文件。
+- 根据 Antigravity 只读实测，ask/review 模板在 `Agent=="antigravity"` 时，引导使用 `view_file/list_dir/find_by_name/grep_search` 等内置只读工具；plan 模板同样说明通过内置读取工具查看目录与文件，直接输出 xcli 计划 JSON。原生 plan 模式由 02 第 4.2 节的会话级 settings 替代。
 
 `ImageHint`：codex → `请使用你内置的图片生成工具（image_gen）生成图片。`；antigravity → `请调用内置的 image-generator 子代理生成图片（通过子代理调用，不要使用 --agent 参数）。`；cursor → `请使用内置的 GenerateImage 工具生成图片。`
 

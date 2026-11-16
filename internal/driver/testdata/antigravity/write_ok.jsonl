@@ -5,7 +5,7 @@
 {"event":"step_update","step_update":{"conversation_id":"88bd3543-8c2c-4681-b823-17f61d6880fd","step_index":2,"state":"DONE","step_type":"tool","tool_name":"write_file","duration_seconds":0.125597,"tool_info":{"name":"write_file","parameters":{"Path":"/TMP/repo/hello.txt"}}}}
 {"event":"step_update","step_update":{"conversation_id":"88bd3543-8c2c-4681-b823-17f61d6880fd","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"已"}}
 {"event":"step_update","step_update":{"conversation_id":"88bd3543-8c2c-4681-b823-17f61d6880fd","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"在当前目录下创建 [hello.txt]"}}
-{"event":"step_update","step_update":{"conversation_id":"88bd3543-8c2c-4681-b823-17f61d6880fd","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"(file:///var/folders/tc/"}}
+{"event":"step_update","step_update":{"conversation_id":"88bd3543-8c2c-4681-b823-17f61d6880fd","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"(file:///TMP"}}
 {"event":"step_update","step_update":{"conversation_id":"88bd3543-8c2c-4681-b823-17f61d6880fd","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"48w0b8390_"}}
 {"event":"step_update","step_update":{"conversation_id":"88bd3543-8c2c-4681-b823-17f61d6880fd","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"q9xhrvc2v_mv580000gn/T/xcli-probe-1"}}
 {"event":"step_update","step_update":{"conversation_id":"88bd3543-8c2c-4681-b823-17f61d6880fd","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"741574629/repo/hello.txt)，内容为 `hi`。"}}

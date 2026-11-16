@@ -153,14 +153,20 @@ type Parser interface {
 | 场景 | 参数 |
 | --- | --- |
 | 公共部分 | `--output-format stream-json --print-timeout 0`，可选 `--model <model>`、`--json-schema <file>`、`--add-dir <dir>`，最后 `--print <prompt>`；cwd 设为 workdir |
-| read | 初始映射 `--mode plan`；当前版本的 headless 行为见下方实测说明 |
+| read | `--sandbox --settings '<下方只读 JSON>'`；使用默认执行模式和内置文件读取工具 |
 | write | `--dangerously-skip-permissions --sandbox` |
 | full | `--dangerously-skip-permissions` |
 | 续接 | 公共部分加 `--conversation <id>` |
 
 `--print-timeout 0` 表示不限时，由 xcli 自己控制超时（旧版硬编码 120 秒是长任务失败的原因之一）。print 模式没有人能点审批，write 模式必须自动批准，否则会出现 `denied_actions`；用 `--sandbox` 限制终端命令的范围。
 
-2026-11-16 实测：Antigravity 1.5.2 的 `--mode plan` 在读取文件时会触发 command 权限拒绝，结果仍可能是 `SUCCESS`、空正文和非空 `denied_actions`。增加 `--sandbox` 后能读取文件，但本次回复生成了实现计划并要求点击 Proceed 批准执行。此映射存在无交互只读任务的适配问题；同类任务可用 Codex 或 Cursor 完成，详见 `driver-notes.md`。
+2026-11-16 根据实测调整：`--mode plan` 会添加原生规划指令，可能要求点击 Proceed。只读调用改为以下会话级 `--settings`，用默认模式直接作答；权限规则由 Antigravity 自己执行，持久配置保持原值：
+
+```json
+{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"deny":["write_file(*)","command(*)","mcp(*)"]}}
+```
+
+只读提示词引导使用 `view_file`、`list_dir`、`find_by_name`、`grep_search` 等内置工具。终端命令和 MCP 调用统一被原生 deny 规则阻止。追加六次实测覆盖直接回答、Schema、续接、两类写入拒绝、规划 JSON；六次工作区内容均保持原样。具体 argv 和事件见 `driver-notes.md`。
 
 ### 4.3 事件解析要点（来自旧版 `stream.go` 的经验）
 
@@ -168,9 +174,11 @@ type Parser interface {
 | --- | --- | --- | --- | --- |
 | codex | `thread.started` 的 `thread_id` | 最后一个 `item.completed` 且 `item.type == "agent_message"` 的 `item.text` | `turn.completed`（带 usage） | `turn.failed`；`error` 事件——但匹配 `^Reconnecting\.\.\. n/m` 的是重连通知，不算失败；`usage_limit_exceeded` / `quota_exceeded` / "hit your usage limit" 归为 `quota` |
 | cursor | `system` 或 `result` 的 `session_id` | 最后一条 `assistant` 消息的 `message.content[].text`；`result.result` 兜底（实测会拼接中间说明） | `type == "result"` | `result.subtype != "success"` 或 `is_error == true`；错误模型也可能只输出 stderr 并非零退出 |
-| antigravity | `step_update.conversation_id` / `result.conversation_id` | 有 `result.structured_output` 时使用该 JSON，否则取 `result.response` | `event == "result"` | `result.status != "SUCCESS"`，错误详情在 `result.error`；`result.denied_actions` 非空时即使状态是 SUCCESS 也判为 `permission_denied` |
+| antigravity | `step_update.conversation_id` / `result.conversation_id` | 有 `result.structured_output` 时使用该 JSON，否则取 `result.response` | `event == "result"` | `result.status != "SUCCESS"`，错误详情在 `result.error`；`result.denied_actions` 非空，或工具错误明确为权限拒绝时，即使状态是 SUCCESS 也判为 `permission_denied` |
 
 用量：Codex 从 `turn.completed.usage.input_tokens/output_tokens` 提取；Cursor 从 `result.usage.inputTokens/outputTokens` 提取；Antigravity 从 `result.usage.input_tokens/output_tokens/total_tokens` 提取。Antigravity 的 `denied_actions` 实测为对象数组，元素含 `action`、`display_name`；驱动的 `Denied []string` 提取 `action`，同时兼容字符串元素。Antigravity 工具进度从 `step_update.tool_name` 和 `tool_info` 提取。
+
+Antigravity 显式 deny 规则命中时，`denied_actions` 可能为空：读取 `step_update.state == "ERROR"` 下的 `tool_info.error.message`，匹配 `permission check failed` 或 `Permission denied`。`tool_name=write_file` 映射到 Denied 的 `write_file`，`run_command` 映射到 `command`；只记录明确的权限拒绝，其他可恢复工具错误继续由原生 CLI 处理。
 
 进度事件归一化成 `message`（助手文本片段）、`tool`（工具名）、`notice`（重连等），只用于展示，不影响结果判定。没有结束标志时判 `protocol` 错误。
 

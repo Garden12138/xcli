@@ -14,12 +14,15 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
 )
 
 const probeSchema = `{"type":"object","additionalProperties":false,"required":["answer"],"properties":{"answer":{"type":"string"}}}`
+const antigravityReadSettings = `{"agentMode":"","toolPermission":"request-review","artifactReviewPolicy":"always-proceed","permissions":{"deny":["write_file(*)","command(*)","mcp(*)"]}}`
+const antigravityReadHint = "你正在被 xcli 调度执行只读任务。请直接完成，用中文回复；使用 view_file、list_dir、find_by_name、grep_search 等内置只读工具读取文件，不要调用 run_command，不要修改文件，不要制定实现计划，不要请求确认。"
 
 var probeCases = []string{"ask_ok", "schema_ok", "resume_ok", "write_ok", "image_ok", "error_bad_model"}
 
@@ -161,7 +164,8 @@ func probeArgs(agent, name, repo, out, schema, sid string) []string {
 		if write {
 			args = append(args, "--dangerously-skip-permissions", "--sandbox")
 		} else {
-			args = append(args, "--mode", "plan")
+			args = append(args, "--sandbox", "--settings", antigravityReadSettings)
+			prompt = antigravityReadHint + prompt
 		}
 		if name == "resume_ok" {
 			args = append(args, "--conversation", sid)
@@ -236,7 +240,7 @@ func sanitize(raw []byte, tmp, home string) []byte {
 			raw = bytes.ReplaceAll(raw, []byte(pair[0]), []byte(pair[1]))
 		}
 	}
-	return raw
+	return regexp.MustCompile(`/private/var/folders/[^\s"\\<>]+|/var/folders/[^\s"\\<>]+`).ReplaceAll(raw, []byte("/TMP"))
 }
 
 func sessionID(agent string, stdout []byte) string {
