@@ -621,7 +621,7 @@ func (c Config) Strength(name, kind string) int
 func Marshal(c Config) ([]byte, error)          // config show / init 使用
 ```
 
-- [ ] **步骤 1：写失败的测试**
+- [x] **步骤 1：写失败的测试**
 
 ```go
 func TestDefaultMatchesDesign(t *testing.T) {
@@ -669,13 +669,13 @@ func TestParseMergesFieldByField(t *testing.T) {
 go test ./internal/config/ -race     # 期望失败：未定义
 ```
 
-- [ ] **步骤 2：实现**
+- [x] **步骤 2：实现**
 
 要点：
 - `Default()` 的值严格等于 02 架构文档第 10 节；`max_concurrency` 默认 2；`artifact_dirs` 按 `driver-notes.md` 的结论填写（没有结论就留空）。
-- `Parse`：先 `cfg := Default()`，记下 `defaultAgents := cfg.Agents` 后置 `cfg.Agents = nil`；用 `yaml.NewDecoder` + `KnownFields(true)` 解码到 `&cfg`（空文档 `io.EOF` 视为成功）；再 `cfg.Agents = mergeAgents(defaultAgents, cfg.Agents)`：非零字段覆盖，`Env` 和 `Strengths` 按键合并，`ExtraArgs` 和 `ArtifactDirs` 非 nil 时整体替换；最后 `validate`（permission 合法、review ∈ {auto, off}、数值为正、planner 是已知 agent、不允许 AgentOrder 之外的 agent 名）。
+- `Parse`：先 `cfg := Default()`，记下 `defaultAgents := cfg.Agents` 后置 `cfg.Agents = nil`；用 `yaml.NewDecoder` + `KnownFields(true)` 解码到 `&cfg`（空文档 `io.EOF` 视为成功），只接受单个 YAML 文档。再把 agents 的 YAML 节点通过 `mergeAgents` 逐字段解码到同名默认 agent 上，保留显式 false、0 和空列表；`Env` 和 `Strengths` 按键合并，列表整体替换。最后 `validate`（permission 合法、review ∈ {auto, off}、数值为正、max_fix_rounds 可为 0、planner 是已知 agent、不允许 AgentOrder 之外的 agent 名）。此处按 02 第 10 节逐字段覆盖规则修正初始“非零字段覆盖”的实现提示。
 
-- [ ] **步骤 3：运行测试并提交**
+- [x] **步骤 3：运行测试并提交**
 
 ```bash
 go test ./internal/config/ -race -v
