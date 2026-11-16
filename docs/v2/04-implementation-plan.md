@@ -1560,7 +1560,7 @@ func ValidatePlan(p api.Plan, req api.Request, available []string, maxSteps int)
 func Execute(ctx context.Context, e *Env, plan api.Plan) api.Result
 ```
 
-- [ ] **步骤 1：写测试**
+- [x] **步骤 1：写测试**
 
 Router：
 - `TestRouterOrdersByStrength`：image → `[antigravity, codex, cursor]`；review → `[cursor, codex, antigravity]`。
@@ -1583,15 +1583,16 @@ Router：
 - `TestExecuteNoFallbackWhenLocked`：`Req.Agent = "codex"` 时额度错误直接失败。
 - `TestExecuteSummaryAndStatus`：末端步骤的文本成为 `Summary`；包含 needs_attention 步骤时任务状态为 `needs_attention`。
 
-- [ ] **步骤 2：实现**
+- [x] **步骤 2：实现**
 
 要点：
 - 执行器用一个调度循环：维护每个步骤的状态；每轮找出依赖已完成的 pending 步骤，用信号量限制 `max_parallel`；code 步骤按工作目录持锁（`map[string]*sync.Mutex`）。
 - 每个步骤：`agent := step.Agent`；为 `"auto"` 时 `Router.Pick(kind)`；运行 `RunStep`；失败且 `ErrorKind.Switchable(kind)`、`Req.Fallback` 为 true（nil 时取配置）、`Req.Agent` 为空时，排除已失败的 agent 重新 Pick，最多切换 2 次。
+- 失败切换的后续调用日志保存在原步骤轮次目录的 `fallback-<次数>-<agent>/` 中，保留每个 CLI 的原始输出。补测逆序依赖链的失败传播，以及无可用候选时 task.json 中的步骤状态。
 - 汇总：Artifacts 按步骤顺序合并；Changes 取最后一个 code 步骤的结果；Verify 合并所有 code 步骤；Review 取最后一个；Error 取第一个失败步骤的错误；`Output` 取 ask 步骤的 JSON（多个时取最后一个末端 ask 步骤）。
 - step.go 中 `review_by == "auto"` 改为 `NewRouter(e).Pick(api.KindReview, coderAgent)`；没有其他 CLI 可选时发 notice"没有可用的其他 CLI，跳过交叉审查"并跳过审查。
 
-- [ ] **步骤 3：运行测试并提交**
+- [x] **步骤 3：运行测试并提交**
 
 ```bash
 go test ./internal/orchestrator/ -race -v

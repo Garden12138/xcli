@@ -12,7 +12,6 @@ import (
 	"github.com/Garden12138/xcli/internal/api"
 	"github.com/Garden12138/xcli/internal/artifact"
 	"github.com/Garden12138/xcli/internal/driver"
-	"github.com/Garden12138/xcli/internal/proc"
 	"github.com/Garden12138/xcli/internal/recipe"
 	"github.com/Garden12138/xcli/internal/store"
 	"github.com/Garden12138/xcli/internal/workspace"
@@ -272,25 +271,7 @@ func (e *Env) reviewer(s api.Step, coder string) string {
 		}
 		return *s.ReviewBy
 	}
-	if e.Req.Agent != "" {
-		return ""
-	}
-	selected, score := "", 0
-	for _, name := range []string{"codex", "cursor", "antigravity"} {
-		d := e.Drivers[name]
-		if name == coder || d == nil || e.Health != nil && !e.Health.Available(name, e.now()) {
-			continue
-		}
-		if len(e.Req.Agents) > 0 && !strings.Contains(","+strings.Join(e.Req.Agents, ",")+",", ","+name+",") {
-			continue
-		}
-		if _, err := proc.LookPath(d.Command(), e.PathList); err != nil {
-			continue
-		}
-		if strength := e.Config.Strength(name, "review"); strength > score {
-			selected, score = name, strength
-		}
-	}
+	selected, _ := NewRouter(e).Pick(api.KindReview, coder)
 	return selected
 }
 
