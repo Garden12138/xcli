@@ -1427,7 +1427,7 @@ func Inspect(path string) (api.Artifact, error)
 func CollectImages(o CollectOptions) ([]api.Artifact, error)
 ```
 
-- [ ] **步骤 1：写测试**
+- [x] **步骤 1：写测试**
 
 用 `image/png`、`image/jpeg` 在测试里生成图片：
 - `TestInspectPNG`：MIME `image/png`，宽高正确，SHA-256 与 `sha256sum` 一致。
@@ -1437,9 +1437,9 @@ func CollectImages(o CollectOptions) ([]api.Artifact, error)
 - `TestCollectExtraDirs`：ExtraDirs 第 2 层目录中的新图片被收集，第 4 层的不被收集。
 - `TestCollectDedup`：同一文件同时出现在 OutDir、Files 和 Text 中，只返回一次。
 
-- [ ] **步骤 2：实现并提交**
+- [x] **步骤 2：实现并提交**
 
-支持 png / jpeg / gif / webp（`import _ "golang.org/x/image/webp"`）；文本路径正则 `(/[^\s"'<>()]+\.(?i:png|jpe?g|webp|gif))`；ExtraDirs 中的 `~` 展开为用户主目录。
+按规范路径和 SHA-256 去重，避免原生缓存与输出副本重复返回；扩展名修正和外部复制遇到重名时保留已有文件，使用带序号的新路径。支持 png / jpeg / gif / webp（`import _ "golang.org/x/image/webp"`）；文本路径正则 `(/[^\s"'<>()]+\.(?i:png|jpe?g|webp|gif))`；ExtraDirs 中的 `~` 展开为用户主目录。
 
 ```bash
 go test ./internal/artifact/ -race -v
