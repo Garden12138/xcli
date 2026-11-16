@@ -85,8 +85,12 @@ func New(name string, cfg config.AgentConfig) (Driver, error) {
 	switch name {
 	case "codex":
 		return &codex{cfg: cfg}, nil
+	case "cursor":
+		return &cursor{cfg: cfg}, nil
+	case "antigravity":
+		return &antigravity{cfg: cfg}, nil
 	default:
-		return nil, fmt.Errorf("请检查 agent %q，当前可用 codex", name)
+		return nil, fmt.Errorf("请检查 agent %q，可选 codex/cursor/antigravity", name)
 	}
 }
 

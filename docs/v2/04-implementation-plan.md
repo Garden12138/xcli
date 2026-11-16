@@ -1048,7 +1048,7 @@ git add internal/driver && git commit -m "feat(driver): add driver interface and
 - 消费：任务 7 的全部类型。
 - 产出：`New("cursor", …)`、`New("antigravity", …)` 可用；`cursor.NativeSchema() == false`，`antigravity.NativeSchema() == true`。
 
-- [ ] **步骤 1：写参数拼装测试**
+- [x] **步骤 1：写参数拼装测试**
 
 cursor 期望：
 
@@ -1082,7 +1082,7 @@ antigravity 期望：
 
 两个驱动都忽略 `Images`（参考图通过提示词里的路径和 `AddDirs` 传递，由 step runner 负责）。cursor 忽略 `SchemaFile` 和 `Network`。
 
-- [ ] **步骤 2：写解析测试**
+- [x] **步骤 2：写解析测试**
 
 Cursor 用样本文件测试 `ask_ok` / `schema_ok` / `resume_ok` / `error_bad_model`（规则同任务 7）；用量读取 `result.usage.inputTokens/outputTokens`。
 
@@ -1113,7 +1113,7 @@ Cursor 用样本文件测试 `ask_ok` / `schema_ok` / `resume_ok` / `error_bad_m
 // 期望 ErrorKind == ErrQuota
 ```
 
-- [ ] **步骤 3：实现并提交**
+- [x] **步骤 3：实现并提交**
 
 要点：cursor 的 `Probe` 认证检查用 `<exe> status --format json`（退出码 0 且输出不含 "not logged" → ok）；antigravity 的认证固定为 `unknown`。
 
