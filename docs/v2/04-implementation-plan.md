@@ -732,7 +732,7 @@ func Follow(ctx context.Context, taskDir string, after int, fn func(api.Event) e
 // Follow 每 300ms 轮询新事件，读到 type=="task.finished" 后返回 nil；ctx 结束返回 ctx.Err()
 ```
 
-- [ ] **步骤 1：写失败的测试**
+- [x] **步骤 1：写失败的测试**
 
 - `TestCreateLoadRoundTrip`：Create 后 Load，Request 与 Status（queued）一致；目录权限 0700。
 - `TestUpdateIsAtomic`：并发 20 个 goroutine 调用 `Update`，每次追加一个 StepResult，结束后 Load 得到 20 个；`task.json` 始终是合法 JSON（同时起一个 goroutine 循环读取并 `json.Unmarshal`，不能出错）。
@@ -740,11 +740,11 @@ func Follow(ctx context.Context, taskDir string, after int, fn func(api.Event) e
 - `TestFollowStopsOnFinished`：后台 goroutine 每 50ms Emit 一次，第 3 次是 `task.finished`；Follow 收到 3 个事件后返回 nil。
 - `TestListNewestFirst`、`TestNewIDFormat`（正则 `^t-\d{8}-\d{6}-[0-9a-f]{4}$`）。
 
-- [ ] **步骤 2：实现**
+- [x] **步骤 2：实现**
 
 要点：`task.json` 先写同目录下的 `.task.json.tmp` 再 `os.Rename`；`events.jsonl` 用 `O_APPEND|O_CREATE|O_WRONLY` 打开，每次写一整行；Load 时 seq 取 events.jsonl 的行数；所有文件权限 0600，目录 0700。
 
-- [ ] **步骤 3：运行测试并提交**
+- [x] **步骤 3：运行测试并提交**
 
 ```bash
 go test ./internal/store/ -race -v
