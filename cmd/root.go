@@ -35,6 +35,10 @@ func newRootCommand() *cobra.Command {
 		SilenceErrors: true,
 	}
 	root.PersistentFlags().StringVar(&rootOpts.home, "home", defaultHome(), "xcli 数据目录")
+	root.InitDefaultHelpFlag()
+	root.InitDefaultVersionFlag()
+	root.CompletionOptions.DisableDefaultCmd = true
+	root.AddCommand(newAgentsCommand(), newConfigCommand())
 	return root
 }
 

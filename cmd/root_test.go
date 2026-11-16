@@ -8,15 +8,17 @@ import (
 )
 
 func TestRootVersion(t *testing.T) {
-	root := newRootCommand()
-	var out bytes.Buffer
-	root.SetOut(&out)
-	root.SetArgs([]string{"--version"})
-	if err := root.Execute(); err != nil {
-		t.Fatal(err)
-	}
-	if got := strings.TrimSpace(out.String()); got != "xcli version 2.0.0-dev" {
-		t.Fatalf("version = %q", got)
+	for _, args := range [][]string{{"--version"}, {"--version", "--home", t.TempDir()}} {
+		root := newRootCommand()
+		var out bytes.Buffer
+		root.SetOut(&out)
+		root.SetArgs(args)
+		if err := root.Execute(); err != nil {
+			t.Fatal(err)
+		}
+		if got := strings.TrimSpace(out.String()); got != "xcli version 2.0.0-dev" {
+			t.Fatalf("version = %q", got)
+		}
 	}
 }
 

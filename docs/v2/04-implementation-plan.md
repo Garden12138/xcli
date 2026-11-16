@@ -1154,14 +1154,14 @@ func (c *Cache) Reset() error                                     // 清除所�
 
 读改写时对 `health.json.lock` 加 `flock`，避免多个进程互相覆盖。
 
-- [ ] **步骤 1：测试**
+- [x] **步骤 1：测试**
 
 - `TestCooldown`：`Cooldown("codex", ErrQuota, t0)` 后 `Available("codex", t0+29m) == false`，`t0+31m == true`；`ErrAuth` 为 10 分钟；`ErrFailed` 不冷却。
 - `TestCooldownPersists`：一个 Cache 写入冷却，用同一个 home 新开的 Cache 能读到。
 - `TestReset`。
 - `TestProbeCached`：用一个计数的假 Driver，maxAge 内第二次 Probe 不再调用 `d.Probe`。
 
-- [ ] **步骤 2：实现 `xcli agents` 与 `xcli config`**
+- [x] **步骤 2：实现 `xcli agents` 与 `xcli config`**
 
 `xcli agents`：对每个配置中的 agent（按 `config.AgentOrder`）解析 PATH 和可执行文件，调用 `Cache.Probe`（maxAge 10 分钟），输出表格：
 
@@ -1176,7 +1176,7 @@ antigravity  yes        1.5.2            unknown  冷却中（额度）至 17:40
 
 `xcli config show` 输出生效配置的 YAML；`config init` 在 `<home>/config.yaml` 不存在时写入默认配置（已存在则报错并提示路径）；`config path` 打印路径。
 
-- [ ] **步骤 3：手动验证并提交**
+- [x] **步骤 3：手动验证并提交**
 
 ```bash
 go test ./internal/health/ -race -v

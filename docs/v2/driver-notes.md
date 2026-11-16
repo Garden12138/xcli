@@ -151,3 +151,5 @@ agy --output-format stream-json --print-timeout 0 --sandbox --settings '{"agentM
 ```
 
 依据：[原生 settings Schema](https://antigravity.google/schemas/v1/settings.json)、[执行模式](https://antigravity.google/docs/cli/modes/)、[权限规则](https://antigravity.google/docs/permissions)。本节行为以追加六次实测为准。
+
+后续健康探测（2026-11-16，仅版本与登录状态）：Codex `0.169.0`、Cursor `2026.11.13-eacade1`、Antigravity `1.5.9`；Codex/Cursor 登录状态为 ok，Antigravity 为 unknown。上文保留各次实测时的参数和结果。
