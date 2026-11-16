@@ -795,7 +795,7 @@ func LookPath(name, pathList string) (string, error)       // 在给定 PATH 中
 func Env(base []string, pathList string, extra map[string]string) []string // 替换 PATH 并叠加 extra
 ```
 
-- [ ] **步骤 1：写失败的测试**
+- [x] **步骤 1：写失败的测试**
 
 ```go
 func TestRunTimeoutKillsProcessGroup(t *testing.T) {
@@ -826,7 +826,7 @@ func TestRunTimeoutKillsProcessGroup(t *testing.T) {
 - `TestSearchPathConfigured`：`SearchPath("/a:/b", "")` 返回 `/a:/b`，不执行 shell。
 - `TestEnvReplacesPath`：结果中只有一个 `PATH=`，extra 中的变量存在。
 
-- [ ] **步骤 2：实现**
+- [x] **步骤 2：实现**
 
 要点：
 - `cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}`；超时或 ctx 结束时 `syscall.Kill(-pgid, SIGTERM)`，5 秒后仍未退出就 `SIGKILL`；设置 `cmd.WaitDelay = 6 * time.Second`。
@@ -835,7 +835,7 @@ func TestRunTimeoutKillsProcessGroup(t *testing.T) {
 - `AcquireSlot`：在 `lockDir` 下依次尝试 `<name>-0.lock` … `<name>-(max-1).lock`，`syscall.Flock(fd, LOCK_EX|LOCK_NB)`；全部失败时调用 `onWait`，等 1 秒重试，直到 ctx 结束。release 解锁并关闭文件。
 - `SearchPath`：`configured` 非空直接返回；否则读缓存（24 小时内有效），缓存无效时执行 `$SHELL -lic 'printf %s "$PATH"'`（3 秒超时，失败忽略），与 `os.Getenv("PATH")` 合并去重，再追加 `~/.local/bin`、`/opt/homebrew/bin`、`/usr/local/bin`，写缓存（`cacheFile` 为空时不读写缓存）。
 
-- [ ] **步骤 3：运行测试并提交**
+- [x] **步骤 3：运行测试并提交**
 
 ```bash
 go test ./internal/proc/ -race -v
