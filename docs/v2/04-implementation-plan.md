@@ -286,7 +286,7 @@ git commit -m "test: record native CLI fixtures and driver notes"
 **接口：**
 - 产出：下面代码中的全部类型、常量和 `NewEvent`、`(Request).Validate`。后续所有任务都使用这些名称。
 
-- [ ] **步骤 1：写类型**
+- [x] **步骤 1：写类型**
 
 ```go
 package api
@@ -543,7 +543,7 @@ func NewEvent(task string, seq int, typ, step, agent string, data any) (Event, e
 }
 ```
 
-- [ ] **步骤 2：写测试并运行**
+- [x] **步骤 2：写测试并运行**
 
 `internal/api/types_test.go` 覆盖：
 - `TestRequestValidate`：表驱动，空 goal、`version: 2`、未知 capability、未知 permission、schema 与 schema_file 同时出现、负的 max_fix_rounds 都返回错误；`{"goal":"x"}` 通过。
@@ -555,7 +555,7 @@ func NewEvent(task string, seq int, typ, step, agent string, data any) (Event, e
 go test ./internal/api/ -race -v
 ```
 
-- [ ] **步骤 3：提交**
+- [x] **步骤 3：提交**
 
 ```bash
 git add internal/api && git commit -m "feat(api): add protocol v1 types"
