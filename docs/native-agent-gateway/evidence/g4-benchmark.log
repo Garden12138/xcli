@@ -1,8 +1,0 @@
-goos: darwin
-goarch: arm64
-pkg: github.com/Garden12138/xcli/internal/agentgateway
-cpu: Apple M4 Pro
-BenchmarkCachedCapabilitiesHTTP-12       	   14107	     24479 ns/op	   16629 B/op	     107 allocs/op
-BenchmarkPersistedFakeTaskReadHTTP-12    	    7508	     40887 ns/op	  25.04 MB/s	   21978 B/op	     118 allocs/op
-PASS
-ok  	github.com/Garden12138/xcli/internal/agentgateway	1.639s

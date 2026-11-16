@@ -1,45 +1,26 @@
-# xcli
+# xcli v2
 
-[English](README.md)
+xcli 是本机多 CLI 编排引擎，通过真实 Codex、Cursor、Antigravity 进程，将文本、编码、审查和图片能力以子进程 JSON 协议提供给桌面应用。
 
-**统一 AI Coding Agent CLI 调度与编排工具。**
+版本：`2.0.0-dev`。正在 `v2` 分支按设计重建。
 
-当前源码版本 **`0.5.0-r4.1-dev`**，尚未发布。Codex CLI、Cursor CLI、Antigravity CLI 各自维护安装、登录、账号、权限、模型和额度；xcli 负责发现、执行、Task 编排、Session、恢复、监控和结果交付。
+## 构建
 
-**从 [本次统一交付入口](docs/release-handoff/README.md) 开始。** 完整成果位于已推送的 `feature/upgrade-chatgpt` 分支；默认远程 main 和已发布 v0.4.0 不含本次完整成果。
+安装 Go 1.26 后运行：
 
-| 目的 | 文档 |
-| --- | --- |
-| 安装并尝试第一个任务 | [快速开始](docs/release-handoff/QUICK_START.md) |
-| macOS Apple Silicon / Intel / Linux 部署 | [本地安装](docs/release-handoff/LOCAL_INSTALLATION.md) |
-| 三 CLI、Task、Session、Jobs、媒体和排障 | [用户手册](docs/release-handoff/USER_MANUAL.md) |
-| 相比主分支和稳定 Tag 的变化 | [版本差异](docs/release-handoff/VERSION_COMPARISON.md) |
-| 测试结果及未验证项 | [自动验收](docs/release-handoff/AUTOMATED_ACCEPTANCE.md) |
-| 清理和最终 Git 状态 | [清理报告](docs/release-handoff/CLEANUP_REPORT.md)、[分支整合](docs/release-handoff/BRANCH_CONSOLIDATION.md) |
-
-当前本地源码构建：
-
-```bash
-go build -trimpath -o bin/xcli .
-./bin/xcli --version
-./bin/xcli --help
+```sh
+go build -o bin/xcli .
 ```
 
-R4.1 执行及版本/help 探针要求用户明确的进程启动窗口，按快速开始建立自己的作用域；旧 UNKNOWN 历史不能视为可用余额。不需要启动守护服务。日常入口为 agents/doctor/run/use/resume/task/runs/jobs/config/launches 和兼容 mcp serve。
+安装并登录原生 CLI（`codex`、`cursor-agent`、`agy`），即可使用任务能力的默认配置。
 
-Task 支持 Work/Project、实际验证、交接、一次有界修复、后台和 checkpoint 恢复；--agent 锁定所有角色，自动跨 CLI 计划没有固定 worker/reviewer 参数。worktree 不是 OS 沙箱，不自动提交、合并、部署或发布。
+## 规划中的用法
 
-核心开发验收：
-
-```bash
-bash tests/product_realignment/verify-core.sh
-go test ./...
-go test -race ./...
-go vet ./...
+```sh
+xcli ask "总结 notes.md 的要点" -i notes.md --json
+xcli image "米白背景上的绿植插画，方形" -o ./covers --json
+xcli code "修复 TTL 到期判断的 Bug" -C ~/repo --verify "go test ./..." --json
+xcli do "给 README 写一段介绍并配一张封面图" -C ~/repo
 ```
 
-测试使用 Fake CLI；HTTP 单元夹具需要本机回环权限。交叉构建不等于异设备实测，Windows 后台 Task/Jobs 暂不支持。本轮模型可用性与历史真实验收分开报告。
-
-Model Gateway、Native Agent Gateway HTTP、SIWC/OAuth/Responses、通用 Media Gateway **冻结、默认关闭**，不属于使用前提。源码及证据保留，见 [模块处置](docs/product-realignment/MODULE_DISPOSITION.md)。旧全量 offline 脚本含显式启动合成实验服务，本次未执行这些服务步骤。
-
-R0–R4 历史材料保留在原目录；当前用户说明统一维护在 `docs/release-handoff/`。
+参见 [v2 设计与实施计划](docs/v2/README.md)。v0.x 的历史成果保存在 tag `archive/r4.1-final`。

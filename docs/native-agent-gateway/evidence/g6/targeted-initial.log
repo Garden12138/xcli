@@ -1,4 +1,0 @@
-# github.com/Garden12138/xcli/internal/nativeadapter_test [github.com/Garden12138/xcli/internal/nativeadapter.test]
-internal/nativeadapter/app_server_test.go:346:18: s.CancelTask undefined (type *agentservice.Service has no field or method CancelTask)
-FAIL	github.com/Garden12138/xcli/internal/nativeadapter [build failed]
-FAIL

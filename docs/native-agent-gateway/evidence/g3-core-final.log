@@ -1,7 +1,0 @@
-ok  	github.com/Garden12138/xcli/internal/agentapi	0.410s
-ok  	github.com/Garden12138/xcli/internal/agentartifact	0.828s
-ok  	github.com/Garden12138/xcli/internal/agentservice	1.673s
-ok  	github.com/Garden12138/xcli/internal/agentgateway	1.918s
-ok  	github.com/Garden12138/xcli/internal/model	(cached)
-ok  	github.com/Garden12138/xcli/internal/modelgateway	1.065s
-ok  	github.com/Garden12138/xcli/internal/agentstore	1.713s

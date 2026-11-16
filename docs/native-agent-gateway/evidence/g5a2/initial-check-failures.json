@@ -1,6 +1,0 @@
-{
-  "go_initial": "Default host Go cache was outside writable sandbox; rerun with documented /tmp GOCACHE.",
-  "http_initial": "Targeted nativeadapter tests could not bind loopback in restricted execution; complete offline gate then passed with loopback permission.",
-  "owner_http_probe_initial": "Status queried during gateway startup; harness aborted on control nonzero instead of polling. No model Task was submitted. Isolated synthetic instance subsequently confirmed inactive; resumed only HTTP/control checks, no native probe repeated.",
-  "owner_http_probe_second": "Old generation status was briefly active when the new process acquired its lock before publishing its new endpoint. Connection to old port refused; no Task POST. Harness stopped its service. Fixed generation validation in the actual acceptance script and added regression."
-}

@@ -1,9 +1,0 @@
-{
-  "compile_fixture": "CancelTask helper name was corrected to existing Cancel API. Original log retained.",
-  "grant_fixture": "Token rotation preserves old grant; fixture fixed by explicitly issuing separate app-server client. Production scope not weakened.",
-  "http_admission": "Existing bounded HTTP admission may return 429; admitted identical keys must yield one Task. No budget/limit changes.",
-  "restart_fixture": "Reopened service from registered configuration, not runtime capability snapshots. Production code not changed.",
-  "private_root_fixture": "TempDir was not private; fixture chmod 0700 meets strict outer path validator. Production validator retained.",
-  "native_envelope": "Actual emittedAtMs notification metadata initially rejected. Added exact optional integer validation; arbitrary fields still fail closed.",
-  "outer_runtime": "Actual strict whole-process app-server initialization failed; retained as FAIL and stopped promotion path. No Keychain/personal/network grants added."
-}

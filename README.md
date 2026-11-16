@@ -1,45 +1,26 @@
-# xcli
+# xcli v2
 
-[简体中文](README.zh-CN.md)
+xcli orchestrates real Codex, Cursor and Antigravity CLI processes to deliver text, coding, reviews and images to local desktop apps through a JSON subprocess protocol.
 
-**A unified scheduler and orchestrator for native AI coding agent CLIs.**
+Version: `2.0.0-dev`. The v2 rebuild is in progress on the `v2` branch.
 
-Current source version: **`0.5.0-r4.1-dev`**, an unpublished development build. Codex CLI, Cursor CLI and Antigravity CLI keep their own installation, login, accounts, permissions, models and quotas. xcli discovers and executes CLIs, orchestrates Tasks, retains Sessions, monitors background work and delivers inspectable results.
+## Build
 
-Start with the **[release handoff](docs/release-handoff/README.md)** for the current version, offline acceptance, local installation, first task and Git state. The complete candidate is available on `feature/upgrade-chatgpt`; the default remote `main` and published v0.4.0 do not contain it.
+Install Go 1.26, then run:
 
-| Need | Current documentation |
-| --- | --- |
-| Install and run a first task | [Quick start](docs/release-handoff/QUICK_START.md) |
-| macOS Apple Silicon / Intel / Linux setup | [Local installation](docs/release-handoff/LOCAL_INSTALLATION.md) |
-| Codex / Cursor / Antigravity, Tasks, Sessions, Jobs, media | [User manual](docs/release-handoff/USER_MANUAL.md) |
-| Main / stable Tag changes and migration | [Version comparison](docs/release-handoff/VERSION_COMPARISON.md) |
-| Test results and limits | [Automated acceptance](docs/release-handoff/AUTOMATED_ACCEPTANCE.md) |
-| Repository and branch audit | [Cleanup](docs/release-handoff/CLEANUP_REPORT.md), [branches](docs/release-handoff/BRANCH_CONSOLIDATION.md) |
-
-Build from this local checkout:
-
-```bash
-go build -trimpath -o bin/xcli .
-./bin/xcli --version
-./bin/xcli --help
+```sh
+go build -o bin/xcli .
 ```
 
-R4.1 requires an explicitly confirmed native process launch window before execution or version/help probes. Follow the quick start to create one for your own scope; old UNKNOWN histories do not supply a usable balance. No background service is needed. Do not reuse historical examples without checking the current help and window requirements.
+Install and log in to the native CLIs (`codex`, `cursor-agent`, `agy`) to use task capabilities with default settings.
 
-Core entries are `agents`, `doctor`, `run`, `use`, `resume`, `task`, `runs`, `jobs`, `config`, `launches` and the compatibility launcher `mcp serve`. Task supports Work/Project, validation, handoffs, bounded repair, background execution and checkpoint recovery. `--agent` locks all roles to one CLI; automatic cross-CLI planning has no fixed worker/reviewer flags. Worktrees are not an OS sandbox. xcli does not automatically commit, merge, deploy or publish.
+## Planned usage
 
-Offline developer gates:
-
-```bash
-bash tests/product_realignment/verify-core.sh
-go test ./...
-go test -race ./...
-go vet ./...
+```sh
+xcli ask "Summarize notes.md" -i notes.md --json
+xcli image "A green plant on a cream background, square" -o ./covers --json
+xcli code "Fix the TTL expiry boundary" -C ~/repo --verify "go test ./..." --json
+xcli do "Write a README introduction and generate a cover image" -C ~/repo
 ```
 
-Tests use fake native processes; HTTP unit fixtures need local loopback access. Cross-builds do not prove runtime support on other devices; Windows background Tasks/Jobs remain unsupported. Native model availability and historical real acceptance are reported separately.
-
-Model Gateway, Native Agent Gateway HTTP, SIWC/OAuth/Responses and generic Media Gateway are **frozen experiments, disabled by default**. They are not installation requirements or promoted product features. Source, configuration compatibility and historical evidence remain; see [module disposition](docs/product-realignment/MODULE_DISPOSITION.md). The old full offline scripts also explicitly start synthetic experimental services and are not part of this handoff's permitted runtime checks.
-
-Historical R0–R4 material remains under `docs/`; current user instructions are centralized in `docs/release-handoff/`.
+See [the v2 design and implementation plan](docs/v2/README.md). Previous v0.x work is preserved in tag `archive/r4.1-final`.

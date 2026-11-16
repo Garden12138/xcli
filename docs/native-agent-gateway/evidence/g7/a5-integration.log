@@ -1,5 +1,0 @@
-=== RUN   TestG7ContainerHTTPFakePeerAndRuntimeLoss
-    isolated_app_server_test.go:210: G7_A5_EVIDENCE {"fake_binary_sha256":"ddaf03787f6f97f69637ed30e93a59f2e3f3c3b2e78a381306691c593ee1bb60","outcomes":[{"cloud_stop_confirmed":null,"fake_peer_only":true,"local_stop_confirmed":true,"process_starts":1,"scenario":"success","status":"succeeded"},{"cloud_stop_confirmed":null,"fake_peer_only":true,"local_stop_confirmed":true,"process_starts":1,"scenario":"destroy","status":"failed"}],"real_model_requests":0,"restart_no_reexecution":true}
---- PASS: TestG7ContainerHTTPFakePeerAndRuntimeLoss (0.97s)
-PASS
-ok  	github.com/Garden12138/xcli/internal/nativeadapter	2.176s

@@ -1,6 +1,0 @@
-{
-  "kind": "native_resume_diagnostic",
-  "exit_code": 1,
-  "stderr": "Error: thread/resume: thread/resume failed: no rollout found for thread id <native-session-redacted> (code -32600)\n",
-  "stdout_types": []
-}

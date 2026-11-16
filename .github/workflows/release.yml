@@ -24,15 +24,11 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: '1.26.x'
-          check-latest: true
           cache: true
-      - run: go mod download
-      - name: Check release notes
-        run: test -f ".github/release-notes/${GITHUB_REF_NAME}.md"
       - uses: goreleaser/goreleaser-action@v7.2.3
         with:
           distribution: goreleaser
           version: v2.16.0
-          args: release --clean --release-notes .github/release-notes/${{ github.ref_name }}.md
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

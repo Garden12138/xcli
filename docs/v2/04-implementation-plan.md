@@ -90,14 +90,14 @@ docs/v2/USER_GUIDE.md                    一页用户手册（任务 19 产出�
 **接口：**
 - 产出：`cmd.Execute() error`；`cmd.Version = "2.0.0-dev"`；根命令的全局参数 `--home`（默认取 `XCLI_HOME`，再默认 `~/.xcli`），供后续命令读取 `rootOpts.home`。
 
-- [ ] **步骤 1：确认基线**
+- [x] **步骤 1：确认基线**
 
 ```bash
 git branch --show-current          # 期望输出 v2
 git tag -l 'archive/*'             # 期望包含 archive/r4.1-final
 ```
 
-- [ ] **步骤 2：删除旧代码与旧文档**
+- [x] **步骤 2：删除旧代码与旧文档**
 
 ```bash
 git rm -r -q cmd internal tests examples xcli-cli-first-acceptance bin 2>/dev/null || true
@@ -105,7 +105,7 @@ git ls-files docs | grep -v '^docs/v2/' | xargs git rm -q
 git status --short | head
 ```
 
-- [ ] **步骤 3：写最小根命令**
+- [x] **步骤 3：写最小根命令**
 
 `cmd/root.go`：
 
@@ -157,7 +157,7 @@ func Execute() error {
 
 `main.go` 保持调用 `cmd.Execute()`，出错时打印到 stderr 并 `os.Exit(1)`。
 
-- [ ] **步骤 4：整理依赖与发布配置**
+- [x] **步骤 4：整理依赖与发布配置**
 
 ```bash
 go mod tidy
@@ -165,11 +165,11 @@ go mod tidy
 
 `.goreleaser.yaml` 的 `goos` 只保留 `darwin`、`linux`，`goarch` 为 `amd64`、`arm64`；ldflags 写入 `-X github.com/Garden12138/xcli/cmd.Version={{.Version}}`。检查 `.github/workflows` 中的 Go 版本为 1.26，去掉对已删除脚本的引用，只保留 `go vet ./...` 和 `go test ./... -race`。
 
-- [ ] **步骤 5：重写 README**
+- [x] **步骤 5：重写 README**
 
 `README.md` / `README.zh-CN.md` 各不超过 40 行：一句话定位、安装（`go build -o bin/xcli .`）、四个示例命令（同 `docs/v2/README.md`）、指向 `docs/v2/`、说明 v0.x 的成果在 tag `archive/r4.1-final`。
 
-- [ ] **步骤 6：验证并提交**
+- [x] **步骤 6：验证并提交**
 
 ```bash
 go build ./... && go vet ./... && go test ./... -race

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
@@ -14,14 +13,6 @@ func main() {
 		return
 	}
 
-	var exitErr *cmd.ExitError
-	if errors.As(err, &exitErr) {
-		if exitErr.Message != "" {
-			fmt.Fprintln(os.Stderr, exitErr.Message)
-		}
-		os.Exit(exitErr.Code)
-	}
-
-	fmt.Fprintln(os.Stderr, "Error:", err)
+	fmt.Fprintln(os.Stderr, "错误：", err)
 	os.Exit(1)
 }
