@@ -17,7 +17,7 @@
 | `xcli wait <id> [--timeout 10m]` | 等待任务结束并输出 Result |
 | `xcli logs <id> [-f] [--after N]` | 输出事件流（JSONL） |
 | `xcli result <id>` | 输出 Result JSON |
-| `xcli cancel <id>` | 取消任务 |
+| `xcli cancel <id>` | 取消前台或后台 worker 任务；HTTP 任务返回对应 HTTP 取消接口指引 |
 | `xcli list [--limit 20]` | 列出最近的任务 |
 | `xcli resume <id> "<追加要求>"` | 基于已结束的任务继续：复用最后一步的 CLI、会话、工作目录和输出目录 |
 | `xcli apply <id>` | 把 `--isolate` 任务的改动应用回原仓库 |
@@ -227,7 +227,7 @@ Plan 与 Step：
 | `POST /v1/tasks/{id}/cancel` | 取消 |
 | `GET /v1/tasks/{id}/artifacts/{index}` | 下载第 index 个产物（只允许 Result 中列出的文件） |
 
-HTTP 接口与命令行共用 engine，任务由 serve 进程内的 goroutine 运行（不另起 worker）。serve 退出时把运行中的任务标记为 `cancelled`。
+HTTP 接口与命令行共用 engine，任务由 serve 进程内的 goroutine 运行（不另起 worker）。通过创建任务的服务调用 `POST /v1/tasks/{id}/cancel`，只取消该任务；`xcli cancel` 对 HTTP 任务返回这个接口的使用指引。serve 退出时取消全部服务内任务，等待 `cancelled` 结果和 `task.finished` 落盘。
 
 Docker 中的调用方：macOS 上的 Docker Desktop / OrbStack 可以通过 `http://host.docker.internal:7788` 访问宿主机 loopback。请求里的 `workdir`、`inputs` 必须是**宿主机路径**，由调用方自己把容器路径转换成宿主机路径。
 

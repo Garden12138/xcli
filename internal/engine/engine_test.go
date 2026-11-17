@@ -220,6 +220,29 @@ func TestEngineCancel(t *testing.T) {
 	}
 }
 
+func TestEngineCancelHTTPDoesNotSignalOwner(t *testing.T) {
+	e := testEngine(t, testutil.FakeScript{})
+	owner := exec.Command("/bin/sleep", "30")
+	if err := owner.Start(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = owner.Process.Kill(); _ = owner.Wait() })
+	task := create(t, e, api.Request{Goal: "HTTP task"})
+	if err := os.WriteFile(task.Path("http"), nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := task.Update(func(r *store.Record) { r.Status = api.StatusRunning; r.PID = owner.Process.Pid }); err != nil {
+		t.Fatal(err)
+	}
+	err := e.Cancel(task.ID())
+	if err == nil || !strings.Contains(err.Error(), "HTTP POST /v1/tasks/"+task.ID()+"/cancel") {
+		t.Fatalf("HTTP guidance: %v", err)
+	}
+	if err := syscall.Kill(owner.Process.Pid, 0); err != nil {
+		t.Fatalf("signalled HTTP owner: %v", err)
+	}
+}
+
 func TestEngineWorkerLost(t *testing.T) {
 	e := testEngine(t, testutil.FakeScript{})
 	task := create(t, e, api.Request{Goal: "x"})

@@ -42,6 +42,7 @@ func newRootCommand() *cobra.Command {
 	root.AddCommand(taskCommands()...)
 	root.AddCommand(lifecycleCommands()...)
 	root.AddCommand(newWorkerCommand())
+	root.AddCommand(newServeCommand())
 	return root
 }
 

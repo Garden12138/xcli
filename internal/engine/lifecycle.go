@@ -113,6 +113,11 @@ func (e *Engine) Cancel(id string) error {
 	if rec.Status.Finished() {
 		return errors.New("任务已结束，请用 xcli result 查看结果")
 	}
+	if _, err := os.Stat(filepath.Join(e.Store.Root, id, "http")); err == nil {
+		return fmt.Errorf("请通过创建任务的服务调用 HTTP POST /v1/tasks/%s/cancel 取消此任务", id)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("请检查任务来源标记的读取权限：%w", err)
+	}
 	if rec.PID <= 0 {
 		return errors.New("任务正在启动，请稍后运行 xcli cancel 重试")
 	}

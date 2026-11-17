@@ -401,6 +401,7 @@ xcli 本身不是沙箱，权限隔离依赖各 CLI 的沙箱；`write` 档会�
 
 - 前台（默认）：当前进程直接运行编排，事件实时输出；Ctrl-C 取消任务。
 - 后台（`--detach`）：`engine.Detach` 用 `Setsid` 启动 `xcli __worker <task-id>`（隐藏命令），stdout/stderr 重定向到任务目录的 `worker.log`，立刻返回任务 ID。之后用 `status` / `wait` / `logs` / `cancel` / `result` 操作。
+- HTTP：任务在 serve 进程内运行，每个任务保存独立的取消函数，通过创建它的服务调用 `POST /v1/tasks/{id}/cancel` 取消。任务启动前写入内部 `http` 来源标记，`xcli cancel` 看到该标记时返回 HTTP 接口指引；向共享的 serve PID 发信号会影响其他任务，因此按用户选择采用此取消方式。serve 退出时取消全部服务内任务，等待结果和结束事件落盘。
 - `task.json` 里记录运行者 PID。查询时如果状态是 `running` 但 PID 已不存在，就把任务标记为 `failed`，`error.kind = "worker_lost"`。
 
 ### 8.2 子进程
@@ -440,6 +441,7 @@ macOS 上从 Dock 启动的桌面应用不会继承终端里的 PATH，xcli 和�
     task.json                  请求 + 计划 + 步骤状态 + 结果（写临时文件后 rename，保证原子）
     events.jsonl               事件流（追加写）
     worker.log                 后台运行时的输出
+    http                       HTTP 任务的内部来源标记（空文件，0600），用于选择取消方式
     inputs/                    输入快照
     work/                      没有 workdir 时的临时工作目录
     out/<step-id>/             默认产物目录

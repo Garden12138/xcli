@@ -1678,7 +1678,7 @@ func (e *ExitError) Error() string
 - 测试先于实现；额外覆盖真实 xcli 进程的 0/1/2/3 退出码、等待超时保留任务、任务超时、隔离改动的 apply/GC、续接跳过未执行步骤。取消测试读取 fakecli 写入的 `<XCLI_FAKE_STATE>/<name>-<n>.pid`，再用 `kill(pid, 0)` 核验退出，兼容无法枚举系统进程的环境。
 - `Detach` 启动失败时保存 failed Result 和 `task.finished`，供 status/wait 查询。
 - `Detach`：可执行文件取 `XCLI_SELF` 环境变量，否则 `os.Executable()`；`exec.Command(self, "--home", e.Home, "__worker", id)`，`SysProcAttr{Setsid: true}`，stdin 为 `/dev/null`，stdout/stderr 写 `worker.log`；`Start` 后 `Release`。
-- `Cancel`：读 PID，向它发 SIGTERM；任务已结束时返回提示"任务已结束"。worker 和前台命令都用 `signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)` 把信号转成 ctx 取消。
+- `Cancel`：HTTP 来源标记存在时返回 `POST /v1/tasks/{id}/cancel` 指引（任务 18 按用户选择补充）；其他任务读 PID，向它发 SIGTERM；任务已结束时返回提示"任务已结束"。worker 和前台命令都用 `signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)` 把信号转成 ctx 取消。
 - `Status`：running 且 `syscall.Kill(pid, 0)` 失败 → 写入 failed + worker_lost。
 - `Wait`：每 500ms 调用一次 `Status`，直到状态结束。
 - `GC`：删除结束时间早于阈值的任务；如果任务有 worktree，先 `workspace.RemoveWorktree`。
@@ -1792,7 +1792,8 @@ git add internal/orchestrator internal/engine && git commit -m "feat(orchestrato
 
 **文件：**
 - 新建：`internal/server/server.go`、`cmd/serve.go`
-- 测试：`internal/server/server_test.go`
+- 修改：`cmd/root.go`（注册 serve）、`internal/engine/lifecycle.go`（HTTP 任务返回取消接口指引）
+- 测试：`internal/server/server_test.go`、`cmd/serve_test.go`、`internal/engine/engine_test.go`
 
 **接口：**
 - 消费：`engine.Engine` 的全部方法。
@@ -1803,7 +1804,9 @@ func New(e *engine.Engine, token string) http.Handler
 func LoadOrCreateToken(home string) (string, error) // <home>/server.token，32 字节随机数的十六进制，权限 0600
 ```
 
-- [ ] **步骤 1：写测试（`httptest.NewServer` + fakecli）**
+`New` 返回的 handler 同时实现 `io.Closer`：关闭时取消任务并等待落盘；`server.Version` 在创建 handler 前由命令设为 `cmd.Version`，健康响应沿用发布版本。
+
+- [x] **步骤 1：写测试（`httptest.NewServer` + fakecli）**
 
 - `TestHealthNoAuth`：`GET /v1/health` 返回 200 和版本号。
 - `TestAuthRequired`：不带令牌访问 `/v1/tasks` 返回 401。
@@ -1813,12 +1816,13 @@ func LoadOrCreateToken(home string) (string, error) // <home>/server.token，32 
 - `TestEventsSSE`：读取 `/v1/tasks/{id}/events`，收到 `event: task.finished` 后连接关闭；`?after=2` 只返回 seq > 2 的事件。
 - `TestCancel`：`POST /v1/tasks/{id}/cancel` 后状态为 cancelled。
 - `TestArtifactDownload`：image 任务完成后 `GET /v1/tasks/{id}/artifacts/0` 返回图片字节，Content-Type 正确；`/artifacts/9` 返回 404。
+- 补充测试：并发任务只取消目标、关闭服务等待全部结果、关闭后拒绝新任务、令牌并发创建和文件权限、CLI 对 HTTP 任务返回接口指引且保持所有者进程存活、排队结果的 steps/artifacts 为空数组、发布版本与命令退出。
 
-- [ ] **步骤 2：实现**
+- [x] **步骤 2：实现**
 
-使用 Go 1.22+ 的路由模式（`mux.HandleFunc("POST /v1/tasks", …)`）。任务在 serve 进程内的 goroutine 中运行，用 `context.WithCancel` 保存每个任务的取消函数（`Cancel` 优先调用它，不在 map 中时退回发信号）。serve 收到 SIGTERM 时取消所有运行中的任务并等待它们写完结果。`cmd/serve.go`：`--listen`（默认 `127.0.0.1:7788`），启动时在 stderr 打印监听地址和令牌文件路径。
+使用 Go 1.22+ 的路由模式（`mux.HandleFunc("POST /v1/tasks", …)`）。任务在 serve 进程内的 goroutine 中运行，用 `context.WithCancel` 保存每个任务的取消函数。HTTP 取消端点优先调用该函数，其他来源的任务退回 `engine.Cancel`。按用户选择的方案 1，启动 HTTP 任务前写入 `<task-dir>/http` 空文件（0600）；`engine.Cancel` 发现标记时返回创建服务的 HTTP 取消接口指引，避免向共享服务 PID 发信号。来源标记是内部存储约定，Request/Result/配置保持现有字段。serve 收到 SIGTERM 时取消所有运行中的任务并等待它们写完结果。`cmd/serve.go`：`--listen`（默认 `127.0.0.1:7788`），启动时在 stderr 打印监听地址和令牌文件路径。
 
-- [ ] **步骤 3：提交**
+- [x] **步骤 3：提交**
 
 ```bash
 go test ./... -race
