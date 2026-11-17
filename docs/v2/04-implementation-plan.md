@@ -1517,7 +1517,7 @@ func (e *Env) RunStep(ctx context.Context, s api.Step, agent string, up []recipe
   5. 把 prompt、stdout、stderr、`result.json` 写进 `StepDir(stepID, round)`；code 循环中的 review 使用该目录的 `review/` 子目录，保留实现者和审查者各自的日志；原生 Schema 文件放在实际调用目录的 `schema.json`，确保并行步骤各自使用对应 Schema；
   6. Outcome 中的超时和取消优先于 Parser 结果；
   7. 结果为 auth / quota 时调用 `Health.Cooldown`。
-  8. Codex 用户 Schema 先检查严格模式兼容性；普通 Schema 直接使用提示词约束。原生 Schema 被明确拒绝时，保留 `schema-failed-*` 日志并重试一次提示词约束；续接失效则保留 `resume-failed-*` 日志。
+  8. Codex 用户 Schema 先检查严格模式兼容性；普通 Schema 直接使用提示词约束。原生 Schema 被明确拒绝时，保留 `schema-failed-*` 日志并重试一次提示词约束；只检查 stdout 错误事件的详情及 stderr（任务 19 根据实测修正回显 Schema 触发的误判）；续接失效则保留 `resume-failed-*` 日志。
 - `RunStep` 按 kind 分派：
   - ask：权限固定 read；Schema 来自 `Req.Schema`（写到本次调用目录的 `schema.json`）；驱动有原生 Schema 时传 `SchemaFile`，否则用 `InlineSchema`；拿到文本后 `ExtractJSON` + `Validate`，失败则在同一会话中发一次修正请求（提示词："你上一次的输出不符合 JSON Schema，错误如下：…… 请只输出修正后的 JSON。"），仍失败则 `schema_mismatch`。
   - image：输出目录 = `Req.OutputDir`（多步骤时加 `/<step.Output 或 step.ID>`），否则 `<task>/out/<step.ID>`；不在工作目录内时加入 `AddDirs`；codex 把参考图放进 `Images`，其他 CLI 把参考图所在目录加入 `AddDirs`；有原生 Schema 时用 `ImageResultSchema`；然后 `artifact.CollectImages`，每张图发一个 `artifact` 事件。
@@ -1839,6 +1839,7 @@ git add internal/server cmd && git commit -m "feat(server): add local HTTP task 
 - 新建：`scripts/smoke.sh`、`docs/v2/USER_GUIDE.md`
 - 测试：`scripts/smoke_test.go`（真实 xcli + 配置 path 指向 fakecli，覆盖脚本成功、失败汇总和确认前退出）
 - 修改：`README.md`、`README.zh-CN.md`、`docs/v2/README.md`、`.goreleaser.yaml`
+- 冒烟修复：`internal/orchestrator/env.go`、`internal/orchestrator/step_test.go`、`internal/driver/antigravity.go`、`internal/driver/antigravity_test.go`、`internal/driver/classify.go`；新增脱敏样本 `internal/driver/testdata/antigravity/error_capacity_with_image.jsonl/.stderr`；同步 `docs/v2/driver-notes.md` 与 `02-architecture.md` 第 4.2/4.3 节。
 
 - [x] **步骤 1：`scripts/smoke.sh`**
 
@@ -1869,6 +1870,8 @@ git add -A && git commit -m "docs: add user guide, smoke script and release conf
 ```
 
 - [ ] **步骤 4：请用户运行 `scripts/smoke.sh`，根据结果修复问题**
+
+2026-11-17：用户已运行两次，最近一组记录重放检查为 7 PASS / 1 FAIL；do 的封面调用遇到 Agy 服务端 503，整合步骤跳过。根据实测补充错误样本，先写失败测试，再修复回显 Schema 导致的额外重试、Agy 错误详情提取和日志指引。原生服务容量错误保留 failed 判定；后续真实复测需用户确认额度授权。
 
 ---
 

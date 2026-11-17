@@ -79,6 +79,7 @@ func (p *antigravityParser) Feed(line []byte) []Event {
 		Result struct {
 			ConversationID   string `json:"conversation_id"`
 			Status, Response string
+			Error            json.RawMessage
 			StructuredOutput json.RawMessage   `json:"structured_output"`
 			DeniedActions    []json.RawMessage `json:"denied_actions"`
 			Usage            *api.Usage
@@ -124,7 +125,7 @@ func (p *antigravityParser) Feed(line []byte) []Event {
 			}
 		}
 		if r.Status != "SUCCESS" {
-			p.fail(string(line))
+			p.fail(string(r.Error))
 		}
 		events = append(events, Event{Kind: "message", Text: p.result.Text})
 	}

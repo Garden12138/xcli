@@ -191,3 +191,13 @@ cover 分支完成，产出 1376×768 的 PNG 和 JPEG；PNG 通过签名、chun
 在新临时仓库使用同一需求，原生 read 会话设置放行 ls/pwd，完整流程返回 completed：Codex 规划 → Antigravity 文案与生图并行 → Codex 整合 → Cursor 审查。共启动五次 CLI，文案、图片、代码三个步骤全部 completed，审查 verdict 为 pass、issues 为空。
 
 本次生图调用了 image-generator 子代理，原生图片写入当前会话 brain 目录，再由 Agy 转为 PNG 放入约定输出目录；前期有较长的工具调用查找过程。Codex 将交接文案写入 README，并把 PNG 复制为 docs/cover.png。目标图片为 1376×768、1345864 字节，通过 PNG 签名、全部 chunk CRC 与 IDAT 解压检查，且与上游产物逐字节一致。最终变更仅含 README.md、docs/cover.png；临时仓库仍只有最初的基线提交。
+
+### 任务 19：用户终端冒烟中的服务容量错误（2026-11-17）
+
+读取用户运行 scripts/smoke.sh 留下的两组 JSON 和任务事件。最近一组在本地时间 11:36–11:50 运行；重放脚本的检查逻辑得到 7 PASS / 1 FAIL：agents、三个 ask、Schema、生图、code 通过，do 的 cover 失败，integrate 跳过。更早一组的 Schema ask 因未放行的 command 被原生拒绝，最近一组该项已完成；read 会话设置沿用既有映射。
+
+两次 do 的 cover 原生最终事件都为 ERROR，`result.error` 为 `API error ... UNAVAILABLE (code 503): No capacity available for model gemini-3.8-flash-high on the server`。stdout 同时包含 `structured_output.files`、回显的 `json_schema`，输出目录已有真实 PNG。两张 PNG 均为 1376×768，通过全部 chunk CRC 和 IDAT 解压检查；stderr 为空，任务事件均已写入 task.finished。
+
+xcli 曾扫描整个 stdout 的 `additionalProperties`，把回显 Schema 误当成原生 Schema 拒绝，去掉 --json-schema 并续接重试一次，随后再次得到 503。根据实测调整：降级只检查 stdout 错误事件中的 error/message 及 stderr；Agy 的错误分类只检查 result.error。最终 ERROR 按既有 failed 规则处理，生成文件留在原目录供排查。错误指引同时包含 stdout.jsonl 和 stderr.log。
+
+脱敏的首个原生结果保存为 `error_capacity_with_image.jsonl/.stderr`。fakecli 回归测试确认此类错误只调用一次；真正的 Schema 拒绝仍会降级重试，正常正文中的权限或额度词汇按正文处理。本次排查和修复使用已有记录及 fakecli。

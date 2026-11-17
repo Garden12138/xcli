@@ -217,6 +217,36 @@ func TestRunStepNativeSchemaRefusalUsesInline(t *testing.T) {
 	}
 }
 
+func TestRunStepRuntimeFailureWithEchoedSchemaDoesNotRetry(t *testing.T) {
+	fixture, err := filepath.Abs(filepath.Join("..", "driver", "testdata", "antigravity", "error_capacity_with_image.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := stepEnv(t, testutil.FakeScript{"agy": {{StdoutFile: fixture, WritePNG: "{{OUT}}/cover.png", Exit: 1}}}, api.Request{Capability: api.CapImage})
+	r := e.RunStep(context.Background(), api.Step{ID: "cover", Kind: api.KindImage}, "antigravity", nil)
+	if r.Result.Status != api.StatusFailed || r.Result.Error == nil || r.Result.Error.Kind != "failed" || len(testutil.FakeCalls(t)) != 1 || len(r.Artifacts) != 0 {
+		t.Fatalf("capacity failure retried or accepted: %+v, calls=%+v", r, testutil.FakeCalls(t))
+	}
+	if _, err := os.Stat(e.Task.Path("steps", "cover-r1", "schema-failed-stdout.jsonl")); !os.IsNotExist(err) {
+		t.Fatalf("capacity error preserved as schema refusal: %v", err)
+	}
+	if _, err := os.Stat(e.Task.Path("out", "cover", "cover.png")); err != nil {
+		t.Fatal("generated image should remain available for diagnosis", err)
+	}
+}
+
+func TestRunStepAntigravitySchemaRefusalUsesInline(t *testing.T) {
+	e := stepEnv(t, testutil.FakeScript{"agy": {
+		{Stdout: []string{`{"event":"result","result":{"conversation_id":"agy-schema","status":"ERROR","error":"invalid schema: additionalProperties is required"}}`}, Exit: 1},
+		{Stdout: []string{`{"event":"result","result":{"conversation_id":"agy-schema","status":"SUCCESS","response":"{\"files\":[]}"}}`}, WritePNG: "{{OUT}}/cover.png"},
+	}}, api.Request{Capability: api.CapImage})
+	r := e.RunStep(context.Background(), api.Step{ID: "cover", Kind: api.KindImage}, "antigravity", nil)
+	calls := testutil.FakeCalls(t)
+	if r.Result.Status != api.StatusCompleted || len(r.Artifacts) != 1 || len(calls) != 2 || strings.Contains(strings.Join(calls[1].Args, " "), "--json-schema") || !strings.Contains(strings.Join(calls[1].Args, " "), "--conversation agy-schema") {
+		t.Fatalf("native schema refusal: %+v, calls=%+v", r, calls)
+	}
+}
+
 func TestRunStepLaxSchemaUsesPrompt(t *testing.T) {
 	e := stepEnv(t, testutil.FakeScript{"codex": {{Stdout: codexOK(`{"answer":"ok"}`)}}}, api.Request{Schema: json.RawMessage(`{"type":"object","properties":{"answer":{"type":"string"}}}`)})
 	r := e.RunStep(context.Background(), api.Step{ID: "main", Kind: api.KindAsk}, "codex", nil)

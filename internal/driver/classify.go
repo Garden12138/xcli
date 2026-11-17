@@ -53,6 +53,6 @@ func errorMessage(name string, kind ErrorKind) string {
 	case ErrProtocol:
 		return "请查看步骤日志中的 stdout.jsonl 和 stderr.log，检查 CLI 输出格式后重试"
 	default:
-		return "请查看步骤日志中的 stderr.log，检查 CLI 参数、模型和运行环境后重试"
+		return "请查看步骤日志中的 stdout.jsonl 和 stderr.log，检查 CLI 参数、模型和运行环境后重试"
 	}
 }

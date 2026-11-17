@@ -227,18 +227,38 @@ func (e *Env) invoke(ctx context.Context, agent string, stepID string, round int
 		return result
 	}
 	result := once()
-	if inv.SchemaFile != "" && result.ErrorKind == driver.ErrFailed {
-		text := strings.ToLower(tail(filepath.Join(dir, "stdout.jsonl"), 65536) + tail(filepath.Join(dir, "stderr.log"), 65536))
-		if strings.Contains(text, "invalid_json_schema") || strings.Contains(text, "invalid schema") || strings.Contains(text, "additionalproperties") || strings.Contains(text, "schema is not supported") {
-			preserve(dir, "schema-failed")
-			inv.SchemaFile = ""
-			inv.Prompt += "\n请只输出符合以下 JSON Schema 的 JSON：\n" + string(schema)
-			inv.SessionID = result.SessionID
-			e.emit("notice", stepID, agent, map[string]string{"text": "已改用提示词约束与本地 Schema 校验"})
-			return once()
-		}
+	if inv.SchemaFile != "" && result.ErrorKind == driver.ErrFailed && schemaRejected(tail(filepath.Join(dir, "stdout.jsonl"), 65536), tail(filepath.Join(dir, "stderr.log"), 65536)) {
+		preserve(dir, "schema-failed")
+		inv.SchemaFile = ""
+		inv.Prompt += "\n请只输出符合以下 JSON Schema 的 JSON：\n" + string(schema)
+		inv.SessionID = result.SessionID
+		e.emit("notice", stepID, agent, map[string]string{"text": "已改用提示词约束与本地 Schema 校验"})
+		return once()
 	}
 	return result
+}
+
+// 只检查原生错误详情；result 中回显的 Schema 和正常正文也含关键字。
+func schemaRejected(stdout, stderr string) bool {
+	text := stderr
+	for _, line := range strings.Split(stdout, "\n") {
+		var event struct {
+			Type, Event, Message string
+			Error                json.RawMessage
+			Result               struct{ Error json.RawMessage }
+		}
+		if json.Unmarshal([]byte(line), &event) != nil {
+			continue
+		}
+		if event.Event == "result" {
+			text += "\n" + string(event.Result.Error)
+		}
+		if event.Type == "error" || event.Type == "turn.failed" {
+			text += "\n" + event.Message + "\n" + string(event.Error)
+		}
+	}
+	text = strings.ToLower(text)
+	return strings.Contains(text, "invalid_json_schema") || strings.Contains(text, "invalid schema") || strings.Contains(text, "additionalproperties") || strings.Contains(text, "schema is not supported")
 }
 
 func strictSchema(raw []byte) bool {

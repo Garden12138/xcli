@@ -3,6 +3,7 @@ package driver
 import (
 	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/Garden12138/xcli/internal/api"
@@ -140,5 +141,21 @@ func TestAntigravityRecordedFixtures(t *testing.T) {
 	}
 	if r := replayFixture(t, "antigravity", "error_bad_model", 1); r.ErrorKind == ErrNone {
 		t.Fatal("bad model passed")
+	}
+}
+
+func TestAntigravityCapacityFailureWithStructuredImage(t *testing.T) {
+	r := replayFixture(t, "antigravity", "error_capacity_with_image", 0)
+	if r.ErrorKind != ErrFailed || r.SessionID != "capacity-smoke-session" || !json.Valid([]byte(r.Text)) || !strings.Contains(r.Error, "stdout.jsonl") {
+		t.Fatalf("capacity failure with output: %+v", r)
+	}
+}
+
+func TestAntigravityClassifiesResultErrorOnly(t *testing.T) {
+	d, _ := New("antigravity", config.Default().Agents["antigravity"])
+	p := d.NewParser()
+	p.Feed([]byte(`{"event":"result","result":{"status":"ERROR","response":"login quota permission denied","error":"API error: UNAVAILABLE (code 503): No capacity available"}}`))
+	if r := p.Finish(0, ""); r.ErrorKind != ErrFailed {
+		t.Fatalf("response treated as failure cause: %+v", r)
 	}
 }
