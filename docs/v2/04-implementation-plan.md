@@ -1169,7 +1169,7 @@ func (c *Cache) Reset() error                                     // 清除所�
 NAME         INSTALLED  VERSION          AUTH     STATUS               CODE REVIEW ASK IMAGE
 codex        yes        codex-cli 0.167  ok       可用                  3    2      2   2
 cursor       yes        2026.10.22       ok       可用                  3    3      2   1
-antigravity  yes        1.5.2            unknown  冷却中（额度）至 17:40  2    2      3   3
+antigravity  yes        1.5.2            unknown  冷却中（额度）至 17:40  2    2      2   3
 ```
 
 `--json` 输出 `[{name, installed, path, version, auth, available, cooldown_until, cooldown_reason, strengths}]`；`--reset` 先清除冷却再输出。
@@ -1563,7 +1563,7 @@ func Execute(ctx context.Context, e *Env, plan api.Plan) api.Result
 - [x] **步骤 1：写测试**
 
 Router：
-- `TestRouterOrdersByStrength`：image → `[antigravity, codex, cursor]`；review → `[cursor, codex, antigravity]`。
+- `TestRouterOrdersByStrength`：ask → `[codex, cursor, antigravity]`（默认分数均为 2，配置顺序打破同分）；image → `[antigravity, codex, cursor]`；review → `[cursor, codex, antigravity]`。
 - `TestRouterRespectsAllowedOrder`：`Req.Agents = ["cursor","codex"]`，ask（两者分数都是 2）→ `[cursor, codex]`。
 - `TestRouterSkipsCooldownAndMissing`：codex 冷却中、agy 不在 PATH → code 只剩 `[cursor]`。
 - `TestRouterExclude`：review 排除 cursor → `[codex, antigravity]`。

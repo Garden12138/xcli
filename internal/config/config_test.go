@@ -27,6 +27,11 @@ func TestDefaultMatchesDesign(t *testing.T) {
 	if c.Strength("antigravity", "image") != 3 || c.Strength("cursor", "review") != 3 || c.Enabled("unknown") {
 		t.Fatal("agent strengths or availability")
 	}
+	for _, name := range AgentOrder {
+		if c.Strength(name, "ask") != 2 {
+			t.Errorf("%s ask strength = %d, want 2", name, c.Strength(name, "ask"))
+		}
+	}
 }
 
 func TestParseMergesFieldByField(t *testing.T) {

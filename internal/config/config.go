@@ -85,7 +85,7 @@ func Default() Config {
 			Strengths: []map[string]int{
 				{"code": 3, "review": 2, "ask": 2, "image": 2, "plan": 3},
 				{"code": 3, "review": 3, "ask": 2, "image": 1, "plan": 1},
-				{"code": 2, "review": 2, "ask": 3, "image": 3, "plan": 2},
+				{"code": 2, "review": 2, "ask": 2, "image": 3, "plan": 2},
 			}[i],
 		}
 	}

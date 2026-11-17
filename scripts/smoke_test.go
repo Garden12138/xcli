@@ -68,12 +68,13 @@ func smokeSetup(t *testing.T, failAsk bool) string {
 	fake := testutil.FakeScript{
 		"codex": {
 			{Stdout: codexReply("add.go 提供 Add 函数")},
+			{Stdout: codexReply(`{"functions":["Add"]}`)},
 			{Stdout: codexReply("添加表驱动测试"), WriteFiles: map[string]string{"add_test.go": "package demo\nimport \"testing\"\nfunc TestAdd(t *testing.T) { for _, c := range []struct{a,b,want int}{{1,2,3},{-1,1,0}} { if got:=Add(c.a,c.b);got!=c.want {t.Fatal(got)} } }\n"}},
 			{Stdout: codexReply(plan)},
 			{Stdout: codexReply("更新 README"), WriteFiles: map[string]string{"README.md": "# demo\n\nAdd 示例项目。\n\n![封面](docs/cover.png)\n"}, WritePNG: "docs/cover.png"},
 		},
 		"cursor-agent": {{Stdout: cursorReply("Add 返回两数之和")}, {Stdout: cursorReply(pass)}, {Stdout: cursorReply("Add 示例项目。")}, {Stdout: cursorReply(pass)}},
-		"agy":          {{Stdout: agyReply("Add 返回两数之和")}, {Stdout: agyReply(`{"functions":["Add"]}`)}, {Stdout: agyReply(`{"files":[]}`), WritePNG: "{{OUT}}/image.png"}, {Stdout: agyReply(`{"files":[]}`), WritePNG: "{{OUT}}/cover.png"}},
+		"agy":          {{Stdout: agyReply("Add 返回两数之和")}, {Stdout: agyReply(`{"files":[]}`), WritePNG: "{{OUT}}/image.png"}, {Stdout: agyReply(`{"files":[]}`), WritePNG: "{{OUT}}/cover.png"}},
 	}
 	if failAsk {
 		fake["codex"][0] = testutil.FakeStep{Stdout: []string{`{"type":"turn.failed","error":{"message":"scripted failure"}}`}, Exit: 1}
