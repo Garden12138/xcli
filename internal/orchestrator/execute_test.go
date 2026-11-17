@@ -43,10 +43,11 @@ func TestExecuteDependencyHandoff(t *testing.T) {
 }
 
 func TestExecuteRetainsImageWhenReadStepDenied(t *testing.T) {
+	fallback := false
 	e := stepEnv(t, testutil.FakeScript{
 		"agy":   {{Stdout: []string{`{"event":"result","result":{"status":"SUCCESS","response":"","denied_actions":[{"action":"read_file","display_name":"ReadFile"}]}}`}}},
 		"codex": {{Stdout: codexOK(`{"files":[]}`), WritePNG: "{{OUT}}/cover.png"}},
-	}, api.Request{})
+	}, api.Request{Fallback: &fallback})
 	p := api.Plan{Steps: []api.Step{
 		{ID: "intro", Kind: api.KindAsk, Agent: "antigravity"},
 		{ID: "cover", Kind: api.KindImage, Agent: "codex"},
@@ -55,6 +56,21 @@ func TestExecuteRetainsImageWhenReadStepDenied(t *testing.T) {
 	r := Execute(context.Background(), e, p)
 	if r.Status != api.StatusFailed || r.Error == nil || r.Error.Kind != "permission_denied" || len(r.Artifacts) != 1 || r.Artifacts[0].MIME != "image/png" || r.Steps[1].Status != api.StatusCompleted || r.Steps[2].Status != api.StatusSkipped || len(testutil.FakeCalls(t)) != 2 {
 		t.Fatalf("read denial: %+v", r)
+	}
+}
+
+func TestExecuteFallbackOnReadPermissionDenied(t *testing.T) {
+	e := stepEnv(t, testutil.FakeScript{
+		"agy":   {{Stdout: []string{`{"event":"result","result":{"status":"SUCCESS","response":"","denied_actions":[{"action":"read_file","display_name":"ReadFile"}]}}`}}},
+		"codex": {{Stdout: codexOK("read fallback success")}},
+	}, api.Request{Agents: []string{"antigravity", "codex"}})
+	r := Execute(context.Background(), e, api.Plan{Steps: []api.Step{{ID: "main", Kind: api.KindAsk, Agent: "antigravity"}}})
+	calls := testutil.FakeCalls(t)
+	if r.Status != api.StatusCompleted || len(r.Steps) != 1 || r.Steps[0].Agent != "codex" || !reflect.DeepEqual(r.Steps[0].Fallbacks, []string{"antigravity: permission_denied"}) || len(calls) != 2 || calls[0].Name != "agy" || calls[1].Name != "codex" {
+		t.Fatalf("read permission fallback: %+v, calls=%+v", r, calls)
+	}
+	if !strings.Contains(strings.Join(calls[1].Args, " "), "-s read-only") {
+		t.Fatal("fallback must retain read-only permission")
 	}
 }
 

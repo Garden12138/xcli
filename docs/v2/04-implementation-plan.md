@@ -1014,7 +1014,7 @@ func TestCodexParserEdgeCases(t *testing.T) {
 
 - [x] **步骤 3：写分类测试**
 
-`TestClassifyText` 表驱动：`"Not logged in. Run codex login"` → auth；`"401 Unauthorized"` → auth；`"429 Too Many Requests"`、`"rate limit exceeded"`、`"quota exceeded"` → quota；`"Workspace Trust Required"` → trust；`"something else"` → ErrNone。`TestSwitchable`：auth / quota / trust / not_installed 对所有 kind 为 true；no_artifact 只对 `KindImage` 为 true；permission_denied、timeout、schema_mismatch 为 false。
+`TestClassifyText` 表驱动：`"Not logged in. Run codex login"` → auth；`"401 Unauthorized"` → auth；`"429 Too Many Requests"`、`"rate limit exceeded"`、`"quota exceeded"` → quota；`"Workspace Trust Required"` → trust；`"something else"` → ErrNone。`TestSwitchable`：auth / quota / trust / not_installed 对所有 kind 为 true；no_artifact 只对 `KindImage` 为 true；permission_denied 对 ask / review 为 true，对 code / image 为 false；timeout、schema_mismatch 为 false。
 
 ```bash
 go test ./internal/driver/ -race     # 期望失败
@@ -1580,6 +1580,7 @@ Router：
 - `TestExecuteSkipsDependents`：a 失败（非可切换错误）→ 依赖 a 的 b 为 `skipped`，与 a 无关的 c 为 completed，任务状态 `failed`。
 - `TestExecuteSerializesCodeOnSameWorkdir`：两个互不依赖的 code 步骤，同一工作目录 → 按时间不重叠（用 fakecli 记录调用时间，或休眠 300ms 后检查总耗时 ≥ 600ms）。
 - `TestExecuteFallbackOnQuota`：codex 返回额度错误 → 自动改用 cursor 完成；`Fallbacks == ["codex: quota"]`；发出 `agent.fallback` 事件；codex 进入冷却。
+- `TestExecuteFallbackOnReadPermissionDenied`：antigravity 的 ask 返回 permission_denied 后由 codex 以只读权限完成；`Fallbacks == ["antigravity: permission_denied"]`。关闭 fallback 的测试继续覆盖只读失败时图片保留与依赖跳过。
 - `TestExecuteNoFallbackWhenLocked`：`Req.Agent = "codex"` 时额度错误直接失败。
 - `TestExecuteSummaryAndStatus`：末端步骤的文本成为 `Summary`；包含 needs_attention 步骤时任务状态为 `needs_attention`。
 

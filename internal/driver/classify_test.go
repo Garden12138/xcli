@@ -31,7 +31,10 @@ func TestSwitchable(t *testing.T) {
 		if got := ErrNoArtifact.Switchable(kind); got != (kind == api.KindImage) {
 			t.Errorf("no artifact for %s: %t", kind, got)
 		}
-		for _, errKind := range []ErrorKind{ErrNone, ErrPermissionDenied, ErrTimeout, ErrCancelled, ErrSchemaMismatch, ErrProtocol, ErrFailed} {
+		if got := ErrPermissionDenied.Switchable(kind); got != (kind == api.KindAsk || kind == api.KindReview) {
+			t.Errorf("permission denied for %s: %t", kind, got)
+		}
+		for _, errKind := range []ErrorKind{ErrNone, ErrTimeout, ErrCancelled, ErrSchemaMismatch, ErrProtocol, ErrFailed} {
 			if errKind.Switchable(kind) {
 				t.Errorf("%s switched for %s", errKind, kind)
 			}

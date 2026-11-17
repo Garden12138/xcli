@@ -204,7 +204,7 @@ Antigravity 显式 deny 规则命中时，`denied_actions` 可能为空：读取
 | `auth` | stderr 或事件里出现未登录、401、"login"、"not authenticated" 等 | 能 |
 | `quota` | 额度、429、rate limit、usage limit | 能 |
 | `trust` | Cursor 工作区信任提示 | 能 |
-| `permission_denied` | `denied_actions`、沙箱拒绝 | 不能（换 CLI 解决不了权限设置问题） |
+| `permission_denied` | `denied_actions`、沙箱拒绝 | ask / review 能，code / image 保持失败 |
 | `no_artifact` | 图片步骤完成但没收集到有效图片 | 仅图片步骤能 |
 | `schema_mismatch` | 一轮修复后输出仍不符合 Schema | 不能 |
 | `timeout` / `cancelled` | xcli 控制 | 不能 |

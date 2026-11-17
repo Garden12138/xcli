@@ -10,6 +10,8 @@ func (k ErrorKind) Switchable(kind api.Kind) bool {
 	switch k {
 	case ErrNotInstalled, ErrAuth, ErrQuota, ErrTrust:
 		return true
+	case ErrPermissionDenied:
+		return kind == api.KindAsk || kind == api.KindReview
 	case ErrNoArtifact:
 		return kind == api.KindImage
 	}
