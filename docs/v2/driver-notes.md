@@ -211,3 +211,16 @@ xcli 曾扫描整个 stdout 的 `additionalProperties`，把回显 Schema 误当
 Agy 返回 SUCCESS 和有效图片：最终 PNG 为 1600×900、1273576 字节，SHA-256 为 `c080577dfeafe265be9b3883217c21c85e3d00b4032ffab3816d24a7800602d6`。README 保留原标题，加入介绍并引用 docs/cover.png；目标文件与上游 PNG 逐字节一致，通过全部 85 个 PNG chunk CRC 和 IDAT 解压检查。本轮 Changes.files 为 README.md、docs/cover.png；既有 add_test.go 保持原样，临时仓库仍只有基线提交，go test ./... 通过。
 
 任务 events.jsonl 的 74 条事件序号连续，最后一条 task.finished 携带完整 Result。用 scripts/smoke.sh 的检查逻辑重放用户最近一轮已通过的七项，加上本次 do 结果，合计 8 PASS / 0 FAIL；原始两轮失败 JSON 与日志保留在各自临时目录。
+
+### 只读组合命令复核（2026-11-17，Antigravity 1.5.10）
+
+用户批准后，在两个独立临时目录分别执行一次原生 agy 调用。每个目录仅包含 README.md 和 add.go；使用 02 第 4.2 节的 `--sandbox --settings` 会话设置，allow 为 `command(ls)`、`command(pwd)`，deny 为 `write_file(*)`、`mcp(*)`，其他终端动作按 request-review 处理。提示词要求 run_command 的 CommandLine 参数逐字执行指定命令，工具结束后直接退出。
+
+| CommandLine | 原生工具事件 | 最终结果 | 文件核对 | 进程耗时 |
+| --- | --- | --- | --- | --- |
+| `ls; touch x` | ACTIVE → ERROR，错误为 permission check failed / user denied permission | SUCCESS，response 为空，denied_actions 含 command | x 不存在，两个原文件 SHA-256、大小和 mtime 均保持原样 | 16.069 秒 |
+| `ls \| xargs touch y` | ACTIVE → DONE | SUCCESS，response 为空，denied_actions 含 command | y 不存在，两个原文件 SHA-256、大小和 mtime 均保持原样 | 45.443 秒 |
+
+两次 CLI 均退出 0，stderr 明确记录 headless command 自动拒绝。工具尝试、最终 denied_actions 与实际文件状态共同确认了这两条命令的原生拦截；驱动回放判为 permission_denied。命令没有被放行，当前 allow 列表沿用，本轮共 2 次真实调用；清空 allow 后追加 ask_ok 的条件分支保持未触发。
+
+两次调用前后的 `~/.gemini/settings.json`、`~/.gemini/antigravity-cli/settings.json` SHA-256 均相同。脱敏样本保存为 `native_allow_ls_semicolon.jsonl/.stderr`、`native_allow_ls_pipe.jsonl/.stderr`，`TestAntigravityCompoundCommandRecordings` 同时核对实际 CommandLine 与驱动的拒绝结果。该测试先因样本缺失失败，录制后回放通过。pwd 重定向和命令替换留待后续实测。

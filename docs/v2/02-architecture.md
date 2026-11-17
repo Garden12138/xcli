@@ -170,7 +170,7 @@ type Parser interface {
 
 ask 文案通过最终回复交接，由下游 code 步骤写入文件。规划指令按此区分只读步骤和写入步骤；读取文件使用工作目录内的绝对路径。
 
-已实测 ls/pwd 和文件读取成功；原生文件写入、未放行的 printf 写入、ls 输出重定向均被拒绝，工作目录内容保持原样。pwd 重定向、命令拼接、管道及命令替换尚无实测结果，覆盖范围见 `driver-notes.md`。
+已实测 ls/pwd 和文件读取成功；原生文件写入、未放行的 printf 写入、ls 输出重定向均被拒绝，工作目录内容保持原样。2026-11-17 在 Agy 1.5.10 下追加验证：`ls; touch x`、`ls | xargs touch y` 都触发原生 command 拒绝，目标文件不存在，原文件内容和修改时间保持原样；现有 allow 设置沿用。pwd 重定向、命令替换仍待实测，具体样本见 `driver-notes.md`。
 
 2026-11-17 根据真实冒烟补充：`--json-schema` 的最终事件会回显 `result.json_schema`。服务返回 503、模型暂无容量时，也可能带有 `structured_output` 和已生成的真实图片；仍以最终 ERROR 状态处理。参数映射沿用上表，原生 Schema 降级依据错误详情判定。
 
@@ -191,6 +191,8 @@ Antigravity 显式 deny 规则命中时，`denied_actions` 可能为空：读取
 任务 17 复测还观察到：`read_file` 已成功读取 README，附带 `ls -la` 被拒，最终 SUCCESS 且有完整文案、没有 `denied_actions`。当前工具级拒绝规则仍将该步骤判为 `permission_denied`；该样本来自调整前的 read 设置；当前映射原生放行 ls/pwd，驱动继续按实际权限拒绝事件判为 permission_denied。详见 `driver-notes.md` 的 `ask_read_probe_denied` 样本。
 
 原生定向放行设置验证中，未放行的终端命令触发 headless 审批拒绝后，CLI 立即结束当前会话，输出 SUCCESS、空 response 和 denied_actions；后续操作按未执行记录。驱动按权限拒绝处理，实测样本为 `native_allow_write_checks`。
+
+Agy 1.5.10 的组合命令复核中，`ls; touch x` 的 run_command 状态为 ERROR，`ls | xargs touch y` 的工具状态为 DONE；两者最终均为 SUCCESS、空 response、denied_actions 含 command。文件状态核对确认两个命令均被原生拦截，驱动按 permission_denied 处理；回放测试同时核对准确的 CommandLine，样本为 `native_allow_ls_semicolon`、`native_allow_ls_pipe`。
 
 2026-11-17 的 `error_capacity_with_image` 样本中，`result.status=ERROR`、`result.error` 为 `UNAVAILABLE (code 503): No capacity available`，同时有完整 `structured_output`、回显的 `json_schema` 和真实 PNG。按 4.4 归为 unavailable，默认允许切换并冷却该 CLI 5 分钟；错误分类只读取 `result.error`。原生 Schema 降级只匹配 stdout 错误事件的详情及 stderr。回显 Schema 中的 `additionalProperties` 作为普通数据处理，真实 Schema 拒绝仍触发一次提示词约束重试。原始输出与图片保留供排查，错误提示同时指向 stdout.jsonl 和 stderr.log。
 

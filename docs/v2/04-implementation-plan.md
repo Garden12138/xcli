@@ -1737,7 +1737,8 @@ git add internal/engine cmd && git commit -m "feat: add engine and task commands
 - 修改：`internal/driver/antigravity.go`、`scripts/probe/main.go`、`scripts/probe/main_test.go`（根据实测调整会话级 read 设置，并保留原有权限拒绝判定）
 - 修改：`internal/recipe/prompts/plan.md`、`docs/v2/driver-notes.md`、`docs/v2/02-architecture.md` 第 4.2/4.3 节（根据实测明确步骤权限与交接）
 - 新增实测样本：`internal/driver/testdata/antigravity/ask_read_probe_denied.jsonl`、`.stderr`（成功回复文本，但旧会话规则拒绝附带 ls；保留旧样本，用户选择原生放行读取命令）
-- 新增原生配置验证样本：`internal/driver/testdata/antigravity/native_allow_read_ok.jsonl`、`native_allow_write_checks.jsonl`、`native_allow_ls_redirect_denied.jsonl` 及对应 `.stderr`；原生放行 ls/pwd，原生文件写入、未放行的 printf 及 ls 重定向已验证为拒绝；采用该会话设置，命令组合尚无实测结果。
+- 新增原生配置验证样本：`internal/driver/testdata/antigravity/native_allow_read_ok.jsonl`、`native_allow_write_checks.jsonl`、`native_allow_ls_redirect_denied.jsonl` 及对应 `.stderr`；原生放行 ls/pwd，原生文件写入、未放行的 printf 及 ls 重定向已验证为拒绝；采用该会话设置，后续组合命令验证见下条。
+- 用户后续批准的组合命令复核：新增 `internal/driver/testdata/antigravity/native_allow_ls_semicolon.jsonl`、`native_allow_ls_pipe.jsonl` 及对应 `.stderr`；先写 `TestAntigravityCompoundCommandRecordings` 验证缺少样本时失败，再录制并回放。Agy 1.5.10 对 `ls; touch x` 和 `ls | xargs touch y` 均原生拒绝，文件保持原样，沿用当前 allow 列表；共 2 次真实调用。
 - 修改：`internal/engine/engine.go`（capability auto 时调用规划器）、`internal/orchestrator/router.go`（抽取内部候选过滤，复用于规划提示词）
 - 测试：`internal/orchestrator/planner_test.go`、`internal/engine/engine_test.go`、`cmd/run_test.go`；修改 `internal/orchestrator/execute_test.go` 的并行断言及只读失败时的图片保留用例；`internal/driver/antigravity_test.go` 补充空文本与多种权限拒绝的解析用例
 

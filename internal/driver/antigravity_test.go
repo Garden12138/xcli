@@ -2,6 +2,8 @@ package driver
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -76,6 +78,40 @@ func TestAntigravityNativeAllowFixtures(t *testing.T) {
 	redirect := replayFixture(t, "antigravity", "native_allow_ls_redirect_denied", 0)
 	if redirect.ErrorKind != ErrPermissionDenied || redirect.Text != "" || !reflect.DeepEqual(redirect.Denied, []string{"command"}) {
 		t.Fatalf("native allow redirect: %+v", redirect)
+	}
+}
+
+func TestAntigravityCompoundCommandRecordings(t *testing.T) {
+	for _, tc := range []struct{ fixture, command string }{
+		{"native_allow_ls_semicolon", "ls; touch x"},
+		{"native_allow_ls_pipe", "ls | xargs touch y"},
+	} {
+		t.Run(tc.fixture, func(t *testing.T) {
+			raw, err := os.ReadFile(filepath.Join("testdata", "antigravity", tc.fixture+".jsonl"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			attempted := false
+			for _, line := range strings.Split(string(raw), "\n") {
+				var event struct {
+					StepUpdate struct {
+						ToolName string `json:"tool_name"`
+						ToolInfo struct {
+							Parameters struct{ CommandLine string }
+						} `json:"tool_info"`
+					} `json:"step_update"`
+				}
+				if json.Unmarshal([]byte(line), &event) == nil && event.StepUpdate.ToolName == "run_command" && event.StepUpdate.ToolInfo.Parameters.CommandLine == tc.command {
+					attempted = true
+				}
+			}
+			if !attempted {
+				t.Fatalf("missing actual run_command attempt for %q", tc.command)
+			}
+			if r := replayFixture(t, "antigravity", tc.fixture, 0); r.ErrorKind != ErrPermissionDenied || !reflect.DeepEqual(r.Denied, []string{"command"}) {
+				t.Fatalf("compound command result: %+v", r)
+			}
+		})
 	}
 }
 
