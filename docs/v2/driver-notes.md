@@ -200,6 +200,8 @@ cover 分支完成，产出 1376×768 的 PNG 和 JPEG；PNG 通过签名、chun
 
 xcli 曾扫描整个 stdout 的 `additionalProperties`，把回显 Schema 误当成原生 Schema 拒绝，去掉 --json-schema 并续接重试一次，随后再次得到 503。根据实测调整：降级只检查 stdout 错误事件中的 error/message 及 stderr；Agy 的错误分类只检查 result.error。最终 ERROR 按既有 failed 规则处理，生成文件留在原目录供排查。错误指引同时包含 stdout.jsonl 和 stderr.log。
 
+后续按用户要求将 503、unavailable、no capacity、overloaded 细分为 unavailable：该错误允许所有步骤类型切换到其他 CLI，并冷却原 CLI 5 分钟。回放同一样本的测试覆盖默认 fallback 切换到 Codex；Agy 的分类范围继续限定为 result.error。
+
 脱敏的首个原生结果保存为 `error_capacity_with_image.jsonl/.stderr`。fakecli 回归测试确认此类错误只调用一次；真正的 Schema 拒绝仍会降级重试，正常正文中的权限或额度词汇按正文处理。本次排查和修复使用已有记录及 fakecli。
 
 ### 任务 19：获批后的 do 定向复测（2026-11-17）

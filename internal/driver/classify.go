@@ -8,7 +8,7 @@ import (
 
 func (k ErrorKind) Switchable(kind api.Kind) bool {
 	switch k {
-	case ErrNotInstalled, ErrAuth, ErrQuota, ErrTrust:
+	case ErrNotInstalled, ErrAuth, ErrQuota, ErrTrust, ErrUnavailable:
 		return true
 	case ErrPermissionDenied:
 		return kind == api.KindAsk || kind == api.KindReview
@@ -25,6 +25,7 @@ func ClassifyText(stderrTail, text string) ErrorKind {
 		keys []string
 	}{
 		{ErrQuota, []string{"usage_limit_exceeded", "quota_exceeded", "usage limit", "quota", "rate limit", "rate_limit", "429", "too many requests"}},
+		{ErrUnavailable, []string{"503", "unavailable", "no capacity", "overloaded"}},
 		{ErrAuth, []string{"not logged", "not authenticated", "unauthorized", "401", "authentication", "login", "sign in"}},
 		{ErrTrust, []string{"workspace trust", "trust required", "工作区信任"}},
 		{ErrPermissionDenied, []string{"permission denied", "permission check failed", "sandbox denied"}},
@@ -48,6 +49,8 @@ func errorMessage(name string, kind ErrorKind) string {
 		return "请在终端运行 " + command + " login 登录后重试"
 	case ErrQuota:
 		return name + " 额度暂不可用，请稍后重试或选择其他 CLI"
+	case ErrUnavailable:
+		return name + " 服务暂不可用，请稍后重试或选择其他 CLI；详情见步骤日志 stdout.jsonl 和 stderr.log"
 	case ErrTrust:
 		return "请检查 Cursor 的 --trust 和工作目录设置后重试"
 	case ErrPermissionDenied:

@@ -37,6 +37,7 @@ const (
 	ErrNotInstalled     ErrorKind = "not_installed"
 	ErrAuth             ErrorKind = "auth"
 	ErrQuota            ErrorKind = "quota"
+	ErrUnavailable      ErrorKind = "unavailable"
 	ErrTrust            ErrorKind = "trust"
 	ErrPermissionDenied ErrorKind = "permission_denied"
 	ErrNoArtifact       ErrorKind = "no_artifact"

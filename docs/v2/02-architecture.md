@@ -62,7 +62,7 @@ internal/api/           协议 v1 公共类型：Request / Plan / Step / Result 
 internal/config/        配置加载、默认值、合并
 internal/proc/          进程启动、进程组取消、超时、逐行读取、并发槽位、GUI 场景 PATH 修复
 internal/driver/        Driver 接口 + codex / cursor / antigravity 实现 + 错误分类
-internal/health/        CLI 健康探测缓存与冷却（额度耗尽、未登录）
+internal/health/        CLI 健康探测缓存与冷却（额度耗尽、未登录、服务不可用）
 internal/store/         任务目录、task.json 原子写、events.jsonl 追加与读取
 internal/recipe/        各步骤类型的提示词模板、内置 Schema、JSON 提取与 Schema 校验
 internal/workspace/     工作目录准备、输入快照、git worktree、变更检测、验证命令、apply
@@ -192,7 +192,7 @@ Antigravity 显式 deny 规则命中时，`denied_actions` 可能为空：读取
 
 原生定向放行设置验证中，未放行的终端命令触发 headless 审批拒绝后，CLI 立即结束当前会话，输出 SUCCESS、空 response 和 denied_actions；后续操作按未执行记录。驱动按权限拒绝处理，实测样本为 `native_allow_write_checks`。
 
-2026-11-17 的 `error_capacity_with_image` 样本中，`result.status=ERROR`、`result.error` 为 `UNAVAILABLE (code 503): No capacity available`，同时有完整 `structured_output`、回显的 `json_schema` 和真实 PNG。按 4.4 归为 failed，错误分类只读取 `result.error`；原生 Schema 降级只匹配 stdout 错误事件的详情及 stderr。回显 Schema 中的 `additionalProperties` 作为普通数据处理，真实 Schema 拒绝仍触发一次提示词约束重试。原始输出与图片保留供排查，错误提示同时指向 stdout.jsonl 和 stderr.log。
+2026-11-17 的 `error_capacity_with_image` 样本中，`result.status=ERROR`、`result.error` 为 `UNAVAILABLE (code 503): No capacity available`，同时有完整 `structured_output`、回显的 `json_schema` 和真实 PNG。按 4.4 归为 unavailable，默认允许切换并冷却该 CLI 5 分钟；错误分类只读取 `result.error`。原生 Schema 降级只匹配 stdout 错误事件的详情及 stderr。回显 Schema 中的 `additionalProperties` 作为普通数据处理，真实 Schema 拒绝仍触发一次提示词约束重试。原始输出与图片保留供排查，错误提示同时指向 stdout.jsonl 和 stderr.log。
 
 进度事件归一化成 `message`（助手文本片段）、`tool`（工具名）、`notice`（重连等），只用于展示，不影响结果判定。运行错误先按 4.4 分类；没有明确运行错误且缺少结束标志时判 `protocol` 错误。
 
@@ -203,6 +203,7 @@ Antigravity 显式 deny 规则命中时，`denied_actions` 可能为空：读取
 | `not_installed` | 找不到命令 | 能 |
 | `auth` | stderr 或事件里出现未登录、401、"login"、"not authenticated" 等 | 能 |
 | `quota` | 额度、429、rate limit、usage limit | 能 |
+| `unavailable` | 503、unavailable、no capacity、overloaded | 所有步骤类型都能 |
 | `trust` | Cursor 工作区信任提示 | 能 |
 | `permission_denied` | `denied_actions`、沙箱拒绝 | ask / review 能，code / image 保持失败 |
 | `no_artifact` | 图片步骤完成但没收集到有效图片 | 仅图片步骤能 |
@@ -217,7 +218,7 @@ Antigravity 显式 deny 规则命中时，`denied_actions` 可能为空：读取
 
 - `Probe`：`exec.LookPath` + `--version`（5 秒超时）；登录检查尽力而为——codex 用 `codex login status`，cursor 用 `cursor-agent status --format json`，antigravity 没有对应命令，记为 `unknown`。
 - 结果缓存在 `~/.xcli/cache/health.json`，有效期 10 分钟。
-- 运行中出现 `auth` 或 `quota` 时写入冷却：`quota` 冷却 30 分钟，`auth` 冷却 10 分钟。冷却中的 CLI 不参与路由。`xcli agents --reset` 清除冷却。
+- 运行中出现 `auth`、`quota` 或 `unavailable` 时写入冷却：`quota` 冷却 30 分钟，`auth` 冷却 10 分钟，`unavailable` 冷却 5 分钟。冷却中的 CLI 不参与路由。`xcli agents --reset` 清除冷却。
 - 探测不消耗模型额度，也不需要任何授权步骤。
 
 ## 5. 步骤类型（recipe）

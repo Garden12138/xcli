@@ -39,6 +39,17 @@ func TestCooldownPersists(t *testing.T) {
 	}
 }
 
+func TestCooldownUnavailable(t *testing.T) {
+	home := t.TempDir()
+	c := Open(home)
+	now := time.Now().UTC()
+	c.Cooldown("antigravity", driver.ErrUnavailable, now)
+	entry := Open(home).Entry("antigravity")
+	if entry.CooldownReason != "unavailable" || !entry.CooldownUntil.Equal(now.Add(5*time.Minute)) || c.Available("antigravity", now.Add(5*time.Minute-time.Nanosecond)) || !c.Available("antigravity", now.Add(5*time.Minute)) {
+		t.Fatalf("unavailable cooldown must persist for exactly five minutes: %+v", entry)
+	}
+}
+
 func TestReset(t *testing.T) {
 	c := Open(t.TempDir())
 	now := time.Now()

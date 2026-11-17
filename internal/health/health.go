@@ -102,7 +102,11 @@ func (c *Cache) Probe(ctx context.Context, d driver.Driver, exe string, env []st
 }
 
 func (c *Cache) Cooldown(name string, kind driver.ErrorKind, now time.Time) {
-	duration := map[driver.ErrorKind]time.Duration{driver.ErrQuota: 30 * time.Minute, driver.ErrAuth: 10 * time.Minute}[kind]
+	duration := map[driver.ErrorKind]time.Duration{
+		driver.ErrQuota:       30 * time.Minute,
+		driver.ErrAuth:        10 * time.Minute,
+		driver.ErrUnavailable: 5 * time.Minute,
+	}[kind]
 	if duration == 0 {
 		return
 	}

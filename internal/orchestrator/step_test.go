@@ -224,7 +224,7 @@ func TestRunStepRuntimeFailureWithEchoedSchemaDoesNotRetry(t *testing.T) {
 	}
 	e := stepEnv(t, testutil.FakeScript{"agy": {{StdoutFile: fixture, WritePNG: "{{OUT}}/cover.png", Exit: 1}}}, api.Request{Capability: api.CapImage})
 	r := e.RunStep(context.Background(), api.Step{ID: "cover", Kind: api.KindImage}, "antigravity", nil)
-	if r.Result.Status != api.StatusFailed || r.Result.Error == nil || r.Result.Error.Kind != "failed" || len(testutil.FakeCalls(t)) != 1 || len(r.Artifacts) != 0 {
+	if r.Result.Status != api.StatusFailed || r.Result.Error == nil || r.Result.Error.Kind != "unavailable" || len(testutil.FakeCalls(t)) != 1 || len(r.Artifacts) != 0 {
 		t.Fatalf("capacity failure retried or accepted: %+v, calls=%+v", r, testutil.FakeCalls(t))
 	}
 	if _, err := os.Stat(e.Task.Path("steps", "cover-r1", "schema-failed-stdout.jsonl")); !os.IsNotExist(err) {

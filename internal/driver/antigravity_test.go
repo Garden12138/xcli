@@ -146,16 +146,25 @@ func TestAntigravityRecordedFixtures(t *testing.T) {
 
 func TestAntigravityCapacityFailureWithStructuredImage(t *testing.T) {
 	r := replayFixture(t, "antigravity", "error_capacity_with_image", 0)
-	if r.ErrorKind != ErrFailed || r.SessionID != "capacity-smoke-session" || !json.Valid([]byte(r.Text)) || !strings.Contains(r.Error, "stdout.jsonl") {
+	if r.ErrorKind != ErrUnavailable || r.SessionID != "capacity-smoke-session" || !json.Valid([]byte(r.Text)) || !strings.Contains(r.Error, "stdout.jsonl") {
 		t.Fatalf("capacity failure with output: %+v", r)
 	}
 }
 
 func TestAntigravityClassifiesResultErrorOnly(t *testing.T) {
 	d, _ := New("antigravity", config.Default().Agents["antigravity"])
-	p := d.NewParser()
-	p.Feed([]byte(`{"event":"result","result":{"status":"ERROR","response":"login quota permission denied","error":"API error: UNAVAILABLE (code 503): No capacity available"}}`))
-	if r := p.Finish(0, ""); r.ErrorKind != ErrFailed {
-		t.Fatalf("response treated as failure cause: %+v", r)
+	for _, tc := range []struct {
+		line string
+		want ErrorKind
+	}{
+		{`{"event":"result","result":{"status":"ERROR","response":"login quota permission denied","error":"API error: UNAVAILABLE (code 503): No capacity available"}}`, ErrUnavailable},
+		{`{"event":"result","result":{"status":"ERROR","response":"503 unavailable no capacity overloaded","error":"unexpected model error"}}`, ErrFailed},
+		{`{"event":"result","result":{"status":"SUCCESS","response":"503 unavailable no capacity overloaded"}}`, ErrNone},
+	} {
+		p := d.NewParser()
+		p.Feed([]byte(tc.line))
+		if r := p.Finish(0, ""); r.ErrorKind != tc.want {
+			t.Fatalf("response treated as failure cause: %+v, want=%s", r, tc.want)
+		}
 	}
 }

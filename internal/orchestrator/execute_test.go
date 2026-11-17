@@ -3,6 +3,7 @@ package orchestrator
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -134,6 +135,25 @@ func TestExecuteFallbackOnQuota(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("fallback event missing")
+	}
+}
+
+func TestExecuteFallbackOnUnavailable(t *testing.T) {
+	fixture, err := filepath.Abs(filepath.Join("..", "driver", "testdata", "antigravity", "error_capacity_with_image.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := stepEnv(t, testutil.FakeScript{
+		"agy":   {{StdoutFile: fixture, WritePNG: "{{OUT}}/failed.png", Exit: 1}},
+		"codex": {{Stdout: codexOK(`{"files":[]}`), WritePNG: "{{OUT}}/from-codex.png"}},
+	}, api.Request{Capability: api.CapImage})
+	r := Execute(context.Background(), e, api.Plan{Steps: []api.Step{{ID: "cover", Kind: api.KindImage, Agent: "auto"}}})
+	calls := testutil.FakeCalls(t)
+	if r.Status != api.StatusCompleted || len(r.Steps) != 1 || r.Steps[0].Agent != "codex" || !reflect.DeepEqual(r.Steps[0].Fallbacks, []string{"antigravity: unavailable"}) || len(calls) != 2 || calls[0].Name != "agy" || calls[1].Name != "codex" || e.Health.Available("antigravity", time.Now()) {
+		t.Fatalf("service unavailable fallback: %+v, calls=%+v", r, calls)
+	}
+	if len(r.Artifacts) != 1 || r.Artifacts[0].Agent != "codex" {
+		t.Fatalf("fallback artifact: %+v", r.Artifacts)
 	}
 }
 

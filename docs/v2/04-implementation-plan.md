@@ -882,6 +882,7 @@ const (
 	ErrNotInstalled     ErrorKind = "not_installed"
 	ErrAuth             ErrorKind = "auth"
 	ErrQuota            ErrorKind = "quota"
+	ErrUnavailable      ErrorKind = "unavailable"
 	ErrTrust            ErrorKind = "trust"
 	ErrPermissionDenied ErrorKind = "permission_denied"
 	ErrNoArtifact       ErrorKind = "no_artifact"
@@ -931,7 +932,7 @@ func New(name string, cfg config.AgentConfig) (Driver, error) // 只认 codex / 
 func All(cfg config.Config) map[string]Driver                  // 为全部已启用的 agent 创建驱动
 
 // classify.go
-func ClassifyText(stderrTail string, text string) ErrorKind    // 通用关键词：auth / quota / trust
+func ClassifyText(stderrTail string, text string) ErrorKind    // 通用关键词：auth / quota / unavailable / trust / permission_denied
 ```
 
 - [x] **步骤 1：写参数拼装测试（codex）**
@@ -1014,7 +1015,7 @@ func TestCodexParserEdgeCases(t *testing.T) {
 
 - [x] **步骤 3：写分类测试**
 
-`TestClassifyText` 表驱动：`"Not logged in. Run codex login"` → auth；`"401 Unauthorized"` → auth；`"429 Too Many Requests"`、`"rate limit exceeded"`、`"quota exceeded"` → quota；`"Workspace Trust Required"` → trust；`"something else"` → ErrNone。`TestSwitchable`：auth / quota / trust / not_installed 对所有 kind 为 true；no_artifact 只对 `KindImage` 为 true；permission_denied 对 ask / review 为 true，对 code / image 为 false；timeout、schema_mismatch 为 false。
+`TestClassifyText` 表驱动：`"Not logged in. Run codex login"` → auth；`"401 Unauthorized"` → auth；`"429 Too Many Requests"`、`"rate limit exceeded"`、`"quota exceeded"` → quota；`"503"`、`"unavailable"`、`"no capacity"`、`"overloaded"` → unavailable；`"Workspace Trust Required"` → trust；`"something else"` → ErrNone。`TestSwitchable`：auth / quota / unavailable / trust / not_installed 对所有 kind 为 true；no_artifact 只对 `KindImage` 为 true；permission_denied 对 ask / review 为 true，对 code / image 为 false；timeout、schema_mismatch 为 false。
 
 ```bash
 go test ./internal/driver/ -race     # 期望失败
@@ -1146,7 +1147,7 @@ type Cache struct { /* file 路径 + 互斥锁 */ }
 
 func Open(home string) *Cache                                     // <home>/cache/health.json
 func (c *Cache) Probe(ctx context.Context, d driver.Driver, exe string, env []string, maxAge time.Duration) Entry
-func (c *Cache) Cooldown(name string, kind driver.ErrorKind, now time.Time) // quota 30 分钟，auth 10 分钟，其他忽略
+func (c *Cache) Cooldown(name string, kind driver.ErrorKind, now time.Time) // quota 30 分钟，auth 10 分钟，unavailable 5 分钟，其他忽略
 func (c *Cache) Available(name string, now time.Time) bool        // 不在冷却中
 func (c *Cache) Entry(name string) Entry
 func (c *Cache) Reset() error                                     // 清除所有冷却
@@ -1158,6 +1159,7 @@ func (c *Cache) Reset() error                                     // 清除所�
 
 - `TestCooldown`：`Cooldown("codex", ErrQuota, t0)` 后 `Available("codex", t0+29m) == false`，`t0+31m == true`；`ErrAuth` 为 10 分钟；`ErrFailed` 不冷却。
 - `TestCooldownPersists`：一个 Cache 写入冷却，用同一个 home 新开的 Cache 能读到。
+- `TestCooldownUnavailable`：unavailable 冷却 5 分钟，跨 Cache 持久化；边界时间到达后可用。
 - `TestReset`。
 - `TestProbeCached`：用一个计数的假 Driver，maxAge 内第二次 Probe 不再调用 `d.Probe`。
 
@@ -1516,7 +1518,7 @@ func (e *Env) RunStep(ctx context.Context, s api.Step, agent string, up []recipe
   4. `proc.Run`，超时取 `cfg.Defaults.StepTimeout`；stdout 每一行交给 Parser，Parser 返回的 message / tool 事件转成 `step.progress`（文本截断到 500 字）；
   5. 把 prompt、stdout、stderr、`result.json` 写进 `StepDir(stepID, round)`；code 循环中的 review 使用该目录的 `review/` 子目录，保留实现者和审查者各自的日志；原生 Schema 文件放在实际调用目录的 `schema.json`，确保并行步骤各自使用对应 Schema；
   6. Outcome 中的超时和取消优先于 Parser 结果；
-  7. 结果为 auth / quota 时调用 `Health.Cooldown`。
+  7. 结果为 auth / quota / unavailable 时调用 `Health.Cooldown`。
   8. Codex 用户 Schema 先检查严格模式兼容性；普通 Schema 直接使用提示词约束。原生 Schema 被明确拒绝时，保留 `schema-failed-*` 日志并重试一次提示词约束；只检查 stdout 错误事件的详情及 stderr（任务 19 根据实测修正回显 Schema 触发的误判）；续接失效则保留 `resume-failed-*` 日志。
 - `RunStep` 按 kind 分派：
   - ask：权限固定 read；Schema 来自 `Req.Schema`（写到本次调用目录的 `schema.json`）；驱动有原生 Schema 时传 `SchemaFile`，否则用 `InlineSchema`；拿到文本后 `ExtractJSON` + `Validate`，失败则在同一会话中发一次修正请求（提示词："你上一次的输出不符合 JSON Schema，错误如下：…… 请只输出修正后的 JSON。"），仍失败则 `schema_mismatch`。
@@ -1581,6 +1583,7 @@ Router：
 - `TestExecuteSerializesCodeOnSameWorkdir`：两个互不依赖的 code 步骤，同一工作目录 → 按时间不重叠（用 fakecli 记录调用时间，或休眠 300ms 后检查总耗时 ≥ 600ms）。
 - `TestExecuteFallbackOnQuota`：codex 返回额度错误 → 自动改用 cursor 完成；`Fallbacks == ["codex: quota"]`；发出 `agent.fallback` 事件；codex 进入冷却。
 - `TestExecuteFallbackOnReadPermissionDenied`：antigravity 的 ask 返回 permission_denied 后由 codex 以只读权限完成；`Fallbacks == ["antigravity: permission_denied"]`。关闭 fallback 的测试继续覆盖只读失败时图片保留与依赖跳过。
+- `TestExecuteFallbackOnUnavailable`：默认开启 fallback，antigravity 生图回放 `error_capacity_with_image` 后由 codex 完成，记录 `antigravity: unavailable` 并进入 5 分钟冷却；原生回显 Schema 保持普通数据，调用次数为 2。
 - `TestExecuteNoFallbackWhenLocked`：`Req.Agent = "codex"` 时额度错误直接失败。
 - `TestExecuteSummaryAndStatus`：末端步骤的文本成为 `Summary`；包含 needs_attention 步骤时任务状态为 `needs_attention`。
 
@@ -1756,7 +1759,7 @@ func (e *Env) Plan(ctx context.Context) api.Plan
 
 要点：
 - 规划 CLI 的候选：先 `cfg.Defaults.Planner`，再按 plan 分数排序的其他可用 CLI；`Req.Agent` 非空时只用它；最多尝试 2 个。
-- 每次规划前刷新可用 CLI 集合；前次调用进入 auth/quota 冷却后，后续提示词和 Schema 同步排除它。plan 分数为 0 的 CLI 仍可作为执行步骤的候选。
+- 每次规划前刷新可用 CLI 集合；前次调用进入 auth/quota/unavailable 冷却后，后续提示词和 Schema 同步排除它。plan 分数为 0 的 CLI 仍可作为执行步骤的候选。
 - 原生调用失败时最多换一个规划 CLI；JSON/Schema/DAG 校验失败按 02 第 6.3 节直接退回规则。后续规划日志保存在 `steps/plan-r1/fallback-<次数>-<agent>/`，保留首个 CLI 的输出。
 - 规划结束后，engine 持久化实际执行步骤；只规划任务的最终 Steps 为空。测试覆盖 do/plan 命令接入和显式计划跳过规划器。
 - 根据实测调整规划模板：ask/review 只读，ask 文案直接回复并由下游 code 落盘；产物 output 是子目录名；文案、配图、项目写入在 max_steps ≥ 3 时拆为并行 ask/image 和依赖两者的 code。
@@ -1872,7 +1875,7 @@ git add -A && git commit -m "docs: add user guide, smoke script and release conf
 
 - [x] **步骤 4：请用户运行 `scripts/smoke.sh`，根据结果修复问题**
 
-2026-11-17：用户已运行两次，最近一组记录重放检查为 7 PASS / 1 FAIL；do 的封面调用遇到 Agy 服务端 503，整合步骤跳过。根据实测补充错误样本，先写失败测试，再修复回显 Schema 导致的额外重试、Agy 错误详情提取和日志指引。原生服务容量错误保留 failed 判定。
+2026-11-17：用户已运行两次，最近一组记录重放检查为 7 PASS / 1 FAIL；do 的封面调用遇到 Agy 服务端 503，整合步骤跳过。根据实测补充错误样本，先写失败测试，再修复回显 Schema 导致的额外重试、Agy 错误详情提取和日志指引。原生服务容量错误后续按用户要求细分为 unavailable，允许切换并冷却 5 分钟。
 
 用户批准后只复测 do：沿用原临时仓库和默认路由，加 `--detach --no-fallback --max-fix-rounds 0`，任务 `t-20261117-064602-93ad` 在约 303 秒后 completed，共 5 次真实 CLI 调用，Cursor 审查 pass、issues 为空。README 引用有效的 1600×900 PNG，代码变更仅含 README.md、docs/cover.png；独立图片校验及临时项目 go test ./... 通过。用脚本检查逻辑重放原先通过的七项与本轮 do，合计 8 PASS / 0 FAIL；保留原始失败记录。本轮没有触发失败切换或修复重试。
 
