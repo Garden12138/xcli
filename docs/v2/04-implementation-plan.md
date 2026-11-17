@@ -1869,9 +1869,11 @@ go build ./... && go vet ./... && go test ./... -race
 git add -A && git commit -m "docs: add user guide, smoke script and release config for v2"
 ```
 
-- [ ] **步骤 4：请用户运行 `scripts/smoke.sh`，根据结果修复问题**
+- [x] **步骤 4：请用户运行 `scripts/smoke.sh`，根据结果修复问题**
 
-2026-11-17：用户已运行两次，最近一组记录重放检查为 7 PASS / 1 FAIL；do 的封面调用遇到 Agy 服务端 503，整合步骤跳过。根据实测补充错误样本，先写失败测试，再修复回显 Schema 导致的额外重试、Agy 错误详情提取和日志指引。原生服务容量错误保留 failed 判定；后续真实复测需用户确认额度授权。
+2026-11-17：用户已运行两次，最近一组记录重放检查为 7 PASS / 1 FAIL；do 的封面调用遇到 Agy 服务端 503，整合步骤跳过。根据实测补充错误样本，先写失败测试，再修复回显 Schema 导致的额外重试、Agy 错误详情提取和日志指引。原生服务容量错误保留 failed 判定。
+
+用户批准后只复测 do：沿用原临时仓库和默认路由，加 `--detach --no-fallback --max-fix-rounds 0`，任务 `t-20261117-064602-93ad` 在约 303 秒后 completed，共 5 次真实 CLI 调用，Cursor 审查 pass、issues 为空。README 引用有效的 1600×900 PNG，代码变更仅含 README.md、docs/cover.png；独立图片校验及临时项目 go test ./... 通过。用脚本检查逻辑重放原先通过的七项与本轮 do，合计 8 PASS / 0 FAIL；保留原始失败记录。本轮没有触发失败切换或修复重试。
 
 ---
 

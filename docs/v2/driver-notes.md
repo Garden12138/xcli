@@ -201,3 +201,11 @@ cover 分支完成，产出 1376×768 的 PNG 和 JPEG；PNG 通过签名、chun
 xcli 曾扫描整个 stdout 的 `additionalProperties`，把回显 Schema 误当成原生 Schema 拒绝，去掉 --json-schema 并续接重试一次，随后再次得到 503。根据实测调整：降级只检查 stdout 错误事件中的 error/message 及 stderr；Agy 的错误分类只检查 result.error。最终 ERROR 按既有 failed 规则处理，生成文件留在原目录供排查。错误指引同时包含 stdout.jsonl 和 stderr.log。
 
 脱敏的首个原生结果保存为 `error_capacity_with_image.jsonl/.stderr`。fakecli 回归测试确认此类错误只调用一次；真正的 Schema 拒绝仍会降级重试，正常正文中的权限或额度词汇按正文处理。本次排查和修复使用已有记录及 fakecli。
+
+### 任务 19：获批后的 do 定向复测（2026-11-17）
+
+修复提交后，用户批准仅复测失败的 do 一轮。沿用原临时仓库和默认路由，后台运行时加 `--detach --no-fallback --max-fix-rounds 0`。任务 `t-20261117-064602-93ad` 耗时 303130 ms，状态 completed：Codex 规划、Antigravity 并行文案/生图、Codex 整合、Cursor 审查，共 5 次 CLI。Cursor verdict 为 pass，issues 为空；本轮没有 Schema 降级、CLI 失败切换或修复重试。
+
+Agy 返回 SUCCESS 和有效图片：最终 PNG 为 1600×900、1273576 字节，SHA-256 为 `c080577dfeafe265be9b3883217c21c85e3d00b4032ffab3816d24a7800602d6`。README 保留原标题，加入介绍并引用 docs/cover.png；目标文件与上游 PNG 逐字节一致，通过全部 85 个 PNG chunk CRC 和 IDAT 解压检查。本轮 Changes.files 为 README.md、docs/cover.png；既有 add_test.go 保持原样，临时仓库仍只有基线提交，go test ./... 通过。
+
+任务 events.jsonl 的 74 条事件序号连续，最后一条 task.finished 携带完整 Result。用 scripts/smoke.sh 的检查逻辑重放用户最近一轮已通过的七项，加上本次 do 结果，合计 8 PASS / 0 FAIL；原始两轮失败 JSON 与日志保留在各自临时目录。
