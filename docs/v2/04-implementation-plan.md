@@ -824,6 +824,9 @@ func TestRunTimeoutKillsProcessGroup(t *testing.T) {
 - `TestLongLineDropped`：输出一行 9 MB 后再输出 `ok` → OnLine 只收到 `ok`。
 - `TestAcquireSlotExclusive`：max=1，第一次获取后第二次阻塞，调用 release 后 1.5 秒内第二次成功；`onWait` 至少被调用一次。
 - `TestSearchPathConfigured`：`SearchPath("/a:/b", "")` 返回 `/a:/b`，不执行 shell。
+- `TestSearchPathShellAndCache`：成功且非空的 shell PATH 被缓存并复用；测试中将包级 `shellProbeTimeout` 从默认 3 秒临时调为 10 秒。
+- `TestSearchPathProbeFailureNotCached`：shell 启动失败、非零退出、输出为空、超时均使用当前 PATH，缓存文件保持不存在；超时后退出 0 也按失败处理。
+- `TestSearchPathIgnoresEmptyCache`：已有空缓存立即重新探测，成功后恢复正确 PATH。
 - `TestEnvReplacesPath`：结果中只有一个 `PATH=`，extra 中的变量存在。
 
 - [x] **步骤 2：实现**
@@ -833,7 +836,7 @@ func TestRunTimeoutKillsProcessGroup(t *testing.T) {
 - stdout 用 `bufio.Reader` 自己按 `\n` 切行，单行超过 8 MB 时丢弃到下一个换行。
 - stderr 写入文件并保留一个 64 KB 环形缓冲。
 - `AcquireSlot`：在 `lockDir` 下依次尝试 `<name>-0.lock` … `<name>-(max-1).lock`，`syscall.Flock(fd, LOCK_EX|LOCK_NB)`；全部失败时调用 `onWait`，等 1 秒重试，直到 ctx 结束。release 解锁并关闭文件。
-- `SearchPath`：`configured` 非空直接返回；否则读缓存（24 小时内有效），缓存无效时执行 `$SHELL -lic 'printf %s "$PATH"'`（3 秒超时，失败忽略），与 `os.Getenv("PATH")` 合并去重，再追加 `~/.local/bin`、`/opt/homebrew/bin`、`/usr/local/bin`，写缓存（`cacheFile` 为空时不读写缓存）。
+- `SearchPath`：`configured` 非空直接返回；否则读非空缓存（24 小时内有效），缓存无效时执行 `$SHELL -lic 'printf %s "$PATH"'`（包级变量 `shellProbeTimeout` 默认 3 秒）。成功且非空时写缓存，失败、超时或空输出使用当前 PATH；与 `os.Getenv("PATH")` 合并去重，再追加 `~/.local/bin`、`/opt/homebrew/bin`、`/usr/local/bin`（`cacheFile` 为空时不读写缓存）。
 
 - [x] **步骤 3：运行测试并提交**
 

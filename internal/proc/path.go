@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+var shellProbeTimeout = 3 * time.Second
+
 func SearchPath(configured, cacheFile string) string {
 	if configured != "" {
 		return configured
@@ -23,18 +25,18 @@ func SearchPath(configured, cacheFile string) string {
 		CheckedAt time.Time `json:"checked_at"`
 	}
 	raw, _ := os.ReadFile(cacheFile)
-	if json.Unmarshal(raw, &cache) != nil || time.Since(cache.CheckedAt) >= 24*time.Hour {
+	if json.Unmarshal(raw, &cache) != nil || strings.TrimSpace(cache.Path) == "" || time.Since(cache.CheckedAt) >= 24*time.Hour {
 		cache.Path = ""
 		shell := os.Getenv("SHELL")
 		if shell == "" {
 			shell = "/bin/sh"
 		}
-		out := Run(context.Background(), Spec{Path: shell, Args: []string{"-lic", `printf %s "$PATH"`}}, Options{Timeout: 3 * time.Second, OnLine: func(line []byte) { cache.Path = strings.TrimSpace(string(line)) }})
-		if out.ExitCode != 0 {
+		out := Run(context.Background(), Spec{Path: shell, Args: []string{"-lic", `printf %s "$PATH"`}}, Options{Timeout: shellProbeTimeout, OnLine: func(line []byte) { cache.Path = strings.TrimSpace(string(line)) }})
+		if out.StartErr != nil || out.TimedOut || out.Cancelled || out.ExitCode != 0 {
 			cache.Path = ""
 		}
-		cache.CheckedAt = time.Now().UTC()
-		if cacheFile != "" && os.MkdirAll(filepath.Dir(cacheFile), 0700) == nil {
+		if cache.Path != "" && cacheFile != "" && os.MkdirAll(filepath.Dir(cacheFile), 0700) == nil {
+			cache.CheckedAt = time.Now().UTC()
 			raw, _ = json.Marshal(cache)
 			_ = os.WriteFile(cacheFile, raw, 0600)
 		}

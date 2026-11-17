@@ -428,7 +428,7 @@ xcli 本身不是沙箱，权限隔离依赖各 CLI 的沙箱；`write` 档会�
 macOS 上从 Dock 启动的桌面应用不会继承终端里的 PATH，xcli 和它启动的 CLI（cursor-agent 依赖 node）可能找不到命令。处理方式：
 
 1. 配置 `path` 非空时直接用它作为子进程 PATH。
-2. 否则执行一次 `$SHELL -lic 'printf %s "$PATH"'`（3 秒超时），与当前 PATH 合并去重，结果缓存在 `~/.xcli/cache/env.json`，有效期 24 小时。
+2. 否则执行一次 `$SHELL -lic 'printf %s "$PATH"'`（3 秒超时），与当前 PATH 合并去重。只有成功且非空的探测结果写入 `~/.xcli/cache/env.json`，有效期 24 小时；失败或超时时使用当前 PATH，下一次重新探测，已有空缓存也会重新探测。
 3. 再追加常见目录：`~/.local/bin`、`/opt/homebrew/bin`、`/usr/local/bin`。
 
 查找 CLI 命令时使用合并后的 PATH。应用侧应该用 xcli 的绝对路径启动它。

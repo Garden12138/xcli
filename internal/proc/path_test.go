@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestSearchPathConfigured(t *testing.T) {
@@ -17,6 +18,9 @@ func TestSearchPathConfigured(t *testing.T) {
 }
 
 func TestSearchPathShellAndCache(t *testing.T) {
+	old := shellProbeTimeout
+	shellProbeTimeout = 10 * time.Second
+	t.Cleanup(func() { shellProbeTimeout = old })
 	dir := t.TempDir()
 	shell := filepath.Join(dir, "fake-shell")
 	if err := os.WriteFile(shell, []byte("#!/bin/sh\nprintf '/custom/bin:/custom/bin:/bin'\n"), 0700); err != nil {
@@ -34,6 +38,56 @@ func TestSearchPathShellAndCache(t *testing.T) {
 	}
 	if got := SearchPath("", cache); got != want {
 		t.Fatalf("cached path = %s, want %s", got, want)
+	}
+}
+
+func TestSearchPathProbeFailureNotCached(t *testing.T) {
+	old := shellProbeTimeout
+	shellProbeTimeout = time.Second
+	t.Cleanup(func() { shellProbeTimeout = old })
+	for _, tc := range []struct{ name, script string }{
+		{"missing", ""},
+		{"failed", "printf '/partial/bin\\n'\nexit 1\n"},
+		{"empty", "printf ' \\n'\n"},
+		{"timed_out", "printf '/partial/bin\\n'\ntrap 'exit 0' TERM\nwhile :; do /bin/sleep 10; done\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			shell := filepath.Join(dir, "fake-shell")
+			if tc.script != "" {
+				if err := os.WriteFile(shell, []byte("#!/bin/sh\n"+tc.script), 0700); err != nil {
+					t.Fatal(err)
+				}
+			}
+			t.Setenv("SHELL", shell)
+			t.Setenv("PATH", "/fallback/bin")
+			cache := filepath.Join(dir, "cache", "env.json")
+			got := SearchPath("", cache)
+			if !strings.HasPrefix(got, "/fallback/bin:") || strings.Contains(got, "/partial/bin") {
+				t.Errorf("failed probe polluted fallback PATH: %s", got)
+			}
+			if _, err := os.Stat(cache); !os.IsNotExist(err) {
+				t.Fatalf("failed probe wrote cache: %v", err)
+			}
+		})
+	}
+}
+
+func TestSearchPathIgnoresEmptyCache(t *testing.T) {
+	dir := t.TempDir()
+	shell := filepath.Join(dir, "fake-shell")
+	if err := os.WriteFile(shell, []byte("#!/bin/sh\nprintf '/recovered/bin'\n"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("SHELL", shell)
+	t.Setenv("PATH", "/bin")
+	cache := filepath.Join(dir, "env.json")
+	raw := []byte(`{"path":"","checked_at":"` + time.Now().UTC().Format(time.RFC3339Nano) + `"}`)
+	if err := os.WriteFile(cache, raw, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if got := SearchPath("", cache); !strings.HasPrefix(got, "/recovered/bin:/bin:") {
+		t.Fatalf("empty cached probe prevented recovery: %s", got)
 	}
 }
 
