@@ -2,7 +2,7 @@
 
 xcli 是本机多 CLI 编排引擎，通过真实 Codex、Cursor、Antigravity 进程，将文本、编码、审查和图片能力以子进程 JSON 协议提供给桌面应用。
 
-版本：`2.0.0-dev`。正在 `v2` 分支按设计重建。
+版本：`2.0.0-dev`，在 `v2` 分支开发。支持 macOS / Linux（amd64 / arm64）。
 
 ## 构建
 
@@ -10,17 +10,21 @@ xcli 是本机多 CLI 编排引擎，通过真实 Codex、Cursor、Antigravity �
 
 ```sh
 go build -o bin/xcli .
+export PATH="$PWD/bin:$PATH"
 ```
 
 安装并登录原生 CLI（`codex`、`cursor-agent`、`agy`），即可使用任务能力的默认配置。
 
-## 规划中的用法
+## 用法
 
 ```sh
 xcli ask "总结 notes.md 的要点" -i notes.md --json
 xcli image "米白背景上的绿植插画，方形" -o ./covers --json
 xcli code "修复 TTL 到期判断的 Bug" -C ~/repo --verify "go test ./..." --json
+xcli review "检查并发与边界条件" -C ~/repo --json
 xcli do "给 README 写一段介绍并配一张封面图" -C ~/repo
 ```
 
-参见 [v2 设计与实施计划](docs/v2/README.md)。v0.x 的历史成果保存在 tag `archive/r4.1-final`。
+应用通过 `xcli submit --request - --json` 提交 Request JSON，或用 `--events` 读取 JSONL 进度。后台任务用 `--detach`，本机 HTTP 任务接口用 `xcli serve`。
+
+参见 [一页用户手册](docs/v2/USER_GUIDE.md)、[接口规范](docs/v2/03-interfaces.md)、[设计与实施计划](docs/v2/README.md)。手动运行 `scripts/smoke.sh`，按回车开始约 10 次消耗额度的真实 CLI 调用。v0.x 的历史成果保存在 tag `archive/r4.1-final`。

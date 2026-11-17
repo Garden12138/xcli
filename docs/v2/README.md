@@ -19,13 +19,15 @@ echo '{"capability":"ask","goal":"..."}' | xcli submit --request - --json   # �
 
 | 文档 | 内容 | 读者 |
 | --- | --- | --- |
+| [用户手册](USER_GUIDE.md) | 安装、五种能力、后台任务、配置、排错与冒烟 | 使用者、应用开发 |
 | [01 需求与现状评估](01-requirements-and-assessment.md) | 需求重述、成功标准、非目标、现状问题、模块去留 | 所有人 |
 | [02 架构设计](02-architecture.md) | 模块、驱动层、编排、权限、生图、进程、存储、配置 | 实现者 |
 | [03 接口规范](03-interfaces.md) | 命令行、请求/结果/事件 JSON 协议、HTTP、四个应用的接入示例 | 实现者、应用开发 |
 | [04 实施计划](04-implementation-plan.md) | 分阶段任务、文件、接口签名、测试用例、验收命令 | Codex |
+| [驱动实测记录](driver-notes.md) | 三个 CLI 的版本、参数、事件、权限与产物行为 | 实现者 |
 | [Codex 交接说明](CODEX_HANDOFF.md) | 直接粘贴给 Codex 的提示词与守则 | 你 |
 
-实施第 0 阶段会生成 `driver-notes.md`（三个 CLI 的实测参数与事件格式记录）。
+真实冒烟入口是 `scripts/smoke.sh`；运行前会提示额度消耗并等待回车。
 
 ## 版本与分支
 

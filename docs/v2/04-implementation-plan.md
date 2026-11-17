@@ -1837,11 +1837,14 @@ git add internal/server cmd && git commit -m "feat(server): add local HTTP task 
 
 **文件：**
 - 新建：`scripts/smoke.sh`、`docs/v2/USER_GUIDE.md`
+- 测试：`scripts/smoke_test.go`（真实 xcli + 配置 path 指向 fakecli，覆盖脚本成功、失败汇总和确认前退出）
 - 修改：`README.md`、`README.zh-CN.md`、`docs/v2/README.md`、`.goreleaser.yaml`
 
-- [ ] **步骤 1：`scripts/smoke.sh`**
+- [x] **步骤 1：`scripts/smoke.sh`**
 
-`set -euo pipefail`；运行前打印"将进行约 10 次真实 CLI 调用，会消耗各 CLI 的额度，按回车继续"。在临时 git 仓库里依次执行，每条都用 `--json`，用 `python3 -c` 或 `grep` 检查 `status`：
+先写脚本测试并验证失败，再实现脚本。自动化测试只调用 fakecli；真实冒烟由用户手动运行。脚本优先使用仓库的 `bin/xcli`，否则从 PATH 查找 xcli；使用带空格的仓库路径验证参数引用。
+
+`set -euo pipefail`；运行前打印"将进行约 10 次真实 CLI 调用，会消耗各 CLI 的额度，按回车继续"。在临时 git 仓库里依次执行，每条都用 `--json`，用 `python3` 检查 `status`：
 
 1. `xcli agents`
 2. 三个 CLI 各一次 `ask -a <agent> "用一句话说明 add.go 的作用" -C <repo>`
@@ -1852,15 +1855,15 @@ git add internal/server cmd && git commit -m "feat(server): add local HTTP task 
 
 每一步打印 PASS / FAIL 和任务 ID，最后汇总。
 
-- [ ] **步骤 2：`docs/v2/USER_GUIDE.md`（一页）**
+- [x] **步骤 2：`docs/v2/USER_GUIDE.md`（一页）**
 
-内容：安装；第一次运行（`xcli agents` 确认三个 CLI 已登录）；五个能力各一个示例；后台任务（`--detach` / `wait` / `logs` / `cancel`）；`resume` 继续修改；`--isolate` + `apply`；配置文件常用项（关闭某个 CLI、改模型、改默认权限）；常见问题（未登录、额度用尽后的自动切换与 `agents --reset`、GUI 应用找不到命令时配置 `path`、Cursor 工作区信任已由 xcli 自动处理）。
+内容：安装；第一次运行直接 `ask`，可选用 `xcli agents` 检查三个 CLI 状态（Antigravity 登录探测为 unknown，实际调用使用已有会话）；五个能力各一个示例；后台任务（`--detach` / `wait` / `logs` / `cancel`）；`resume` 继续修改；`--isolate` + `apply`；配置文件常用项（关闭某个 CLI、改模型、改默认权限）；常见问题（未登录、额度用尽后的自动切换与 `agents --reset`、GUI 应用找不到命令时配置 `path`、Cursor 工作区信任已由 xcli 自动处理）。
 
-- [ ] **步骤 3：更新 README、发布配置并统计代码规模**
+- [x] **步骤 3：更新 README、发布配置并统计代码规模**
 
 ```bash
 git ls-files '*.go' | grep -v _test.go | xargs wc -l | tail -1   # 记录到提交说明；超过 8000 行先找用户复盘
-goreleaser check 2>/dev/null || true
+if command -v goreleaser >/dev/null 2>&1; then goreleaser check; fi
 go build ./... && go vet ./... && go test ./... -race
 git add -A && git commit -m "docs: add user guide, smoke script and release config for v2"
 ```

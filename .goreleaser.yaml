@@ -28,6 +28,8 @@ archives:
       - LICENSE
       - README.md
       - README.zh-CN.md
+      - docs/v2/USER_GUIDE.md
+      - docs/v2/03-interfaces.md
     name_template: >-
       {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
 

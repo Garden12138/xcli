@@ -2,7 +2,7 @@
 
 xcli orchestrates real Codex, Cursor and Antigravity CLI processes to deliver text, coding, reviews and images to local desktop apps through a JSON subprocess protocol.
 
-Version: `2.0.0-dev`. The v2 rebuild is in progress on the `v2` branch.
+Version: `2.0.0-dev`, developed on the `v2` branch. Supports macOS and Linux (amd64 / arm64).
 
 ## Build
 
@@ -10,17 +10,21 @@ Install Go 1.26, then run:
 
 ```sh
 go build -o bin/xcli .
+export PATH="$PWD/bin:$PATH"
 ```
 
 Install and log in to the native CLIs (`codex`, `cursor-agent`, `agy`) to use task capabilities with default settings.
 
-## Planned usage
+## Usage
 
 ```sh
 xcli ask "Summarize notes.md" -i notes.md --json
 xcli image "A green plant on a cream background, square" -o ./covers --json
 xcli code "Fix the TTL expiry boundary" -C ~/repo --verify "go test ./..." --json
+xcli review "Check concurrency and boundary conditions" -C ~/repo --json
 xcli do "Write a README introduction and generate a cover image" -C ~/repo
 ```
 
-See [the v2 design and implementation plan](docs/v2/README.md). Previous v0.x work is preserved in tag `archive/r4.1-final`.
+Apps can send a Request JSON to `xcli submit --request - --json`, or read JSONL progress with `--events`. Use `--detach` for background tasks; `xcli serve` provides an optional local HTTP task API.
+
+See the [user guide (Chinese)](docs/v2/USER_GUIDE.md), [protocol](docs/v2/03-interfaces.md), and [design](docs/v2/README.md). Run `scripts/smoke.sh` for a manual smoke test; it asks before about 10 real CLI calls that consume quota. Previous v0.x work is preserved in tag `archive/r4.1-final`.
