@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Version = "2.0.0-dev"
+var Version = "2.0.0"
 
 type rootOptions struct {
 	home string

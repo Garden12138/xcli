@@ -4,6 +4,8 @@ xcli 在本机启动 Codex、Cursor、Antigravity，完成文本、编码、审�
 
 ## 安装与第一次运行
 
+从 [Releases](https://github.com/Garden12138/xcli/releases) 下载对应系统和架构的 `.tar.gz`，解压后将 `xcli` 放入 PATH。发布包附带 `checksums.txt`，可用 `shasum -a 256 <压缩包>` 核对下载文件。
+
 从源码安装（Go 1.26）：
 
 ```sh

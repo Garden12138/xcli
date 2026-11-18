@@ -16,7 +16,7 @@ func TestRootVersion(t *testing.T) {
 		if err := root.Execute(); err != nil {
 			t.Fatal(err)
 		}
-		if got := strings.TrimSpace(out.String()); got != "xcli version 2.0.0-dev" {
+		if got := strings.TrimSpace(out.String()); got != "xcli version 2.0.0" {
 			t.Fatalf("version = %q", got)
 		}
 	}

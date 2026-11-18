@@ -2,7 +2,7 @@
 
 xcli orchestrates real Codex, Cursor and Antigravity CLI processes to deliver text, coding, reviews and images to local desktop apps through a JSON subprocess protocol.
 
-Version: `2.0.0-dev`, developed on the `v2` branch. Supports macOS and Linux (amd64 / arm64).
+Version: `2.0.0`. Supports macOS and Linux (amd64 / arm64). Download binaries from [Releases](https://github.com/Garden12138/xcli/releases).
 
 ## Build
 
@@ -27,4 +27,4 @@ xcli do "Write a README introduction and generate a cover image" -C ~/repo
 
 Apps can send a Request JSON to `xcli submit --request - --json`, or read JSONL progress with `--events`. Use `--detach` for background tasks; `xcli serve` provides an optional local HTTP task API.
 
-See the [user guide (Chinese)](docs/v2/USER_GUIDE.md), [protocol](docs/v2/03-interfaces.md), and [design](docs/v2/README.md). Run `scripts/smoke.sh` for a manual smoke test; it asks before about 10 real CLI calls that consume quota. Previous v0.x work is preserved in tag `archive/r4.1-final`.
+See the [user guide (Chinese)](docs/v2/USER_GUIDE.md), [protocol](docs/v2/03-interfaces.md), and [design](https://github.com/Garden12138/xcli/tree/v2.0.0/docs/v2). Run `scripts/smoke.sh` for a manual smoke test; it asks before about 10 real CLI calls that consume quota. Previous v0.x work is preserved in tag `archive/r4.1-final`.

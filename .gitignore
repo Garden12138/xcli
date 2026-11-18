@@ -18,6 +18,3 @@ __pycache__/
 !/.env.example
 /config.local.yaml
 /config.local.json
-
-# Post-commit local handoff receipt (avoids embedding a commit hash in itself)
-/docs/release-handoff/FINAL_STATE.json
