@@ -296,11 +296,13 @@ review 步骤：优先排除被审查步骤所用的 CLI；只剩它自己时不
 
 | CLI | code | review | ask | image | plan |
 | --- | --- | --- | --- | --- | --- |
-| codex | 3 | 2 | 2 | 2 | 3 |
+| codex | 3 | 2 | 2 | 3 | 3 |
 | cursor | 3 | 3 | 2 | 1 | 1 |
-| antigravity | 2 | 2 | 2 | 3 | 2 |
+| antigravity | 2 | 2 | 2 | 2 | 2 |
 
 三个 CLI 的默认 ask 分数均为 2，默认按配置顺序选择 codex；请求指定 agents 顺序时按该顺序打破同分。
+
+默认生图顺序为 Codex、Antigravity、Cursor。
 
 ### 6.3 planner：让 CLI 生成计划
 
@@ -491,7 +493,7 @@ agents:
     env: {}
     extra_args: []
     artifact_dirs: ["~/.codex/generated_images"]
-    strengths: {code: 3, review: 2, ask: 2, image: 2, plan: 3}
+    strengths: {code: 3, review: 2, ask: 2, image: 3, plan: 3}
   cursor:
     command: cursor-agent
     artifact_dirs: ["~/.cursor/projects"]
@@ -499,7 +501,7 @@ agents:
   antigravity:
     command: agy
     artifact_dirs: ["~/.gemini/antigravity-cli/brain"]
-    strengths: {code: 2, review: 2, ask: 2, image: 3, plan: 2}
+    strengths: {code: 2, review: 2, ask: 2, image: 2, plan: 2}
 ```
 
 `artifact_dirs` 来自第 0 阶段实测。原生环境变量 `CODEX_HOME` 非空时，Codex 默认目录改用该目录下的 `generated_images`；其余使用上面的常规路径。

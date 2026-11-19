@@ -24,7 +24,7 @@ func TestDefaultMatchesDesign(t *testing.T) {
 			t.Errorf("%s: %+v", name, c.Agents[name])
 		}
 	}
-	if c.Strength("antigravity", "image") != 3 || c.Strength("cursor", "review") != 3 || c.Enabled("unknown") {
+	if c.Strength("codex", "image") != 3 || c.Strength("antigravity", "image") != 2 || c.Strength("cursor", "image") != 1 || c.Strength("cursor", "review") != 3 || c.Enabled("unknown") {
 		t.Fatal("agent strengths or availability")
 	}
 	for _, name := range AgentOrder {

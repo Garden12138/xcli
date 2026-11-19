@@ -20,7 +20,7 @@ func TestRouterOrdersByStrength(t *testing.T) {
 		want []string
 	}{
 		{api.KindAsk, []string{"codex", "cursor", "antigravity"}},
-		{api.KindImage, []string{"antigravity", "codex", "cursor"}}, {api.KindReview, []string{"cursor", "codex", "antigravity"}},
+		{api.KindImage, []string{"codex", "antigravity", "cursor"}}, {api.KindReview, []string{"cursor", "codex", "antigravity"}},
 	} {
 		if got := r.Candidates(tc.kind); !reflect.DeepEqual(got, tc.want) {
 			t.Fatalf("%s: %v, want %v", tc.kind, got, tc.want)

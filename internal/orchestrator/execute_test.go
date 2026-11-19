@@ -147,7 +147,7 @@ func TestExecuteFallbackOnUnavailable(t *testing.T) {
 		"agy":   {{StdoutFile: fixture, WritePNG: "{{OUT}}/failed.png", Exit: 1}},
 		"codex": {{Stdout: codexOK(`{"files":[]}`), WritePNG: "{{OUT}}/from-codex.png"}},
 	}, api.Request{Capability: api.CapImage})
-	r := Execute(context.Background(), e, api.Plan{Steps: []api.Step{{ID: "cover", Kind: api.KindImage, Agent: "auto"}}})
+	r := Execute(context.Background(), e, api.Plan{Steps: []api.Step{{ID: "cover", Kind: api.KindImage, Agent: "antigravity"}}})
 	calls := testutil.FakeCalls(t)
 	if r.Status != api.StatusCompleted || len(r.Steps) != 1 || r.Steps[0].Agent != "codex" || !reflect.DeepEqual(r.Steps[0].Fallbacks, []string{"antigravity: unavailable"}) || len(calls) != 2 || calls[0].Name != "agy" || calls[1].Name != "codex" || e.Health.Available("antigravity", time.Now()) {
 		t.Fatalf("service unavailable fallback: %+v, calls=%+v", r, calls)
