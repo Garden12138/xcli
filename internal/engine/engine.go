@@ -18,12 +18,13 @@ import (
 )
 
 type Engine struct {
-	Home     string
-	Config   config.Config
-	Store    *store.Store
-	Health   *health.Cache
-	Drivers  map[string]driver.Driver
-	PathList string
+	Home       string
+	Config     config.Config
+	Store      *store.Store
+	Health     *health.Cache
+	Drivers    map[string]driver.Driver
+	PathList   string
+	ShellProxy map[string]string
 }
 
 func New(home string) (*Engine, error) {
@@ -39,7 +40,8 @@ func New(home string) (*Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Engine{Home: home, Config: cfg, Store: st, Health: health.Open(home), Drivers: driver.All(cfg), PathList: proc.SearchPath(cfg.Path, filepath.Join(home, "cache", "env.json"))}, nil
+	path, proxy := proc.SearchEnvironment(cfg.Path, filepath.Join(home, "cache", "env.json"), cfg.Defaults.InheritShellProxy)
+	return &Engine{Home: home, Config: cfg, Store: st, Health: health.Open(home), Drivers: driver.All(cfg), PathList: path, ShellProxy: proxy}, nil
 }
 
 func (e *Engine) available(req api.Request) []string {
@@ -126,7 +128,7 @@ func (e *Engine) Run(ctx context.Context, t *store.Task, sink func(api.Event)) (
 	for _, notice := range notices {
 		emit("notice", map[string]string{"text": notice})
 	}
-	env := &orchestrator.Env{Config: e.Config, Drivers: e.Drivers, Health: e.Health, Task: t, WS: ws, Req: req, PathList: e.PathList, LockDir: filepath.Join(e.Home, "locks"), Now: time.Now, Sink: sink}
+	env := &orchestrator.Env{Config: e.Config, Drivers: e.Drivers, Health: e.Health, Task: t, WS: ws, Req: req, PathList: e.PathList, ShellProxy: e.ShellProxy, LockDir: filepath.Join(e.Home, "locks"), Now: time.Now, Sink: sink}
 	if req.ParentTask != "" {
 		if parent, err := e.Store.Load(req.ParentTask); err == nil {
 			step := lastExecuted(parent.Snapshot().Steps)

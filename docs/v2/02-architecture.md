@@ -416,7 +416,7 @@ xcli 本身不是沙箱，权限隔离依赖各 CLI 的沙箱；`write` 档会�
 ### 8.2 子进程
 
 - 每个 CLI 进程用 `Setpgid` 启动独立进程组；取消或超时时先向进程组发 SIGTERM，5 秒后 SIGKILL。
-- stdout 逐行交给 Parser，同时原样写入 `steps/<id>-r<n>/stdout.jsonl`；stderr 写入 `stderr.log`，并在内存保留最后 64 KB 供错误分类。
+- stdout 逐行交给 Parser 并写入 `steps/<id>-r<n>/stdout.jsonl`；stderr 写入 `stderr.log`，并在内存保留最后 64 KB 供错误分类。CLI 代理值在输出进入 Parser 或日志前遮蔽。
 - 单行上限 8 MB，超出的行丢弃并记 notice。
 - 环境变量：继承 xcli 的完整环境，叠加配置中该 agent 的 `env`。
 - 超时：步骤默认 20 分钟，任务默认 90 分钟，规划 3 分钟，均可配置。
@@ -425,13 +425,13 @@ xcli 本身不是沙箱，权限隔离依赖各 CLI 的沙箱；`write` 档会�
 
 每个 CLI 有 `max_concurrency` 个槽位（默认 2），对应文件 `~/.xcli/locks/<agent>-<n>.lock`，用 `flock(LOCK_EX|LOCK_NB)` 抢占，进程退出时自动释放。抢不到时每秒重试，并发出 `step.waiting` 事件。这样多个应用同时调用 xcli 时也不会把同一个 CLI 开得过多。
 
-### 8.4 GUI 应用的 PATH 问题
+### 8.4 GUI 应用的 PATH 和代理
 
 macOS 上从 Dock 启动的桌面应用不会继承终端里的 PATH，xcli 和它启动的 CLI（cursor-agent 依赖 node）可能找不到命令。处理方式：
 
-1. 配置 `path` 非空时直接用它作为子进程 PATH。
-2. 否则执行一次 `$SHELL -lic 'printf %s "$PATH"'`（3 秒超时），与当前 PATH 合并去重。只有成功且非空的探测结果写入 `~/.xcli/cache/env.json`，有效期 24 小时；失败或超时时使用当前 PATH，下一次重新探测，已有空缓存也会重新探测。
-3. 再追加常见目录：`~/.local/bin`、`/opt/homebrew/bin`、`/usr/local/bin`。
+1. 配置 `path` 非空时用它作为子进程 PATH。否则用登录 shell 的 PATH 与当前 PATH 合并去重，并追加 `~/.local/bin`、`/opt/homebrew/bin`、`/usr/local/bin`。
+2. 默认在 xcli 环境中不存在任何代理变量时，从同一次登录 shell 探测补上 `HTTP_PROXY`、`HTTPS_PROXY`、`ALL_PROXY`、`NO_PROXY` 及小写形式。任意一个已设置的变量（包括空值）都保留应用自己的代理环境。显式配置 `path` 时仍可独立探测代理，agent 的 `env` 最后叠加。
+3. 登录 shell 探测超时为 3 秒。成功且 PATH 非空的结果写入 `~/.xcli/cache/env.json`（0600），有效期 24 小时。无可用缓存时，探测失败后使用当前 PATH 并在下次重试。CLI 输出中的代理值在写入日志或事件前遮蔽。
 
 查找 CLI 命令时使用合并后的 PATH。应用侧应该用 xcli 的绝对路径启动它。
 
@@ -443,7 +443,7 @@ macOS 上从 Dock 启动的桌面应用不会继承终端里的 PATH，xcli 和�
 ~/.xcli/
   config.yaml                  可选
   cache/health.json            健康探测与冷却
-  cache/env.json               登录 shell 的 PATH
+  cache/env.json               登录 shell 的 PATH 和代理变量（0600）
   locks/<agent>-<n>.lock       并发槽位
   server.token                 HTTP 接口令牌（0600）
   tasks/<task-id>/
@@ -470,6 +470,7 @@ macOS 上从 Dock 启动的桌面应用不会继承终端里的 PATH，xcli 和�
 defaults:
   permission: write        # read | write | full
   network: true            # write 档沙箱内是否允许联网
+  inherit_shell_proxy: true # 允许从登录 shell 补充代理，设为 false 关闭
   review: auto             # code 任务自动安排另一个 CLI 审查：auto | off
   fallback: true           # CLI 不可用时自动切换
   max_fix_rounds: 2

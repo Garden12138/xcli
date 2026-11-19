@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"text/tabwriter"
 	"time"
@@ -40,7 +39,7 @@ func newAgentsCommand() *cobra.Command {
 				return err
 			}
 		}
-		pathList := proc.SearchPath(cfg.Path, filepath.Join(rootOpts.home, "cache", "env.json"))
+		pathList, proxy := proc.SearchEnvironment(cfg.Path, filepath.Join(rootOpts.home, "cache", "env.json"), cfg.Defaults.InheritShellProxy)
 		rows := []agentRow{}
 		for _, name := range config.AgentOrder {
 			d, err := driver.New(name, cfg.Agents[name])
@@ -48,7 +47,7 @@ func newAgentsCommand() *cobra.Command {
 				return err
 			}
 			exe, _ := proc.LookPath(d.Command(), pathList)
-			e := cache.Probe(cmd.Context(), d, exe, proc.Env(os.Environ(), pathList, cfg.Agents[name].Env), 10*time.Minute)
+			e := cache.Probe(cmd.Context(), d, exe, proc.CLIEnv(pathList, cfg.Agents[name].Env, proxy), 10*time.Minute)
 			h := e.Health
 			rows = append(rows, agentRow{Name: name, Installed: h.Installed, Path: h.Path, Version: h.Version, Auth: h.Auth,
 				Available:     cfg.Enabled(name) && h.Installed && h.Auth != "missing" && cache.Available(name, time.Now()),

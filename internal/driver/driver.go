@@ -119,7 +119,7 @@ func probe(ctx context.Context, d Driver, exe string, env []string, statusArgs .
 			text = s
 		}
 	}
-	out := proc.Run(ctx, proc.Spec{Path: exe, Args: []string{"--version"}, Env: env}, proc.Options{Timeout: 5 * time.Second, OnLine: read})
+	out := proc.Run(ctx, proc.Spec{Path: exe, Args: []string{"--version"}, Env: env}, proc.Options{Timeout: 5 * time.Second, OnLine: read, RedactProxy: true})
 	h.Installed = out.StartErr == nil
 	if out.StartErr != nil || out.ExitCode != 0 {
 		h.Error = "请在终端运行 " + d.Command() + " --version 检查安装"
@@ -128,7 +128,7 @@ func probe(ctx context.Context, d Driver, exe string, env []string, statusArgs .
 	h.Version = text
 	if len(statusArgs) > 0 {
 		text = ""
-		out = proc.Run(ctx, proc.Spec{Path: exe, Args: statusArgs, Env: env}, proc.Options{Timeout: 5 * time.Second, OnLine: read})
+		out = proc.Run(ctx, proc.Spec{Path: exe, Args: statusArgs, Env: env}, proc.Options{Timeout: 5 * time.Second, OnLine: read, RedactProxy: true})
 		if out.StartErr == nil && !out.Cancelled && !out.TimedOut {
 			h.Auth = "ok"
 			if out.ExitCode != 0 || ClassifyText("", text) == ErrAuth {

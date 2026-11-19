@@ -33,6 +33,7 @@ func testEngine(t *testing.T, script testutil.FakeScript) *Engine {
 	t.Helper()
 	home := t.TempDir()
 	cfg := config.Default()
+	cfg.Defaults.InheritShellProxy = false
 	cfg.Path = testutil.InstallFakeCLIs(t, script)
 	for name, a := range cfg.Agents {
 		a.ArtifactDirs = []string{}
@@ -89,6 +90,125 @@ func TestEngineRunAsk(t *testing.T) {
 	persisted, err := store.ReadEvents(task.Dir(), 0)
 	if err != nil || len(persisted) != len(events) {
 		t.Fatalf("persisted=%v err=%v", persisted, err)
+	}
+}
+
+func TestEngineInheritsLoginShellProxy(t *testing.T) {
+	const proxy = "http://user:fake-secret@proxy.invalid:8080"
+	keys := []string{"HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "all_proxy", "no_proxy"}
+	for _, tc := range []struct {
+		name, existing string
+		disabled       bool
+	}{
+		{name: "default"},
+		{name: "existing lowercase", existing: "https_proxy=own-proxy"},
+		{name: "existing empty", existing: "NO_PROXY="},
+		{name: "disabled", disabled: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, key := range keys {
+				t.Setenv(key, "")
+				if err := os.Unsetenv(key); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if key, value, ok := strings.Cut(tc.existing, "="); ok {
+				t.Setenv(key, value)
+			}
+			home := t.TempDir()
+			shell := filepath.Join(home, "login-shell")
+			script := "#!/bin/sh\n"
+			for _, key := range keys {
+				script += "export " + key + "='" + proxy + "'\n"
+			}
+			script += "printf 'login banner\\n'\nexec /bin/sh -c \"$2\"\n"
+			if err := os.WriteFile(shell, []byte(script), 0700); err != nil {
+				t.Fatal(err)
+			}
+			t.Setenv("SHELL", shell)
+			dir := t.TempDir()
+			t.Setenv("XCLI_PROXY_TEST_OUTPUT", filepath.Join(home, "child-proxies"))
+			fakecli := `#!/bin/sh
+{
+	for key in HTTP_PROXY HTTPS_PROXY ALL_PROXY NO_PROXY http_proxy https_proxy all_proxy no_proxy; do
+		eval 'present=${'"$key"'+yes}'
+		if [ "$present" = yes ]; then
+			eval 'value=$'"$key"
+			printf '%s=%s\n' "$key" "$value"
+		fi
+	done
+} > "$XCLI_PROXY_TEST_OUTPUT"
+printf '{"type":"item.completed","item":{"type":"agent_message","text":"proxy %s"}}\n' "${HTTP_PROXY-}"
+printf '{"type":"turn.completed"}\n'
+printf 'proxy %s\n' "${HTTP_PROXY-}" >&2
+`
+			if err := os.WriteFile(filepath.Join(dir, "codex"), []byte(fakecli), 0700); err != nil {
+				t.Fatal(err)
+			}
+			raw := "path: " + strconv.Quote(dir+":/bin:/usr/bin") + "\n"
+			if tc.disabled {
+				raw += "defaults: {inherit_shell_proxy: false}\n"
+			}
+			if err := os.WriteFile(filepath.Join(home, "config.yaml"), []byte(raw), 0600); err != nil {
+				t.Fatal(err)
+			}
+			e, err := New(home)
+			if err != nil {
+				t.Fatal(err)
+			}
+			task := create(t, e, api.Request{Capability: api.CapAsk, Agent: "codex", Goal: "verify child environment"})
+			result := e.Run(context.Background(), task, nil)
+			if result.Status != api.StatusCompleted {
+				t.Fatalf("task status: %s", result.Status)
+			}
+			got, err := os.ReadFile(filepath.Join(home, "child-proxies"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := ""
+			if tc.existing != "" {
+				want = tc.existing + "\n"
+			} else if !tc.disabled {
+				for _, key := range keys {
+					want += key + "=" + proxy + "\n"
+				}
+				info, err := os.Stat(filepath.Join(home, "cache", "env.json"))
+				if err != nil {
+					t.Errorf("shell environment cache: %v", err)
+				} else if info.Mode().Perm() != 0600 {
+					t.Error("shell environment cache must have mode 0600")
+				}
+				if err := os.Remove(shell); err != nil {
+					t.Fatal(err)
+				}
+				e, err = New(home)
+				if err != nil {
+					t.Fatal(err)
+				}
+				for _, key := range keys {
+					if e.ShellProxy[key] != proxy {
+						t.Errorf("cached proxy missing for %s", key)
+					}
+				}
+			}
+			if string(got) != want {
+				t.Error("child received unexpected proxy environment")
+			}
+			for _, path := range []string{
+				task.Path("steps", "main-r1", "stdout.jsonl"),
+				task.Path("steps", "main-r1", "stderr.log"),
+				task.Path("events.jsonl"),
+				task.Path("task.json"),
+			} {
+				data, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if bytes.Contains(data, []byte(proxy)) {
+					t.Errorf("proxy value recorded in %s", filepath.Base(path))
+				}
+			}
+		})
 	}
 }
 

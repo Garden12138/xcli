@@ -23,7 +23,7 @@ func TestSearchPathShellAndCache(t *testing.T) {
 	t.Cleanup(func() { shellProbeTimeout = old })
 	dir := t.TempDir()
 	shell := filepath.Join(dir, "fake-shell")
-	if err := os.WriteFile(shell, []byte("#!/bin/sh\nprintf '/custom/bin:/custom/bin:/bin'\n"), 0700); err != nil {
+	if err := os.WriteFile(shell, []byte("#!/bin/sh\nexport PATH=/custom/bin:/custom/bin:/bin\nexec /bin/sh -c \"$2\"\n"), 0700); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("SHELL", shell)
@@ -47,9 +47,9 @@ func TestSearchPathProbeFailureNotCached(t *testing.T) {
 	t.Cleanup(func() { shellProbeTimeout = old })
 	for _, tc := range []struct{ name, script string }{
 		{"missing", ""},
-		{"failed", "printf '/partial/bin\\n'\nexit 1\n"},
-		{"empty", "printf ' \\n'\n"},
-		{"timed_out", "printf '/partial/bin\\n'\ntrap 'exit 0' TERM\nwhile :; do /bin/sleep 10; done\n"},
+		{"failed", "export PATH=/partial/bin\n/bin/sh -c \"$2\"\nexit 1\n"},
+		{"empty", "export PATH=' '\nexec /bin/sh -c \"$2\"\n"},
+		{"timed_out", "export PATH=/partial/bin\n/bin/sh -c \"$2\"\ntrap 'exit 0' TERM\nwhile :; do /bin/sleep 10; done\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
@@ -76,7 +76,7 @@ func TestSearchPathProbeFailureNotCached(t *testing.T) {
 func TestSearchPathIgnoresEmptyCache(t *testing.T) {
 	dir := t.TempDir()
 	shell := filepath.Join(dir, "fake-shell")
-	if err := os.WriteFile(shell, []byte("#!/bin/sh\nprintf '/recovered/bin'\n"), 0700); err != nil {
+	if err := os.WriteFile(shell, []byte("#!/bin/sh\nexport PATH=/recovered/bin\nexec /bin/sh -c \"$2\"\n"), 0700); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("SHELL", shell)

@@ -258,7 +258,7 @@ func (s *service) agents(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		exe, _ := proc.LookPath(d.Command(), s.e.PathList)
-		entry := s.e.Health.Probe(r.Context(), d, exe, proc.Env(os.Environ(), s.e.PathList, s.e.Config.Agents[name].Env), 10*time.Minute)
+		entry := s.e.Health.Probe(r.Context(), d, exe, proc.CLIEnv(s.e.PathList, s.e.Config.Agents[name].Env, s.e.ShellProxy), 10*time.Minute)
 		h := entry.Health
 		rows = append(rows, map[string]any{"name": name, "installed": h.Installed, "path": h.Path, "version": h.Version, "auth": h.Auth, "available": s.e.Config.Enabled(name) && h.Installed && h.Auth != "missing" && s.e.Health.Available(name, time.Now()), "cooldown_until": entry.CooldownUntil, "cooldown_reason": entry.CooldownReason, "strengths": s.e.Config.Agents[name].Strengths})
 	}

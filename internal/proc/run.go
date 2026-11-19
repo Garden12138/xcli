@@ -21,10 +21,11 @@ type Spec struct {
 	Env  []string
 }
 type Options struct {
-	Timeout    time.Duration
-	OnLine     func([]byte)
-	StdoutFile string
-	StderrFile string
+	Timeout     time.Duration
+	OnLine      func([]byte)
+	StdoutFile  string
+	StderrFile  string
+	RedactProxy bool
 }
 type Outcome struct {
 	ExitCode   int
@@ -95,6 +96,30 @@ func Run(ctx context.Context, s Spec, o Options) (out Outcome) {
 		defer stderrFile.Close()
 	}
 	tail := &tailWriter{file: stderrFile}
+	var raw io.Writer
+	if stdoutFile != nil {
+		raw = stdoutFile
+	}
+	var stderr io.Writer = tail
+	onLine := o.OnLine
+	var stdoutLog, stderrLog *redactedLog
+	if o.RedactProxy {
+		env := s.Env
+		if env == nil {
+			env = os.Environ()
+		}
+		if replace := proxyRedactor(env); replace != nil {
+			if raw != nil {
+				stdoutLog = &redactedLog{dst: raw, replace: replace}
+				raw = stdoutLog
+			}
+			stderrLog = &redactedLog{dst: tail, replace: replace}
+			stderr = stderrLog
+			if onLine != nil {
+				onLine = func(line []byte) { o.OnLine([]byte(replace.Replace(string(line)))) }
+			}
+		}
+	}
 	reader, writer, err := os.Pipe()
 	if err != nil {
 		out.StartErr = err
@@ -104,7 +129,7 @@ func Run(ctx context.Context, s Spec, o Options) (out Outcome) {
 	defer writer.Close()
 	cmd := exec.CommandContext(ctx, s.Path, s.Args...)
 	cmd.Dir, cmd.Env = s.Dir, s.Env
-	cmd.Stdout, cmd.Stderr = writer, tail
+	cmd.Stdout, cmd.Stderr = writer, stderr
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.WaitDelay = 6 * time.Second
 	var killTimer *time.Timer
@@ -126,9 +151,16 @@ func Run(ctx context.Context, s Spec, o Options) (out Outcome) {
 	linesDone := make(chan error, 1)
 	go func() {
 		defer reader.Close()
-		linesDone <- readLines(reader, stdoutFile, o.OnLine, tail)
+		err := readLines(reader, raw, onLine, tail)
+		if stdoutLog != nil {
+			err = errors.Join(err, stdoutLog.flush())
+		}
+		linesDone <- err
 	}()
 	waitErr := cmd.Wait()
+	if stderrLog != nil {
+		_ = stderrLog.flush()
+	}
 	select {
 	case err = <-linesDone:
 	case <-time.After(6 * time.Second):
@@ -158,7 +190,9 @@ func Run(ctx context.Context, s Spec, o Options) (out Outcome) {
 	return out
 }
 
-func readLines(r io.Reader, raw *os.File, onLine func([]byte), notices io.Writer) error {
+const maxOutputLine = 8 * 1024 * 1024
+
+func readLines(r io.Reader, raw io.Writer, onLine func([]byte), notices io.Writer) error {
 	reader := bufio.NewReaderSize(r, 64*1024)
 	var pending []byte
 	dropped := false
@@ -174,7 +208,7 @@ func readLines(r io.Reader, raw *os.File, onLine func([]byte), notices io.Writer
 			chunk = chunk[:len(chunk)-1]
 		}
 		if !dropped {
-			if len(pending)+len(chunk) > 8*1024*1024 {
+			if len(pending)+len(chunk) > maxOutputLine {
 				dropped, pending = true, nil
 				_, _ = io.WriteString(notices, "[xcli] stdout 单行超过 8 MB，已跳过该行；请查看原始 stdout 日志。\n")
 			} else {

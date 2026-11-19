@@ -24,6 +24,7 @@ func commandHomeScript(t *testing.T, script testutil.FakeScript) {
 	home := t.TempDir()
 	t.Setenv("XCLI_HOME", home)
 	cfg := config.Default()
+	cfg.Defaults.InheritShellProxy = false
 	cfg.Path = testutil.InstallFakeCLIs(t, script)
 	for name, a := range cfg.Agents {
 		a.ArtifactDirs = []string{}

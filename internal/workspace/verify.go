@@ -15,7 +15,7 @@ func RunVerify(ctx context.Context, dir string, cmds []string, timeout time.Dura
 	results := []api.VerifyResult{}
 	for i, command := range cmds {
 		logPath := filepath.Join(logDir, fmt.Sprintf("verify-%d.log", i+1))
-		out := proc.Run(ctx, proc.Spec{Path: "/bin/sh", Args: []string{"-c", "exec 2>&1\n" + command}, Dir: dir}, proc.Options{Timeout: timeout, StdoutFile: logPath})
+		out := proc.Run(ctx, proc.Spec{Path: "/bin/sh", Args: []string{"-c", "exec 2>&1\n" + command}, Dir: dir}, proc.Options{Timeout: timeout, StdoutFile: logPath, RedactProxy: true})
 		code := out.ExitCode
 		if out.TimedOut {
 			code = 124

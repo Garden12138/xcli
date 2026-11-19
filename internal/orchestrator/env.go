@@ -28,6 +28,7 @@ type Env struct {
 	WS            *workspace.Workspace
 	Req           api.Request // 已规范化
 	PathList      string
+	ShellProxy    map[string]string
 	LockDir       string // <home>/locks
 	ResumeSession string // resume 时第一个步骤续接的会话
 	Now           func() time.Time
@@ -179,8 +180,8 @@ func (e *Env) invoke(ctx context.Context, agent string, stepID string, round int
 		}
 		e.emit("step.started", stepID, agent, map[string]any{"kind": kind, "round": round})
 		parser := d.NewParser()
-		out := proc.Run(ctx, proc.Spec{Path: exe, Args: args, Dir: inv.Workdir, Env: proc.Env(os.Environ(), e.PathList, cfg.Env)}, proc.Options{
-			Timeout: e.Config.Defaults.StepTimeout.D(), StdoutFile: filepath.Join(dir, "stdout.jsonl"), StderrFile: filepath.Join(dir, "stderr.log"),
+		out := proc.Run(ctx, proc.Spec{Path: exe, Args: args, Dir: inv.Workdir, Env: proc.CLIEnv(e.PathList, cfg.Env, e.ShellProxy)}, proc.Options{
+			Timeout: e.Config.Defaults.StepTimeout.D(), StdoutFile: filepath.Join(dir, "stdout.jsonl"), StderrFile: filepath.Join(dir, "stderr.log"), RedactProxy: true,
 			OnLine: func(line []byte) {
 				for _, event := range parser.Feed(line) {
 					switch event.Kind {

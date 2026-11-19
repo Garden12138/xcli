@@ -80,6 +80,7 @@ func smokeSetup(t *testing.T, failAsk bool) string {
 		fake["codex"][0] = testutil.FakeStep{Stdout: []string{`{"type":"turn.failed","error":{"message":"scripted failure"}}`}, Exit: 1}
 	}
 	cfg := config.Default()
+	cfg.Defaults.InheritShellProxy = false
 	cfg.Path = testutil.InstallFakeCLIs(t, fake) + ":" + filepath.Join(runtime.GOROOT(), "bin")
 	for name, agent := range cfg.Agents {
 		agent.ArtifactDirs = []string{}

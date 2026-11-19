@@ -32,18 +32,19 @@ func (d *Duration) UnmarshalYAML(n *yaml.Node) error {
 }
 
 type Defaults struct {
-	Permission     api.Permission `yaml:"permission"`
-	Network        bool           `yaml:"network"`
-	Review         string         `yaml:"review"` // "auto" | "off"
-	Fallback       bool           `yaml:"fallback"`
-	MaxFixRounds   int            `yaml:"max_fix_rounds"`
-	MaxSteps       int            `yaml:"max_steps"`
-	MaxParallel    int            `yaml:"max_parallel"`
-	StepTimeout    Duration       `yaml:"step_timeout"`
-	TaskTimeout    Duration       `yaml:"task_timeout"`
-	PlannerTimeout Duration       `yaml:"planner_timeout"`
-	VerifyTimeout  Duration       `yaml:"verify_timeout"`
-	Planner        string         `yaml:"planner"`
+	Permission        api.Permission `yaml:"permission"`
+	Network           bool           `yaml:"network"`
+	InheritShellProxy bool           `yaml:"inherit_shell_proxy"`
+	Review            string         `yaml:"review"` // "auto" | "off"
+	Fallback          bool           `yaml:"fallback"`
+	MaxFixRounds      int            `yaml:"max_fix_rounds"`
+	MaxSteps          int            `yaml:"max_steps"`
+	MaxParallel       int            `yaml:"max_parallel"`
+	StepTimeout       Duration       `yaml:"step_timeout"`
+	TaskTimeout       Duration       `yaml:"task_timeout"`
+	PlannerTimeout    Duration       `yaml:"planner_timeout"`
+	VerifyTimeout     Duration       `yaml:"verify_timeout"`
+	Planner           string         `yaml:"planner"`
 }
 
 type AgentConfig struct {
@@ -67,7 +68,7 @@ var AgentOrder = []string{"codex", "cursor", "antigravity"}
 
 func Default() Config {
 	c := Config{Defaults: Defaults{
-		Permission: api.PermWrite, Network: true, Review: "auto", Fallback: true,
+		Permission: api.PermWrite, Network: true, InheritShellProxy: true, Review: "auto", Fallback: true,
 		MaxFixRounds: 2, MaxSteps: 6, MaxParallel: 3, Planner: "codex",
 		StepTimeout: Duration(20 * time.Minute), TaskTimeout: Duration(90 * time.Minute),
 		PlannerTimeout: Duration(3 * time.Minute), VerifyTimeout: Duration(10 * time.Minute),

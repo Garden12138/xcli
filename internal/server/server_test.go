@@ -33,6 +33,7 @@ func setup(t *testing.T, script testutil.FakeScript) (*httptest.Server, *engine.
 	t.Helper()
 	home := t.TempDir()
 	cfg := config.Default()
+	cfg.Defaults.InheritShellProxy = false
 	cfg.Path = testutil.InstallFakeCLIs(t, script)
 	for name, a := range cfg.Agents {
 		a.ArtifactDirs = []string{}

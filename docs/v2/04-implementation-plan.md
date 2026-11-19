@@ -582,6 +582,7 @@ func (d Duration) D() time.Duration
 type Defaults struct {
 	Permission     api.Permission `yaml:"permission"`
 	Network        bool           `yaml:"network"`
+	InheritShellProxy bool        `yaml:"inherit_shell_proxy"`
 	Review         string         `yaml:"review"` // "auto" | "off"
 	Fallback       bool           `yaml:"fallback"`
 	MaxFixRounds   int            `yaml:"max_fix_rounds"`
@@ -773,8 +774,9 @@ type Spec struct {
 type Options struct {
 	Timeout    time.Duration    // 0 表示不限
 	OnLine     func(line []byte) // 每一行 stdout（不含换行），在同一个 goroutine 中按顺序调用
-	StdoutFile string            // 原样保存 stdout；空则不保存
+	StdoutFile string            // 保存 stdout；空则不保存
 	StderrFile string
+	RedactProxy bool              // CLI 运行及探测中遮蔽输出里的代理值
 }
 
 type Outcome struct {
@@ -791,6 +793,8 @@ func Run(ctx context.Context, s Spec, o Options) Outcome
 func AcquireSlot(ctx context.Context, lockDir, name string, max int, onWait func()) (release func(), err error)
 
 func SearchPath(configured, cacheFile string) string      // 02 架构文档 8.4 节
+func SearchEnvironment(configured, cacheFile string, inheritProxy bool) (string, map[string]string) // 有效 PATH 和登录 shell 的代理默认值
+func CLIEnv(path string, extra, shellProxy map[string]string) []string // 合并实际 CLI 子进程环境
 func LookPath(name, pathList string) (string, error)       // 在给定 PATH 中查找
 func Env(base []string, pathList string, extra map[string]string) []string // 替换 PATH 并叠加 extra
 ```
@@ -836,7 +840,7 @@ func TestRunTimeoutKillsProcessGroup(t *testing.T) {
 - stdout 用 `bufio.Reader` 自己按 `\n` 切行，单行超过 8 MB 时丢弃到下一个换行。
 - stderr 写入文件并保留一个 64 KB 环形缓冲。
 - `AcquireSlot`：在 `lockDir` 下依次尝试 `<name>-0.lock` … `<name>-(max-1).lock`，`syscall.Flock(fd, LOCK_EX|LOCK_NB)`；全部失败时调用 `onWait`，等 1 秒重试，直到 ctx 结束。release 解锁并关闭文件。
-- `SearchPath`：`configured` 非空直接返回；否则读非空缓存（24 小时内有效），缓存无效时执行 `$SHELL -lic 'printf %s "$PATH"'`（包级变量 `shellProbeTimeout` 默认 3 秒）。成功且非空时写缓存，失败、超时或空输出使用当前 PATH；与 `os.Getenv("PATH")` 合并去重，再追加 `~/.local/bin`、`/opt/homebrew/bin`、`/usr/local/bin`（`cacheFile` 为空时不读写缓存）。
+- `SearchPath`：`configured` 非空直接返回，其他情况由 `SearchEnvironment` 探测。登录 shell 的 PATH 与当前 PATH 合并去重并追加常见目录；探测超时默认 3 秒，只缓存成功且 PATH 非空的结果（24 小时，0600）。需要代理时探测八个大小写变量；`CLIEnv` 在当前环境没有任何代理变量时补上 shell 值，最后应用 agent 的 `env`。
 
 - [x] **步骤 3：运行测试并提交**
 
@@ -1135,7 +1139,7 @@ git add internal/driver && git commit -m "feat(driver): add cursor and antigravi
 - 测试：`internal/health/health_test.go`
 
 **接口：**
-- 消费：`driver.Driver`、`driver.Health`、`driver.ErrorKind`、`proc.SearchPath`、`proc.LookPath`、`proc.Env`、`config.Load`。
+- 消费：`driver.Driver`、`driver.Health`、`driver.ErrorKind`、`proc.SearchEnvironment`、`proc.LookPath`、`proc.CLIEnv`、`config.Load`。
 - 产出：
 
 ```go
@@ -1473,6 +1477,7 @@ type Env struct {
 	WS            *workspace.Workspace
 	Req           api.Request // 已规范化
 	PathList      string
+	ShellProxy    map[string]string
 	LockDir       string      // <home>/locks
 	ResumeSession string      // resume 时第一个步骤续接的会话
 	Now           func() time.Time
@@ -1628,6 +1633,7 @@ type Engine struct {
 	Health   *health.Cache
 	Drivers  map[string]driver.Driver
 	PathList string
+	ShellProxy map[string]string
 }
 
 func New(home string) (*Engine, error)
@@ -1673,7 +1679,7 @@ func (e *ExitError) Error() string
 - [x] **步骤 3：实现 engine**
 
 要点：
-- `New`：`config.Load`、`store.Open`、`health.Open`、`driver.All`、`proc.SearchPath(cfg.Path, <home>/cache/env.json)`。
+- `New`：`config.Load`、`store.Open`、`health.Open`、`driver.All`、`proc.SearchEnvironment(cfg.Path, <home>/cache/env.json, cfg.Defaults.InheritShellProxy)`。
 - `Run`：
   1. `Update`：status running、PID = `os.Getpid()`；发 `task.started`；
   2. 用 `context.WithTimeout` 设置任务超时；
