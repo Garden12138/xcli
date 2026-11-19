@@ -516,7 +516,7 @@ agents:
 4. 收集（`artifact.CollectImages`）：
    - 输出目录里修改时间晚于步骤开始的文件；
    - 最终 JSON 里 `files` 列出的路径，以及文本中匹配 `(/[^\s"'<>]+\.(png|jpe?g|webp|gif))` 的绝对路径；
-   - 该 CLI `artifact_dirs` 下修改时间晚于步骤开始的图片（最多扫描 3 层、2000 个条目）。
+   - 前两处都没有有效图片时，扫描该 CLI 的 `artifact_dirs` 中修改时间晚于步骤开始的图片（最多 3 层、2000 个条目）。每个根目录下存在以当前会话 ID 命名的子目录时，该根只扫描这个子目录。
    输出目录之外的文件复制进输出目录。
 5. 校验：用 `image.DecodeConfig`（png / jpeg / gif / webp）读出格式和尺寸，计算 SHA-256；扩展名与真实格式不一致时改成正确的扩展名（例如 CLI 把 JPEG 存成了 `.png`）；无法解码的文件丢弃。
 6. 一张有效图片都没有 → `no_artifact`，按 6.4 切换到下一个 image 分数大于 0 的 CLI。

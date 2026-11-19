@@ -26,6 +26,7 @@ type CollectOptions struct {
 	Files     []string
 	ExtraDirs []string
 	Prefix    string
+	SessionID string
 }
 
 func Inspect(path string) (api.Artifact, error) {
@@ -130,6 +131,12 @@ func CollectImages(o CollectOptions) ([]api.Artifact, error) {
 	candidates := scan(canonicalOut, o.Since, 0, 0)
 	candidates = append(candidates, o.Files...)
 	candidates = append(candidates, imagePaths.FindAllString(o.Text, -1)...)
+	images, err := collect(candidates, out, canonicalOut, o.Prefix)
+	if err != nil || len(images) > 0 {
+		return images, err
+	}
+
+	var fallback []string
 	home, _ := os.UserHomeDir()
 	for _, root := range o.ExtraDirs {
 		if root == "~" {
@@ -137,8 +144,18 @@ func CollectImages(o CollectOptions) ([]api.Artifact, error) {
 		} else if strings.HasPrefix(root, "~/") {
 			root = filepath.Join(home, root[2:])
 		}
-		candidates = append(candidates, scan(root, o.Since, 3, 2000)...)
+		if filepath.IsLocal(o.SessionID) && o.SessionID != "." && filepath.Base(o.SessionID) == o.SessionID {
+			sessionDir := filepath.Join(root, o.SessionID)
+			if info, err := os.Lstat(sessionDir); err == nil && info.IsDir() {
+				root = sessionDir
+			}
+		}
+		fallback = append(fallback, scan(root, o.Since, 3, 2000)...)
 	}
+	return collect(fallback, out, canonicalOut, o.Prefix)
+}
+
+func collect(candidates []string, out, canonicalOut, prefix string) ([]api.Artifact, error) {
 	images := []api.Artifact{}
 	seenPaths, seenHashes := map[string]bool{}, map[string]bool{}
 	for _, source := range candidates {
@@ -170,8 +187,8 @@ func CollectImages(o CollectOptions) ([]api.Artifact, error) {
 			if inside {
 				target = filepath.Join(filepath.Dir(path), target)
 			} else {
-				if o.Prefix != "" {
-					target = o.Prefix + "-" + target
+				if prefix != "" {
+					target = prefix + "-" + target
 				}
 				target = filepath.Join(out, target)
 			}

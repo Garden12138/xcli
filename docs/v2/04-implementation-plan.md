@@ -1426,6 +1426,7 @@ type CollectOptions struct {
 	Files     []string // 最终 JSON 中的 files
 	ExtraDirs []string // 该 CLI 的 artifact_dirs
 	Prefix    string   // 复制进 OutDir 时的文件名前缀（步骤 ID）
+	SessionID string   // ExtraDirs 中用于限定扫描范围的原生会话 ID
 }
 
 func Inspect(path string) (api.Artifact, error)

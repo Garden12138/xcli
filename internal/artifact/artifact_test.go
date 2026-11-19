@@ -114,13 +114,44 @@ func TestCollectDedup(t *testing.T) {
 	}
 }
 
-func TestCollectDedupsNativeCacheCopy(t *testing.T) {
+func TestCollectExtraDirsPrefersCurrentSession(t *testing.T) {
+	out, cache := t.TempDir(), t.TempDir()
+	writeImage(t, filepath.Join(cache, "other", "other.png"), "png", 8)
+	writeImage(t, filepath.Join(cache, "current", "current.png"), "png", 9)
+	images, err := CollectImages(CollectOptions{OutDir: out, ExtraDirs: []string{cache}, SessionID: "current"})
+	if err != nil || len(images) != 1 || filepath.Base(images[0].Path) != "current.png" {
+		t.Fatalf("current session: %+v, %v", images, err)
+	}
+}
+
+func TestCollectPrefersOutDirOverNativeCache(t *testing.T) {
 	out, cache := t.TempDir(), t.TempDir()
 	writeImage(t, filepath.Join(out, "image.png"), "png", 8)
-	writeImage(t, filepath.Join(cache, "native.png"), "png", 8)
+	writeImage(t, filepath.Join(cache, "native.png"), "png", 9)
 	images, err := CollectImages(CollectOptions{OutDir: out, ExtraDirs: []string{cache}, Prefix: "main"})
 	if err != nil || len(images) != 1 || filepath.Base(images[0].Path) != "image.png" {
-		t.Fatalf("native cache duplicate: %+v, %v", images, err)
+		t.Fatalf("output should suppress native cache scan: %+v, %v", images, err)
+	}
+}
+
+func TestCollectPrefersExplicitPathsOverNativeCache(t *testing.T) {
+	for _, source := range []string{"files", "text"} {
+		t.Run(source, func(t *testing.T) {
+			out, cache := t.TempDir(), t.TempDir()
+			path := filepath.Join(t.TempDir(), "reported.png")
+			writeImage(t, path, "png", 8)
+			writeImage(t, filepath.Join(cache, "unrelated.png"), "png", 9)
+			o := CollectOptions{OutDir: out, ExtraDirs: []string{cache}}
+			if source == "files" {
+				o.Files = []string{path}
+			} else {
+				o.Text = path
+			}
+			images, err := CollectImages(o)
+			if err != nil || len(images) != 1 || filepath.Base(images[0].Path) != "reported.png" {
+				t.Fatalf("explicit image should suppress native cache scan: %+v, %v", images, err)
+			}
+		})
 	}
 }
 

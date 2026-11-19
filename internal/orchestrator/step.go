@@ -209,7 +209,10 @@ func (e *Env) RunStep(ctx context.Context, s api.Step, agent string, up []recipe
 		if raw, err := recipe.ExtractJSON(out.Text); err == nil {
 			_ = json.Unmarshal(raw, &files)
 		}
-		out.Artifacts, err = artifact.CollectImages(artifact.CollectOptions{OutDir: in.OutputDir, Since: start, Files: files.Files, Text: out.Text, ExtraDirs: e.Config.Agents[agent].ArtifactDirs, Prefix: s.ID})
+		out.Artifacts, err = artifact.CollectImages(artifact.CollectOptions{
+			OutDir: in.OutputDir, Since: start, Files: files.Files, Text: out.Text,
+			ExtraDirs: e.Config.Agents[agent].ArtifactDirs, Prefix: s.ID, SessionID: out.Result.SessionID,
+		})
 		if err != nil {
 			accept(&out, invokeError(err))
 			return
