@@ -205,14 +205,14 @@ Agy 1.5.10 的组合命令复核中，`ls; touch x` 的 run_command 状态为 ER
 | `not_installed` | 找不到命令 | 能 |
 | `auth` | stderr 或事件里出现未登录、401、"login"、"not authenticated" 等 | 能 |
 | `quota` | 额度、429、rate limit、usage limit | 能 |
-| `unavailable` | 503、unavailable、no capacity、overloaded | 所有步骤类型都能 |
+| `unavailable` | 503、unavailable、no capacity、overloaded，或 Agy 的 plan model not specified / no models available | 所有步骤类型都能 |
 | `trust` | Cursor 工作区信任提示 | 能 |
 | `permission_denied` | `denied_actions`、沙箱拒绝 | ask / review 能，code / image 保持失败 |
 | `no_artifact` | 图片步骤完成但没收集到有效图片 | 仅图片步骤能 |
 | `schema_mismatch` | 一轮修复后输出仍不符合 Schema | 不能 |
 | `timeout` / `cancelled` | xcli 控制 | 不能 |
 | `protocol` | 没有结束事件、JSON 损坏 | 不能 |
-| `failed` | 其他非零退出 | 不能 |
+| `failed` | Agy 的 invalid model selection、其他未分类的运行错误 | 不能 |
 
 识别规则集中在每个驱动的 `classify` 函数里，表驱动，配有样本测试。
 

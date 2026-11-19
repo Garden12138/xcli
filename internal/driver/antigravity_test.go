@@ -175,8 +175,30 @@ func TestAntigravityRecordedFixtures(t *testing.T) {
 	if r := replayFixture(t, "antigravity", "resume_ok", 0); r.ErrorKind != ErrNone || r.SessionID != ask.SessionID {
 		t.Fatalf("resume: %+v", r)
 	}
-	if r := replayFixture(t, "antigravity", "error_bad_model", 1); r.ErrorKind == ErrNone {
-		t.Fatal("bad model passed")
+	if r := replayFixture(t, "antigravity", "error_bad_model", 1); r.ErrorKind != ErrFailed || r.ErrorKind.Switchable(api.KindImage) {
+		t.Fatalf("explicit invalid model: %+v", r)
+	}
+}
+
+func TestAntigravityUnavailablePlanModel(t *testing.T) {
+	if r := replayFixture(t, "antigravity", "error_no_plan_model", 1); r.ErrorKind != ErrUnavailable {
+		t.Fatalf("missing plan model: %+v", r)
+	}
+	d, _ := New("antigravity", config.Default().Agents["antigravity"])
+	for _, tc := range []struct {
+		message string
+		want    ErrorKind
+	}{
+		{"plan model not specified", ErrUnavailable},
+		{"no models available", ErrUnavailable},
+		{"invalid model selection: no models available", ErrFailed},
+	} {
+		p := d.NewParser()
+		line, _ := json.Marshal(map[string]any{"event": "result", "result": map[string]string{"status": "ERROR", "error": tc.message}})
+		p.Feed(line)
+		if r := p.Finish(1, ""); r.ErrorKind != tc.want {
+			t.Errorf("%q classified as %q, want %q", tc.message, r.ErrorKind, tc.want)
+		}
 	}
 }
 

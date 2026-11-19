@@ -125,7 +125,15 @@ func (p *antigravityParser) Feed(line []byte) []Event {
 			}
 		}
 		if r.Status != "SUCCESS" {
-			p.fail(string(r.Error))
+			message := strings.ToLower(string(r.Error))
+			switch {
+			case strings.Contains(message, "invalid model selection"):
+				p.result.ErrorKind = ErrFailed
+			case strings.Contains(message, "plan model not specified"), strings.Contains(message, "no models available"):
+				p.result.ErrorKind = ErrUnavailable
+			default:
+				p.fail(message)
+			}
 		}
 		events = append(events, Event{Kind: "message", Text: p.result.Text})
 	}
