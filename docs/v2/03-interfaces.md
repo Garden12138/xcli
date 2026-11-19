@@ -218,7 +218,7 @@ Plan 与 Step：
 
 | 方法与路径 | 说明 |
 | --- | --- |
-| `GET /v1/health` | `{"ok": true, "version": "2.0.0"}`，不需要令牌 |
+| `GET /v1/health` | `{"ok": true, "version": "2.0.1"}`，不需要令牌 |
 | `GET /v1/agents` | 同 `xcli agents --json` |
 | `POST /v1/tasks` | 请求体是 Request；`?wait=true` 时阻塞到结束并返回 Result，否则返回 `202 {"task_id"}` |
 | `GET /v1/tasks?limit=20` | 任务列表 |
