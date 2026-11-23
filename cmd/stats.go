@@ -167,7 +167,6 @@ func writeStatsTables(out *strings.Builder, report stats.Report) {
 			statsValue(strings.Join(e.Apps, ", ")), statsValue(strings.Join(e.Agents, ", "))})
 	}
 	writeStatsTable(out, "失败原因", failures)
-
 }
 
 func writeStatsDays(out *strings.Builder, daily []stats.DayReport) {
@@ -177,8 +176,22 @@ func writeStatsDays(out *strings.Builder, daily []stats.DayReport) {
 	}
 	days := [][]string{{"日期", "任务", "成功", "失败", "平均耗时", ""}}
 	week := [...]string{"日", "一", "二", "三", "四", "五", "六"}
-	for _, d := range daily {
+	for i := 0; i < len(daily); i++ {
+		d := daily[i]
 		date, _ := time.Parse(time.DateOnly, d.Date)
+		if d.Tasks == 0 {
+			last := i
+			for last+1 < len(daily) && daily[last+1].Tasks == 0 {
+				last++
+			}
+			if last > i {
+				end, _ := time.Parse(time.DateOnly, daily[last].Date)
+				days = append(days, []string{fmt.Sprintf("%s ～ %s  无任务（%d 天）",
+					date.Format("01-02"), end.Format("01-02"), last-i+1)})
+				i = last
+				continue
+			}
+		}
 		bar := ""
 		if d.Tasks > 0 {
 			bar = strings.Repeat("█", max(1, (20*d.Tasks+busiest/2)/busiest))
@@ -193,7 +206,7 @@ func writeStatsTable(out *strings.Builder, title string, rows [][]string) {
 	fmt.Fprint(out, "\n", title, "\n")
 	widths := make([]int, len(rows[0]))
 	for _, row := range rows {
-		for i, cell := range row {
+		for i, cell := range row[:len(row)-1] {
 			widths[i] = max(widths[i], statsDisplayWidth(cell))
 		}
 	}

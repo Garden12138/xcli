@@ -50,6 +50,63 @@ func TestStatsCommand(t *testing.T) {
 	}
 }
 
+func TestStatsDaysCollapseEmptyRuns(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		secondDay int
+		lastRun   string
+		singleDay bool
+	}{
+		{"consecutive task days", 19, "11-20 ～ 11-23  无任务（4 天）", false},
+		{"one empty day between tasks", 20, "11-21 ～ 11-23  无任务（3 天）", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			home := t.TempDir()
+			t.Setenv("XCLI_HOME", home)
+			loc := statsLocation()
+			for i, day := range []int{18, tc.secondDay} {
+				at := time.Date(2026, time.November, day, 12, 0, 0, 0, loc)
+				record := stats.Record{V: 1, TaskID: at.Format(time.DateOnly), App: "terminal",
+					Status: "completed", FinishedAt: at, DurationMS: int64(i+1) * 1000}
+				if err := stats.Append(home, record); err != nil {
+					t.Fatal(err)
+				}
+			}
+			args := []string{"stats", "--since", "30d", "--until", "2026-11-23"}
+			out, _, err := runCommand(args, "")
+			if err != nil || !strings.Contains(out, "10-25 ～ 11-17  无任务（24 天）") ||
+				!strings.Contains(out, tc.lastRun) || strings.Contains(out, "10-26 周") {
+				t.Fatalf("daily table: %v\n%s", err, out)
+			}
+			if tc.singleDay {
+				found := false
+				for line := range strings.SplitSeq(out, "\n") {
+					if strings.Join(strings.Fields(line), " ") == "11-19 周四 0 0 0 —" {
+						found = true
+					}
+				}
+				if !found {
+					t.Fatalf("missing standalone empty day:\n%s", out)
+				}
+			}
+			out, _, err = runCommand(append(args, "--json"), "")
+			var report stats.Report
+			if err != nil || json.Unmarshal([]byte(out), &report) != nil || len(report.Daily) != 30 {
+				t.Fatalf("daily JSON: %v\n%s", err, out)
+			}
+			first := time.Date(2026, time.October, 25, 0, 0, 0, 0, loc)
+			for i, row := range report.Daily {
+				if want := first.AddDate(0, 0, i).Format(time.DateOnly); row.Date != want {
+					t.Errorf("day %d = %s, want %s", i, row.Date, want)
+				}
+			}
+			if tc.singleDay && report.Daily[25].Tasks != 0 {
+				t.Fatalf("November 19 JSON = %+v", report.Daily[25])
+			}
+		})
+	}
+}
+
 func TestStatsRanges(t *testing.T) {
 	zone := time.FixedZone("CST", 8*3600)
 	now := time.Date(2026, time.November, 23, 10, 30, 0, 0, zone)
