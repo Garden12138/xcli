@@ -24,6 +24,7 @@ echo '{"capability":"ask","goal":"..."}' | xcli submit --request - --json   # �
 | [02 架构设计](02-architecture.md) | 模块、驱动层、编排、权限、生图、进程、存储、配置 | 实现者 |
 | [03 接口规范](03-interfaces.md) | 命令行、请求/结果/事件 JSON 协议、HTTP、四个应用的接入示例 | 实现者、应用开发 |
 | [04 实施计划](04-implementation-plan.md) | 分阶段任务、文件、接口签名、测试用例、验收命令 | Codex |
+| [05 接入应用统计](05-app-stats.md) | `xcli stats`：统计账本、调用方标识、统计口径、实施任务（v2.1.0） | 实现者、Codex |
 | [驱动实测记录](driver-notes.md) | 三个 CLI 的版本、参数、事件、权限与产物行为 | 实现者 |
 | [Codex 交接说明](CODEX_HANDOFF.md) | 直接粘贴给 Codex 的提示词与守则 | 你 |
 
