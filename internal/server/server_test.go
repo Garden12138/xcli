@@ -19,6 +19,7 @@ import (
 	"github.com/Garden12138/xcli/internal/api"
 	"github.com/Garden12138/xcli/internal/config"
 	"github.com/Garden12138/xcli/internal/engine"
+	"github.com/Garden12138/xcli/internal/stats"
 	"github.com/Garden12138/xcli/internal/testutil"
 )
 
@@ -182,10 +183,15 @@ func TestCreateAndGet(t *testing.T) {
 }
 
 func TestCreateWait(t *testing.T) {
-	ts, _, _ := setup(t, testutil.FakeScript{"codex": {{Stdout: okLines("waited")}}})
+	ts, e, _ := setup(t, testutil.FakeScript{"codex": {{Stdout: okLines("waited")}}})
 	r := decode[api.Result](t, request(t, ts, "POST", "/v1/tasks?wait=true", `{"capability":"ask","agent":"codex","goal":"hi"}`), 200)
 	if r.Status != api.StatusCompleted || r.Summary != "waited" {
 		t.Fatalf("wait: %+v", r)
+	}
+	records, skipped, err := stats.ReadLedger(filepath.Join(e.Home, "stats", "usage.jsonl"))
+	if err != nil || skipped != 0 || len(records) != 1 || records[0].TaskID != r.TaskID ||
+		records[0].App != "unknown" || records[0].Approximate || len(records[0].Calls) != 1 {
+		t.Fatalf("HTTP ledger: %+v, skipped=%d, err=%v", records, skipped, err)
 	}
 }
 

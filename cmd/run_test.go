@@ -11,6 +11,7 @@ import (
 
 	"github.com/Garden12138/xcli/internal/api"
 	"github.com/Garden12138/xcli/internal/config"
+	"github.com/Garden12138/xcli/internal/stats"
 	"github.com/Garden12138/xcli/internal/testutil"
 )
 
@@ -57,10 +58,24 @@ func TestRunAskJSON(t *testing.T) {
 	if err != nil || json.Unmarshal([]byte(out), &r) != nil || r.Status != api.StatusCompleted || stderr != "" {
 		t.Fatalf("out=%s stderr=%s err=%v", out, stderr, err)
 	}
+	records := commandLedger(t)
+	if len(records) != 1 || records[0].TaskID != r.TaskID || records[0].App != "terminal" || records[0].Approximate ||
+		len(records[0].Calls) != 1 || records[0].Calls[0].Agent != "codex" {
+		t.Fatalf("ask ledger: %+v", records)
+	}
 	result, _, err := runCommand([]string{"result", r.TaskID}, "")
 	if err != nil || !json.Valid([]byte(result)) {
 		t.Fatalf("result=%s err=%v", result, err)
 	}
+}
+
+func commandLedger(t *testing.T) []stats.Record {
+	t.Helper()
+	records, skipped, err := stats.ReadLedger(filepath.Join(defaultHome(), "stats", "usage.jsonl"))
+	if err != nil || skipped != 0 {
+		t.Fatalf("ledger: skipped=%d, err=%v", skipped, err)
+	}
+	return records
 }
 
 func TestSubmitEvents(t *testing.T) {
@@ -79,6 +94,9 @@ func TestSubmitEvents(t *testing.T) {
 			t.Fatal(line)
 		}
 	}
+	if records := commandLedger(t); len(records) != 1 || records[0].App != "unknown" {
+		t.Fatalf("submit ledger: %+v", records)
+	}
 }
 
 func TestInvalidRequestJSON(t *testing.T) {
@@ -94,6 +112,7 @@ func TestInvalidRequestJSON(t *testing.T) {
 		{[]string{"ask", "x", "--json", "--review", "--no-review"}, ""},
 		{[]string{"ask", "x", "--json", "--max-fix-rounds", "bad"}, ""},
 		{[]string{"ask", "x", "--json", "--unknown-flag"}, ""},
+		{[]string{"ask", "x", "--json", "--app", "Bad!"}, ""},
 	} {
 		out, _, err := runCommand(tc.args, tc.in)
 		var r api.Result
@@ -101,6 +120,9 @@ func TestInvalidRequestJSON(t *testing.T) {
 		if json.Unmarshal([]byte(out), &r) != nil || r.Status != api.StatusInvalid || !errors.As(err, &exit) || exit.Code != 2 {
 			t.Fatalf("args=%v out=%s err=%v", tc.args, out, err)
 		}
+	}
+	if records := commandLedger(t); len(records) != 0 {
+		t.Fatalf("invalid requests wrote usage: %+v", records)
 	}
 }
 
@@ -153,6 +175,29 @@ func TestTaskLifecycleCommands(t *testing.T) {
 	}
 	if _, _, err = runCommand([]string{"cancel", r.TaskID}, ""); err == nil || !strings.Contains(err.Error(), "任务已结束") {
 		t.Fatal(err)
+	}
+}
+
+func TestAppOverrideAndResume(t *testing.T) {
+	commandHome(t)
+	out, _, err := runCommand([]string{"ask", "hello", "-a", "codex", "--json", "--app", " WorkLog "}, "")
+	var parent api.Result
+	if err != nil || json.Unmarshal([]byte(out), &parent) != nil || parent.Metadata["app"] != "worklog" {
+		t.Fatalf("parent: %s, %v", out, err)
+	}
+	for _, args := range [][]string{
+		{"resume", parent.TaskID, "continue", "--json"},
+		{"resume", parent.TaskID, "continue", "--json", "--app", "GardenFlow"},
+	} {
+		out, _, err := runCommand(args, "")
+		if err != nil {
+			t.Fatalf("resume: %s, %v", out, err)
+		}
+	}
+	records := commandLedger(t)
+	if len(records) != 3 || records[1].App != "worklog" || records[1].ParentTask != parent.TaskID ||
+		records[2].App != "gardenflow" || records[2].ParentTask != parent.TaskID {
+		t.Fatalf("resume ledger: %+v", records)
 	}
 }
 

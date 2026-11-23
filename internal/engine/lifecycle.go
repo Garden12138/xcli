@@ -68,19 +68,53 @@ func (e *Engine) Status(id string) (store.Record, error) {
 		return store.Record{}, err
 	}
 	rec := t.Snapshot()
-	if rec.Status == api.StatusRunning && (rec.PID <= 0 || errors.Is(syscall.Kill(rec.PID, 0), syscall.ESRCH)) {
-		now := time.Now().UTC()
-		result := api.Result{Version: api.Version, TaskID: id, Status: api.StatusFailed, Capability: rec.Request.Capability, Summary: "任务进程已结束，请查看 worker.log 并重新提交任务", Plan: rec.Plan, Steps: rec.Steps, Artifacts: []api.Artifact{}, Metadata: rec.Request.Metadata, StartedAt: rec.CreatedAt, FinishedAt: now, DurationMS: now.Sub(rec.CreatedAt).Milliseconds(), Error: &api.Error{Kind: "worker_lost", Message: "任务进程已结束，请查看 worker.log 并重新提交任务"}}
-		if err := t.Update(func(r *store.Record) { r.Status = api.StatusFailed; r.Result = &result; r.PID = 0 }); err != nil {
-			return rec, err
-		}
-		_, err = t.Emit("task.finished", "", "", result)
-		if err != nil {
-			return t.Snapshot(), err
-		}
-		rec = t.Snapshot()
+	if workerLost(rec) {
+		return e.finishLostWorker(t)
 	}
 	return rec, nil
+}
+
+func workerLost(rec store.Record) bool {
+	return rec.Status == api.StatusRunning && (rec.PID <= 0 || errors.Is(syscall.Kill(rec.PID, 0), syscall.ESRCH))
+}
+
+func (e *Engine) finishLostWorker(t *store.Task) (store.Record, error) {
+	// Serialize the read and transition across status readers in different processes.
+	lock, err := os.Open(t.Dir())
+	if err != nil {
+		return store.Record{}, err
+	}
+	defer lock.Close()
+	for {
+		err = syscall.Flock(int(lock.Fd()), syscall.LOCK_EX)
+		if !errors.Is(err, syscall.EINTR) {
+			break
+		}
+	}
+	if err != nil {
+		return store.Record{}, err
+	}
+	t, err = e.Store.Load(t.ID())
+	if err != nil {
+		return store.Record{}, err
+	}
+	rec := t.Snapshot()
+	if !workerLost(rec) {
+		return rec, nil
+	}
+	now := time.Now().UTC()
+	const message = "任务进程已结束，请查看 worker.log 并重新提交任务"
+	result := api.Result{Version: api.Version, TaskID: t.ID(), Status: api.StatusFailed, Capability: rec.Request.Capability,
+		Summary: message, Plan: rec.Plan, Steps: rec.Steps, Artifacts: []api.Artifact{}, Metadata: rec.Request.Metadata,
+		StartedAt: rec.CreatedAt, FinishedAt: now, DurationMS: now.Sub(rec.CreatedAt).Milliseconds(),
+		Error: &api.Error{Kind: "worker_lost", Message: message}}
+	if err := t.Update(func(r *store.Record) { r.Status = api.StatusFailed; r.Result = &result; r.PID = 0 }); err != nil {
+		return rec, err
+	}
+	_, err = t.Emit("task.finished", "", "", result)
+	rec = t.Snapshot()
+	e.appendUsage(t.Dir(), rec, nil)
+	return rec, err
 }
 
 func (e *Engine) Wait(ctx context.Context, id string) (api.Result, error) {

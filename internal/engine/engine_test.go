@@ -20,6 +20,7 @@ import (
 
 	"github.com/Garden12138/xcli/internal/api"
 	"github.com/Garden12138/xcli/internal/config"
+	"github.com/Garden12138/xcli/internal/stats"
 	"github.com/Garden12138/xcli/internal/store"
 	"github.com/Garden12138/xcli/internal/testutil"
 )
@@ -296,6 +297,23 @@ func TestEngineDetachAndWait(t *testing.T) {
 	if err != nil || r.Status != api.StatusCompleted || r.Summary != "background" {
 		t.Fatalf("wait: %+v err=%v", r, err)
 	}
+	for {
+		records, skipped, err := stats.ReadLedger(filepath.Join(e.Home, "stats", "usage.jsonl"))
+		if err != nil || skipped != 0 {
+			t.Fatalf("worker ledger: skipped=%d, err=%v", skipped, err)
+		}
+		if len(records) != 0 {
+			if len(records) != 1 || records[0].TaskID != r.TaskID || records[0].Approximate || len(records[0].Calls) != 1 {
+				t.Fatalf("worker ledger: %+v", records)
+			}
+			break
+		}
+		select {
+		case <-ctx.Done():
+			t.Fatal("worker did not write ledger")
+		case <-time.After(20 * time.Millisecond):
+		}
+	}
 }
 
 func TestEngineCancel(t *testing.T) {
@@ -369,9 +387,20 @@ func TestEngineWorkerLost(t *testing.T) {
 	if err := task.Update(func(r *store.Record) { r.Status = api.StatusRunning; r.PID = 1 << 30 }); err != nil {
 		t.Fatal(err)
 	}
-	rec, err := e.Status(task.ID())
-	if err != nil || rec.Status != api.StatusFailed || rec.Result == nil || rec.Result.Error.Kind != "worker_lost" {
-		t.Fatalf("lost: %+v err=%v", rec, err)
+	var wg sync.WaitGroup
+	for range 5 {
+		wg.Go(func() {
+			rec, err := e.Status(task.ID())
+			if err != nil || rec.Status != api.StatusFailed || rec.Result == nil || rec.Result.Error.Kind != "worker_lost" {
+				t.Errorf("lost: %+v err=%v", rec, err)
+			}
+		})
+	}
+	wg.Wait()
+	records, skipped, err := stats.ReadLedger(filepath.Join(e.Home, "stats", "usage.jsonl"))
+	if err != nil || skipped != 0 || len(records) != 1 || records[0].TaskID != task.ID() ||
+		!records[0].Approximate || records[0].ErrorKind != "worker_lost" {
+		t.Fatalf("lost ledger: %+v, skipped=%d, err=%v", records, skipped, err)
 	}
 }
 
@@ -416,6 +445,14 @@ func TestEngineGC(t *testing.T) {
 	if err := running.Update(func(r *store.Record) { r.Status = api.StatusRunning; r.CreatedAt = time.Now().Add(-9 * 24 * time.Hour) }); err != nil {
 		t.Fatal(err)
 	}
+	if err := stats.Append(e.Home, stats.Record{V: 1, TaskID: old.ID()}); err != nil {
+		t.Fatal(err)
+	}
+	ledger := filepath.Join(e.Home, "stats", "usage.jsonl")
+	before, err := os.ReadFile(ledger)
+	if err != nil {
+		t.Fatal(err)
+	}
 	n, err := e.GC(7 * 24 * time.Hour)
 	if err != nil || n != 1 {
 		t.Fatalf("gc=%d err=%v", n, err)
@@ -425,6 +462,21 @@ func TestEngineGC(t *testing.T) {
 	}
 	if _, err := os.Stat(running.Dir()); err != nil {
 		t.Fatal(err)
+	}
+	after, err := os.ReadFile(ledger)
+	if err != nil || !bytes.Equal(before, after) {
+		t.Fatalf("gc changed ledger: %v", err)
+	}
+}
+
+func TestLedgerFailurePreservesResult(t *testing.T) {
+	e := testEngine(t, testutil.FakeScript{"codex": {{Stdout: nativeOK("ok")}}})
+	task := create(t, e, api.Request{Goal: "hello", Capability: api.CapAsk, Agent: "codex"})
+	if err := os.WriteFile(filepath.Join(e.Home, "stats"), nil, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if r := e.Run(context.Background(), task, nil); r.Status != api.StatusCompleted {
+		t.Fatalf("ledger failure changed result: %+v", r)
 	}
 }
 

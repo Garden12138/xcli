@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Garden12138/xcli/internal/api"
+	"github.com/Garden12138/xcli/internal/stats"
 	"github.com/spf13/cobra"
 )
 
@@ -19,6 +20,7 @@ type requestFlags struct {
 	maxFix                       int
 	timeout                      time.Duration
 	planFile                     string
+	app                          string
 	changed                      func(string) bool
 	outputOptions
 }
@@ -45,6 +47,7 @@ func (f *requestFlags) add(c *cobra.Command) {
 	p.BoolVar(&f.noFallback, "no-fallback", false, "关闭自动切换")
 	p.StringVar(&f.planFile, "plan", "", "执行指定计划 JSON 文件")
 	p.BoolVar(&f.req.PlanOnly, "plan-only", false, "只生成计划")
+	p.StringVar(&f.app, "app", "", "调用方应用名称")
 	f.outputOptions.add(c, true)
 }
 
@@ -81,6 +84,9 @@ func (f *requestFlags) Request(cap api.Capability, goal string) api.Request {
 
 func (f *requestFlags) read(cap api.Capability, goal string) (api.Request, error) {
 	r := f.Request(cap, goal)
+	if err := applyApp(&r, f.app, f.changed("app"), "terminal"); err != nil {
+		return r, err
+	}
 	if f.changed("review") && f.changed("no-review") {
 		return r, fmt.Errorf("请在 --review 和 --no-review 中选择一个")
 	}
@@ -106,6 +112,24 @@ func (f *requestFlags) read(cap api.Capability, goal string) (api.Request, error
 		r.Plan = &plan
 	}
 	return r, nil
+}
+
+func applyApp(r *api.Request, value string, explicit bool, defaultApp string) error {
+	app := defaultApp
+	if explicit {
+		var valid bool
+		app, valid = stats.ParseApp(value)
+		if !valid {
+			return fmt.Errorf("请将 --app 设为 1–40 位字母、数字、点、下划线或连字符，并以字母或数字开头")
+		}
+	} else if _, exists := r.Metadata["app"]; exists || defaultApp == "" {
+		return nil
+	}
+	if r.Metadata == nil {
+		r.Metadata = make(map[string]string)
+	}
+	r.Metadata["app"] = app
+	return nil
 }
 
 func decodeJSON(r io.Reader, value any) error {

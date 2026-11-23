@@ -155,6 +155,7 @@ func lifecycleCommands() []*cobra.Command {
 	list.Flags().IntVar(&limit, "limit", 20, "最多显示多少任务")
 	list.Flags().BoolVar(&listJSON, "json", false, "输出任务记录 JSON")
 	var resumeOutput outputOptions
+	var resumeApp string
 	resume := &cobra.Command{Use: "resume <id> <追加要求…>", Short: "续接已结束任务的 CLI、会话与工作目录", RunE: func(c *cobra.Command, args []string) error {
 		if len(args) < 2 {
 			return resumeOutput.invalid(c, fmt.Errorf("请提供任务 ID 和追加要求"))
@@ -167,8 +168,12 @@ func lifecycleCommands() []*cobra.Command {
 		if err != nil {
 			return resumeOutput.invalid(c, err)
 		}
+		if err := applyApp(&req, resumeApp, c.Flags().Changed("app"), ""); err != nil {
+			return resumeOutput.invalid(c, err)
+		}
 		return runRequest(c, req, resumeOutput)
 	}}
+	resume.Flags().StringVar(&resumeApp, "app", "", "覆盖父任务的调用方应用名称")
 	resumeOutput.add(resume, true)
 	var older string
 	gc := &cobra.Command{Use: "gc", Short: "清理已结束的旧任务和 worktree", Args: cobra.NoArgs, RunE: func(c *cobra.Command, args []string) error {

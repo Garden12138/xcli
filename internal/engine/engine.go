@@ -72,6 +72,7 @@ func (e *Engine) Create(req api.Request) (*store.Task, error) {
 
 func (e *Engine) Run(ctx context.Context, t *store.Task, sink func(api.Event)) (result api.Result) {
 	req := t.Snapshot().Request
+	env := &orchestrator.Env{Config: e.Config, Drivers: e.Drivers, Health: e.Health, Task: t, Req: req, PathList: e.PathList, ShellProxy: e.ShellProxy, LockDir: filepath.Join(e.Home, "locks"), Now: time.Now, Sink: sink}
 	started := time.Now().UTC()
 	result = api.Result{Version: api.Version, Status: api.StatusFailed, Artifacts: []api.Artifact{}, Steps: []api.StepResult{}}
 	emit := func(typ string, data any) {
@@ -109,6 +110,7 @@ func (e *Engine) Run(ctx context.Context, t *store.Task, sink func(api.Event)) (
 			result.Error = &api.Error{Kind: "failed", Message: "请检查任务目录写入权限：" + err.Error()}
 		}
 		emit("task.finished", result)
+		e.appendUsage(t.Dir(), store.Record{ID: t.ID(), Status: result.Status, Request: req, Result: &result}, env.Calls())
 	}()
 	if err := t.Update(func(r *store.Record) { r.Status = api.StatusRunning; r.PID = os.Getpid() }); err != nil {
 		result.Error = &api.Error{Kind: "failed", Message: "请检查任务目录写入权限：" + err.Error()}
@@ -128,7 +130,7 @@ func (e *Engine) Run(ctx context.Context, t *store.Task, sink func(api.Event)) (
 	for _, notice := range notices {
 		emit("notice", map[string]string{"text": notice})
 	}
-	env := &orchestrator.Env{Config: e.Config, Drivers: e.Drivers, Health: e.Health, Task: t, WS: ws, Req: req, PathList: e.PathList, ShellProxy: e.ShellProxy, LockDir: filepath.Join(e.Home, "locks"), Now: time.Now, Sink: sink}
+	env.WS = ws
 	if req.ParentTask != "" {
 		if parent, err := e.Store.Load(req.ParentTask); err == nil {
 			step := lastExecuted(parent.Snapshot().Steps)
@@ -140,7 +142,7 @@ func (e *Engine) Run(ctx context.Context, t *store.Task, sink func(api.Event)) (
 	plan := orchestrator.RulesPlan(req, e.Config)
 	if req.Plan != nil {
 		plan = *req.Plan
-		plan.Source = "explicit"
+		plan.Source, plan.Planner = "explicit", ""
 	} else if req.Capability == api.CapAuto {
 		plan = env.Plan(ctx)
 	}
