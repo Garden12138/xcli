@@ -51,6 +51,13 @@ xcli apply <隔离任务id> --remove-worktree
 
 Ctrl-C 取消前台任务；`wait` 超时后任务继续运行。`resume` 复用最后一步的 CLI 会话，图片任务会自动带上上次图片。`--isolate` 基于 Git HEAD 创建 worktree；`apply` 把改动应用回原仓库。用 `xcli result <id>` 重读结果，`xcli gc --older-than 7d` 清理旧任务。
 
+## 查看接入应用统计
+
+`xcli stats` 显示最近 30 天的任务量、成功率、耗时、失败原因、Token 和每日趋势。
+`xcli stats --since 7d --app worklog --json` 可按应用筛选并输出 JSON。
+接入应用在请求中填写 `metadata.app`。终端默认归为 `terminal`，可用 `--app` 指定名称。
+统计会只读补录历史任务，并标出 CLI 调用和耗时的估算记录。
+
 ## 可选配置与 HTTP
 
 配置放在 `~/.xcli/config.yaml`，只填写需要覆盖的字段；`xcli config show` 查看全部生效值，`XCLI_HOME` 可修改存储目录。

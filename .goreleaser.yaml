@@ -3,7 +3,7 @@ version: 2
 project_name: xcli
 
 snapshot:
-  version_template: "2.0.1-dev-{{ .ShortCommit }}"
+  version_template: "2.1.0-dev-{{ .ShortCommit }}"
 
 builds:
   - id: xcli

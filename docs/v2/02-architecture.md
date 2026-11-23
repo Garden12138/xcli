@@ -448,6 +448,7 @@ macOS 上从 Dock 启动的桌面应用不会继承终端里的 PATH，xcli 和�
   cache/env.json               登录 shell 的 PATH 和代理变量（0600）
   locks/<agent>-<n>.lock       并发槽位
   server.token                 HTTP 接口令牌（0600）
+  stats/usage.jsonl             任务统计账本（0600，追加写）
   tasks/<task-id>/
     task.json                  请求 + 计划 + 步骤状态 + 结果（写临时文件后 rename，保证原子）
     events.jsonl               事件流（追加写）
@@ -462,7 +463,7 @@ macOS 上从 Dock 启动的桌面应用不会继承终端里的 PATH，xcli 和�
       review/                  代码循环中审查者的 prompt、schema、stdout、stderr、result
 ```
 
-任务 ID 格式：`t-20261113-170102-a3f9`（时间 + 4 位随机十六进制）。`xcli gc --older-than 7d` 清理已结束的旧任务（会先删除对应的 worktree 和 `xcli/<task-id>` 分支）。
+任务 ID 格式：`t-20261113-170102-a3f9`（时间 + 4 位随机十六进制）。`xcli gc --older-than 7d` 清理已结束的旧任务（会先删除对应的 worktree 和 `xcli/<task-id>` 分支）。账本独立保留，供 `xcli stats` 汇总。
 
 ## 10. 配置
 
@@ -484,6 +485,8 @@ defaults:
   verify_timeout: 10m
   planner: codex           # 智能编排时负责规划的 CLI
 path: ""                   # 子进程 PATH；空表示自动探测
+stats:
+  include: ["chat-insight/*/xcli"] # 额外的只读统计目录，glob 相对于当前数据目录
 agents:
   codex:
     command: codex

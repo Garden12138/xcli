@@ -33,4 +33,4 @@ echo '{"capability":"ask","goal":"..."}' | xcli submit --request - --json   # �
 ## 版本与分支
 
 - 旧成果（R0–R4.1、Model Gateway、Agent Gateway、SIWC 等）完整保留在 tag `archive/r4.1-final`。
-- v2 当前版本为 `2.0.1`，任务 JSON 协议版本为 `1`。从 v0.x 升级时请按 [接口规范](03-interfaces.md) 接入。
+- v2 当前版本为 `2.1.0`，任务 JSON 协议版本为 `1`。从 v0.x 升级时请按 [接口规范](03-interfaces.md) 接入。

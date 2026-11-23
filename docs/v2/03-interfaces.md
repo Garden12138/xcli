@@ -25,6 +25,7 @@
 | `xcli config show\|init\|path` | 查看生效配置 / 写入默认配置 / 显示配置路径 |
 | `xcli serve [--listen 127.0.0.1:7788]` | 本机 HTTP 任务接口（第 5 阶段） |
 | `xcli gc [--older-than 7d]` | 清理旧任务 |
+| `xcli stats [--since 30d] [--until YYYY-MM-DD] [--app NAME] [--json]` | 查看接入应用的调用量、耗时、失败原因和用量 |
 
 ### 1.2 通用参数（`do` / `plan` / `ask` / `code` / `review` / `image`）
 
@@ -33,6 +34,7 @@
 | `-C, --workdir <dir>` | `workdir` | 工作目录 |
 | `-a, --agent <name>` | `agent` | 所有步骤都用这个 CLI，不做路由，也不切换 |
 | `--agents a,b` | `agents` | 允许使用的 CLI 及偏好顺序 |
+| `--app <name>` | `metadata.app` | 标记调用方应用，终端默认 `terminal` |
 | `-i, --input <path>` | `inputs` | 输入文件或目录，可重复 |
 | `--image <path>` | `images` | 参考图，可重复 |
 | `-o, --out <dir>` | `output_dir` | 产物目录 |
@@ -64,7 +66,7 @@
 | 3 | `needs_attention` |
 | 130 | `cancelled` |
 
-`--json` 模式下无论成功失败，stdout 都是一个完整的 Result JSON，调用方先解析 stdout，再看退出码。
+提交或执行任务时，`--json` 模式会把完整的 Result JSON 写到 stdout。调用方先解析 stdout，再看退出码。
 
 ## 2. Request
 
@@ -124,6 +126,8 @@
 | `parent_task` | string | 否 | "" | `resume` 时由 xcli 填写 |
 | `metadata` | map | 否 | {} | 调用方自定义字段，原样写回 Result |
 
+接入应用通过 `metadata.app` 填写稳定的应用名称，例如 `worklog`、`gardenflow`、`chat-insight`。统计时去掉首尾空白并转为小写，归组使用规范化后匹配 `^[a-z0-9][a-z0-9._-]{0,39}$` 的名称，缺失或格式无效的值归为 `unknown`。`do`、`plan`、`ask`、`code`、`review`、`image` 可通过 `--app` 设置，默认使用 `terminal`。`submit` 和 HTTP 从请求中读取应用名称。`resume` 继承父任务的名称，可用 `--app` 覆盖。无效的 `--app` 返回 `invalid`（退出码 2）。
+
 Plan 与 Step：
 
 ```json
@@ -137,6 +141,8 @@ Plan 与 Step：
   ]
 }
 ```
+
+CLI 规划成功时，结果中的可选字段 `plan.planner` 记录完成规划的 CLI 名称。
 
 ## 3. Result
 
@@ -218,7 +224,7 @@ Plan 与 Step：
 
 | 方法与路径 | 说明 |
 | --- | --- |
-| `GET /v1/health` | `{"ok": true, "version": "2.0.1"}`，不需要令牌 |
+| `GET /v1/health` | `{"ok": true, "version": "2.1.0"}`，不需要令牌 |
 | `GET /v1/agents` | 同 `xcli agents --json` |
 | `POST /v1/tasks` | 请求体是 Request；`?wait=true` 时阻塞到结束并返回 Result，否则返回 `202 {"task_id"}` |
 | `GET /v1/tasks?limit=20` | 任务列表 |
@@ -345,3 +351,7 @@ print(result["status"], result["changes"]["diff_file"], result["review"])
 - Request / Result / Event 带版本号 `1`。v1 内只新增可选字段，不删除、不改名、不改语义。
 - 调用方必须忽略不认识的字段和事件类型。
 - 命令行参数在 2.x 内保持兼容；人类可读的输出格式不做承诺，程序请使用 `--json` / `--events`。
+
+## 8. 统计账本
+
+任务结束后，xcli 向数据目录的 `stats/usage.jsonl` 追加一条记录。`xcli stats` 只读汇总账本和可用的历史任务，按任务 ID 去重。账本字段、权限和写入时机见 [接入应用统计第 2.1 节](05-app-stats.md#21-统计账本)。

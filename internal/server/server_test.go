@@ -141,7 +141,7 @@ func TestHealthNoAuth(t *testing.T) {
 		OK      bool   `json:"ok"`
 		Version string `json:"version"`
 	}](t, res, 200)
-	if !v.OK || v.Version != "2.0.1" {
+	if !v.OK || v.Version != "2.1.0" {
 		t.Fatal(v)
 	}
 }

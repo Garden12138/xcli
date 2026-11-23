@@ -25,7 +25,7 @@ import (
 )
 
 // Version 由 serve 命令在创建 handler 前设为 cmd.Version。
-var Version = "2.0.1"
+var Version = "2.1.0"
 
 type service struct {
 	e              *engine.Engine
