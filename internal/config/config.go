@@ -155,6 +155,16 @@ func (c Config) Enabled(name string) bool {
 	return ok && (a.Enabled == nil || *a.Enabled)
 }
 
+func (c Config) EnabledAgents() []string {
+	var agents []string
+	for _, name := range AgentOrder {
+		if c.Enabled(name) {
+			agents = append(agents, name)
+		}
+	}
+	return agents
+}
+
 func (c Config) Strength(name, kind string) int { return c.Agents[name].Strengths[kind] }
 func Marshal(c Config) ([]byte, error)          { return yaml.Marshal(c) }
 

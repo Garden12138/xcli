@@ -56,7 +56,7 @@ func RulesPlan(req api.Request, cfg config.Config) api.Plan {
 
 var planID = regexp.MustCompile(`^[a-z0-9_-]{1,32}$`)
 
-func ValidatePlan(p api.Plan, req api.Request, available []string, maxSteps int) error {
+func ValidatePlan(p api.Plan, req api.Request, enabled []string, maxSteps int) error {
 	if len(p.Steps) == 0 || len(p.Steps) > maxSteps {
 		return fmt.Errorf("请将计划步骤数设为 1 到 %d", maxSteps)
 	}
@@ -74,8 +74,8 @@ func ValidatePlan(p api.Plan, req api.Request, available []string, maxSteps int)
 		default:
 			return fmt.Errorf("请修正步骤 %s 的 kind", s.ID)
 		}
-		if s.Agent != "auto" && !slices.Contains(available, s.Agent) {
-			return fmt.Errorf("请将步骤 %s 的 agent 设为 auto 或可用 CLI", s.ID)
+		if s.Agent != "auto" && !slices.Contains(enabled, s.Agent) {
+			return fmt.Errorf("请将步骤 %s 的 agent 设为 auto 或配置中启用的 CLI", s.ID)
 		}
 		if req.Agent != "" && s.Agent != "auto" && s.Agent != req.Agent {
 			return fmt.Errorf("请将步骤 %s 的 agent 设为 %s 或 auto", s.ID, req.Agent)
@@ -87,8 +87,8 @@ func ValidatePlan(p api.Plan, req api.Request, available []string, maxSteps int)
 			if s.Kind != api.KindCode {
 				return fmt.Errorf("请仅在 code 步骤设置 review_by：%s", s.ID)
 			}
-			if *s.ReviewBy != "auto" && !slices.Contains(available, *s.ReviewBy) {
-				return fmt.Errorf("请为步骤 %s 选择可用 review_by 或 auto", s.ID)
+			if *s.ReviewBy != "auto" && !slices.Contains(enabled, *s.ReviewBy) {
+				return fmt.Errorf("请将步骤 %s 的 review_by 设为 auto 或配置中启用的 CLI", s.ID)
 			}
 		}
 		if s.Output != nil && (filepath.IsAbs(*s.Output) || filepath.Clean(*s.Output) == ".." || strings.HasPrefix(filepath.Clean(*s.Output), ".."+string(filepath.Separator))) {

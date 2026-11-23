@@ -193,6 +193,8 @@ CLI 规划成功时，结果中的可选字段 `plan.planner` 记录完成规划
 | `steps[].fallbacks` | 切换记录，例如 `["codex: quota"]` |
 | `error` | `{"kind": "...", "message": "...", "step_id": "..."}`；kind 取值见架构文档 4.4，另有 `invalid_request`、`worker_lost` |
 
+固定的 CLI 不可用时，任务状态为 `failed`，`error.kind` 为冷却原因（`auth`、`quota`、`unavailable`）或 `not_installed`。`message` 提供重试时间或安装指引。计划结构错误仍使用 `invalid_request`。
+
 ## 4. 事件（JSONL）
 
 每行一个对象：

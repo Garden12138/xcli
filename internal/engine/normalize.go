@@ -114,7 +114,7 @@ func (e *Engine) Normalize(req api.Request, cwd string) (api.Request, error) {
 		req.TimeoutSec = max(1, int(e.Config.Defaults.TaskTimeout.D()/time.Second))
 	}
 	if req.Plan != nil {
-		if err := orchestrator.ValidatePlan(*req.Plan, req, e.available(req), e.Config.Defaults.MaxSteps); err != nil {
+		if err := orchestrator.ValidatePlan(*req.Plan, req, e.Config.EnabledAgents(), e.Config.Defaults.MaxSteps); err != nil {
 			return req, err
 		}
 	}

@@ -31,11 +31,12 @@ func (e *Env) runFallback(ctx context.Context, s api.Step, up []recipe.Handoff) 
 		agent = e.Req.Agent
 	}
 	if agent == "" || agent == "auto" {
-		var err error
-		agent, err = NewRouter(e).Pick(s.Kind)
-		if err != nil {
-			e.emit("step.finished", s.ID, "", map[string]any{"status": api.StatusFailed, "summary": err.Error()})
-			return StepOutcome{Result: api.StepResult{ID: s.ID, Kind: s.Kind, Status: api.StatusFailed, Fallbacks: []string{}, Error: &api.Error{Kind: "not_installed", Message: err.Error(), StepID: s.ID}}}
+		var issue *api.Error
+		agent, issue = NewRouter(e).Pick(s.Kind)
+		if issue != nil {
+			issue.StepID = s.ID
+			e.emit("step.finished", s.ID, "", map[string]any{"status": api.StatusFailed, "summary": issue.Message})
+			return StepOutcome{Result: api.StepResult{ID: s.ID, Kind: s.Kind, Status: api.StatusFailed, Fallbacks: []string{}, Error: issue}}
 		}
 	}
 	fallback := e.Config.Defaults.Fallback

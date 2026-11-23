@@ -216,6 +216,8 @@ Agy 1.5.10 的组合命令复核中，`ls; touch x` 的 run_command 状态为 ER
 
 识别规则集中在每个驱动的 `classify` 函数里，表驱动，配有样本测试。
 
+请求固定的 CLI 不可用时，任务以冷却原因（`auth`、`quota`、`unavailable`）或 `not_installed` 失败。冷却提示给出本机重试时间和 `xcli agents --reset`，缺少命令时提示安装或修正配置中的 `command`。
+
 ### 4.5 健康状态
 
 - `Probe`：`exec.LookPath` + `--version`（5 秒超时）；登录检查尽力而为——codex 用 `codex login status`，cursor 用 `cursor-agent status --format json`，antigravity 没有对应命令，记为 `unknown`。
@@ -291,6 +293,8 @@ Request
 排序 = strengths[kind] 降序 → 请求 agents 中的顺序 → 配置顺序（codex, cursor, antigravity）
 review 步骤：优先排除被审查步骤所用的 CLI；只剩它自己时不做审查，并发出 notice 事件
 ```
+
+计划结构校验允许 `auto` 和配置中启用的已知 CLI。执行前检查请求固定的 CLI、步骤指定的 CLI 和指定的审查 CLI。任一不可用时，任务以冷却原因或 `not_installed` 失败。自动路由选不出可用 CLI 时，列出候选状态，优先报告最早解除的冷却原因，无冷却时返回 `not_installed`。
 
 默认 strengths（可在配置里改；依据是历史实测：codex 与 antigravity 生图通过，cursor 生图受信任问题阻塞未验证）：
 

@@ -39,7 +39,7 @@ func (e *Env) Plan(ctx context.Context) api.Plan {
 		if ctx.Err() != nil {
 			return fallback("规划已取消或超时，请重新提交任务继续")
 		}
-		available := router.eligible()
+		available := router.Candidates("")
 		input.Agents = nil
 		for _, name := range available {
 			input.Agents = append(input.Agents, recipe.AgentInfo{Name: name, Strengths: e.Config.Agents[name].Strengths, Note: notes[name]})
@@ -89,7 +89,7 @@ func (e *Env) Plan(ctx context.Context) api.Plan {
 			err = json.Unmarshal(raw, &plan)
 		}
 		if err == nil {
-			err = ValidatePlan(plan, e.Req, available, e.Config.Defaults.MaxSteps)
+			err = ValidatePlan(plan, e.Req, e.Config.EnabledAgents(), e.Config.Defaults.MaxSteps)
 		}
 		if err != nil {
 			return fallback("计划校验失败，请检查需求或使用 --plan 提供计划：" + err.Error())

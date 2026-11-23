@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"slices"
 	"time"
 
 	"github.com/Garden12138/xcli/internal/api"
@@ -42,20 +41,6 @@ func New(home string) (*Engine, error) {
 	}
 	path, proxy := proc.SearchEnvironment(cfg.Path, filepath.Join(home, "cache", "env.json"), cfg.Defaults.InheritShellProxy)
 	return &Engine{Home: home, Config: cfg, Store: st, Health: health.Open(home), Drivers: driver.All(cfg), PathList: path, ShellProxy: proxy}, nil
-}
-
-func (e *Engine) available(req api.Request) []string {
-	available := []string{}
-	for _, name := range config.AgentOrder {
-		d := e.Drivers[name]
-		if d == nil || !e.Config.Enabled(name) || (len(req.Agents) > 0 && req.Agent == "" && !slices.Contains(req.Agents, name)) || (req.Agent != "" && name != req.Agent) {
-			continue
-		}
-		if _, err := proc.LookPath(d.Command(), e.PathList); err == nil && e.Health.Available(name, time.Now()) {
-			available = append(available, name)
-		}
-	}
-	return available
 }
 
 func (e *Engine) Create(req api.Request) (*store.Task, error) {
@@ -146,12 +131,16 @@ func (e *Engine) Run(ctx context.Context, t *store.Task, sink func(api.Event)) (
 	} else if req.Capability == api.CapAuto {
 		plan = env.Plan(ctx)
 	}
-	if err := orchestrator.ValidatePlan(plan, req, e.available(req), e.Config.Defaults.MaxSteps); err != nil {
+	if err := orchestrator.ValidatePlan(plan, req, e.Config.EnabledAgents(), e.Config.Defaults.MaxSteps); err != nil {
 		result.Error = &api.Error{Kind: "invalid_request", Message: err.Error()}
 		result.Summary = err.Error()
 		return result
 	}
 	result.Plan = &plan
+	if issue := orchestrator.NewRouter(env).CheckPlanAvailability(plan); issue != nil {
+		result.Error, result.Summary = issue, issue.Message
+		return result
+	}
 	_ = t.Update(func(r *store.Record) { r.Plan = &plan })
 	emit("plan.ready", map[string]any{"plan": plan})
 	if req.PlanOnly {
