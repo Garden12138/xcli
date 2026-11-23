@@ -155,7 +155,7 @@ func stepHasAgent(step StepRecord) bool {
 }
 
 func stepHasTiming(step StepRecord) bool {
-	return stepHasAgent(step) && len(step.Fallbacks) == 0 && max(step.Rounds, 1) == 1
+	return api.Status(step.Status).Finished() && stepHasAgent(step) && len(step.Fallbacks) == 0 && max(step.Rounds, 1) == 1
 }
 
 func estimateCalls(r Record, results []api.StepResult) []Call {

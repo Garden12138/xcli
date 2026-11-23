@@ -11,6 +11,22 @@ import (
 	"github.com/Garden12138/xcli/internal/api"
 )
 
+func TestStatsInclude(t *testing.T) {
+	defaults, err := Parse([]byte("defaults: {}"))
+	if err != nil || !reflect.DeepEqual(defaults.Stats.Include, []string{"chat-insight/*/xcli"}) {
+		t.Fatalf("default stats config: %+v, %v", defaults.Stats, err)
+	}
+	for raw, want := range map[string][]string{
+		"stats: {include: [other/*]}": {"other/*"},
+		"stats: {include: []}":        {},
+	} {
+		cfg, err := Parse([]byte(raw))
+		if err != nil || !reflect.DeepEqual(cfg.Stats.Include, want) {
+			t.Fatalf("stats config: %+v, %v", cfg.Stats, err)
+		}
+	}
+}
+
 func TestDefaultMatchesDesign(t *testing.T) {
 	c := Default()
 	if c.Defaults.Permission != api.PermWrite || !c.Defaults.Network || !c.Defaults.Fallback || c.Defaults.Review != "auto" || c.Defaults.Planner != "codex" {

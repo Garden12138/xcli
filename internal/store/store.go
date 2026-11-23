@@ -78,16 +78,11 @@ func (s *Store) Load(id string) (*Task, error) {
 		return nil, errors.New("请提供 xcli 返回的完整任务 ID")
 	}
 	t := &Task{dir: filepath.Join(s.Root, id)}
-	raw, err := os.ReadFile(t.Path("task.json"))
+	rec, err := ReadRecord(t.dir)
 	if err != nil {
-		return nil, fmt.Errorf("请用 xcli list 检查任务 %s：%w", id, err)
+		return nil, err
 	}
-	if err := json.Unmarshal(raw, &t.rec); err != nil {
-		return nil, fmt.Errorf("请检查任务 %s 的 task.json：%w", id, err)
-	}
-	if t.rec.ID != id {
-		return nil, errors.New("请检查 task.json 中的 ID 与任务目录是否一致")
-	}
+	t.rec = rec
 	events, err := ReadEvents(t.dir, 0)
 	if err != nil {
 		return nil, err
@@ -98,6 +93,23 @@ func (s *Store) Load(id string) (*Task, error) {
 		}
 	}
 	return t, nil
+}
+
+// ReadRecord reads task.json without creating a store or reading events.
+func ReadRecord(taskDir string) (Record, error) {
+	id := filepath.Base(taskDir)
+	var rec Record
+	raw, err := os.ReadFile(filepath.Join(taskDir, "task.json"))
+	if err != nil {
+		return rec, fmt.Errorf("请用 xcli list 检查任务 %s：%w", id, err)
+	}
+	if err := json.Unmarshal(raw, &rec); err != nil {
+		return rec, fmt.Errorf("请检查任务 %s 的 task.json：%w", id, err)
+	}
+	if rec.ID != id {
+		return rec, errors.New("请检查 task.json 中的 ID 与任务目录是否一致")
+	}
+	return rec, nil
 }
 
 func (s *Store) List(limit int) ([]Record, error) {

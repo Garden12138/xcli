@@ -62,6 +62,11 @@ type Config struct {
 	Defaults Defaults               `yaml:"defaults"`
 	Path     string                 `yaml:"path"`
 	Agents   map[string]AgentConfig `yaml:"agents"`
+	Stats    StatsConfig            `yaml:"stats"`
+}
+
+type StatsConfig struct {
+	Include []string `yaml:"include"`
 }
 
 var AgentOrder = []string{"codex", "cursor", "antigravity"}
@@ -72,7 +77,7 @@ func Default() Config {
 		MaxFixRounds: 2, MaxSteps: 6, MaxParallel: 3, Planner: "codex",
 		StepTimeout: Duration(20 * time.Minute), TaskTimeout: Duration(90 * time.Minute),
 		PlannerTimeout: Duration(3 * time.Minute), VerifyTimeout: Duration(10 * time.Minute),
-	}, Agents: make(map[string]AgentConfig)}
+	}, Agents: make(map[string]AgentConfig), Stats: StatsConfig{Include: []string{"chat-insight/*/xcli"}}}
 	codexHome := os.Getenv("CODEX_HOME")
 	if codexHome == "" {
 		codexHome = "~/.codex"
