@@ -13,6 +13,7 @@ import (
 	"github.com/Garden12138/xcli/internal/api"
 	"github.com/Garden12138/xcli/internal/config"
 	"github.com/Garden12138/xcli/internal/driver"
+	"github.com/Garden12138/xcli/internal/stats"
 	"github.com/Garden12138/xcli/internal/store"
 	"github.com/Garden12138/xcli/internal/testutil"
 )
@@ -84,9 +85,13 @@ func TestPlannerUnavailableTriesNext(t *testing.T) {
 	e := stepEnv(t, testutil.FakeScript{"codex": {{Exit: 1, Stderr: "Not logged in. Run codex login"}}, "agy": {{Stdout: agyOK(plannerJSON(p))}}}, api.Request{Capability: api.CapAuto})
 	got := e.Plan(context.Background())
 	calls := testutil.FakeCalls(t)
-	if got.Source != "planner" || len(calls) != 2 || calls[0].Name != "codex" || calls[1].Name != "agy" || !strings.Contains(strings.Join(calls[1].Args, " "), "--json-schema") || e.Health.Available("codex", time.Now()) {
+	if got.Source != "planner" || got.Planner != "antigravity" || len(calls) != 2 || calls[0].Name != "codex" || calls[1].Name != "agy" || !strings.Contains(strings.Join(calls[1].Args, " "), "--json-schema") || e.Health.Available("codex", time.Now()) {
 		t.Fatalf("plan: %+v calls=%+v", got, calls)
 	}
+	checkCalls(t, e,
+		stats.Call{Agent: "codex", Purpose: "plan", Step: "plan", Round: 1, ErrorKind: "auth"},
+		stats.Call{Agent: "antigravity", Purpose: "plan", Step: "plan", Round: 1},
+	)
 	first, _ := os.ReadFile(e.Task.Path("steps", "plan-r1", "stderr.log"))
 	if !strings.Contains(string(first), "Not logged in") {
 		t.Fatal("first planner logs overwritten")

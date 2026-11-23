@@ -123,6 +123,10 @@ func TestExecuteFallbackOnQuota(t *testing.T) {
 	if r.Status != api.StatusCompleted || r.Steps[0].Agent != "cursor" || !reflect.DeepEqual(r.Steps[0].Fallbacks, []string{"codex: quota"}) || e.Health.Available("codex", time.Now()) {
 		t.Fatalf("fallback: %+v", r)
 	}
+	if got := e.Calls(); len(got) != 2 || got[0].Agent != "codex" || got[0].Purpose != "run" || got[0].ErrorKind != "quota" ||
+		got[1].Agent != "cursor" || got[1].Purpose != "run" || got[1].ErrorKind != "" {
+		t.Fatalf("fallback calls: %+v", got)
+	}
 	events, err := store.ReadEvents(e.Task.Dir(), 0)
 	if err != nil {
 		t.Fatal(err)

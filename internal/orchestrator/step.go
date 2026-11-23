@@ -13,6 +13,7 @@ import (
 	"github.com/Garden12138/xcli/internal/artifact"
 	"github.com/Garden12138/xcli/internal/driver"
 	"github.com/Garden12138/xcli/internal/recipe"
+	"github.com/Garden12138/xcli/internal/stats"
 	"github.com/Garden12138/xcli/internal/store"
 	"github.com/Garden12138/xcli/internal/workspace"
 )
@@ -89,7 +90,7 @@ func (e *Env) invocation(in recipe.Input, agent, id string, round int, schema []
 	return inv, nil
 }
 
-func (e *Env) jsonRun(ctx context.Context, s api.Step, agent string, in recipe.Input, schema []byte, round int, session string) (driver.Result, json.RawMessage, int) {
+func (e *Env) jsonRun(ctx context.Context, s api.Step, agent, purpose string, in recipe.Input, schema []byte, round int, session string) (driver.Result, json.RawMessage, int) {
 	var result driver.Result
 	var validation error
 	for attempt := 0; attempt < 2; attempt++ {
@@ -105,10 +106,11 @@ func (e *Env) jsonRun(ctx context.Context, s api.Step, agent string, in recipe.I
 		}
 		inv.SessionID = session
 		if attempt > 0 {
+			purpose = stats.PurposeRepair
 			inv.SchemaFile = ""
 			inv.Prompt += "\n你上一次的输出不符合 JSON Schema，请修正：\n" + validation.Error() + "\n请只输出修正后的 JSON，Schema：\n" + string(schema)
 		}
-		result = runner.invoke(ctx, agent, s.ID, current, inv)
+		result = runner.invoke(ctx, agent, purpose, s.ID, current, inv)
 		if result.ErrorKind != driver.ErrNone {
 			return result, nil, round + attempt
 		}
@@ -162,7 +164,7 @@ func (e *Env) RunStep(ctx context.Context, s api.Step, agent string, up []recipe
 	case api.KindAsk:
 		if e.Req.HasSchema() {
 			var result driver.Result
-			result, out.JSON, out.Result.Rounds = e.jsonRun(ctx, s, agent, in, e.Req.Schema, 1, e.ResumeSession)
+			result, out.JSON, out.Result.Rounds = e.jsonRun(ctx, s, agent, stats.PurposeRun, in, e.Req.Schema, 1, e.ResumeSession)
 			accept(&out, result)
 		} else {
 			inv, err := e.invocation(in, agent, s.ID, 1, nil)
@@ -171,7 +173,7 @@ func (e *Env) RunStep(ctx context.Context, s api.Step, agent string, up []recipe
 				return
 			}
 			inv.SessionID = e.ResumeSession
-			accept(&out, e.invoke(ctx, agent, s.ID, 1, inv))
+			accept(&out, e.invoke(ctx, agent, stats.PurposeRun, s.ID, 1, inv))
 		}
 	case api.KindImage:
 		in.Instruction = "步骤 ID：" + s.ID + "\n" + in.Instruction
@@ -202,7 +204,7 @@ func (e *Env) RunStep(ctx context.Context, s api.Step, agent string, up []recipe
 			return
 		}
 		inv.SessionID = e.ResumeSession
-		if !accept(&out, e.invoke(ctx, agent, s.ID, 1, inv)) {
+		if !accept(&out, e.invoke(ctx, agent, stats.PurposeRun, s.ID, 1, inv)) {
 			return
 		}
 		var files struct{ Files []string }
@@ -243,7 +245,7 @@ func (e *Env) RunStep(ctx context.Context, s api.Step, agent string, up []recipe
 				return
 			}
 		}
-		result, raw, rounds := e.jsonRun(ctx, s, agent, in, recipe.ReviewSchema(), 1, e.ResumeSession)
+		result, raw, rounds := e.jsonRun(ctx, s, agent, stats.PurposeReview, in, recipe.ReviewSchema(), 1, e.ResumeSession)
 		out.Result.Rounds = rounds
 		if !accept(&out, result) {
 			return
@@ -297,7 +299,11 @@ func (e *Env) runCode(ctx context.Context, s api.Step, agent string, in recipe.I
 			return
 		}
 		inv.SessionID = session
-		result := e.invoke(ctx, agent, s.ID, round, inv)
+		purpose := stats.PurposeRun
+		if round > 1 {
+			purpose = stats.PurposeRepair
+		}
+		result := e.invoke(ctx, agent, purpose, s.ID, round, inv)
 		if session != "" && (result.ErrorKind == driver.ErrProtocol || result.ErrorKind == driver.ErrFailed) {
 			dir, _ := e.logDir(s.ID, round)
 			text := strings.ToLower(tail(filepath.Join(dir, "stderr.log"), 65536))
@@ -306,7 +312,7 @@ func (e *Env) runCode(ctx context.Context, s api.Step, agent string, in recipe.I
 				inv.SessionID = ""
 				inv.Prompt += "\n原始需求：" + e.Req.Goal + "\n上一轮总结：" + previous
 				e.emit("notice", s.ID, agent, map[string]string{"text": "已开启新会话继续修复"})
-				result = e.invoke(ctx, agent, s.ID, round, inv)
+				result = e.invoke(ctx, agent, stats.PurposeRepair, s.ID, round, inv)
 			}
 		}
 		if !accept(out, result) {
@@ -365,7 +371,7 @@ func (e *Env) runCode(ctx context.Context, s api.Step, agent string, in recipe.I
 						return
 					}
 				}
-				dr, raw, _ := reviewEnv.jsonRun(ctx, s, reviewer, reviewInput, recipe.ReviewSchema(), round, "")
+				dr, raw, _ := reviewEnv.jsonRun(ctx, s, reviewer, stats.PurposeReview, reviewInput, recipe.ReviewSchema(), round, "")
 				if dr.ErrorKind != driver.ErrNone {
 					fail(out, dr.ErrorKind, dr.Error)
 					return

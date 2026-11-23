@@ -11,6 +11,7 @@ import (
 	"github.com/Garden12138/xcli/internal/api"
 	"github.com/Garden12138/xcli/internal/driver"
 	"github.com/Garden12138/xcli/internal/recipe"
+	"github.com/Garden12138/xcli/internal/stats"
 	"github.com/Garden12138/xcli/internal/workspace"
 )
 
@@ -73,7 +74,7 @@ func (e *Env) Plan(ctx context.Context) api.Plan {
 			inv.Prompt += "\n请只输出符合下面 JSON Schema 的 JSON：\n" + string(schema)
 		}
 		planCtx, cancel := context.WithTimeout(ctx, e.Config.Defaults.PlannerTimeout.D())
-		result := runner.invoke(planCtx, name, "plan", 1, inv)
+		result := runner.invoke(planCtx, name, stats.PurposePlan, "plan", 1, inv)
 		cancel()
 		if result.ErrorKind != driver.ErrNone {
 			e.emit("notice", "plan", name, map[string]string{"text": "规划 CLI " + name + "：" + result.Error})
@@ -94,6 +95,7 @@ func (e *Env) Plan(ctx context.Context) api.Plan {
 			return fallback("计划校验失败，请检查需求或使用 --plan 提供计划：" + err.Error())
 		}
 		plan.Source = "planner"
+		plan.Planner = name
 		return plan
 	}
 	return fallback("规划调用已结束，请查看步骤 plan 的日志或稍后重试")

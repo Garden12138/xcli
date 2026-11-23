@@ -28,12 +28,14 @@ type Options struct {
 	RedactProxy bool
 }
 type Outcome struct {
-	ExitCode   int
-	TimedOut   bool
-	Cancelled  bool
-	StartErr   error
-	StderrTail string
-	Duration   time.Duration
+	ExitCode        int
+	TimedOut        bool
+	Cancelled       bool
+	Started         bool
+	StartErr        error
+	StderrTail      string
+	Duration        time.Duration
+	ProcessDuration time.Duration
 }
 
 type tailWriter struct {
@@ -142,11 +144,13 @@ func Run(ctx context.Context, s Spec, o Options) (out Outcome) {
 		killTimer = time.AfterFunc(5*time.Second, func() { _ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL) })
 		return syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM)
 	}
+	processStart := time.Now()
 	if err := cmd.Start(); err != nil {
 		out.StartErr = err
 		markContext()
 		return out
 	}
+	out.Started = true
 	_ = writer.Close()
 	linesDone := make(chan error, 1)
 	go func() {
@@ -158,6 +162,7 @@ func Run(ctx context.Context, s Spec, o Options) (out Outcome) {
 		linesDone <- err
 	}()
 	waitErr := cmd.Wait()
+	out.ProcessDuration = time.Since(processStart)
 	if stderrLog != nil {
 		_ = stderrLog.flush()
 	}

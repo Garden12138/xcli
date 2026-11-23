@@ -16,6 +16,7 @@ import (
 	"github.com/Garden12138/xcli/internal/driver"
 	"github.com/Garden12138/xcli/internal/health"
 	"github.com/Garden12138/xcli/internal/proc"
+	"github.com/Garden12138/xcli/internal/stats"
 	"github.com/Garden12138/xcli/internal/store"
 	"github.com/Garden12138/xcli/internal/workspace"
 )
@@ -49,7 +50,11 @@ type StepOutcome struct {
 	Files     []string // 变更文件，用于交接
 }
 
-type envShared struct{ events sync.Mutex }
+type envShared struct {
+	events  sync.Mutex
+	callsMu sync.Mutex
+	calls   []stats.Call
+}
 
 var envInit sync.Mutex
 
@@ -60,6 +65,14 @@ func (e *Env) state() *envShared {
 		e.shared = &envShared{}
 	}
 	return e.shared
+}
+
+// Calls returns a snapshot of the completed CLI launches for this task.
+func (e *Env) Calls() []stats.Call {
+	state := e.state()
+	state.callsMu.Lock()
+	defer state.callsMu.Unlock()
+	return append([]stats.Call{}, state.calls...)
 }
 
 func (e *Env) now() time.Time {
@@ -132,7 +145,7 @@ func invokeError(err error) driver.Result {
 	return driver.Result{ErrorKind: kind, Error: "请检查任务状态、工作目录和日志目录后重试：" + err.Error()}
 }
 
-func (e *Env) invoke(ctx context.Context, agent string, stepID string, round int, inv driver.Invocation) driver.Result {
+func (e *Env) invoke(ctx context.Context, agent, purpose, stepID string, round int, inv driver.Invocation) driver.Result {
 	d := e.Drivers[agent]
 	if d == nil {
 		return driver.Result{ErrorKind: driver.ErrNotInstalled, Error: "请启用或安装 " + agent + " 后重试"}
@@ -153,7 +166,7 @@ func (e *Env) invoke(ctx context.Context, agent string, stepID string, round int
 		inv.SchemaFile = ""
 		inv.Prompt += "\n请只输出符合以下 JSON Schema 的 JSON：\n" + string(schema)
 	}
-	once := func() driver.Result {
+	once := func(purpose string) driver.Result {
 		release, err := proc.AcquireSlot(ctx, e.LockDir, agent, cfg.MaxConcurrency, func() {
 			e.status(stepID, agent, round, api.StatusWaiting)
 			e.emit("step.waiting", stepID, agent, map[string]string{"reason": "等待 CLI 并发槽位"})
@@ -212,6 +225,17 @@ func (e *Env) invoke(ctx context.Context, agent string, stepID string, round int
 			result.ErrorKind = driver.ErrCancelled
 			result.Error = "任务已取消，可重新提交任务继续"
 		}
+		if out.Started {
+			call := stats.Call{Agent: agent, Purpose: purpose, Step: stepID, Round: round,
+				DurationMS: out.ProcessDuration.Milliseconds(), ErrorKind: string(result.ErrorKind)}
+			if result.Usage != nil {
+				call.HasUsage, call.InputTokens, call.OutputTokens = true, result.Usage.InputTokens, result.Usage.OutputTokens
+			}
+			state := e.state()
+			state.callsMu.Lock()
+			state.calls = append(state.calls, call)
+			state.callsMu.Unlock()
+		}
 		if strings.Contains(out.StderrTail, "[xcli] stdout 单行超过 8 MB") {
 			e.emit("notice", stepID, agent, map[string]string{"text": "stdout 单行超过 8 MB，已跳过；请查看原始日志"})
 		}
@@ -227,14 +251,14 @@ func (e *Env) invoke(ctx context.Context, agent string, stepID string, round int
 		}
 		return result
 	}
-	result := once()
+	result := once(purpose)
 	if inv.SchemaFile != "" && result.ErrorKind == driver.ErrFailed && schemaRejected(tail(filepath.Join(dir, "stdout.jsonl"), 65536), tail(filepath.Join(dir, "stderr.log"), 65536)) {
 		preserve(dir, "schema-failed")
 		inv.SchemaFile = ""
 		inv.Prompt += "\n请只输出符合以下 JSON Schema 的 JSON：\n" + string(schema)
 		inv.SessionID = result.SessionID
 		e.emit("notice", stepID, agent, map[string]string{"text": "已改用提示词约束与本地 Schema 校验"})
-		return once()
+		return once(stats.PurposeRepair)
 	}
 	return result
 }

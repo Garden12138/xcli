@@ -128,6 +128,7 @@ type Plan struct {
 	Source    string `json:"source"`
 	Reasoning string `json:"reasoning"`
 	Steps     []Step `json:"steps"`
+	Planner   string `json:"planner,omitempty"`
 }
 
 type Step struct {

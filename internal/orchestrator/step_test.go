@@ -16,6 +16,7 @@ import (
 	"github.com/Garden12138/xcli/internal/driver"
 	"github.com/Garden12138/xcli/internal/health"
 	"github.com/Garden12138/xcli/internal/recipe"
+	"github.com/Garden12138/xcli/internal/stats"
 	"github.com/Garden12138/xcli/internal/store"
 	"github.com/Garden12138/xcli/internal/testutil"
 	"github.com/Garden12138/xcli/internal/workspace"
@@ -98,6 +99,10 @@ func TestRunStepAskSchemaRepair(t *testing.T) {
 	if r.Result.Status != api.StatusCompleted || !json.Valid(r.JSON) || len(calls) != 2 || !strings.Contains(strings.Join(calls[1].Args, " "), "--resume") {
 		t.Fatalf("schema repair: %+v, calls=%+v", r, calls)
 	}
+	checkCalls(t, e,
+		stats.Call{Agent: "cursor", Purpose: "run", Step: "main", Round: 1},
+		stats.Call{Agent: "cursor", Purpose: "repair", Step: "main", Round: 2},
+	)
 }
 
 func TestRunStepAskSchemaMismatch(t *testing.T) {
@@ -146,6 +151,12 @@ func TestRunStepCodeReviewLoop(t *testing.T) {
 	if r.Result.Status != api.StatusCompleted || r.Result.Rounds != 2 || r.Review == nil || r.Review.Verdict != "pass" {
 		t.Fatalf("review loop: %+v", r)
 	}
+	checkCalls(t, e,
+		stats.Call{Agent: "codex", Purpose: "run", Step: "main", Round: 1, HasUsage: true, InputTokens: 5, OutputTokens: 2},
+		stats.Call{Agent: "cursor", Purpose: "review", Step: "main", Round: 1},
+		stats.Call{Agent: "codex", Purpose: "repair", Step: "main", Round: 2, HasUsage: true, InputTokens: 5, OutputTokens: 2},
+		stats.Call{Agent: "cursor", Purpose: "review", Step: "main", Round: 2},
+	)
 	coderLog, _ := os.ReadFile(e.Task.Path("steps", "main-r1", "stdout.jsonl"))
 	reviewLog, err := os.ReadFile(e.Task.Path("steps", "main-r1", "review", "stdout.jsonl"))
 	if err != nil || !strings.Contains(string(coderLog), "thread.started") || !strings.Contains(string(reviewLog), "changes_requested") {
@@ -194,6 +205,9 @@ func TestRunStepCodeResumeFailureStartsNewSession(t *testing.T) {
 	if _, err := os.Stat(e.Task.Path("steps", "main-r2", "resume-failed-stderr.log")); err != nil {
 		t.Fatal(err)
 	}
+	if got := e.Calls(); len(got) != 3 || got[2].Purpose != "repair" || got[2].Round != 2 {
+		t.Fatalf("resume stats: %+v", got)
+	}
 }
 
 func TestRunStepNativeSchemaRefusalUsesInline(t *testing.T) {
@@ -214,6 +228,9 @@ func TestRunStepNativeSchemaRefusalUsesInline(t *testing.T) {
 	}
 	if _, err := os.Stat(e.Task.Path("steps", "main-r1", "schema-failed-stdout.jsonl")); err != nil {
 		t.Fatal(err)
+	}
+	if got := e.Calls(); len(got) != 2 || got[0].ErrorKind == "" || got[1].Purpose != "repair" || got[1].ErrorKind != "" {
+		t.Fatalf("native schema retry stats: %+v", got)
 	}
 }
 
@@ -270,6 +287,9 @@ func TestRunStepConcurrentSinkOrdered(t *testing.T) {
 		})
 	}
 	wg.Wait()
+	if got := e.Calls(); len(got) != 2 || got[0].Step == got[1].Step {
+		t.Fatalf("parallel calls: %+v", got)
+	}
 	for i, seq := range seqs {
 		if seq != i+1 {
 			t.Fatalf("sink order: %v", seqs)
