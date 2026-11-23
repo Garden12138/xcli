@@ -24,7 +24,9 @@
 ```json
 {"v":1,"task_id":"t-20261119-030133-ea72","app":"gardenflow","capability":"image","status":"completed","error_kind":"","error_step":"","started_at":"2026-11-19T03:01:33Z","finished_at":"2026-11-19T03:02:34Z","duration_ms":61557,"parent_task":"","planner":"",
  "steps":[{"id":"main","kind":"image","agent":"antigravity","status":"completed","duration_ms":61200,"rounds":1,"fallbacks":[],"input_tokens":0,"output_tokens":0,"has_usage":false}],
- "reviews":[]}
+ "reviews":[],
+ "calls":[{"agent":"antigravity","purpose":"run","step":"main","round":1,"duration_ms":61150,"error_kind":"","input_tokens":0,"output_tokens":0,"has_usage":false}],
+ "approximate":false}
 ```
 
 | 字段 | 来源 |
@@ -35,8 +37,23 @@
 | `steps[].fallbacks` | 由 `"codex: quota"` 形式拆成 `[{"agent":"codex","reason":"quota"}]` |
 | `reviews[]` | 任务事件中每条 `review.result`：`{"step":"main","agent":"cursor","round":1,"verdict":"pass"}` |
 | `planner` | 新增的可选字段 `plan.planner`（由 CLI 规划时记录规划成功的 CLI） |
+| `calls[]` | 本任务每一次实际启动 CLI 的记录，由 `orchestrator.Env.invoke` 采集（见下文） |
+| `approximate` | `calls[]` 是否为估算：v2.1.0 起正常结束的任务为 `false`；从旧任务补录或 `worker_lost` 的任务为 `true` |
 
-**隐私：** 账本只记录上表字段，不记录目标描述、提示词、输入路径、输出文本、产物路径或除 `app` 以外的 metadata。
+**`calls[]` 的采集：** xcli 启动 CLI 只有一个入口 `Env.invoke`（规划、执行、Schema 修复、代码修复轮、审查都经过它）。每次调用结束时追加一条记录：
+
+| 字段 | 含义 |
+| --- | --- |
+| `agent` | 本次启动的 CLI |
+| `purpose` | `plan`（规划，包括失败的尝试）/ `review`（审查，包括代码循环中的审查和 `review` 类型的步骤）/ `repair`（Schema 修复、代码修复轮，包括续接失败后的新会话重试）/ `run`（其他：步骤的首次执行，切换后在新 CLI 上的执行也算 `run`） |
+| `step`、`round` | 所属步骤 ID（规划为 `plan`）和轮次 |
+| `duration_ms` | 本次调用从启动进程到结束的耗时 |
+| `error_kind` | 本次调用的错误类型；成功为空 |
+| `input_tokens`、`output_tokens`、`has_usage` | 本次调用上报的用量 |
+
+找不到可执行文件、没有启动进程时不记录；调用中途被取消时照常记录，`error_kind` 为 `cancelled`。采集需要并发安全（并行步骤会同时调用）。`worker_lost` 时进程已经退出，内存中的采集结果丢失，按补录规则估算。
+
+**隐私：** 账本只记录上面两张表中的字段，不记录目标描述、提示词、输入路径、输出文本、产物路径或除 `app` 以外的 metadata。
 
 **写入：** 打开时使用 `O_APPEND|O_CREATE|O_WRONLY`（文件 0600，目录 0700），加 `flock` 后写入一整行。写入失败不影响任务结果，只在 stderr 输出一行提示。写入时机：
 
@@ -55,7 +72,7 @@
 每个数据目录依次读取：
 
 1. `stats/usage.jsonl`：损坏的行跳过并计数；
-2. `tasks/*/task.json`：目录名（即任务 ID）已在账本中出现的直接跳过、不读取；其余已结束的任务用同一个转换函数补录，审查信息从同目录的 `events.jsonl` 读取。
+2. `tasks/*/task.json`：目录名（即任务 ID）已在账本中出现的直接跳过、不读取；其余已结束的任务用同一个转换函数补录，审查信息从同目录的 `events.jsonl` 读取，`calls[]` 按第 4 节的估算规则生成，`approximate` 为 `true`。
 
 这样升级前的历史任务、Chat Insight 用旧版 xcli 留下的任务都能统计到。
 
@@ -76,11 +93,12 @@
 | 成功率 | 成功 ÷（成功 + 需关注 + 失败）；取消不计入分母；分母为 0 时显示 `—` |
 | 应用耗时 | 任务 `duration_ms`，不含取消的任务 |
 | P50、P90 | 最近秩法（nearest-rank）：排序后取第 ⌈p × n⌉ 个 |
-| CLI 调用 | 每次实际启动 CLI 记一次：每条切换记录是该 CLI 的一次失败调用；每个步骤最终执行的 CLI 记一次（成败取步骤状态）；每条审查记录是审查 CLI 的一次调用（有结论即成功）；`planner` 非空时记一次成功的规划调用 |
-| CLI 耗时 | 只统计步骤最终执行的那次调用（其他调用的耗时没有记录） |
+| CLI 调用 | `calls[]` 的条数，按 `agent` 归组；调用成功 = `error_kind` 为空。精确记录直接使用 `calls[]`；估算记录的 `calls[]` 由下一行规则生成 |
+| 估算规则（`approximate: true`） | 每条切换记录 → 该 CLI 一次失败的 `run`（`error_kind` 取切换原因）；每个步骤的最终 CLI → `max(rounds, 1)` 次调用，前面的轮次记为成功的 `repair`，最后一次的成败取步骤状态（`completed`、`needs_attention` 为成功）；`code` 步骤的每条 `review.result` → 审查 CLI 一次成功的 `review`；`review` 类型步骤只按步骤本身计 1 次，不再计它的 `review.result`；`planner` 非空 → 一次成功的 `plan`（失败的规划尝试无法估算）。Schema 修复无法从旧记录识别，不计 |
+| CLI 耗时 | 精确记录用每次调用的 `duration_ms`。估算记录只使用"没有切换且只有一轮"的步骤：步骤耗时归到最终 CLI 的那次调用；其他估算调用不参与耗时统计 |
 | 被切走、接手 | 被切走 = 该 CLI 出现在切换记录中的次数；接手 = 发生过切换的步骤最终由该 CLI 完成的次数 |
 | 失败原因 | 失败任务的 `error_kind`，并列出涉及的应用和 CLI（`error_step` 对应步骤的最终 CLI） |
-| Token | 汇总 `has_usage` 为真的步骤；同时显示有用量数据的步骤数 ÷ 总步骤数 |
+| Token | 应用和总览按步骤汇总 `has_usage` 为真的步骤，同时显示有用量数据的步骤数 ÷ 总步骤数；CLI 按 `calls[]` 汇总（估算记录的步骤用量归到最终 CLI 的最后一次调用） |
 | 按天 | 本机时区自然日；范围内每天一行，没有任务的日子也显示 |
 
 ## 5. 命令
@@ -124,7 +142,10 @@ unavailable  4     29%   gardenflow  antigravity
 ...
 
 数据来源：账本 30 条，补录 7 条，跳过损坏 0 行；数据目录 2 个
+其中 7 个任务为 v2.1.0 之前的记录，CLI 调用次数和耗时为估算值
 ```
+
+没有估算记录时不显示最后一行。
 
 `--json` 结构：
 
@@ -140,7 +161,7 @@ unavailable  4     29%   gardenflow  antigravity
               "fallback_from": 1, "fallback_to": 2, "input_tokens": 1100000, "output_tokens": 30000}],
   "errors": [{"kind": "failed", "count": 6, "share": 0.43, "apps": ["gardenflow"], "agents": ["antigravity"]}],
   "daily": [{"date": "2026-11-19", "tasks": 12, "succeeded": 7, "failed": 5, "avg_ms": 108000}],
-  "sources": {"ledger_records": 30, "backfilled_tasks": 7, "skipped_lines": 0, "homes": ["~/.xcli", "~/.xcli/chat-insight/0f3a.../xcli"]}
+  "sources": {"ledger_records": 30, "backfilled_tasks": 7, "approximate_tasks": 7, "skipped_lines": 0, "homes": ["~/.xcli", "~/.xcli/chat-insight/0f3a.../xcli"]}
 }
 ```
 
@@ -172,6 +193,14 @@ type StepRecord struct {
 	HasUsage                  bool
 }
 type ReviewRecord struct{ Step, Agent, Verdict string; Round int }
+type Call struct {
+	Agent, Purpose, Step      string // Purpose: plan | run | repair | review
+	Round                     int
+	DurationMS                int64
+	ErrorKind                 string
+	InputTokens, OutputTokens int64
+	HasUsage                  bool
+}
 type Record struct {
 	V                                int
 	TaskID, App, Capability, Status  string
@@ -181,21 +210,26 @@ type Record struct {
 	ParentTask, Planner              string
 	Steps                            []StepRecord
 	Reviews                          []ReviewRecord
+	Calls                            []Call
+	Approximate                      bool
 }
 // JSON 字段名按第 2.1 节的 snake_case。
 
-func NormalizeApp(value string) string                      // 第 3 节规则
-func FromTask(rec store.Record, events []api.Event) (Record, bool) // 未结束的任务返回 false
-func Append(home string, r Record) error                    // 第 2.1 节的写入方式
+func NormalizeApp(value string) string // 第 3 节规则
+// calls 为 nil 时按第 4 节估算规则生成 Calls，并置 Approximate = true；未结束的任务返回 false。
+func FromTask(rec store.Record, events []api.Event, calls []Call) (Record, bool)
+func Append(home string, r Record) error // 第 2.1 节的写入方式
 func ReadLedger(path string) (records []Record, skipped int, err error)
 ```
 
+- **调用采集（`internal/orchestrator`）：** `Env` 增加一个并发安全的调用记录器；`invoke` 增加 `purpose` 参数（取值见第 2.1 节），在每次启动过 CLI 的调用结束时追加一条 `stats.Call`（用量、错误类型、耗时都来自本次调用的结果）。按第 2.1 节的定义更新全部调用点：规划、步骤首次执行、Schema 修复、代码修复轮（含续接失败后的新会话重试）、审查。`stats` 包不得依赖 `orchestrator`，避免循环引用：类型放在 `stats`，由 `orchestrator` 引用。
 - `api.Plan` 增加 `Planner string \`json:"planner,omitempty"\``；`orchestrator.Env.Plan` 在 CLI 规划成功时写入所用 CLI。
-- 测试：`FromTask` 覆盖切换记录拆分、审查事件提取、规划 CLI、用量有无、`app` 规范化（大写、空白、非法字符、缺失）；`Append` 在 20 个 goroutine 并发写入后，文件恰好 20 行且每行都是合法 JSON；`ReadLedger` 跳过损坏行并计数；账本中不出现 `goal`、`summary` 等字段（对 JSON 键做白名单断言）。
+- 测试（采集，用 fakecli）：ask 步骤 Schema 修复一次 → `run` + `repair` 两条；代码步骤两轮、两次审查 → 编码 CLI 的 `run`、`repair` 各一条，审查 CLI 的 `review` 两条；切换一次 → 原 CLI 失败的 `run`（`error_kind` 为切换原因）+ 新 CLI 的 `run`；规划第一个 CLI 失败、第二个成功 → 两条 `plan`；`review` 类型步骤 → 一条 `review`；调用中途取消 → 一条 `error_kind: cancelled`；可执行文件不存在 → 不记录。
+- 测试（记录）：`FromTask` 传入 calls 时原样使用、`Approximate` 为 false；传 nil 时按估算规则生成，覆盖：切换、两轮代码加审查、独立审查步骤只计 1 次、规划；切换记录拆分、审查事件提取、用量有无、`app` 规范化（大写、空白、非法字符、缺失）。`Append` 在 20 个 goroutine 并发写入后，文件恰好 20 行且每行都是合法 JSON；`ReadLedger` 跳过损坏行并计数；账本中不出现 `goal`、`summary` 等字段（对 JSON 键做白名单断言）。
 
 ### 任务 2：写入时机与调用方标识（`internal/engine`、`cmd`）
 
-- `engine.Run` 收尾：`task.finished` 写入后调用 `stats.Append`；`engine.Status` 判定 `worker_lost` 后同样调用。写入失败只向 stderr 输出一行提示。
+- `engine.Run` 收尾：`task.finished` 写入后调用 `stats.Append(home, FromTask(记录, 事件, 本次采集的 calls))`；`engine.Status` 判定 `worker_lost` 后同样调用，但 calls 传 nil（按估算）。写入失败只向 stderr 输出一行提示。
 - `cmd/request_flags.go`：新增 `--app`，按第 3 节校验和填默认值；`submit` 不填默认值。
 - `engine.Resume`：继承父任务的 `metadata.app`。
 - 测试：前台运行、`--detach` 后台运行、HTTP 运行各产生一行账本；`worker_lost` 产生一行；`xcli gc` 后账本不变；`ask hello`（终端）记为 `terminal`；`submit` 不带 app 时记为 `unknown`；`--app Bad!` 返回 `invalid`、退出码 2；`resume` 继承父任务的 app。
@@ -203,7 +237,7 @@ func ReadLedger(path string) (records []Record, skipped int, err error)
 ### 任务 3：收集与汇总（`internal/stats/collect.go`、`aggregate.go`）
 
 ```go
-type Sources struct{ LedgerRecords, BackfilledTasks, SkippedLines int; Homes []string }
+type Sources struct{ LedgerRecords, BackfilledTasks, ApproximateTasks, SkippedLines int; Homes []string }
 func Homes(home string, include []string) []string
 func Collect(homes []string) ([]Record, Sources, error)          // 第 2.2 节，按 task_id 去重
 type Filter struct{ Since, Until time.Time; App string; Location *time.Location }
@@ -212,7 +246,7 @@ func Aggregate(records []Record, f Filter) Report               // 第 4 节口�
 ```
 
 - `config` 增加 `stats.include`，默认 `["chat-insight/*/xcli"]`。
-- 测试：账本与任务目录重复时只计一次；已在账本中的任务目录不读取 `task.json`（可用损坏的 `task.json` 断言没有报错）；`include` 的 glob 能找到两个模拟的 Chat Insight 数据目录；成功率不含取消；P50、P90 的最近秩法；CLI 调用计数（一次切换加最终成功 = 失败 1 次 + 成功 1 次；两轮审查 = 审查 CLI 调用 2 次；规划 1 次）；被切走、接手；失败原因的涉及应用和 CLI；按天在固定时区（测试里用 `time.FixedZone("CST", 8*3600)`）下补齐空白日期；`--app` 过滤。
+- 测试：账本与任务目录重复时只计一次；已在账本中的任务目录不读取 `task.json`（可用损坏的 `task.json` 断言没有报错）；`include` 的 glob 能找到两个模拟的 Chat Insight 数据目录；成功率不含取消；P50、P90 的最近秩法；CLI 调用直接按 `calls[]` 计数与计算耗时；估算记录中"有切换或多轮"的步骤不参与 CLI 耗时；精确与估算记录混合时 `approximate_tasks` 计数正确；被切走、接手；失败原因的涉及应用和 CLI；按天在固定时区（测试里用 `time.FixedZone("CST", 8*3600)`）下补齐空白日期；`--app` 过滤。
 
 ### 任务 4：`xcli stats` 命令（`cmd/stats.go`）
 
